@@ -8,6 +8,7 @@ import {
   type MealPlanRequest,
   type MealPlanResponse,
 } from "@/lib/meal-plan-schema";
+import WaitlistForm from "@/components/WaitlistForm";
 
 type FormState = {
   weeklyBudget: string;
@@ -458,6 +459,8 @@ export function SmartCartApp() {
               </p>
             </div>
           )}
+
+          <WaitlistForm />
         </section>
       </section>
     </main>
