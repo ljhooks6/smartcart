@@ -1,34 +1,47 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
-import {
-  adventureLevelOptions,
-  prepTimeOptions,
-  type MealPlanRequest,
-  type MealPlanResponse,
-} from "@/lib/meal-plan-schema";
 import WaitlistForm from "@/components/WaitlistForm";
 
+type GenerateListResponse = {
+  meals: Array<{
+    name: string;
+    servings: number;
+    notes: string;
+  }>;
+  grocery_list: Array<{
+    item: string;
+    estimated_price: number;
+  }>;
+};
+
 type FormState = {
-  weeklyBudget: string;
+  budget: string;
+  diet: string;
   householdSize: string;
-  dietaryRestrictions: string;
-  prepTimeAvailable: MealPlanRequest["prepTimeAvailable"];
-  adventureLevel: MealPlanRequest["adventureLevel"];
-  pantryCheck: string;
+  pantryItems: string;
+  prepTime: string;
+  adventureLevel: string;
   strictStretchMode: boolean;
 };
 
 const initialFormState: FormState = {
-  weeklyBudget: "75",
+  budget: "75",
+  diet: "Vegetarian",
   householdSize: "2",
-  dietaryRestrictions: "",
-  prepTimeAvailable: "Under 30 mins",
+  pantryItems: "Rice, black beans, garlic, soy sauce, canned tomatoes",
+  prepTime: "Under 30 mins",
   adventureLevel: "Mix it up",
-  pantryCheck: "Rice, black beans, garlic, soy sauce, canned tomatoes",
   strictStretchMode: true,
 };
+
+const prepTimeOptions = ["Under 30 mins", "Under 1 hour", "No limit"] as const;
+const adventureLevelOptions = [
+  "Stick to basics",
+  "Mix it up",
+  "Try new cuisines",
+] as const;
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -41,25 +54,31 @@ function formatCurrency(value: number) {
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [result, setResult] = useState<MealPlanResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const resultsRef = useRef<HTMLElement | null>(null);
+  const [generatedPlan, setGeneratedPlan] =
+    useState<GenerateListResponse | null>(null);
 
   const pantryHints = useMemo(
-    () => formState.pantryCheck.split(",").map((item) => item.trim()).filter(Boolean),
-    [formState.pantryCheck],
+    () =>
+      formState.pantryItems
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    [formState.pantryItems],
   );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setValidationError(null);
-    setServerError(null);
 
-    const weeklyBudget = Number(formState.weeklyBudget);
+    const budget = Number(formState.budget);
     const householdSize = Number(formState.householdSize);
+    const pantryItems = formState.pantryItems
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
 
-    if (!Number.isFinite(weeklyBudget) || weeklyBudget <= 0) {
+    if (!Number.isFinite(budget) || budget <= 0) {
       setValidationError("Enter a weekly budget greater than $0.");
       return;
     }
@@ -69,48 +88,44 @@ export function SmartCartApp() {
       return;
     }
 
-    if (formState.pantryCheck.trim().length < 3) {
-      setValidationError("Add 3 to 5 pantry ingredients so SmartCart can anchor the plan.");
+    if (pantryItems.length === 0) {
+      setValidationError("Add at least one pantry item before generating a plan.");
       return;
     }
-
-    const payload: MealPlanRequest = {
-      weeklyBudget,
-      householdSize,
-      dietaryRestrictions: formState.dietaryRestrictions.trim(),
-      prepTimeAvailable: formState.prepTimeAvailable,
-      adventureLevel: formState.adventureLevel,
-      pantryCheck: formState.pantryCheck.trim(),
-      strictStretchMode: formState.strictStretchMode,
-    };
 
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/meal-plan", {
+      const response = await fetch("/api/generate-list", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          budget,
+          diet: formState.diet.trim() || "No specific diet provided",
+          householdSize,
+          pantryItems,
+        }),
       });
 
-      const data = (await response.json()) as MealPlanResponse | { error?: string };
+      const data = (await response.json()) as {
+        meals?: GenerateListResponse["meals"];
+        grocery_list?: GenerateListResponse["grocery_list"];
+        error?: string;
+      };
 
       if (!response.ok) {
-        setServerError(data && "error" in data ? data.error || "Request failed." : "Request failed.");
-        setResult(null);
-        return;
+        throw new Error(data.error || "Request failed.");
       }
 
-      setResult(data as MealPlanResponse);
-
-      requestAnimationFrame(() => {
-        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      console.log(data);
+      setGeneratedPlan({
+        meals: data.meals ?? [],
+        grocery_list: data.grocery_list ?? [],
       });
     } catch {
-      setServerError("Network error. Please try again once the app server is running.");
-      setResult(null);
+      alert("Oops! There was a problem generating your plan. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -119,6 +134,7 @@ export function SmartCartApp() {
   return (
     <main className="relative overflow-hidden">
       <div className="absolute inset-x-0 top-0 -z-10 h-[32rem] bg-grain-glow blur-3xl" />
+
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
           <div className="space-y-8 rounded-[2rem] border border-white/60 bg-white/70 p-6 shadow-halo backdrop-blur xl:p-10">
@@ -135,23 +151,29 @@ export function SmartCartApp() {
                 Stretch every grocery dollar without defaulting to the same tired dinners.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-ink/75">
-                SmartCart turns your pantry, budget, and time constraints into a cross-utilized
-                5-day dinner plan with a practical grocery checklist you can actually shop.
+                SmartCart turns your pantry, budget, and time constraints into a practical dinner
+                plan with a grocery checklist you can actually shop.
               </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-3xl border border-pine/10 bg-cream p-4">
-                <p className="font-display text-3xl text-pine">5 days</p>
-                <p className="mt-2 text-sm text-ink/70">Dinner-focused planning built for the workweek.</p>
+                <p className="font-display text-3xl text-pine">Budget first</p>
+                <p className="mt-2 text-sm text-ink/70">
+                  Plans are shaped around what you can realistically spend this week.
+                </p>
               </div>
               <div className="rounded-3xl border border-pine/10 bg-cream p-4">
-                <p className="font-display text-3xl text-pine">Zero waste</p>
-                <p className="mt-2 text-sm text-ink/70">Ingredient overlap is prioritized to avoid leftovers dying in the fridge.</p>
+                <p className="font-display text-3xl text-pine">Pantry aware</p>
+                <p className="mt-2 text-sm text-ink/70">
+                  Existing ingredients are surfaced first so fewer groceries go to waste.
+                </p>
               </div>
               <div className="rounded-3xl border border-pine/10 bg-cream p-4">
-                <p className="font-display text-3xl text-pine">Pantry first</p>
-                <p className="mt-2 text-sm text-ink/70">Meals are anchored to what you already own before anything new gets added.</p>
+                <p className="font-display text-3xl text-pine">Fast setup</p>
+                <p className="mt-2 text-sm text-ink/70">
+                  A few context inputs are enough to generate a usable plan.
+                </p>
               </div>
             </div>
 
@@ -180,7 +202,7 @@ export function SmartCartApp() {
             <div className="mb-6">
               <p className="font-display text-3xl text-ink">The Smart Context Form</p>
               <p className="mt-2 text-sm leading-6 text-ink/70">
-                Give the planner enough context to keep meals affordable, realistic, and worth repeating.
+                Give the planner enough context to keep meals affordable and realistic.
               </p>
             </div>
 
@@ -193,19 +215,18 @@ export function SmartCartApp() {
                       $
                     </span>
                     <input
-                      className="w-full rounded-2xl border border-ink/10 bg-white px-8 py-3 text-base outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
+                      className="w-full rounded-2xl border border-ink/10 bg-white px-8 py-3 text-base text-ink outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
                       inputMode="decimal"
                       min="1"
-                      name="weeklyBudget"
                       onChange={(event) =>
                         setFormState((current) => ({
                           ...current,
-                          weeklyBudget: event.target.value,
+                          budget: event.target.value,
                         }))
                       }
                       placeholder="75"
                       type="number"
-                      value={formState.weeklyBudget}
+                      value={formState.budget}
                     />
                   </div>
                 </label>
@@ -213,9 +234,8 @@ export function SmartCartApp() {
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-ink">Household Size</span>
                   <input
-                    className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
+                    className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
                     min="1"
-                    name="householdSize"
                     onChange={(event) =>
                       setFormState((current) => ({
                         ...current,
@@ -232,17 +252,16 @@ export function SmartCartApp() {
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-ink">Dietary Restrictions</span>
                 <input
-                  className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
-                  name="dietaryRestrictions"
+                  className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
-                      dietaryRestrictions: event.target.value,
+                      diet: event.target.value,
                     }))
                   }
                   placeholder="Vegetarian, nut-free, halal, low-sodium..."
                   type="text"
-                  value={formState.dietaryRestrictions}
+                  value={formState.diet}
                 />
               </label>
 
@@ -250,14 +269,14 @@ export function SmartCartApp() {
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-ink">Prep Time Available</span>
                   <select
-                    className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
+                    className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
                     onChange={(event) =>
                       setFormState((current) => ({
                         ...current,
-                        prepTimeAvailable: event.target.value as MealPlanRequest["prepTimeAvailable"],
+                        prepTime: event.target.value,
                       }))
                     }
-                    value={formState.prepTimeAvailable}
+                    value={formState.prepTime}
                   >
                     {prepTimeOptions.map((option) => (
                       <option key={option} value={option}>
@@ -270,11 +289,11 @@ export function SmartCartApp() {
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-ink">Adventure Level</span>
                   <select
-                    className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
+                    className="w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
                     onChange={(event) =>
                       setFormState((current) => ({
                         ...current,
-                        adventureLevel: event.target.value as MealPlanRequest["adventureLevel"],
+                        adventureLevel: event.target.value,
                       }))
                     }
                     value={formState.adventureLevel}
@@ -291,16 +310,15 @@ export function SmartCartApp() {
               <label className="space-y-2">
                 <span className="text-sm font-semibold text-ink">Pantry Check</span>
                 <textarea
-                  className="min-h-32 w-full rounded-3xl border border-ink/10 bg-white px-4 py-3 text-base outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
-                  name="pantryCheck"
+                  className="min-h-32 w-full rounded-3xl border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-apricot focus:ring-4 focus:ring-apricot/15"
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
-                      pantryCheck: event.target.value,
+                      pantryItems: event.target.value,
                     }))
                   }
                   placeholder="List 3-5 ingredients you already own..."
-                  value={formState.pantryCheck}
+                  value={formState.pantryItems}
                 />
               </label>
 
@@ -308,7 +326,7 @@ export function SmartCartApp() {
                 <div className="pr-4">
                   <p className="text-sm font-semibold text-ink">Budget Tightness / Stretch</p>
                   <p className="mt-1 text-sm leading-6 text-ink/65">
-                    Enforce strict ingredient cross-utilization to squeeze the most out of your cart.
+                    Keep ingredient overlap high so the cart stays lean and flexible.
                   </p>
                 </div>
                 <button
@@ -332,9 +350,9 @@ export function SmartCartApp() {
                 </button>
               </div>
 
-              {(validationError || serverError) && (
+              {validationError && (
                 <div className="rounded-2xl border border-berry/20 bg-berry/10 px-4 py-3 text-sm text-berry">
-                  {validationError || serverError}
+                  {validationError}
                 </div>
               )}
 
@@ -343,119 +361,74 @@ export function SmartCartApp() {
                 disabled={isSubmitting}
                 type="submit"
               >
-                {isSubmitting ? "Building your plan..." : "Generate my 5-day plan"}
+                {isSubmitting ? "Generating Plan..." : "Generate"}
               </button>
             </form>
           </div>
         </div>
 
-        <section className="mt-10 space-y-6 pb-16" ref={resultsRef}>
-          {result ? (
-            <>
-              <div className="flex flex-col gap-4 rounded-[2rem] border border-pine/10 bg-white/80 p-6 shadow-halo backdrop-blur sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="font-display text-3xl text-ink">Your SmartCart plan</p>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/70">
-                    Five budget-conscious dinners, one cross-utilized grocery list, and a built-in savings tip.
-                  </p>
-                </div>
-                <div className="rounded-[1.5rem] bg-pine px-5 py-4 text-cream">
-                  <p className="text-sm uppercase tracking-[0.2em] text-cream/70">Estimated total</p>
-                  <p className="mt-1 font-display text-3xl">{formatCurrency(result.estimated_total_cost)}</p>
-                </div>
-              </div>
-
-              <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-                <div className="space-y-5">
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                    {result.meal_plan.map((meal, index) => (
-                      <article
-                        key={`${meal.day}-${meal.meal_name}-${index}`}
-                        className="rounded-[1.75rem] border border-ink/10 bg-[#fffaf4] p-5 shadow-sm"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                              {meal.day}
-                            </p>
-                            <h2 className="mt-2 font-display text-2xl text-ink">{meal.meal_name}</h2>
-                          </div>
-                          <span className="rounded-full bg-apricot/15 px-3 py-1 text-sm font-semibold text-berry">
-                            {meal.prep_time_minutes} min
-                          </span>
-                        </div>
-                        <p className="mt-4 text-sm leading-7 text-ink/75">{meal.quick_instructions}</p>
-                      </article>
-                    ))}
+        <section className="mt-10 space-y-6 pb-16">
+          {generatedPlan ? (
+            <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+              <div className="rounded-[2rem] border border-pine/10 bg-white/80 p-6 shadow-halo backdrop-blur">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="font-display text-3xl text-ink">Suggested meals</p>
+                    <p className="mt-2 text-sm leading-6 text-ink/70">
+                      These results are coming directly from <code>/api/generate-list</code>.
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-pine px-4 py-3 text-cream">
+                    <p className="text-xs uppercase tracking-[0.2em] text-cream/75">Budget</p>
+                    <p className="font-display text-2xl">
+                      {formatCurrency(Number(formState.budget) || 0)}
+                    </p>
                   </div>
                 </div>
 
-                <aside className="rounded-[2rem] border border-ink/10 bg-cream p-6 shadow-sm">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-display text-3xl text-ink">Grocery checklist</p>
-                      <p className="mt-2 text-sm leading-6 text-ink/70">
-                        Organized so you can shop once and cook through the week.
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  {generatedPlan.meals.map((meal) => (
+                    <article
+                      key={meal.name}
+                      className="rounded-[1.5rem] border border-ink/10 bg-[#fffaf4] p-5 shadow-sm"
+                    >
+                      <h2 className="font-display text-2xl text-ink">{meal.name}</h2>
+                      <p className="mt-2 text-sm font-semibold text-pine">
+                        Serves {meal.servings}
                       </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 space-y-6">
-                    {[
-                      {
-                        title: "Produce",
-                        items: result.grocery_list.produce,
-                      },
-                      {
-                        title: "Meat & Dairy",
-                        items: result.grocery_list.meat_and_dairy,
-                      },
-                      {
-                        title: "Pantry Staples",
-                        items: result.grocery_list.pantry_staples,
-                      },
-                    ].map((group) => (
-                      <section key={group.title} className="rounded-[1.5rem] border border-pine/10 bg-white px-4 py-4">
-                        <p className="font-display text-xl text-pine">{group.title}</p>
-                        <ul className="mt-4 space-y-3">
-                          {group.items.map((item) => (
-                            <li key={`${group.title}-${item}`} className="flex items-start gap-3 text-sm text-ink/80">
-                              <input
-                                checked
-                                className="mt-0.5 h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                                readOnly
-                                type="checkbox"
-                              />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </section>
-                    ))}
-                  </div>
-
-                  <div className="mt-6 rounded-[1.5rem] bg-apricot/15 px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">Savings tip</p>
-                    <p className="mt-2 text-sm leading-7 text-ink/80">{result.savings_tip}</p>
-                  </div>
-
-                  <a
-                    className="mt-6 inline-flex w-full items-center justify-center rounded-[1.5rem] bg-pine px-6 py-4 text-center font-display text-xl text-cream transition hover:-translate-y-0.5 hover:bg-berry"
-                    href="https://www.instacart.com"
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    🛒 Shop this list on Instacart
-                  </a>
-                </aside>
+                      <p className="mt-3 text-sm leading-7 text-ink/75">{meal.notes}</p>
+                    </article>
+                  ))}
+                </div>
               </div>
-            </>
+
+              <aside className="rounded-[2rem] border border-ink/10 bg-cream p-6 shadow-sm">
+                <p className="font-display text-3xl text-ink">Grocery list</p>
+                <p className="mt-2 text-sm leading-6 text-ink/70">
+                  Estimated prices are included so you can spot-check the cart quickly.
+                </p>
+
+                <ul className="mt-6 space-y-3">
+                  {generatedPlan.grocery_list.map((item) => (
+                    <li
+                      key={item.item}
+                      className="flex items-center justify-between gap-4 rounded-2xl border border-pine/10 bg-white px-4 py-3"
+                    >
+                      <span className="text-sm font-medium text-ink">{item.item}</span>
+                      <span className="text-sm font-semibold text-pine">
+                        {formatCurrency(item.estimated_price)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </aside>
+            </div>
           ) : (
             <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
-              <p className="font-display text-2xl text-ink">Your plan will appear here</p>
+              <p className="font-display text-2xl text-ink">Your generated plan will appear here</p>
               <p className="mt-3 text-sm leading-7">
-                Submit the Smart Context Form to generate dinner cards, a categorized grocery list,
-                estimated spend, and one app-based savings tip.
+                Submitting the form sends a POST request to <code>/api/generate-list</code> with
+                your budget, diet, household size, and pantry items.
               </p>
             </div>
           )}
