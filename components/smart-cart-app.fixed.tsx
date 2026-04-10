@@ -2,18 +2,22 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+type MealPlanItem = {
+  day: string;
+  name: string;
+  servings: number;
+  notes: string;
+};
+
+type GroceryListItem = {
+  category: string;
+  item: string;
+  estimated_price: number;
+};
+
 type GenerateListResponse = {
-  meals: Array<{
-    day: string;
-    name: string;
-    servings: number;
-    notes: string;
-  }>;
-  grocery_list: Array<{
-    category: string;
-    item: string;
-    estimated_price: number;
-  }>;
+  meals: MealPlanItem[];
+  grocery_list: GroceryListItem[];
   estimated_total_cost: number;
   budget_summary: string;
   upgrade_available: boolean;
@@ -21,6 +25,13 @@ type GenerateListResponse = {
     title: string;
     description: string;
   };
+};
+
+type RecipeResponse = {
+  title: string;
+  prep_time_minutes: number;
+  ingredients: string[];
+  steps: string[];
 };
 
 type FormState = {
@@ -126,6 +137,12 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function getMealImageUrl(mealName: string, index: number) {
+  return `https://source.unsplash.com/featured/1200x800/?${encodeURIComponent(
+    `${mealName},food photography,delicious dinner`,
+  )}&sig=${index + 1}`;
+}
+
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -140,6 +157,14 @@ export function SmartCartApp() {
   const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [recipeCache, setRecipeCache] = useState<Record<string, RecipeResponse>>(
+    {},
+  );
+  const [activeRecipeMeal, setActiveRecipeMeal] = useState<MealPlanItem | null>(
+    null,
+  );
+  const [recipeError, setRecipeError] = useState<string | null>(null);
+  const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -185,6 +210,22 @@ export function SmartCartApp() {
     );
   }, [formState, selectedQuickItems]);
 
+  useEffect(() => {
+    if (!activeRecipeMeal) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setActiveRecipeMeal(null);
+        setRecipeError(null);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeRecipeMeal]);
+
   const combinedPantryItems = useMemo(() => {
     const typedItems = formState.pantryItems
       .split(",")
@@ -194,14 +235,12 @@ export function SmartCartApp() {
     return Array.from(new Set([...Array.from(selectedQuickItems), ...typedItems]));
   }, [formState.pantryItems, selectedQuickItems]);
 
-  const pantryHints = combinedPantryItems;
-
   const groceriesByCategory = useMemo(() => {
     if (!generatedPlan) {
       return [];
     }
 
-    const grouped = generatedPlan.grocery_list.reduce<Record<string, GenerateListResponse["grocery_list"]>>(
+    const grouped = generatedPlan.grocery_list.reduce<Record<string, GroceryListItem[]>>(
       (accumulator, item) => {
         const category = item.category || "Other";
         if (!accumulator[category]) {
@@ -225,6 +264,10 @@ export function SmartCartApp() {
       )
       .join("\n\n");
   }, [groceriesByCategory]);
+
+  const activeRecipe = activeRecipeMeal
+    ? recipeCache[activeRecipeMeal.name]
+    : undefined;
 
   const parsedBudget = Number(formState.budget);
   const isBudgetValid =
@@ -274,13 +317,7 @@ export function SmartCartApp() {
         }),
       });
 
-      const data = (await response.json()) as {
-        meals?: GenerateListResponse["meals"];
-        grocery_list?: GenerateListResponse["grocery_list"];
-        estimated_total_cost?: number;
-        budget_summary?: string;
-        upgrade_available?: boolean;
-        dessert?: GenerateListResponse["dessert"];
+      const data = (await response.json()) as GenerateListResponse & {
         error?: string;
       };
 
@@ -289,10 +326,11 @@ export function SmartCartApp() {
         setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
         return;
       }
-
-      console.log(data);
-      setGeneratedPlan(data as GenerateListResponse);
+      setGeneratedPlan(data);
       setCheckedItems(new Set());
+      setRecipeCache({});
+      setActiveRecipeMeal(null);
+      setRecipeError(null);
       setHasAppliedUpgrades(applyUpgrades);
     } catch (error) {
       setGeneratedPlan(null);
@@ -353,6 +391,49 @@ export function SmartCartApp() {
     event.preventDefault();
   }
 
+  async function handleGetRecipe(meal: MealPlanItem) {
+    setActiveRecipeMeal(meal);
+    setRecipeError(null);
+
+    if (recipeCache[meal.name]) {
+      return;
+    }
+
+    setRecipeLoadingMeal(meal.name);
+
+    try {
+      const response = await fetch("/api/get-recipe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mealTitle: meal.name,
+          mealNotes: meal.notes,
+          servings: meal.servings,
+        }),
+      });
+
+      const data = (await response.json()) as RecipeResponse & { error?: string };
+
+      if (!response.ok) {
+        setRecipeError(`Error ${response.status}: ${data.error || "Request failed."}`);
+        return;
+      }
+
+      setRecipeCache((current) => ({
+        ...current,
+        [meal.name]: data,
+      }));
+    } catch (error) {
+      setRecipeError(
+        error instanceof Error ? error.message : "Failed to fetch recipe.",
+      );
+    } finally {
+      setRecipeLoadingMeal(null);
+    }
+  }
+
   return (
     <main className="relative overflow-hidden">
       <div className="absolute inset-x-0 top-0 -z-10 h-[32rem] bg-grain-glow blur-3xl" />
@@ -381,41 +462,12 @@ export function SmartCartApp() {
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-3xl border border-pine/10 bg-cream p-4">
                 <p className="font-display text-3xl text-pine">Budget first</p>
-                <p className="mt-2 text-sm text-ink/70">
-                  Plans are shaped around what you can realistically spend this week.
-                </p>
               </div>
               <div className="rounded-3xl border border-pine/10 bg-cream p-4">
                 <p className="font-display text-3xl text-pine">Pantry aware</p>
-                <p className="mt-2 text-sm text-ink/70">
-                  Existing ingredients are surfaced first so fewer groceries go to waste.
-                </p>
               </div>
               <div className="rounded-3xl border border-pine/10 bg-cream p-4">
                 <p className="font-display text-3xl text-pine">Fast setup</p>
-                <p className="mt-2 text-sm text-ink/70">
-                  A few context inputs are enough to generate a usable plan.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-[1.75rem] border border-pine/10 bg-pine px-6 py-5 text-cream">
-              <p className="font-display text-xl">Pantry snapshot</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {pantryHints.length > 0 ? (
-                  pantryHints.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
-                    >
-                      {item}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-cream/80">
-                    Add a few pantry ingredients and they&apos;ll show up here.
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -528,6 +580,31 @@ export function SmartCartApp() {
                     ))}
                   </select>
                 </label>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-pine/10 bg-pine px-6 py-5 text-cream">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="font-display text-xl">Pantry Snapshot</p>
+                  <span className="text-xs uppercase tracking-[0.2em] text-cream/70">
+                    Live update
+                  </span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {combinedPantryItems.length > 0 ? (
+                    combinedPantryItems.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
+                      >
+                        {item}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-cream/80">
+                      Add a few pantry ingredients and they&apos;ll show up here.
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -685,20 +762,44 @@ export function SmartCartApp() {
                   {generatedPlan.meals.map((meal, index) => (
                     <article
                       key={`${meal.day}-${meal.name}-${index}`}
-                      className="rounded-[1.5rem] border border-ink/10 bg-[#fffaf4] p-5 shadow-sm"
+                      className="overflow-hidden rounded-[1.5rem] border border-ink/10 bg-[#fffaf4] shadow-sm"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                            {meal.day}
-                          </p>
-                          <h2 className="mt-2 font-display text-2xl text-ink">{meal.name}</h2>
+                      <div className="relative h-48 overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          alt={meal.name}
+                          className="h-full w-full object-cover"
+                          src={getMealImageUrl(meal.name, index)}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
+                        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cream/80">
+                              {meal.day}
+                            </p>
+                            <h2 className="mt-2 font-display text-2xl text-white">
+                              {meal.name}
+                            </h2>
+                          </div>
+                          <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
+                            Serves {meal.servings}
+                          </span>
                         </div>
-                        <span className="rounded-full bg-apricot/15 px-3 py-1 text-sm font-semibold text-berry">
-                          Serves {meal.servings}
-                        </span>
                       </div>
-                      <p className="mt-3 text-sm leading-7 text-ink/75">{meal.notes}</p>
+
+                      <div className="space-y-4 p-5">
+                        <p className="text-sm leading-7 text-ink/75">{meal.notes}</p>
+                        <button
+                          className="inline-flex items-center justify-center rounded-[1.1rem] bg-berry px-4 py-3 text-sm font-semibold text-cream transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={recipeLoadingMeal === meal.name}
+                          onClick={() => handleGetRecipe(meal)}
+                          type="button"
+                        >
+                          {recipeLoadingMeal === meal.name
+                            ? "Loading recipe..."
+                            : "Get Recipe"}
+                        </button>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -780,7 +881,7 @@ export function SmartCartApp() {
                     >
                       {isLoading
                         ? "Cooking up your plan..."
-                        : "✨ You have extra budget! Click to upgrade ingredients."}
+                        : "You have extra budget! Click to upgrade ingredients."}
                     </button>
                   )}
                 </div>
@@ -843,6 +944,83 @@ export function SmartCartApp() {
           </section>
         </section>
       </section>
+
+      {activeRecipeMeal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4 py-8 backdrop-blur-sm">
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white/50 bg-white p-6 shadow-halo sm:p-8">
+            <button
+              aria-label="Close recipe"
+              className="absolute right-4 top-4 rounded-full border border-ink/10 bg-white px-3 py-2 text-sm font-semibold text-ink transition hover:bg-cream"
+              onClick={() => {
+                setActiveRecipeMeal(null);
+                setRecipeError(null);
+              }}
+              type="button"
+            >
+              Close
+            </button>
+
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+              Recipe detail
+            </p>
+            <h3 className="mt-3 max-w-xl font-display text-3xl text-ink">
+              {activeRecipeMeal.name}
+            </h3>
+
+            {recipeLoadingMeal === activeRecipeMeal.name && !activeRecipe ? (
+              <div className="mt-6 rounded-[1.5rem] border border-pine/10 bg-cream px-5 py-6 text-sm text-ink/70">
+                Building a fast, step-by-step recipe...
+              </div>
+            ) : recipeError ? (
+              <div className="mt-6 rounded-[1.5rem] border border-berry/20 bg-berry/10 px-5 py-6 text-sm text-berry">
+                {recipeError}
+              </div>
+            ) : activeRecipe ? (
+              <div className="mt-6 space-y-6">
+                <div className="rounded-[1.5rem] bg-pine px-5 py-4 text-cream">
+                  <p className="text-xs uppercase tracking-[0.2em] text-cream/75">
+                    Prep time
+                  </p>
+                  <p className="mt-2 font-display text-2xl">
+                    {activeRecipe.prep_time_minutes} minutes
+                  </p>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-[0.95fr_1.05fr]">
+                  <section className="rounded-[1.5rem] border border-pine/10 bg-cream px-5 py-5">
+                    <p className="font-display text-2xl text-pine">Ingredients</p>
+                    <ul className="mt-4 space-y-3 text-sm leading-7 text-ink/80">
+                      {activeRecipe.ingredients.map((ingredient) => (
+                        <li key={ingredient} className="flex gap-3">
+                          <span className="mt-2 h-2 w-2 rounded-full bg-berry" />
+                          <span>{ingredient}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+
+                  <section className="rounded-[1.5rem] border border-ink/10 bg-[#fffaf4] px-5 py-5">
+                    <p className="font-display text-2xl text-ink">Steps</p>
+                    <ol className="mt-4 space-y-4 text-sm leading-7 text-ink/80">
+                      {activeRecipe.steps.map((step, index) => (
+                        <li
+                          key={`${activeRecipe.title}-step-${index + 1}`}
+                          className="flex gap-4"
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-apricot/20 text-xs font-semibold text-berry">
+                            {index + 1}
+                          </span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
