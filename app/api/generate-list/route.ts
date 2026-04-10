@@ -36,7 +36,7 @@ const generateListResponseSchema = z.object({
   estimated_total_cost: z.number().nonnegative(),
   budget_summary: z.string().min(1),
   upgrade_available: z.boolean(),
-  dessert: dessertSchema.optional(),
+  dessert: dessertSchema.nullable().optional(),
 });
 
 type GenerateListResponse = z.infer<typeof generateListResponseSchema>;
@@ -100,7 +100,7 @@ Rules:
 - Respect the budget strictly.
 - Respect the diet exactly.
 - Reuse pantry items whenever possible.
-- If includeDessert is true, evaluate the remaining budget after planning the 5 main meals. If there is room, generate exactly ONE dessert recipe for the week. Prioritize utilizing the user's pantry baking staples to keep costs low and add any missing items to the grocery list. If the budget is too tight to afford the 5 meals AND a dessert, omit the dessert entirely.
+- If includeDessert is true, evaluate the remaining budget after planning the 5 main meals. If there is room, generate exactly ONE dessert recipe for the week. Prioritize utilizing the user's pantry baking staples to keep costs low and add any missing items to the grocery list. If the budget is too tight to afford the 5 meals AND a dessert, set "dessert" to null.
 - If a must_have_ingredient is provided, you MUST feature it prominently in AT LEAST ONE, but strictly NO MORE THAN TWO of the 5 meals. You must ensure the remaining meals use completely different flavor profiles and main ingredients to provide variety and prevent ingredient fatigue.
 - Strict Consistency: Every single item in the grocery_list must be explicitly used in the name or notes of at least one meal in the meals array. Do not include any grocery item that is not required by the generated meals.
 - The grocery_list must be organized by category. Every grocery item must include a "category" field such as "Produce", "Meat/Seafood", "Dairy", or "Center Aisle".
@@ -131,7 +131,7 @@ Rules:
   "dessert": {
     "title": "string",
     "description": "string"
-  }
+  } | null
 }
 `;
 
