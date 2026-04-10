@@ -138,9 +138,9 @@ function formatCurrency(value: number) {
 }
 
 function getMealImageUrl(mealName: string, index: number) {
-  return `https://source.unsplash.com/featured/1200x800/?${encodeURIComponent(
-    `${mealName},food photography,delicious dinner`,
-  )}&sig=${index + 1}`;
+  return `https://picsum.photos/seed/${encodeURIComponent(
+    `${mealName}-${index + 1}`,
+  )}/900/520`;
 }
 
 export function SmartCartApp() {
