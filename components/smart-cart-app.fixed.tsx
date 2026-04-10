@@ -138,7 +138,8 @@ function formatCurrency(value: number) {
 }
 
 function getMealImageUrl(mealName: string, index: number) {
-  return `https://loremflickr.com/600/400/${encodeURIComponent(mealName)}?lock=${index + 1}`;
+  void mealName;
+  return `https://loremflickr.com/600/400/food,meal?lock=${index + 1}`;
 }
 
 export function SmartCartApp() {
