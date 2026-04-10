@@ -128,6 +128,13 @@ const pantryQuickSelectOptions = {
 } as const;
 
 const SMART_CART_FORM_STORAGE_KEY = "smartcart-smart-context-form";
+const fallbackFoodImages = [
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80",
+  "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=600&q=80",
+  "https://images.unsplash.com/photo-1490645935967-10de6ba8232e?w=600&q=80",
+  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80",
+  "https://images.unsplash.com/photo-1432139555190-58524dae6a5a?w=600&q=80",
+];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -135,11 +142,6 @@ function formatCurrency(value: number) {
     currency: "USD",
     maximumFractionDigits: 2,
   }).format(value);
-}
-
-function getMealImageUrl(mealName: string, index: number) {
-  void mealName;
-  return `https://loremflickr.com/600/400/food,meal?lock=${index + 1}`;
 }
 
 export function SmartCartApp() {
@@ -770,10 +772,9 @@ export function SmartCartApp() {
                           className="h-full w-full object-cover"
                           onError={(event) => {
                             event.currentTarget.onerror = null;
-                            event.currentTarget.src =
-                              "https://loremflickr.com/600/400/food,dinner";
+                            event.currentTarget.src = fallbackFoodImages[0];
                           }}
-                          src={getMealImageUrl(meal.name, index)}
+                          src={fallbackFoodImages[index % fallbackFoodImages.length]}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
