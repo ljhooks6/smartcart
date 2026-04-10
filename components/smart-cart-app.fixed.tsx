@@ -138,9 +138,7 @@ function formatCurrency(value: number) {
 }
 
 function getMealImageUrl(mealName: string, index: number) {
-  return `https://picsum.photos/seed/${encodeURIComponent(
-    `${mealName}-${index + 1}`,
-  )}/900/520`;
+  return `https://loremflickr.com/600/400/${encodeURIComponent(mealName)}?lock=${index + 1}`;
 }
 
 export function SmartCartApp() {
@@ -769,6 +767,11 @@ export function SmartCartApp() {
                         <img
                           alt={meal.name}
                           className="h-full w-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src =
+                              "https://loremflickr.com/600/400/food,dinner";
+                          }}
                           src={getMealImageUrl(meal.name, index)}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
