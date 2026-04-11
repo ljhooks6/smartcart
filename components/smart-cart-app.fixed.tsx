@@ -612,12 +612,12 @@ export function SmartCartApp() {
   }
 
   return (
-    <main className="relative overflow-hidden">
+    <main className="relative overflow-hidden bg-stone-50">
       <div className="absolute inset-x-0 top-0 -z-10 h-[32rem] bg-grain-glow blur-3xl" />
 
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="space-y-8 rounded-[2rem] border border-white/60 bg-white/70 p-6 shadow-halo backdrop-blur xl:p-10">
+          <div className="space-y-8 rounded-[2rem] border border-stone-200/80 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-10">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
               SmartCart
               <span className="h-2.5 w-2.5 rounded-full bg-sage" />
@@ -649,7 +649,7 @@ export function SmartCartApp() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-ink/10 bg-[#fff9f0]/90 p-6 shadow-halo backdrop-blur xl:p-8">
+          <div className="rounded-[2rem] border border-stone-200 bg-[#fcfaf6]/95 p-6 shadow-xl backdrop-blur xl:p-8">
             <div className="mb-6">
               <p className="font-display text-3xl text-ink">The Smart Context Form</p>
               <p className="mt-2 text-sm leading-6 text-ink/70">
@@ -803,8 +803,8 @@ export function SmartCartApp() {
                             key={item}
                             className={`rounded-full border px-3 py-1.5 text-sm transition ${
                               selectedQuickItems.has(item)
-                                ? "border-pine bg-pine text-cream"
-                                : "border-pine/15 bg-white text-ink hover:border-pine/40"
+                                ? "border-emerald-800 bg-emerald-800 text-stone-50"
+                                : "border-stone-300 bg-white text-ink hover:border-emerald-700"
                             }`}
                             onClick={() => toggleQuickItem(item)}
                             type="button"
@@ -906,7 +906,7 @@ export function SmartCartApp() {
               )}
 
               <button
-                className="w-full rounded-[1.5rem] bg-ink px-6 py-4 font-display text-lg text-cream transition hover:-translate-y-0.5 hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-[1.5rem] bg-emerald-800 px-6 py-4 font-display text-lg text-stone-50 transition hover:-translate-y-0.5 hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isLoading || !isBudgetValid}
                 type="submit"
               >
@@ -919,7 +919,7 @@ export function SmartCartApp() {
         <section className="mt-10 space-y-6 pb-16">
           {generatedPlan ? (
             <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-              <div className="rounded-[2rem] border border-pine/10 bg-white/80 p-6 shadow-halo backdrop-blur">
+              <div className="rounded-[2rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="font-display text-3xl text-ink">Your 5-day plan</p>
@@ -939,7 +939,7 @@ export function SmartCartApp() {
                   {generatedPlan.meals.map((meal, index) => (
                     <article
                       key={`${meal.day}-${meal.name}-${index}`}
-                      className="overflow-hidden rounded-[1.5rem] border border-ink/10 bg-[#fffaf4] shadow-sm"
+                      className="overflow-hidden rounded-[1.5rem] border border-stone-200 bg-[#fffdf9] shadow-xl"
                     >
                       <div className="relative h-48 overflow-hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -974,8 +974,8 @@ export function SmartCartApp() {
                           <button
                             className={`inline-flex items-center justify-center rounded-[1.1rem] px-4 py-3 text-sm font-semibold transition ${
                               savedMealKeys.has(`${meal.day}::${meal.name}`)
-                                ? "bg-berry text-cream"
-                                : "bg-cream text-berry hover:bg-apricot/20"
+                                ? "bg-emerald-800 text-stone-50"
+                                : "bg-stone-100 text-emerald-900 hover:bg-emerald-50"
                             }`}
                             onClick={() => handleSaveToWeeklyMenu(meal)}
                             type="button"
@@ -985,7 +985,7 @@ export function SmartCartApp() {
                               : "♡ Save to Menu"}
                           </button>
                           <button
-                            className="inline-flex items-center justify-center rounded-[1.1rem] bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center justify-center rounded-[1.1rem] bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
                             disabled={replacingMealKey === `${meal.day}::${meal.name}`}
                             onClick={() => handleReplaceMeal(meal, index)}
                             type="button"
@@ -995,7 +995,7 @@ export function SmartCartApp() {
                               : "Replace"}
                           </button>
                           <button
-                            className="inline-flex items-center justify-center rounded-[1.1rem] bg-berry px-4 py-3 text-sm font-semibold text-cream transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center justify-center rounded-[1.1rem] bg-emerald-800 px-4 py-3 text-sm font-semibold text-stone-50 transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
                             disabled={
                               recipeLoadingMeal === meal.name ||
                               replacingMealKey === `${meal.day}::${meal.name}`
@@ -1013,7 +1013,7 @@ export function SmartCartApp() {
                   ))}
                 </div>
 
-                <section className="mt-8 rounded-[1.75rem] border border-pine/10 bg-cream p-5">
+                <section className="mt-8 rounded-[1.75rem] border border-stone-200 bg-[#f8f4ec] p-5 shadow-lg">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="font-display text-2xl text-ink">Your Weekly Menu</p>
@@ -1031,7 +1031,7 @@ export function SmartCartApp() {
                       {weeklyMenu.map((meal) => (
                         <article
                           key={`saved-${meal.day}-${meal.name}`}
-                          className="rounded-[1.25rem] border border-pine/10 bg-white px-4 py-4"
+                          className="rounded-[1.25rem] border border-stone-200 bg-white px-4 py-4 shadow-lg"
                         >
                           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
                             {meal.day}
@@ -1044,7 +1044,7 @@ export function SmartCartApp() {
                           </p>
                           <div className="mt-4 flex flex-wrap gap-2">
                             <button
-                              className="inline-flex items-center justify-center rounded-[1rem] bg-berry px-3 py-2 text-sm font-semibold text-cream transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-[1rem] bg-emerald-800 px-3 py-2 text-sm font-semibold text-stone-50 transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={recipeLoadingMeal === meal.name}
                               onClick={() => handleGetRecipe(meal)}
                               type="button"
@@ -1054,7 +1054,7 @@ export function SmartCartApp() {
                                 : "Get Recipe"}
                             </button>
                             <button
-                              className="inline-flex items-center justify-center rounded-[1rem] bg-cream px-3 py-2 text-sm font-semibold text-ink transition hover:bg-apricot/20 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex items-center justify-center rounded-[1rem] bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
                               disabled={recipeLoadingMeal === meal.name}
                               onClick={() => handleToggleIngredients(meal)}
                               type="button"
@@ -1091,7 +1091,7 @@ export function SmartCartApp() {
                 </section>
 
                 {generatedPlan.dessert && (
-                  <section className="mt-6 rounded-[1.75rem] border border-berry/15 bg-berry/10 p-5 shadow-sm">
+                  <section className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
                       Sweet Treat
                     </p>
@@ -1105,7 +1105,7 @@ export function SmartCartApp() {
                 )}
               </div>
 
-              <aside className="rounded-[2rem] border border-ink/10 bg-cream p-6 shadow-sm">
+              <aside className="rounded-[2rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl">
                 <p className="font-display text-3xl text-ink">Grocery list</p>
                 <p className="mt-2 text-sm leading-6 text-ink/70">
                   Estimated prices are included so you can spot-check the cart quickly.
@@ -1115,7 +1115,7 @@ export function SmartCartApp() {
                   {groceriesByCategory.map(([category, items]) => (
                     <section
                       key={category}
-                      className="rounded-[1.5rem] border border-pine/10 bg-white p-4"
+                      className="rounded-[1.5rem] border border-stone-200 bg-white p-4 shadow-lg"
                     >
                       <p className="font-display text-xl text-pine">{category}</p>
                       <ul className="mt-4 space-y-3">
@@ -1160,7 +1160,7 @@ export function SmartCartApp() {
                   </p>
                   {generatedPlan.upgrade_available && !hasAppliedUpgrades && (
                     <button
-                      className="mt-4 inline-flex items-center justify-center rounded-[1.25rem] bg-berry px-4 py-3 text-sm font-semibold text-cream transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-4 inline-flex items-center justify-center rounded-[1.25rem] bg-emerald-800 px-4 py-3 text-sm font-semibold text-stone-50 transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={isLoading}
                       onClick={handleUpgradePlan}
                       type="button"
@@ -1174,7 +1174,7 @@ export function SmartCartApp() {
 
                 <div className="mt-4 flex items-center gap-3">
                   <button
-                    className="inline-flex items-center justify-center rounded-[1.25rem] bg-ink px-4 py-3 text-sm font-semibold text-cream transition hover:bg-pine"
+                    className="inline-flex items-center justify-center rounded-[1.25rem] bg-emerald-800 px-4 py-3 text-sm font-semibold text-stone-50 transition hover:bg-emerald-900"
                     onClick={handleCopyShoppingList}
                     type="button"
                   >
@@ -1196,7 +1196,7 @@ export function SmartCartApp() {
             </div>
           )}
 
-          <section className="rounded-[2rem] border border-pine/10 bg-white/75 p-6 shadow-halo backdrop-blur xl:p-8">
+          <section className="rounded-[2rem] border border-stone-200 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-8">
             <div className="mx-auto max-w-3xl text-center">
               <p className="font-display text-3xl text-ink">
                 The Ultimate Grocery Map is Coming
@@ -1220,7 +1220,7 @@ export function SmartCartApp() {
                   value={waitlistEmail}
                 />
                 <button
-                  className="rounded-2xl bg-berry px-5 py-3 font-semibold text-cream transition hover:bg-pine"
+                  className="rounded-2xl bg-emerald-800 px-5 py-3 font-semibold text-stone-50 transition hover:bg-emerald-900"
                   type="submit"
                 >
                   Join Waitlist
@@ -1233,7 +1233,7 @@ export function SmartCartApp() {
 
       {activeRecipeMeal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4 py-8 backdrop-blur-sm">
-          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white/50 bg-white p-6 shadow-halo sm:p-8">
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-stone-200 bg-white p-6 shadow-xl sm:p-8">
             <button
               aria-label="Close recipe"
               className="absolute right-4 top-4 rounded-full border border-ink/10 bg-white px-3 py-2 text-sm font-semibold text-ink transition hover:bg-cream"

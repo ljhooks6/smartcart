@@ -18,8 +18,9 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.85), transparent 35%),
-    linear-gradient(180deg, #f7efe3 0%, #f2e5d2 48%, #efe2ce 100%);
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.9), transparent 35%),
+    linear-gradient(180deg, #fafaf9 0%, #f5f5f4 48%, #f1efea 100%);
+  color: #1b120d;
 }
 
 body::before {
@@ -27,8 +28,8 @@ body::before {
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(51, 86, 60, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(51, 86, 60, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(68, 80, 54, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(68, 80, 54, 0.045) 1px, transparent 1px);
   background-size: 28px 28px;
   content: "";
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent);

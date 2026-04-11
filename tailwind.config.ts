@@ -25,8 +25,21 @@ const config: Config = {
           "radial-gradient(circle at top left, rgba(243, 154, 99, 0.35), transparent 35%), radial-gradient(circle at bottom right, rgba(154, 192, 140, 0.32), transparent 28%)",
       },
       fontFamily: {
-        display: ["var(--font-space-grotesk)", "sans-serif"],
-        body: ["var(--font-plus-jakarta)", "sans-serif"],
+        display: [
+          "\"Iowan Old Style\"",
+          "\"Palatino Linotype\"",
+          "\"Book Antiqua\"",
+          "Georgia",
+          "serif",
+        ],
+        body: [
+          "\"Avenir Next\"",
+          "Avenir",
+          "\"Segoe UI\"",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
       },
     },
   },
