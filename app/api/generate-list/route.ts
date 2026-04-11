@@ -9,6 +9,8 @@ type GenerateListRequest = {
   combinedPantryItems: string;
   mustHaveIngredient?: string;
   includeDessert?: boolean;
+  adventureLevel?: string;
+  budgetTightness?: boolean;
   apply_upgrades?: boolean;
 };
 
@@ -64,6 +66,8 @@ export async function POST(request: Request) {
     combinedPantryItems,
     mustHaveIngredient,
     includeDessert,
+    adventureLevel,
+    budgetTightness,
     apply_upgrades,
   } =
     (body as Partial<GenerateListRequest>) ?? {};
@@ -100,6 +104,8 @@ Rules:
 - Respect the budget strictly.
 - Respect the diet exactly.
 - Reuse pantry items whenever possible.
+- Adventure Level enforcement: if the user selected "Try new cuisines" or "Mix it up", you MUST generate diverse, global, or creative recipes and strictly avoid generic fallbacks like "Vegetable Stir-fry", plain pasta, or repetitive default meals. If the user selected "Stick to basics", keep the meals familiar and approachable.
+- Budget Tightness enforcement: if budgetTightness is false, you MUST NOT force heavy ingredient overlap. Prioritize culinary variety, distinct flavor profiles, and different lead ingredients across the week. Only force strong cross-utilization and ingredient overlap if budgetTightness is true.
 - If includeDessert is true, evaluate the remaining budget after planning the 5 main meals. If there is room, generate exactly ONE dessert recipe for the week. Prioritize utilizing the user's pantry baking staples to keep costs low and add any missing items to the grocery list. If the budget is too tight to afford the 5 meals AND a dessert, set "dessert" to null.
 - If a must_have_ingredient is provided, you MUST feature it prominently in AT LEAST ONE, but strictly NO MORE THAN TWO of the 5 meals. You must ensure the remaining meals use completely different flavor profiles and main ingredients to provide variety and prevent ingredient fatigue.
 - Strict Consistency: Every single item in the grocery_list must be explicitly used in the name or notes of at least one meal in the meals array. Do not include any grocery item that is not required by the generated meals.
@@ -144,6 +150,8 @@ Household Size: ${householdSize}
 Pantry Items: ${combinedPantryItems || "None provided"}
 Must-Have Ingredient: ${mustHaveIngredient?.trim() || "None provided"}
 Include Dessert: ${includeDessert ? "Yes" : "No"}
+Adventure Level: ${adventureLevel?.trim() || "No preference provided"}
+Budget Tightness: ${typeof budgetTightness === "boolean" ? (budgetTightness ? "ON" : "OFF") : "Not provided"}
 
 ${apply_upgrades
     ? "The user has chosen to upgrade. Rewrite this plan using premium, high-quality ingredients (for example fresh herbs, better proteins, organic ingredients) to get as close to the max budget as possible."

@@ -366,6 +366,8 @@ export function SmartCartApp() {
           combinedPantryItems: combinedPantryItems.join(", "),
           mustHaveIngredient: formState.mustHaveIngredient.trim(),
           includeDessert: formState.includeDessert,
+          adventureLevel: formState.adventureLevel,
+          budgetTightness: formState.isBudgetTight,
           apply_upgrades: applyUpgrades,
         }),
       });
@@ -498,6 +500,21 @@ export function SmartCartApp() {
   async function handleGetRecipe(meal: MealPlanItem) {
     setActiveRecipeMeal(meal);
     await fetchRecipeForMeal(meal);
+  }
+
+  async function handleGetDessertRecipe() {
+    if (!generatedPlan?.dessert) {
+      return;
+    }
+
+    const dessertMeal: MealPlanItem = {
+      day: "Sweet Treat",
+      name: generatedPlan.dessert.title,
+      servings: Number(formState.householdSize) || 2,
+      notes: generatedPlan.dessert.description,
+    };
+
+    await handleGetRecipe(dessertMeal);
   }
 
   function handleSaveToWeeklyMenu(meal: MealPlanItem) {
@@ -1112,6 +1129,16 @@ export function SmartCartApp() {
                     <p className="mt-3 text-sm leading-7 text-ink/80">
                       {generatedPlan.dessert.description}
                     </p>
+                    <button
+                      className="mt-4 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={recipeLoadingMeal === generatedPlan.dessert.title}
+                      onClick={handleGetDessertRecipe}
+                      type="button"
+                    >
+                      {recipeLoadingMeal === generatedPlan.dessert.title
+                        ? "Loading recipe..."
+                        : "Get Recipe"}
+                    </button>
                   </section>
                 )}
               </div>
