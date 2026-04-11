@@ -176,6 +176,9 @@ export function SmartCartApp() {
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
   const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
+  const [expandedIngredientsMeals, setExpandedIngredientsMeals] = useState<
+    Set<string>
+  >(new Set());
 
   useEffect(() => {
     try {
@@ -433,14 +436,12 @@ export function SmartCartApp() {
     event.preventDefault();
   }
 
-  async function handleGetRecipe(meal: MealPlanItem) {
-    setActiveRecipeMeal(meal);
-    setRecipeError(null);
-
+  async function fetchRecipeForMeal(meal: MealPlanItem) {
     if (recipeCache[meal.name]) {
-      return;
+      return recipeCache[meal.name];
     }
 
+    setRecipeError(null);
     setRecipeLoadingMeal(meal.name);
 
     try {
@@ -460,20 +461,35 @@ export function SmartCartApp() {
 
       if (!response.ok) {
         setRecipeError(`Error ${response.status}: ${data.error || "Request failed."}`);
-        return;
+        return null;
       }
+
+      const recipeData = {
+        title: data.title,
+        prep_time_minutes: data.prep_time_minutes,
+        ingredients: data.ingredients,
+        steps: data.steps,
+      };
 
       setRecipeCache((current) => ({
         ...current,
-        [meal.name]: data,
+        [meal.name]: recipeData,
       }));
+
+      return recipeData;
     } catch (error) {
       setRecipeError(
         error instanceof Error ? error.message : "Failed to fetch recipe.",
       );
+      return null;
     } finally {
       setRecipeLoadingMeal(null);
     }
+  }
+
+  async function handleGetRecipe(meal: MealPlanItem) {
+    setActiveRecipeMeal(meal);
+    await fetchRecipeForMeal(meal);
   }
 
   function handleSaveToWeeklyMenu(meal: MealPlanItem) {
@@ -569,6 +585,30 @@ export function SmartCartApp() {
     } finally {
       setReplacingMealKey(null);
     }
+  }
+
+  async function handleToggleIngredients(meal: MealPlanItem) {
+    const mealKey = `${meal.day}::${meal.name}`;
+
+    if (expandedIngredientsMeals.has(mealKey)) {
+      setExpandedIngredientsMeals((current) => {
+        const next = new Set(current);
+        next.delete(mealKey);
+        return next;
+      });
+      return;
+    }
+
+    const recipe = await fetchRecipeForMeal(meal);
+    if (!recipe) {
+      return;
+    }
+
+    setExpandedIngredientsMeals((current) => {
+      const next = new Set(current);
+      next.add(mealKey);
+      return next;
+    });
   }
 
   return (
@@ -1002,6 +1042,44 @@ export function SmartCartApp() {
                           <p className="mt-2 text-sm leading-6 text-ink/70">
                             Serves {meal.servings}
                           </p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                              className="inline-flex items-center justify-center rounded-[1rem] bg-berry px-3 py-2 text-sm font-semibold text-cream transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={recipeLoadingMeal === meal.name}
+                              onClick={() => handleGetRecipe(meal)}
+                              type="button"
+                            >
+                              {recipeLoadingMeal === meal.name
+                                ? "Loading recipe..."
+                                : "Get Recipe"}
+                            </button>
+                            <button
+                              className="inline-flex items-center justify-center rounded-[1rem] bg-cream px-3 py-2 text-sm font-semibold text-ink transition hover:bg-apricot/20 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={recipeLoadingMeal === meal.name}
+                              onClick={() => handleToggleIngredients(meal)}
+                              type="button"
+                            >
+                              {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
+                                ? "Hide Ingredients"
+                                : "View Ingredients"}
+                            </button>
+                          </div>
+                          {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
+                            recipeCache[meal.name] && (
+                              <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                                  Ingredients
+                                </p>
+                                <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
+                                  {recipeCache[meal.name].ingredients.map((ingredient) => (
+                                    <li key={`${meal.name}-${ingredient}`} className="flex gap-2">
+                                      <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
+                                      <span>{ingredient}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                         </article>
                       ))}
                     </div>
