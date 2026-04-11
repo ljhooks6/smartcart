@@ -1118,8 +1118,9 @@ export function SmartCartApp() {
 
               <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl">
                 <p className="font-display text-3xl text-ink">Grocery list</p>
-                <p className="mt-2 text-sm leading-6 text-ink/70">
-                  Estimated prices are included so you can spot-check the cart quickly.
+                <p className="mt-2 text-sm italic leading-6 text-gray-500">
+                  Prices are AI-generated national averages for estimation. Actual costs may be
+                  higher or lower depending on your location and local store.
                 </p>
 
                 <div className="mt-6 space-y-5">
