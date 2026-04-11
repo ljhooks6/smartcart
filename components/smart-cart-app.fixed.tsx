@@ -128,6 +128,7 @@ const pantryQuickSelectOptions = {
 } as const;
 
 const SMART_CART_FORM_STORAGE_KEY = "smartcart-smart-context-form";
+const SMART_CART_WEEKLY_MENU_STORAGE_KEY = "smartcart-weekly-menu";
 const fallbackFoodImages = [
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80",
   "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=600&q=80",
@@ -166,6 +167,7 @@ export function SmartCartApp() {
   );
   const [recipeError, setRecipeError] = useState<string | null>(null);
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
+  const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
 
   useEffect(() => {
     try {
@@ -210,6 +212,32 @@ export function SmartCartApp() {
       }),
     );
   }, [formState, selectedQuickItems]);
+
+  useEffect(() => {
+    try {
+      const savedWeeklyMenu = window.localStorage.getItem(
+        SMART_CART_WEEKLY_MENU_STORAGE_KEY,
+      );
+
+      if (!savedWeeklyMenu) {
+        return;
+      }
+
+      const parsed = JSON.parse(savedWeeklyMenu) as MealPlanItem[];
+      if (Array.isArray(parsed)) {
+        setWeeklyMenu(parsed);
+      }
+    } catch {
+      window.localStorage.removeItem(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      SMART_CART_WEEKLY_MENU_STORAGE_KEY,
+      JSON.stringify(weeklyMenu),
+    );
+  }, [weeklyMenu]);
 
   useEffect(() => {
     if (!activeRecipeMeal) {
@@ -269,6 +297,11 @@ export function SmartCartApp() {
   const activeRecipe = activeRecipeMeal
     ? recipeCache[activeRecipeMeal.name]
     : undefined;
+
+  const savedMealKeys = useMemo(
+    () => new Set(weeklyMenu.map((meal) => `${meal.day}::${meal.name}`)),
+    [weeklyMenu],
+  );
 
   const parsedBudget = Number(formState.budget);
   const isBudgetValid =
@@ -433,6 +466,18 @@ export function SmartCartApp() {
     } finally {
       setRecipeLoadingMeal(null);
     }
+  }
+
+  function handleSaveToWeeklyMenu(meal: MealPlanItem) {
+    const mealKey = `${meal.day}::${meal.name}`;
+
+    setWeeklyMenu((current) => {
+      if (current.some((savedMeal) => `${savedMeal.day}::${savedMeal.name}` === mealKey)) {
+        return current;
+      }
+
+      return [...current, meal];
+    });
   }
 
   return (
@@ -794,20 +839,74 @@ export function SmartCartApp() {
 
                       <div className="space-y-4 p-5">
                         <p className="text-sm leading-7 text-ink/75">{meal.notes}</p>
-                        <button
-                          className="inline-flex items-center justify-center rounded-[1.1rem] bg-berry px-4 py-3 text-sm font-semibold text-cream transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
-                          disabled={recipeLoadingMeal === meal.name}
-                          onClick={() => handleGetRecipe(meal)}
-                          type="button"
-                        >
-                          {recipeLoadingMeal === meal.name
-                            ? "Loading recipe..."
-                            : "Get Recipe"}
-                        </button>
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            className={`inline-flex items-center justify-center rounded-[1.1rem] px-4 py-3 text-sm font-semibold transition ${
+                              savedMealKeys.has(`${meal.day}::${meal.name}`)
+                                ? "bg-berry text-cream"
+                                : "bg-cream text-berry hover:bg-apricot/20"
+                            }`}
+                            onClick={() => handleSaveToWeeklyMenu(meal)}
+                            type="button"
+                          >
+                            {savedMealKeys.has(`${meal.day}::${meal.name}`)
+                              ? "♥ Saved"
+                              : "♡ Save to Menu"}
+                          </button>
+                          <button
+                            className="inline-flex items-center justify-center rounded-[1.1rem] bg-berry px-4 py-3 text-sm font-semibold text-cream transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={recipeLoadingMeal === meal.name}
+                            onClick={() => handleGetRecipe(meal)}
+                            type="button"
+                          >
+                            {recipeLoadingMeal === meal.name
+                              ? "Loading recipe..."
+                              : "Get Recipe"}
+                          </button>
+                        </div>
                       </div>
                     </article>
                   ))}
                 </div>
+
+                <section className="mt-8 rounded-[1.75rem] border border-pine/10 bg-cream p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-display text-2xl text-ink">Your Weekly Menu</p>
+                      <p className="mt-1 text-sm leading-6 text-ink/70">
+                        Save the dinners you want to keep in rotation this week.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-pine">
+                      {weeklyMenu.length} saved
+                    </span>
+                  </div>
+
+                  {weeklyMenu.length > 0 ? (
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      {weeklyMenu.map((meal) => (
+                        <article
+                          key={`saved-${meal.day}-${meal.name}`}
+                          className="rounded-[1.25rem] border border-pine/10 bg-white px-4 py-4"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                            {meal.day}
+                          </p>
+                          <h3 className="mt-2 font-display text-xl text-ink">
+                            {meal.name}
+                          </h3>
+                          <p className="mt-2 text-sm leading-6 text-ink/70">
+                            Serves {meal.servings}
+                          </p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-[1.25rem] border border-dashed border-pine/20 bg-white px-4 py-5 text-sm text-ink/60">
+                      Tap the heart on any meal card to build your weekly menu.
+                    </div>
+                  )}
+                </section>
 
                 {generatedPlan.dessert && (
                   <section className="mt-6 rounded-[1.75rem] border border-berry/15 bg-berry/10 p-5 shadow-sm">
