@@ -41,6 +41,11 @@ type ReplaceMealResponse = {
   ingredients: string[];
 };
 
+type ReplaceDessertResponse = {
+  title: string;
+  description: string;
+};
+
 type FormState = {
   budget: string;
   diet: string;
@@ -184,6 +189,7 @@ export function SmartCartApp() {
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
   const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
+  const [isReplacingDessert, setIsReplacingDessert] = useState(false);
   const [expandedIngredientsMeals, setExpandedIngredientsMeals] = useState<
     Set<string>
   >(new Set());
@@ -515,6 +521,67 @@ export function SmartCartApp() {
     };
 
     await handleGetRecipe(dessertMeal);
+  }
+
+  async function handleReplaceDessert() {
+    if (!generatedPlan?.dessert) {
+      return;
+    }
+
+    setIsReplacingDessert(true);
+    setRequestError(null);
+
+    try {
+      const response = await fetch("/api/replace-dessert", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          rejectedDessertTitle: generatedPlan.dessert.title,
+          budget: Number(formState.budget),
+          diet: formState.diet.trim() || "No specific diet provided",
+          householdSize: Number(formState.householdSize),
+          combinedPantryItems: combinedPantryItems.join(", "),
+        }),
+      });
+
+      const data = (await response.json()) as ReplaceDessertResponse & {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
+        return;
+      }
+
+      setGeneratedPlan((current) =>
+        current
+          ? {
+              ...current,
+              dessert: {
+                title: data.title,
+                description: data.description,
+              },
+            }
+          : current,
+      );
+
+      if (activeRecipeMeal?.day === "Sweet Treat") {
+        setActiveRecipeMeal({
+          day: "Sweet Treat",
+          name: data.title,
+          servings: Number(formState.householdSize) || 2,
+          notes: data.description,
+        });
+      }
+    } catch (error) {
+      setRequestError(
+        error instanceof Error ? error.message : "Failed to replace dessert.",
+      );
+    } finally {
+      setIsReplacingDessert(false);
+    }
   }
 
   function handleSaveToWeeklyMenu(meal: MealPlanItem) {
@@ -1131,13 +1198,24 @@ export function SmartCartApp() {
                     </p>
                     <button
                       className="mt-4 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={recipeLoadingMeal === generatedPlan.dessert.title}
+                      disabled={
+                        recipeLoadingMeal === generatedPlan.dessert.title ||
+                        isReplacingDessert
+                      }
                       onClick={handleGetDessertRecipe}
                       type="button"
                     >
                       {recipeLoadingMeal === generatedPlan.dessert.title
                         ? "Loading recipe..."
                         : "Get Recipe"}
+                    </button>
+                    <button
+                      className="mt-4 ml-3 inline-flex items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isReplacingDessert}
+                      onClick={handleReplaceDessert}
+                      type="button"
+                    >
+                      {isReplacingDessert ? "Replacing..." : "Replace"}
                     </button>
                   </section>
                 )}
