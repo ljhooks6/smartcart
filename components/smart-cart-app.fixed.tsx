@@ -34,6 +34,13 @@ type RecipeResponse = {
   steps: string[];
 };
 
+type ReplaceMealResponse = {
+  title: string;
+  description: string;
+  prepTime: number;
+  ingredients: string[];
+};
+
 type FormState = {
   budget: string;
   diet: string;
@@ -168,6 +175,7 @@ export function SmartCartApp() {
   const [recipeError, setRecipeError] = useState<string | null>(null);
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
   const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
+  const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -478,6 +486,89 @@ export function SmartCartApp() {
 
       return [...current, meal];
     });
+  }
+
+  async function handleReplaceMeal(meal: MealPlanItem, index: number) {
+    if (!generatedPlan) {
+      return;
+    }
+
+    const mealKey = `${meal.day}::${meal.name}`;
+    const budget = Number(formState.budget);
+    const householdSize = Number(formState.householdSize);
+
+    setReplacingMealKey(mealKey);
+    setRequestError(null);
+
+    try {
+      const response = await fetch("/api/replace-meal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          budget,
+          diet: formState.diet.trim() || "No specific diet provided",
+          householdSize,
+          combinedPantryItems: combinedPantryItems.join(", "),
+          rejectedMealTitle: meal.name,
+          prepTime: formState.prepTime,
+          adventureLevel: formState.adventureLevel,
+          mustHaveIngredient: formState.mustHaveIngredient.trim(),
+        }),
+      });
+
+      const data = (await response.json()) as ReplaceMealResponse & {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
+        return;
+      }
+
+      const replacementMeal: MealPlanItem = {
+        day: meal.day,
+        name: data.title,
+        servings: meal.servings,
+        notes: `${data.description} Ingredients: ${data.ingredients.join(", ")}. Approx. prep time: ${data.prepTime} minutes.`,
+      };
+
+      setGeneratedPlan((current) => {
+        if (!current) {
+          return current;
+        }
+
+        const nextMeals = [...current.meals];
+        nextMeals[index] = replacementMeal;
+
+        return {
+          ...current,
+          meals: nextMeals,
+        };
+      });
+
+      setWeeklyMenu((current) =>
+        current.map((savedMeal) =>
+          `${savedMeal.day}::${savedMeal.name}` === mealKey
+            ? replacementMeal
+            : savedMeal,
+        ),
+      );
+
+      if (
+        activeRecipeMeal &&
+        `${activeRecipeMeal.day}::${activeRecipeMeal.name}` === mealKey
+      ) {
+        setActiveRecipeMeal(replacementMeal);
+      }
+    } catch (error) {
+      setRequestError(
+        error instanceof Error ? error.message : "Failed to replace meal.",
+      );
+    } finally {
+      setReplacingMealKey(null);
+    }
   }
 
   return (
@@ -854,8 +945,21 @@ export function SmartCartApp() {
                               : "♡ Save to Menu"}
                           </button>
                           <button
+                            className="inline-flex items-center justify-center rounded-[1.1rem] bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={replacingMealKey === `${meal.day}::${meal.name}`}
+                            onClick={() => handleReplaceMeal(meal, index)}
+                            type="button"
+                          >
+                            {replacingMealKey === `${meal.day}::${meal.name}`
+                              ? "Replacing..."
+                              : "Replace"}
+                          </button>
+                          <button
                             className="inline-flex items-center justify-center rounded-[1.1rem] bg-berry px-4 py-3 text-sm font-semibold text-cream transition hover:bg-pine disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={recipeLoadingMeal === meal.name}
+                            disabled={
+                              recipeLoadingMeal === meal.name ||
+                              replacingMealKey === `${meal.day}::${meal.name}`
+                            }
                             onClick={() => handleGetRecipe(meal)}
                             type="button"
                           >
