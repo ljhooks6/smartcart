@@ -70,6 +70,18 @@ const initialFormState: FormState = {
   isBudgetTight: true,
 };
 
+const clearedFormState: FormState = {
+  budget: "",
+  diet: "",
+  householdSize: "",
+  pantryItems: "",
+  mustHaveIngredient: "",
+  includeDessert: false,
+  prepTime: "Under 30 mins",
+  adventureLevel: "Stick to basics",
+  isBudgetTight: true,
+};
+
 const prepTimeOptions = ["Under 30 mins", "Under 1 hour", "No limit"] as const;
 const adventureLevelOptions = [
   "Stick to basics",
@@ -596,6 +608,39 @@ export function SmartCartApp() {
     });
   }
 
+  function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
+    const mealKey = `${meal.day}::${meal.name}`;
+
+    setWeeklyMenu((current) =>
+      current.filter(
+        (savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey,
+      ),
+    );
+  }
+
+  function handleClearForm() {
+    setFormState(clearedFormState);
+    setValidationError(null);
+    setRequestError(null);
+    setIsLoading(false);
+    setGeneratedPlan(null);
+    setCheckedItems(new Set());
+    setSelectedQuickItems(new Set());
+    setCopied(false);
+    setHasAppliedUpgrades(false);
+    setRecipeCache({});
+    setActiveRecipeMeal(null);
+    setRecipeError(null);
+    setRecipeLoadingMeal(null);
+    setWeeklyMenu([]);
+    setReplacingMealKey(null);
+    setIsReplacingDessert(false);
+    setExpandedIngredientsMeals(new Set());
+
+    window.localStorage.removeItem(SMART_CART_FORM_STORAGE_KEY);
+    window.localStorage.removeItem(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
+  }
+
   async function handleReplaceMeal(meal: MealPlanItem, index: number) {
     if (!generatedPlan) {
       return;
@@ -1000,13 +1045,22 @@ export function SmartCartApp() {
                 </div>
               )}
 
-              <button
-                className="w-full rounded-full bg-orange-500 px-6 py-4 font-display text-lg text-white transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isLoading || !isBudgetValid}
-                type="submit"
-              >
-                {isLoading ? "Cooking up your plan..." : "Generate"}
-              </button>
+              <div className="flex items-center justify-between gap-4">
+                <button
+                  className="flex-1 rounded-full bg-orange-500 px-6 py-4 font-display text-lg text-white transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isLoading || !isBudgetValid}
+                  type="submit"
+                >
+                  {isLoading ? "Cooking up your plan..." : "Generate"}
+                </button>
+                <button
+                  className="shrink-0 text-sm text-gray-500 underline decoration-gray-300 underline-offset-4 transition hover:text-red-500"
+                  onClick={handleClearForm}
+                  type="button"
+                >
+                  Clear Form
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -1157,6 +1211,13 @@ export function SmartCartApp() {
                               {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
                                 ? "Hide Ingredients"
                                 : "View Ingredients"}
+                            </button>
+                            <button
+                              className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                              onClick={() => handleRemoveFromWeeklyMenu(meal)}
+                              type="button"
+                            >
+                              Remove
                             </button>
                           </div>
                           {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
