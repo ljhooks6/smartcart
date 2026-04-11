@@ -153,6 +153,14 @@ const pantryQuickSelectOptions = {
 
 const SMART_CART_FORM_STORAGE_KEY = "smartcart-smart-context-form";
 const SMART_CART_WEEKLY_MENU_STORAGE_KEY = "smartcart-weekly-menu";
+const featureDescriptions = {
+  "Budget first":
+    "Strictly enforces your weekly budget so you never overspend at the checkout.",
+  "Pantry aware":
+    "Uses your existing ingredients first to reduce waste and lower your grocery bill.",
+  "Fast setup":
+    "Skip the endless scrolling and get a personalized, 5-day dinner plan in seconds.",
+} as const;
 const fallbackFoodImages = [
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80",
   "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=600&q=80",
@@ -205,6 +213,7 @@ export function SmartCartApp() {
   const [expandedIngredientsMeals, setExpandedIngredientsMeals] = useState<
     Set<string>
   >(new Set());
+  const [activeFeature, setActiveFeature] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -641,6 +650,10 @@ export function SmartCartApp() {
     window.localStorage.removeItem(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
   }
 
+  function handleFeatureToggle(feature: keyof typeof featureDescriptions) {
+    setActiveFeature((current) => (current === feature ? null : feature));
+  }
+
   async function handleReplaceMeal(meal: MealPlanItem, index: number) {
     if (!generatedPlan) {
       return;
@@ -774,15 +787,30 @@ export function SmartCartApp() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-3xl border border-pine/10 bg-cream p-4">
-                <p className="font-display text-3xl text-pine">Budget first</p>
-              </div>
-              <div className="rounded-3xl border border-pine/10 bg-cream p-4">
-                <p className="font-display text-3xl text-pine">Pantry aware</p>
-              </div>
-              <div className="rounded-3xl border border-pine/10 bg-cream p-4">
-                <p className="font-display text-3xl text-pine">Fast setup</p>
-              </div>
+              {(Object.keys(featureDescriptions) as Array<
+                keyof typeof featureDescriptions
+              >).map((feature) => (
+                <button
+                  key={feature}
+                  className={`rounded-3xl border p-4 text-left transition ${
+                    activeFeature === feature
+                      ? "border-orange-400 bg-orange-100 shadow-md"
+                      : "border-pine/10 bg-cream hover:border-orange-300 hover:bg-orange-50"
+                  }`}
+                  onClick={() => handleFeatureToggle(feature)}
+                  type="button"
+                >
+                  <p className="font-display text-3xl text-pine">{feature}</p>
+                </button>
+              ))}
+            </div>
+
+            <div
+              className={`overflow-hidden rounded-3xl border border-stone-200 bg-white/80 px-5 py-4 text-sm leading-7 text-ink/75 transition-all ${
+                activeFeature ? "max-h-40 opacity-100 shadow-md" : "max-h-0 border-transparent px-0 py-0 opacity-0"
+              }`}
+            >
+              {activeFeature ? featureDescriptions[activeFeature as keyof typeof featureDescriptions] : null}
             </div>
           </div>
 
