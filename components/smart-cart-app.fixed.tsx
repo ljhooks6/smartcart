@@ -469,10 +469,6 @@ export function SmartCartApp() {
     await submitPlan(true);
   }
 
-  function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-  }
-
   async function fetchRecipeForMeal(meal: MealPlanItem) {
     if (recipeCache[meal.name]) {
       return recipeCache[meal.name];
@@ -1414,11 +1410,13 @@ export function SmartCartApp() {
               </p>
 
               <form
+                action="https://formspree.io/f/mqegdoly"
                 className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center"
-                onSubmit={handleWaitlistSubmit}
+                method="POST"
               >
                 <input
                   className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200 sm:max-w-md"
+                  name="email"
                   onChange={(event) => setWaitlistEmail(event.target.value)}
                   placeholder="Enter your email address*"
                   required
