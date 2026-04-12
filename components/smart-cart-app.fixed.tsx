@@ -153,6 +153,7 @@ const pantryQuickSelectOptions = {
 
 const SMART_CART_FORM_STORAGE_KEY = "smartcart-smart-context-form";
 const SMART_CART_WEEKLY_MENU_STORAGE_KEY = "smartcart-weekly-menu";
+const SMART_CART_WAITLIST_ENDPOINT = "https://formspree.io/f/mqegdoly";
 const featureDescriptions = {
   "Budget first":
     "Strictly enforces your weekly budget so you never overspend at the checkout.",
@@ -199,6 +200,9 @@ export function SmartCartApp() {
   const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistStatus, setWaitlistStatus] = useState<
+    "idle" | "submitting" | "success"
+  >("idle");
   const [recipeCache, setRecipeCache] = useState<Record<string, RecipeResponse>>(
     {},
   );
@@ -648,6 +652,39 @@ export function SmartCartApp() {
 
   function handleFeatureToggle(feature: keyof typeof featureDescriptions) {
     setActiveFeature((current) => (current === feature ? null : feature));
+  }
+
+  async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!waitlistEmail.trim()) {
+      return;
+    }
+
+    setWaitlistStatus("submitting");
+
+    try {
+      const response = await fetch(SMART_CART_WAITLIST_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email: waitlistEmail.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to join the waitlist.");
+      }
+
+      setWaitlistStatus("success");
+      setWaitlistEmail("");
+    } catch (error) {
+      setWaitlistStatus("idle");
+      setRequestError(
+        error instanceof Error ? error.message : "Failed to join the waitlist.",
+      );
+    }
   }
 
   async function handleReplaceMeal(meal: MealPlanItem, index: number) {
@@ -1409,27 +1446,34 @@ export function SmartCartApp() {
                 access!
               </p>
 
-              <form
-                action="https://formspree.io/f/mqegdoly"
-                className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center"
-                method="POST"
-              >
-                <input
-                  className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200 sm:max-w-md"
-                  name="email"
-                  onChange={(event) => setWaitlistEmail(event.target.value)}
-                  placeholder="Enter your email address*"
-                  required
-                  type="email"
-                  value={waitlistEmail}
-                />
-                <button
-                  className="rounded-full bg-orange-500 px-5 py-3 font-semibold text-white transition hover:bg-orange-600"
-                  type="submit"
+              {waitlistStatus === "success" ? (
+                <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">
+                  Thanks for joining! You are now a part of something fantastic! Phase 2 coming
+                  soon!
+                </div>
+              ) : (
+                <form
+                  className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center"
+                  onSubmit={handleWaitlistSubmit}
                 >
-                  Join Waitlist
-                </button>
-              </form>
+                  <input
+                    className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200 sm:max-w-md"
+                    name="email"
+                    onChange={(event) => setWaitlistEmail(event.target.value)}
+                    placeholder="Enter your email address*"
+                    required
+                    type="email"
+                    value={waitlistEmail}
+                  />
+                  <button
+                    className="rounded-full bg-orange-500 px-5 py-3 font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={waitlistStatus === "submitting"}
+                    type="submit"
+                  >
+                    {waitlistStatus === "submitting" ? "Joining..." : "Join Waitlist"}
+                  </button>
+                </form>
+              )}
             </div>
           </section>
         </section>
