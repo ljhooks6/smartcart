@@ -1149,8 +1149,9 @@ export function SmartCartApp() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="font-display text-3xl text-ink">Your 5-day plan</p>
-                    <p className="mt-2 text-sm leading-6 text-ink/70">
-                      These results are coming directly from <code>/api/generate-list</code>.
+                    <p className="mt-2 text-sm italic leading-6 text-ink/70">
+                      Images are dynamically sourced for visual inspiration and may not perfectly
+                      reflect the specific AI-generated recipe.
                     </p>
                   </div>
                   <div className="rounded-2xl bg-pine px-4 py-3 text-cream">
@@ -1445,14 +1446,13 @@ export function SmartCartApp() {
               </aside>
             </div>
           ) : (
-            <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
-              <p className="font-display text-2xl text-ink">Your generated plan will appear here</p>
-              <p className="mt-3 text-sm leading-7">
-                Submitting the form sends a POST request to <code>/api/generate-list</code> with
-                your budget, diet, household size, and pantry items.
-              </p>
-            </div>
-          )}
+              <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
+                <p className="font-display text-2xl text-ink">Your generated plan will appear here</p>
+                <p className="mt-3 text-sm leading-7">
+                  Select your preferences and pantry items above to get started.
+                </p>
+              </div>
+            )}
 
           <section className="rounded-[2.25rem] border border-stone-200 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-8">
             <div className="mx-auto max-w-3xl text-center">
