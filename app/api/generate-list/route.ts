@@ -216,6 +216,23 @@ ${apply_upgrades
 
     const parsed = generateListResponseSchema.parse(JSON.parse(content));
 
+    const pantryTokens = combinedPantryItems
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+
+    const filteredGroceryList = parsed.grocery_list.filter((item) => {
+      const itemName = item.item.trim().toLowerCase();
+      return !pantryTokens.some(
+        (token) => itemName.includes(token) || token.includes(itemName),
+      );
+    });
+
+    const recalculatedTotal = filteredGroceryList.reduce(
+      (sum, item) => sum + item.estimated_price,
+      0,
+    );
+
     const [mealImages, dessertImage] = await Promise.all([
       Promise.all(parsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
       parsed.dessert ? fetchUnsplashImage(parsed.dessert.title) : Promise.resolve(""),
@@ -233,6 +250,8 @@ ${apply_upgrades
     return NextResponse.json({
       ...parsed,
       meals: mealsWithImages,
+      grocery_list: filteredGroceryList,
+      estimated_total_cost: recalculatedTotal,
       dessert: dessertWithImage,
     });
   } catch (error) {
