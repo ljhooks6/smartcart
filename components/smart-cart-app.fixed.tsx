@@ -7,6 +7,7 @@ type MealPlanItem = {
   name: string;
   servings: number;
   notes: string;
+  imageUrl?: string;
 };
 
 type GroceryListItem = {
@@ -24,6 +25,7 @@ type GenerateListResponse = {
   dessert?: {
     title: string;
     description: string;
+    imageUrl?: string;
   };
 };
 
@@ -90,6 +92,19 @@ const adventureLevelOptions = [
 ] as const;
 
 const pantryQuickSelectOptions = {
+  "Proteins (Freezer & Fridge)": [
+    "Chicken breast",
+    "Chicken thighs",
+    "Ground beef",
+    "Steak",
+    "Pork chops",
+    "Ground turkey",
+    "Bacon",
+    "Shrimp",
+    "Salmon",
+    "Tofu",
+    "Eggs",
+  ],
   "Oils & Condiments": [
     "Olive oil",
     "Vegetable oil",
@@ -170,6 +185,7 @@ const fallbackFoodImages = [
   "https://images.unsplash.com/photo-1432139555190-58524dae6a5a?w=600&q=80",
 ];
 const pantryCategoryStyles: Record<string, string> = {
+  "Proteins (Freezer & Fridge)": "border-rose-200 bg-rose-50",
   "Oils & Condiments": "border-orange-200 bg-orange-50",
   "Spices & Seasonings": "border-rose-200 bg-rose-50",
   "Baking Staples": "border-amber-200 bg-amber-50",
@@ -1160,7 +1176,10 @@ export function SmartCartApp() {
                             event.currentTarget.onerror = null;
                             event.currentTarget.src = fallbackFoodImages[0];
                           }}
-                          src={fallbackFoodImages[index % fallbackFoodImages.length]}
+                          src={
+                            meal.imageUrl ??
+                            fallbackFoodImages[index % fallbackFoodImages.length]
+                          }
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">

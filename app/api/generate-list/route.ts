@@ -19,6 +19,7 @@ const mealSchema = z.object({
   name: z.string().min(1),
   servings: z.number().int().positive(),
   notes: z.string().min(1),
+  imageUrl: z.string().url().optional(),
 });
 
 const groceryItemSchema = z.object({
@@ -30,6 +31,7 @@ const groceryItemSchema = z.object({
 const dessertSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
+  imageUrl: z.string().url().optional(),
 });
 
 const generateListResponseSchema = z.object({
@@ -46,6 +48,37 @@ type GenerateListResponse = z.infer<typeof generateListResponseSchema>;
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const DEFAULT_MEAL_IMAGE =
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80";
+
+async function fetchUnsplashImage(query: string) {
+  if (!process.env.UNSPLASH_ACCESS_KEY) {
+    return DEFAULT_MEAL_IMAGE;
+  }
+
+  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
+    `${query} food`,
+  )}&client_id=${process.env.UNSPLASH_ACCESS_KEY}&per_page=1`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return DEFAULT_MEAL_IMAGE;
+    }
+
+    const data = (await response.json()) as {
+      results?: Array<{ urls?: { regular?: string; small?: string } }>;
+    };
+
+    const imageUrl =
+      data?.results?.[0]?.urls?.regular ?? data?.results?.[0]?.urls?.small;
+
+    return imageUrl || DEFAULT_MEAL_IMAGE;
+  } catch {
+    return DEFAULT_MEAL_IMAGE;
+  }
+}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -181,7 +214,25 @@ ${apply_upgrades
 
     const parsed = generateListResponseSchema.parse(JSON.parse(content));
 
-    return NextResponse.json(parsed);
+    const [mealImages, dessertImage] = await Promise.all([
+      Promise.all(parsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
+      parsed.dessert ? fetchUnsplashImage(parsed.dessert.title) : Promise.resolve(""),
+    ]);
+
+    const mealsWithImages = parsed.meals.map((meal, index) => ({
+      ...meal,
+      imageUrl: mealImages[index],
+    }));
+
+    const dessertWithImage = parsed.dessert
+      ? { ...parsed.dessert, imageUrl: dessertImage || DEFAULT_MEAL_IMAGE }
+      : parsed.dessert;
+
+    return NextResponse.json({
+      ...parsed,
+      meals: mealsWithImages,
+      dessert: dessertWithImage,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
