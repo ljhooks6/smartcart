@@ -57,8 +57,13 @@ async function fetchUnsplashImage(query: string) {
     return DEFAULT_MEAL_IMAGE;
   }
 
+  const searchQuery = `${query} food`;
+  console.log("--- UNSPLASH DIAGNOSTIC ---");
+  console.log("Query:", searchQuery);
+  console.log("Key exists?", !!process.env.UNSPLASH_ACCESS_KEY);
+
   const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
-    `${query} food`,
+    searchQuery,
   )}&client_id=${process.env.UNSPLASH_ACCESS_KEY}&per_page=1`;
 
   try {
@@ -69,7 +74,14 @@ async function fetchUnsplashImage(query: string) {
 
     const data = (await response.json()) as {
       results?: Array<{ urls?: { regular?: string; small?: string } }>;
+      errors?: string[];
     };
+
+    console.log("Response Status:", response.status);
+    console.log("Data Results Length:", data.results?.length);
+    if (data.errors) {
+      console.log("Unsplash API Errors:", data.errors);
+    }
 
     if (!data?.results || data.results.length === 0) {
       return DEFAULT_MEAL_IMAGE;
