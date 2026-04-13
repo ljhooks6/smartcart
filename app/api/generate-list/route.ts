@@ -71,8 +71,12 @@ async function fetchUnsplashImage(query: string) {
       results?: Array<{ urls?: { regular?: string; small?: string } }>;
     };
 
+    if (!data?.results || data.results.length === 0) {
+      return DEFAULT_MEAL_IMAGE;
+    }
+
     const imageUrl =
-      data?.results?.[0]?.urls?.regular ?? data?.results?.[0]?.urls?.small;
+      data.results[0]?.urls?.regular ?? data.results[0]?.urls?.small;
 
     return imageUrl || DEFAULT_MEAL_IMAGE;
   } catch {
