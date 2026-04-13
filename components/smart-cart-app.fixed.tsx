@@ -46,6 +46,7 @@ type ReplaceMealResponse = {
 type ReplaceDessertResponse = {
   title: string;
   description: string;
+  imageUrl?: string;
 };
 
 type FormState = {
@@ -599,6 +600,7 @@ export function SmartCartApp() {
               dessert: {
                 title: data.title,
                 description: data.description,
+                imageUrl: data.imageUrl,
               },
             }
           : current,
@@ -1328,10 +1330,17 @@ export function SmartCartApp() {
                 </section>
 
                 {generatedPlan.dessert && (
-                  <section className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
+                  <section className="mt-6 overflow-hidden rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
                       Sweet Treat
                     </p>
+                    <div className="mt-4 overflow-hidden rounded-[1.5rem]">
+                      <img
+                        alt={generatedPlan.dessert.title}
+                        className="h-48 w-full rounded-[1.5rem] object-cover"
+                        src={generatedPlan.dessert.imageUrl || fallbackFoodImages[0]}
+                      />
+                    </div>
                     <h3 className="mt-2 font-display text-2xl text-ink">
                       {generatedPlan.dessert.title}
                     </h3>

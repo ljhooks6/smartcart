@@ -52,19 +52,20 @@ const openai = new OpenAI({
 const DEFAULT_MEAL_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80";
 
-async function fetchUnsplashImage(query: string) {
+async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
   if (!process.env.UNSPLASH_ACCESS_KEY) {
     return DEFAULT_MEAL_IMAGE;
   }
 
-  const searchQuery = `${query} food`;
+  const searchQuery = queryIsEncoded ? query : `${query} food`;
+  const encodedQuery = queryIsEncoded
+    ? searchQuery
+    : encodeURIComponent(searchQuery);
   console.log("--- UNSPLASH DIAGNOSTIC ---");
   console.log("Query:", searchQuery);
   console.log("Key exists?", !!process.env.UNSPLASH_ACCESS_KEY);
 
-  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
-    searchQuery,
-  )}&client_id=${process.env.UNSPLASH_ACCESS_KEY}&per_page=1`;
+  const url = `https://api.unsplash.com/search/photos?query=${encodedQuery}&client_id=${process.env.UNSPLASH_ACCESS_KEY}&per_page=1`;
 
   try {
     const response = await fetch(url);
@@ -253,9 +254,14 @@ ${apply_upgrades
       0,
     );
 
+    const dessertQuery = parsed.dessert
+      ? encodeURIComponent(`${parsed.dessert.title} dessert`)
+      : "";
     const [mealImages, dessertImage] = await Promise.all([
       Promise.all(parsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
-      parsed.dessert ? fetchUnsplashImage(parsed.dessert.title) : Promise.resolve(""),
+      parsed.dessert
+        ? fetchUnsplashImage(dessertQuery, true)
+        : Promise.resolve(""),
     ]);
 
     const mealsWithImages = parsed.meals.map((meal, index) => ({

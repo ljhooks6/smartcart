@@ -13,11 +13,45 @@ type ReplaceDessertRequest = {
 const replaceDessertResponseSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
+  imageUrl: z.string().url().optional(),
 });
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const DEFAULT_DESSERT_IMAGE =
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80";
+
+async function fetchUnsplashImage(encodedQuery: string) {
+  if (!process.env.UNSPLASH_ACCESS_KEY) {
+    return DEFAULT_DESSERT_IMAGE;
+  }
+
+  const url = `https://api.unsplash.com/search/photos?query=${encodedQuery}&client_id=${process.env.UNSPLASH_ACCESS_KEY}&per_page=1`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return DEFAULT_DESSERT_IMAGE;
+    }
+
+    const data = (await response.json()) as {
+      results?: Array<{ urls?: { regular?: string; small?: string } }>;
+    };
+
+    if (!data?.results || data.results.length === 0) {
+      return DEFAULT_DESSERT_IMAGE;
+    }
+
+    const imageUrl =
+      data.results[0]?.urls?.regular ?? data.results[0]?.urls?.small;
+
+    return imageUrl || DEFAULT_DESSERT_IMAGE;
+  } catch {
+    return DEFAULT_DESSERT_IMAGE;
+  }
+}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -109,7 +143,9 @@ The new dessert must be clearly different from "${rejectedDessertTitle}".
     }
 
     const parsed = replaceDessertResponseSchema.parse(JSON.parse(content));
-    return NextResponse.json(parsed);
+    const dessertQuery = encodeURIComponent(`${parsed.title} dessert`);
+    const imageUrl = await fetchUnsplashImage(dessertQuery);
+    return NextResponse.json({ ...parsed, imageUrl });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
