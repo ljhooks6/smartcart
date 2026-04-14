@@ -9,6 +9,7 @@ type GenerateListRequest = {
   combinedPantryItems: string;
   fullyStocked?: string[];
   runningLow?: string[];
+  restock?: string[];
   mustHaveIngredient?: string;
   includeDessert?: boolean;
   adventureLevel?: string;
@@ -118,6 +119,7 @@ export async function POST(request: Request) {
     combinedPantryItems,
     fullyStocked,
     runningLow,
+    restock,
     mustHaveIngredient,
     includeDessert,
     adventureLevel,
@@ -158,8 +160,8 @@ Rules:
 - Respect the budget strictly.
 - Respect the diet exactly.
 - Reuse pantry items whenever possible.
-- Use pantry items from both "fully stocked" and "running low" lists to shape the meals.
-- CRITICAL: If an ingredient is from the runningLow list, you MUST include it in the groceryList and append the tag [RESTOCK] to its name.
+- Use pantry items from the "fully stocked", "running low", and "restock" lists to shape the meals.
+- CRITICAL: If an ingredient is from the restock list, you MUST include it in the groceryList and append the tag [RESTOCK] to its name. Do not do this for running low items.
 - CRITICAL: If an ingredient is included in the user's pantryItems list, it MUST NOT be included in the generated groceryList array. The user already owns these items. You must strictly filter out pantry items from the final shopping list and estimated total.
 - Adventure Level enforcement: if the user selected "Try new cuisines" or "Mix it up", you MUST generate diverse, global, or creative recipes and strictly avoid generic fallbacks like "Vegetable Stir-fry", plain pasta, or repetitive default meals. If the user selected "Stick to basics", keep the meals familiar and approachable.
 - CRITICAL: You must strictly tailor the cuisine types to the user's adventureLevel preference.
@@ -213,6 +215,7 @@ Household Size: ${householdSize}
 Pantry Items: ${combinedPantryItems || "None provided"}
 Fully Stocked Pantry Items: ${Array.isArray(fullyStocked) && fullyStocked.length > 0 ? fullyStocked.join(", ") : "None provided"}
 Running Low Pantry Items: ${Array.isArray(runningLow) && runningLow.length > 0 ? runningLow.join(", ") : "None provided"}
+Restock Pantry Items: ${Array.isArray(restock) && restock.length > 0 ? restock.join(", ") : "None provided"}
 Must-Have Ingredient: ${mustHaveIngredient?.trim() || "None provided"}
 Include Dessert: ${includeDessert ? "Yes" : "No"}
 Adventure Level: ${adventureLevel?.trim() || "No preference provided"}
@@ -245,9 +248,12 @@ ${apply_upgrades
 
     const parsed = generateListResponseSchema.parse(JSON.parse(content));
 
-    const pantryTokens = Array.isArray(fullyStocked)
-      ? fullyStocked.map((item) => item.trim().toLowerCase()).filter(Boolean)
-      : [];
+    const pantryTokens = [
+      ...(Array.isArray(fullyStocked) ? fullyStocked : []),
+      ...(Array.isArray(runningLow) ? runningLow : []),
+    ]
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
 
     const filteredGroceryList = parsed.grocery_list.filter((item) => {
       const itemName = item.item.trim().toLowerCase();

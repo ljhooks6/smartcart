@@ -213,6 +213,7 @@ export function SmartCartApp() {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [fullyStocked, setFullyStocked] = useState<Set<string>>(new Set());
   const [runningLow, setRunningLow] = useState<Set<string>>(new Set());
+  const [restock, setRestock] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
@@ -249,6 +250,7 @@ export function SmartCartApp() {
         selectedQuickItems?: string[];
         fullyStocked?: string[];
         runningLow?: string[];
+        restock?: string[];
       };
 
       setFormState((current) => ({
@@ -268,9 +270,11 @@ export function SmartCartApp() {
       if (parsed.fullyStocked || parsed.runningLow) {
         setFullyStocked(new Set(parsed.fullyStocked ?? []));
         setRunningLow(new Set(parsed.runningLow ?? []));
+        setRestock(new Set(parsed.restock ?? []));
       } else {
         setFullyStocked(new Set(parsed.selectedQuickItems ?? []));
         setRunningLow(new Set());
+        setRestock(new Set());
       }
     } catch {
       window.localStorage.removeItem(SMART_CART_FORM_STORAGE_KEY);
@@ -284,9 +288,10 @@ export function SmartCartApp() {
         ...formState,
         fullyStocked: Array.from(fullyStocked),
         runningLow: Array.from(runningLow),
+        restock: Array.from(restock),
       }),
     );
-  }, [formState, fullyStocked, runningLow]);
+  }, [formState, fullyStocked, runningLow, restock]);
 
   useEffect(() => {
     try {
@@ -340,10 +345,11 @@ export function SmartCartApp() {
       new Set([
         ...Array.from(fullyStocked),
         ...Array.from(runningLow),
+        ...Array.from(restock),
         ...typedItems,
       ]),
     );
-  }, [formState.pantryItems, fullyStocked, runningLow]);
+  }, [formState.pantryItems, fullyStocked, runningLow, restock]);
 
   const groceriesByCategory = useMemo(() => {
     if (!generatedPlan) {
@@ -428,6 +434,7 @@ export function SmartCartApp() {
           combinedPantryItems: combinedPantryItems.join(", "),
           fullyStocked: Array.from(fullyStocked),
           runningLow: Array.from(runningLow),
+          restock: Array.from(restock),
           mustHaveIngredient: formState.mustHaveIngredient.trim(),
           includeDessert: formState.includeDessert,
           adventureLevel: formState.adventureLevel,
@@ -481,8 +488,9 @@ export function SmartCartApp() {
   function toggleQuickItem(item: string) {
     const isFullyStocked = fullyStocked.has(item);
     const isRunningLow = runningLow.has(item);
+    const isRestock = restock.has(item);
 
-    if (!isFullyStocked && !isRunningLow) {
+    if (!isFullyStocked && !isRunningLow && !isRestock) {
       setFullyStocked(new Set([...fullyStocked, item]));
       return;
     }
@@ -497,9 +505,19 @@ export function SmartCartApp() {
       return;
     }
 
-    const nextLow = new Set(runningLow);
-    nextLow.delete(item);
-    setRunningLow(nextLow);
+    if (isRunningLow) {
+      const nextLow = new Set(runningLow);
+      nextLow.delete(item);
+      const nextRestock = new Set(restock);
+      nextRestock.add(item);
+      setRunningLow(nextLow);
+      setRestock(nextRestock);
+      return;
+    }
+
+    const nextRestock = new Set(restock);
+    nextRestock.delete(item);
+    setRestock(nextRestock);
   }
 
   async function handleCopyShoppingList() {
@@ -682,6 +700,7 @@ export function SmartCartApp() {
     setCheckedItems(new Set());
     setFullyStocked(new Set());
     setRunningLow(new Set());
+    setRestock(new Set());
     setCopied(false);
     setHasAppliedUpgrades(false);
     setRecipeCache({});
@@ -1041,8 +1060,12 @@ export function SmartCartApp() {
                       <span>Fully Stocked</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full border border-orange-400 bg-orange-300" />
-                      <span>Running Low (Restock)</span>
+                      <span className="h-3 w-3 rounded-full border border-yellow-400 bg-yellow-300" />
+                      <span>Running Low</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full border border-orange-500 bg-orange-400" />
+                      <span>Restock (Add to List)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full border border-white/80 bg-white" />
@@ -1063,10 +1086,13 @@ export function SmartCartApp() {
                         {items.map((item) => {
                           const isFullyStocked = fullyStocked.has(item);
                           const isRunningLow = runningLow.has(item);
+                          const isRestock = restock.has(item);
                           const stateClass = isFullyStocked
                             ? "border-pine bg-pine text-white"
                             : isRunningLow
-                              ? "border-orange-400 bg-orange-300 text-ink"
+                              ? "border-yellow-400 bg-yellow-300 text-ink"
+                              : isRestock
+                                ? "border-orange-500 bg-orange-400 text-ink"
                               : "border-white/80 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
 
                           return (
@@ -1436,33 +1462,45 @@ export function SmartCartApp() {
                     >
                       <p className="font-display text-xl text-pine">{category}</p>
                       <ul className="mt-4 space-y-3">
-                        {items.map((item) => (
-                          <li
-                            key={`${category}-${item.item}`}
-                            className="flex items-center justify-between gap-4"
-                          >
-                            <label className="flex items-center gap-3">
-                              <input
-                                checked={checkedItems.has(`${category}-${item.item}`)}
-                                className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                                onChange={() => toggleCheckedItem(`${category}-${item.item}`)}
-                                type="checkbox"
-                              />
-                              <span
-                                className={`text-sm font-medium text-ink ${
-                                  checkedItems.has(`${category}-${item.item}`)
-                                    ? "line-through opacity-60"
-                                    : ""
-                                }`}
-                              >
-                                {item.item}
+                        {items.map((item) => {
+                          const isRestock = item.item.includes("[RESTOCK]");
+                          const displayName = item.item
+                            .replace(/\s*\[RESTOCK\]\s*/gi, " ")
+                            .trim();
+
+                          return (
+                            <li
+                              key={`${category}-${item.item}`}
+                              className="flex items-center justify-between gap-4"
+                            >
+                              <label className="flex items-center gap-3">
+                                <input
+                                  checked={checkedItems.has(`${category}-${item.item}`)}
+                                  className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
+                                  onChange={() => toggleCheckedItem(`${category}-${item.item}`)}
+                                  type="checkbox"
+                                />
+                                <span
+                                  className={`flex items-center gap-2 text-sm font-medium text-ink ${
+                                    checkedItems.has(`${category}-${item.item}`)
+                                      ? "line-through opacity-60"
+                                      : ""
+                                  }`}
+                                >
+                                  <span>{displayName}</span>
+                                  {isRestock && (
+                                    <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
+                                      Restock
+                                    </span>
+                                  )}
+                                </span>
+                              </label>
+                              <span className="text-sm font-semibold text-pine">
+                                {formatCurrency(item.estimated_price)}
                               </span>
-                            </label>
-                            <span className="text-sm font-semibold text-pine">
-                              {formatCurrency(item.estimated_price)}
-                            </span>
-                          </li>
-                        ))}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </section>
                   ))}
