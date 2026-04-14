@@ -1035,6 +1035,20 @@ export function SmartCartApp() {
                   <p className="mt-1 text-sm leading-6 text-ink/65">
                     Tap common staples to add them before typing anything custom.
                   </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-semibold text-ink/70">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full border border-pine bg-pine" />
+                      <span>Fully Stocked</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full border border-orange-400 bg-orange-300" />
+                      <span>Running Low (Restock)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full border border-white/80 bg-white" />
+                      <span>Don&#39;t Have</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-3">
                   {Object.entries(pantryQuickSelectOptions).map(([category, items]) => (
