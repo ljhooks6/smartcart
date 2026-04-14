@@ -211,9 +211,8 @@ export function SmartCartApp() {
   const [generatedPlan, setGeneratedPlan] =
     useState<GenerateListResponse | null>(null);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
-  const [selectedQuickItems, setSelectedQuickItems] = useState<Set<string>>(
-    new Set(),
-  );
+  const [fullyStocked, setFullyStocked] = useState<Set<string>>(new Set());
+  const [runningLow, setRunningLow] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
@@ -248,6 +247,8 @@ export function SmartCartApp() {
 
       const parsed = JSON.parse(savedFormState) as Partial<FormState> & {
         selectedQuickItems?: string[];
+        fullyStocked?: string[];
+        runningLow?: string[];
       };
 
       setFormState((current) => ({
@@ -264,7 +265,13 @@ export function SmartCartApp() {
         isBudgetTight: parsed.isBudgetTight ?? current.isBudgetTight,
       }));
 
-      setSelectedQuickItems(new Set(parsed.selectedQuickItems ?? []));
+      if (parsed.fullyStocked || parsed.runningLow) {
+        setFullyStocked(new Set(parsed.fullyStocked ?? []));
+        setRunningLow(new Set(parsed.runningLow ?? []));
+      } else {
+        setFullyStocked(new Set(parsed.selectedQuickItems ?? []));
+        setRunningLow(new Set());
+      }
     } catch {
       window.localStorage.removeItem(SMART_CART_FORM_STORAGE_KEY);
     }
@@ -275,10 +282,11 @@ export function SmartCartApp() {
       SMART_CART_FORM_STORAGE_KEY,
       JSON.stringify({
         ...formState,
-        selectedQuickItems: Array.from(selectedQuickItems),
+        fullyStocked: Array.from(fullyStocked),
+        runningLow: Array.from(runningLow),
       }),
     );
-  }, [formState, selectedQuickItems]);
+  }, [formState, fullyStocked, runningLow]);
 
   useEffect(() => {
     try {
@@ -328,8 +336,14 @@ export function SmartCartApp() {
       .map((item) => item.trim())
       .filter(Boolean);
 
-    return Array.from(new Set([...Array.from(selectedQuickItems), ...typedItems]));
-  }, [formState.pantryItems, selectedQuickItems]);
+    return Array.from(
+      new Set([
+        ...Array.from(fullyStocked),
+        ...Array.from(runningLow),
+        ...typedItems,
+      ]),
+    );
+  }, [formState.pantryItems, fullyStocked, runningLow]);
 
   const groceriesByCategory = useMemo(() => {
     if (!generatedPlan) {
@@ -412,6 +426,8 @@ export function SmartCartApp() {
           diet: formState.diet.trim() || "No specific diet provided",
           householdSize,
           combinedPantryItems: combinedPantryItems.join(", "),
+          fullyStocked: Array.from(fullyStocked),
+          runningLow: Array.from(runningLow),
           mustHaveIngredient: formState.mustHaveIngredient.trim(),
           includeDessert: formState.includeDessert,
           adventureLevel: formState.adventureLevel,
@@ -463,15 +479,27 @@ export function SmartCartApp() {
   }
 
   function toggleQuickItem(item: string) {
-    setSelectedQuickItems((current) => {
-      const next = new Set(current);
-      if (next.has(item)) {
-        next.delete(item);
-      } else {
-        next.add(item);
-      }
-      return next;
-    });
+    const isFullyStocked = fullyStocked.has(item);
+    const isRunningLow = runningLow.has(item);
+
+    if (!isFullyStocked && !isRunningLow) {
+      setFullyStocked(new Set([...fullyStocked, item]));
+      return;
+    }
+
+    if (isFullyStocked) {
+      const nextFully = new Set(fullyStocked);
+      nextFully.delete(item);
+      const nextLow = new Set(runningLow);
+      nextLow.add(item);
+      setFullyStocked(nextFully);
+      setRunningLow(nextLow);
+      return;
+    }
+
+    const nextLow = new Set(runningLow);
+    nextLow.delete(item);
+    setRunningLow(nextLow);
   }
 
   async function handleCopyShoppingList() {
@@ -652,7 +680,8 @@ export function SmartCartApp() {
     setIsLoading(false);
     setGeneratedPlan(null);
     setCheckedItems(new Set());
-    setSelectedQuickItems(new Set());
+    setFullyStocked(new Set());
+    setRunningLow(new Set());
     setCopied(false);
     setHasAppliedUpgrades(false);
     setRecipeCache({});
@@ -1017,20 +1046,26 @@ export function SmartCartApp() {
                         {category}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {items.map((item) => (
-                          <button
-                            key={item}
-                            className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
-                              selectedQuickItems.has(item)
-                                ? "border-orange-500 bg-orange-500 text-white"
-                                : "border-white/80 bg-white text-ink hover:border-orange-300 hover:bg-orange-50"
-                            }`}
-                            onClick={() => toggleQuickItem(item)}
-                            type="button"
-                          >
-                            {item}
-                          </button>
-                        ))}
+                        {items.map((item) => {
+                          const isFullyStocked = fullyStocked.has(item);
+                          const isRunningLow = runningLow.has(item);
+                          const stateClass = isFullyStocked
+                            ? "border-pine bg-pine text-white"
+                            : isRunningLow
+                              ? "border-orange-400 bg-orange-300 text-ink"
+                              : "border-white/80 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
+
+                          return (
+                            <button
+                              key={item}
+                              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${stateClass}`}
+                              onClick={() => toggleQuickItem(item)}
+                              type="button"
+                            >
+                              {item}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
