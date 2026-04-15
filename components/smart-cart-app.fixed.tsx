@@ -9,6 +9,7 @@ type MealPlanItem = {
   notes: string;
   ingredients?: Array<{
     name: string;
+    amount: string;
     estimatedPrice: number;
   }>;
   imageUrl?: string;
@@ -17,6 +18,7 @@ type MealPlanItem = {
 type GroceryListItem = {
   category: string;
   item: string;
+  amount?: string;
   estimated_price: number;
 };
 
@@ -251,6 +253,10 @@ function estimateRestockPrice(itemName: string) {
   return 3;
 }
 
+function normalizeIngredientName(itemName: string) {
+  return itemName.trim().toLowerCase();
+}
+
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -400,39 +406,62 @@ export function SmartCartApp() {
   }, [formState.pantryItems, fullyStocked, runningLow, restock]);
 
   const derivedGroceryList = useMemo(() => {
-    const flattenedMealIngredients = weeklyMenu.flatMap((meal) =>
-      (meal.ingredients ?? []).map((ingredient) => ({
-        category: "Meal Ingredients",
-        item: ingredient.name,
-        estimated_price: ingredient.estimatedPrice,
-      })),
+    const groupedItems = weeklyMenu.reduce<Record<string, GroceryListItem>>(
+      (accumulator, meal) => {
+        for (const ingredient of meal.ingredients ?? []) {
+          const normalizedKey = normalizeIngredientName(ingredient.name);
+          const existingItem = accumulator[normalizedKey];
+
+          if (!existingItem) {
+            accumulator[normalizedKey] = {
+              category: "Meal Ingredients",
+              item: ingredient.name.trim(),
+              amount: ingredient.amount.trim(),
+              estimated_price: ingredient.estimatedPrice,
+            };
+            continue;
+          }
+
+          accumulator[normalizedKey] = {
+            ...existingItem,
+            amount: existingItem.amount
+              ? `${existingItem.amount} + ${ingredient.amount.trim()}`
+              : ingredient.amount.trim(),
+            estimated_price:
+              existingItem.estimated_price + ingredient.estimatedPrice,
+          };
+        }
+
+        return accumulator;
+      },
+      {},
     );
 
-    const restockItems = Array.from(restock).map((item) => ({
-      category: "Restock",
-      item: `${item} [RESTOCK]`,
-      estimated_price: estimateRestockPrice(item),
-    }));
+    for (const restockItem of Array.from(restock)) {
+      const normalizedKey = normalizeIngredientName(restockItem);
+      const restockPrice = estimateRestockPrice(restockItem);
+      const existingItem = groupedItems[normalizedKey];
 
-    const dedupedItems = [...flattenedMealIngredients, ...restockItems].reduce<
-      Record<string, GroceryListItem>
-    >((accumulator, item) => {
-      const normalizedKey = `${item.category}::${item.item.trim().toLowerCase()}`;
-      if (!accumulator[normalizedKey]) {
-        accumulator[normalizedKey] = { ...item };
-        return accumulator;
+      if (existingItem) {
+        groupedItems[normalizedKey] = {
+          ...existingItem,
+          amount: existingItem.amount
+            ? `${existingItem.amount} (+ Restock)`
+            : "(+ Restock)",
+          estimated_price: existingItem.estimated_price + restockPrice,
+        };
+        continue;
       }
 
-      accumulator[normalizedKey] = {
-        ...accumulator[normalizedKey],
-        estimated_price:
-          accumulator[normalizedKey].estimated_price + item.estimated_price,
+      groupedItems[normalizedKey] = {
+        category: "Restock",
+        item: `${restockItem.trim()} [RESTOCK]`,
+        amount: "(+ Restock)",
+        estimated_price: restockPrice,
       };
+    }
 
-      return accumulator;
-    }, {});
-
-    return Object.values(dedupedItems);
+    return Object.values(groupedItems);
   }, [restock, weeklyMenu]);
 
   const groceriesByCategory = useMemo(() => {
@@ -908,6 +937,7 @@ export function SmartCartApp() {
         notes: `${data.description} Ingredients: ${data.ingredients.join(", ")}. Approx. prep time: ${data.prepTime} minutes.`,
         ingredients: data.ingredients.map((ingredient) => ({
           name: ingredient,
+          amount: "1 item",
           estimatedPrice: estimateRestockPrice(ingredient),
         })),
       };
@@ -1575,7 +1605,9 @@ export function SmartCartApp() {
                       <p className="font-display text-xl text-pine">{category}</p>
                       <ul className="mt-4 space-y-3">
                         {items.map((item) => {
-                          const isRestock = item.item.includes("[RESTOCK]");
+                          const isRestock =
+                            item.item.includes("[RESTOCK]") ||
+                            item.amount?.includes("(+ Restock)") === true;
                           const displayName = item.item
                             .replace(/\s*\[RESTOCK\]\s*/gi, " ")
                             .trim();
@@ -1606,6 +1638,11 @@ export function SmartCartApp() {
                                     </span>
                                   )}
                                 </span>
+                                {item.amount && (
+                                  <span className="block text-xs text-ink/55">
+                                    {item.amount}
+                                  </span>
+                                )}
                               </label>
                               <span className="text-sm font-semibold text-pine">
                                 {formatCurrency(item.estimated_price)}
@@ -1642,7 +1679,9 @@ export function SmartCartApp() {
                     <span>{Math.round(rawBudgetPercentage)}% of budget used</span>
                     <span className={budgetStatusTextClass}>{budgetStatusLabel}</span>
                   </div>
-                  {generatedPlan.upgrade_available && !hasAppliedUpgrades && (
+                  {generatedPlan.upgrade_available &&
+                    !hasAppliedUpgrades &&
+                    rawBudgetPercentage < 80 && (
                     <button
                       className="mt-4 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={isLoading}

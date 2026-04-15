@@ -19,6 +19,7 @@ type GenerateListRequest = {
 
 const ingredientSchema = z.object({
   name: z.string().min(1),
+  amount: z.string().min(1),
   estimatedPrice: z.number().nonnegative(),
 });
 
@@ -216,8 +217,11 @@ Rules:
 - Every meal must include its own localized "ingredients" array.
 - Each ingredient object must contain:
   - "name": string
+  - "amount": string
   - "estimatedPrice": number
 - Only include ingredients required for that specific meal inside that meal's ingredients array.
+- You MUST be specific with ingredient names (for example "Red Bell Peppers" or "Roma Tomatoes", not just "Peppers").
+- NEVER append conversational text like "(assumed purchase)" to ingredient names.
 - Adventure Level enforcement: if the user selected "Try new cuisines" or "Mix it up", you MUST generate diverse, global, or creative recipes and strictly avoid generic fallbacks like "Vegetable Stir-fry", plain pasta, or repetitive default meals. If the user selected "Stick to basics", keep the meals familiar and approachable.
 - CRITICAL: You must strictly tailor the cuisine types to the user's adventureLevel preference.
 - If Stick to basics: Generate classic, familiar comfort foods. You MUST prioritize styles like Soul Food, classic BBQ, traditional American fare (for example burgers and fries, pork chops), and simple homestyle meals. STRICTLY avoid trendy bowls or complex international dishes.
@@ -244,6 +248,7 @@ Rules:
       "ingredients": [
         {
           "name": "string",
+          "amount": "string",
           "estimatedPrice": number
         }
       ]
