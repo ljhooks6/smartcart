@@ -161,7 +161,7 @@ Rules:
 - Respect the diet exactly.
 - Reuse pantry items whenever possible.
 - Use pantry items from the "fully stocked", "running low", and "restock" lists to shape the meals.
-- CRITICAL: If an ingredient is from the restock list, you MUST include it in the groceryList and append the tag [RESTOCK] to its name. Do not do this for running low items.
+- The grocery_list should only contain ingredients required for the meals and dessert you generate.
 - CRITICAL: If an ingredient is included in the user's pantryItems list, it MUST NOT be included in the generated groceryList array. The user already owns these items. You must strictly filter out pantry items from the final shopping list and estimated total.
 - Adventure Level enforcement: if the user selected "Try new cuisines" or "Mix it up", you MUST generate diverse, global, or creative recipes and strictly avoid generic fallbacks like "Vegetable Stir-fry", plain pasta, or repetitive default meals. If the user selected "Stick to basics", keep the meals familiar and approachable.
 - CRITICAL: You must strictly tailor the cuisine types to the user's adventureLevel preference.
@@ -262,7 +262,21 @@ ${apply_upgrades
       );
     });
 
-    const recalculatedTotal = filteredGroceryList.reduce(
+    const deterministicRestockItems = (Array.isArray(restock) ? restock : [])
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => ({
+        category: "Restock",
+        item: `${item} [RESTOCK]`,
+        estimated_price: 3,
+      }));
+
+    const finalGroceryList = [
+      ...filteredGroceryList,
+      ...deterministicRestockItems,
+    ];
+
+    const recalculatedTotal = finalGroceryList.reduce(
       (sum, item) => sum + item.estimated_price,
       0,
     );
@@ -289,7 +303,7 @@ ${apply_upgrades
     return NextResponse.json({
       ...parsed,
       meals: mealsWithImages,
-      grocery_list: filteredGroceryList,
+      grocery_list: finalGroceryList,
       estimated_total_cost: recalculatedTotal,
       dessert: dessertWithImage,
     });
