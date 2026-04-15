@@ -395,6 +395,16 @@ export function SmartCartApp() {
     formState.budget.trim().length > 0 &&
     Number.isFinite(parsedBudget) &&
     parsedBudget > 0;
+  const budgetProgress = generatedPlan
+    ? (generatedPlan.estimated_total_cost / Math.max(parsedBudget || 0, 1)) * 100
+    : 0;
+  const budgetProgressWidth = Math.min(budgetProgress, 100);
+  const budgetProgressBarClass =
+    budgetProgress > 100
+      ? "bg-red-500"
+      : budgetProgress >= 80
+        ? "bg-yellow-500"
+        : "bg-green-500";
 
   async function submitPlan(applyUpgrades = false) {
     setValidationError(null);
@@ -1221,8 +1231,8 @@ export function SmartCartApp() {
 
         <section className="mt-10 space-y-6 pb-16">
           {generatedPlan ? (
-            <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-              <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+              <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur lg:col-span-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="font-display text-3xl text-ink">Your 5-day plan</p>
@@ -1447,7 +1457,7 @@ export function SmartCartApp() {
                 )}
               </div>
 
-              <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl">
+              <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl lg:sticky lg:top-4 lg:col-span-4 lg:self-start">
                 <p className="font-display text-3xl text-ink">Grocery list</p>
                 <p className="mt-2 text-sm italic leading-6 text-gray-500">
                   Prices are AI-generated national averages for estimation. Actual costs may be
@@ -1506,13 +1516,25 @@ export function SmartCartApp() {
                   ))}
                 </div>
 
-                <div className="mt-6 rounded-[1.5rem] bg-apricot/15 px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
-                    Budget note
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-ink/80">
-                    {generatedPlan.budget_summary}
-                  </p>
+                <div className="mt-6 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
+                      Budget Progress
+                    </p>
+                    <p className="text-sm font-semibold text-ink">
+                      {formatCurrency(generatedPlan.estimated_total_cost)} / {formatCurrency(parsedBudget)}
+                    </p>
+                  </div>
+                  <div className="mt-4 h-3 overflow-hidden rounded-full bg-stone-200">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${budgetProgressBarClass}`}
+                      style={{ width: `${budgetProgressWidth}%` }}
+                    />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs font-medium text-ink/60">
+                    <span>{Math.round(budgetProgress)}% of budget used</span>
+                    <span>{budgetProgress > 100 ? "Over budget" : "On track"}</span>
+                  </div>
                   {generatedPlan.upgrade_available && !hasAppliedUpgrades && (
                     <button
                       className="mt-4 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
