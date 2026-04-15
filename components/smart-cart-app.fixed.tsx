@@ -10,8 +10,7 @@ type MealPlanItem = {
   ingredients?: Array<{
     name: string;
     amount: string;
-    estimatedPrice: number;
-    description?: string;
+    price: number;
   }>;
   imageUrl?: string;
 };
@@ -21,8 +20,6 @@ type GroceryListItem = {
   name: string;
   amount?: string;
   estimated_price: number;
-  description?: string;
-  item?: string;
 };
 
 type GenerateListResponse = {
@@ -214,6 +211,7 @@ function formatCurrency(value: number) {
 
 function estimateRestockPrice(itemName: string) {
   const normalized = itemName.trim().toLowerCase();
+  let estimate = 3;
 
   if (
     normalized.includes("steak") ||
@@ -221,28 +219,22 @@ function estimateRestockPrice(itemName: string) {
     normalized.includes("shrimp") ||
     normalized.includes("seafood")
   ) {
-    return 10;
-  }
-
-  if (
+    estimate = 10;
+  } else if (
     normalized.includes("chicken") ||
     normalized.includes("pork") ||
     normalized.includes("beef") ||
     normalized.includes("cheese")
   ) {
-    return 6;
-  }
-
-  if (
+    estimate = 6;
+  } else if (
     normalized.includes("oil") ||
     normalized.includes("sauce") ||
     normalized.includes("butter") ||
     normalized.includes("milk")
   ) {
-    return 4;
-  }
-
-  if (
+    estimate = 4;
+  } else if (
     normalized.includes("rice") ||
     normalized.includes("pasta") ||
     normalized.includes("beans") ||
@@ -250,10 +242,10 @@ function estimateRestockPrice(itemName: string) {
     normalized.includes("produce") ||
     normalized.includes("potatoes")
   ) {
-    return 2;
+    estimate = 2;
   }
 
-  return 3;
+  return Math.max(1, estimate);
 }
 
 function normalizeIngredientName(itemName: string) {
@@ -409,64 +401,58 @@ export function SmartCartApp() {
   }, [formState.pantryItems, fullyStocked, runningLow, restock]);
 
   const derivedGroceryList = useMemo(() => {
-    const groupedItems = weeklyMenu.reduce<Record<string, GroceryListItem>>(
-      (accumulator, meal) => {
-        for (const ingredient of meal.ingredients ?? []) {
-          const normalizedKey = normalizeIngredientName(ingredient.name);
-          const existingItem = accumulator[normalizedKey];
+    const groupedItems = new Map<string, GroceryListItem>();
 
-          if (!existingItem) {
-            accumulator[normalizedKey] = {
-              category: "Meal Ingredients",
-              name: ingredient.name.trim(),
-              amount: ingredient.amount.trim(),
-              estimated_price: Math.max(1, ingredient.estimatedPrice),
-              description: ingredient.description?.trim(),
-            };
-            continue;
-          }
+    for (const meal of weeklyMenu) {
+      for (const ingredient of meal.ingredients ?? []) {
+        const normalizedKey = normalizeIngredientName(ingredient.name);
+        const existingItem = groupedItems.get(normalizedKey);
+        const nextPrice = Math.max(1, Number(ingredient.price));
+        const nextAmount = ingredient.amount.trim();
 
-          accumulator[normalizedKey] = {
-            ...existingItem,
-            amount: existingItem.amount
-              ? `${existingItem.amount} + ${ingredient.amount.trim()}`
-              : ingredient.amount.trim(),
-            estimated_price:
-              existingItem.estimated_price + Math.max(1, ingredient.estimatedPrice),
-            description: existingItem.description ?? ingredient.description?.trim(),
-          };
+        if (!existingItem) {
+          groupedItems.set(normalizedKey, {
+            category: "Meal Ingredients",
+            name: ingredient.name.trim(),
+            amount: nextAmount,
+            estimated_price: nextPrice,
+          });
+          continue;
         }
 
-        return accumulator;
-      },
-      {},
-    );
+        groupedItems.set(normalizedKey, {
+          ...existingItem,
+          amount: existingItem.amount
+            ? `${existingItem.amount} + ${nextAmount}`
+            : nextAmount,
+          estimated_price: existingItem.estimated_price + nextPrice,
+        });
+      }
+    }
 
     for (const restockItem of Array.from(restock)) {
       const normalizedKey = normalizeIngredientName(restockItem);
-      const restockPrice = estimateRestockPrice(restockItem);
-      const existingItem = groupedItems[normalizedKey];
+      const restockPrice = Math.max(1, estimateRestockPrice(restockItem));
+      const existingItem = groupedItems.get(normalizedKey);
 
       if (existingItem) {
-        groupedItems[normalizedKey] = {
+        groupedItems.set(normalizedKey, {
           ...existingItem,
-          amount: existingItem.amount
-            ? `${existingItem.amount} (+ Restock)`
-            : "(+ Restock)",
+          name: `${existingItem.name.replace(/\s*\(Includes Restock\)$/i, "")} (Includes Restock)`,
           estimated_price: existingItem.estimated_price + restockPrice,
-        };
+        });
         continue;
       }
 
-      groupedItems[normalizedKey] = {
+      groupedItems.set(normalizedKey, {
         category: "Restock",
-        name: `${restockItem.trim()} [RESTOCK]`,
-        amount: "(+ Restock)",
+        name: `${restockItem.trim()} (Includes Restock)`,
+        amount: "1",
         estimated_price: restockPrice,
-      };
+      });
     }
 
-    return Object.values(groupedItems);
+    return Array.from(groupedItems.values());
   }, [restock, weeklyMenu]);
 
   const groceriesByCategory = useMemo(() => {
@@ -942,8 +928,8 @@ export function SmartCartApp() {
         notes: `${data.description} Ingredients: ${data.ingredients.join(", ")}. Approx. prep time: ${data.prepTime} minutes.`,
         ingredients: data.ingredients.map((ingredient) => ({
           name: ingredient,
-          amount: "1 item",
-          estimatedPrice: Math.max(1, estimateRestockPrice(ingredient)),
+          amount: "1 pack",
+          price: Math.max(1, estimateRestockPrice(ingredient)),
         })),
       };
 
@@ -1610,15 +1596,8 @@ export function SmartCartApp() {
                       <p className="font-display text-xl text-pine">{category}</p>
                       <ul className="mt-4 space-y-3">
                         {items.map((item) => {
-                          const isRestock =
-                            item.name.includes("[RESTOCK]") ||
-                            item.amount?.includes("(+ Restock)") === true;
-                          const displayName = item.name
-                            .replace(/\s*\[RESTOCK\]\s*/gi, " ")
-                            .trim();
-                          const lineItemText = item.amount
-                            ? `${item.amount} ${displayName}`.trim()
-                            : displayName;
+                          const isRestock = item.name.includes("(Includes Restock)");
+                          const displayName = item.name.trim();
 
                           return (
                             <li
@@ -1637,21 +1616,21 @@ export function SmartCartApp() {
                                     className={`flex items-center gap-2 text-sm font-medium text-ink ${
                                       checkedItems.has(`${category}-${item.name}`)
                                         ? "line-through opacity-60"
-                                        : ""
+                                      : ""
                                     }`}
                                   >
-                                    <span>{lineItemText}</span>
+                                    {item.amount && (
+                                      <span className="font-semibold text-ink">
+                                        {item.amount}
+                                      </span>
+                                    )}
+                                    <span>{displayName}</span>
                                     {isRestock && (
                                       <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
                                         Restock
                                       </span>
                                     )}
                                   </span>
-                                  {item.description && (
-                                    <span className="mt-1 text-xs text-ink/55">
-                                      {item.description}
-                                    </span>
-                                  )}
                                 </span>
                               </label>
                               <span className="text-sm font-semibold text-pine">

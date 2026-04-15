@@ -20,8 +20,7 @@ type GenerateListRequest = {
 const ingredientSchema = z.object({
   name: z.string().min(1),
   amount: z.string().min(1),
-  estimatedPrice: z.number().nonnegative(),
-  description: z.string().min(1).optional(),
+  price: z.number().min(1),
 });
 
 const mealSchema = z.object({
@@ -66,6 +65,7 @@ const DEFAULT_MEAL_IMAGE =
 
 function estimateRestockPrice(itemName: string) {
   const normalized = itemName.trim().toLowerCase();
+  let estimate = 3;
 
   if (
     normalized.includes("steak") ||
@@ -73,28 +73,22 @@ function estimateRestockPrice(itemName: string) {
     normalized.includes("shrimp") ||
     normalized.includes("seafood")
   ) {
-    return 10;
-  }
-
-  if (
+    estimate = 10;
+  } else if (
     normalized.includes("chicken") ||
     normalized.includes("pork") ||
     normalized.includes("beef") ||
     normalized.includes("cheese")
   ) {
-    return 6;
-  }
-
-  if (
+    estimate = 6;
+  } else if (
     normalized.includes("oil") ||
     normalized.includes("sauce") ||
     normalized.includes("butter") ||
     normalized.includes("milk")
   ) {
-    return 4;
-  }
-
-  if (
+    estimate = 4;
+  } else if (
     normalized.includes("rice") ||
     normalized.includes("pasta") ||
     normalized.includes("beans") ||
@@ -102,10 +96,10 @@ function estimateRestockPrice(itemName: string) {
     normalized.includes("produce") ||
     normalized.includes("potatoes")
   ) {
-    return 2;
+    estimate = 2;
   }
 
-  return 3;
+  return Math.max(1, estimate);
 }
 
 async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
@@ -216,15 +210,12 @@ Rules:
 - Use pantry items from the "fully stocked", "running low", and "restock" lists to shape the meals.
 - Do not generate a root-level grocery list.
 - Every meal must include its own localized "ingredients" array.
-- Each ingredient object must contain:
-  - "name": string
-  - "amount": string
-  - "estimatedPrice": number
-- Each ingredient may include:
-  - "description": string
+- Each ingredient object must use this exact format:
+  - { "name": "Red Bell Peppers", "amount": "2", "price": 3.00 }
 - Only include ingredients required for that specific meal inside that meal's ingredients array.
 - You MUST be specific with ingredient names (for example "Red Bell Peppers" or "Roma Tomatoes", not just "Peppers").
 - NEVER append conversational text like "(assumed purchase)" to ingredient names.
+- BANNED: Any text like "1 item", "(assumed purchase)", or "to taste". If an amount is small, use "1 pinch" or "1 tsp".
 - You are a professional grocery curator. You are FORBIDDEN from using generic names. You must specify types: "Red Bell Peppers", "English Cucumber", "Honeycrisp Apples", "80/20 Ground Beef". Every ingredient MUST have a realistic store-bought quantity (for example "16oz jar", "1 lb pack", "Bundle of 5").
 - No ingredient or pantry item should ever be priced below $1.00. Even tiny-use items must reflect the cost of buying a standard store container.
 - Adventure Level enforcement: if the user selected "Try new cuisines" or "Mix it up", you MUST generate diverse, global, or creative recipes and strictly avoid generic fallbacks like "Vegetable Stir-fry", plain pasta, or repetitive default meals. If the user selected "Stick to basics", keep the meals familiar and approachable.
@@ -254,8 +245,7 @@ Rules:
         {
           "name": "string",
           "amount": "string",
-          "estimatedPrice": number,
-          "description": "string"
+          "price": number
         }
       ]
     }
@@ -315,7 +305,7 @@ ${apply_upgrades
       ...meal,
       ingredients: meal.ingredients.map((ingredient) => ({
         ...ingredient,
-        estimatedPrice: Math.max(1, ingredient.estimatedPrice),
+        price: Math.max(1, ingredient.price),
       })),
     }));
 
@@ -339,7 +329,7 @@ ${apply_upgrades
           sum +
           meal.ingredients.reduce(
             (ingredientSum, ingredient) =>
-              ingredientSum + Math.max(1, ingredient.estimatedPrice),
+              ingredientSum + Math.max(1, ingredient.price),
             0,
           ),
         0,
