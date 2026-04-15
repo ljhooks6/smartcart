@@ -7,6 +7,10 @@ type MealPlanItem = {
   name: string;
   servings: number;
   notes: string;
+  ingredients?: Array<{
+    name: string;
+    estimatedPrice: number;
+  }>;
   imageUrl?: string;
 };
 
@@ -18,7 +22,7 @@ type GroceryListItem = {
 
 type GenerateListResponse = {
   meals: MealPlanItem[];
-  grocery_list: GroceryListItem[];
+  restock_items: GroceryListItem[];
   estimated_total_cost: number;
   budget_summary: string;
   upgrade_available: boolean;
@@ -203,6 +207,50 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function estimateRestockPrice(itemName: string) {
+  const normalized = itemName.trim().toLowerCase();
+
+  if (
+    normalized.includes("steak") ||
+    normalized.includes("salmon") ||
+    normalized.includes("shrimp") ||
+    normalized.includes("seafood")
+  ) {
+    return 10;
+  }
+
+  if (
+    normalized.includes("chicken") ||
+    normalized.includes("pork") ||
+    normalized.includes("beef") ||
+    normalized.includes("cheese")
+  ) {
+    return 6;
+  }
+
+  if (
+    normalized.includes("oil") ||
+    normalized.includes("sauce") ||
+    normalized.includes("butter") ||
+    normalized.includes("milk")
+  ) {
+    return 4;
+  }
+
+  if (
+    normalized.includes("rice") ||
+    normalized.includes("pasta") ||
+    normalized.includes("beans") ||
+    normalized.includes("carrots") ||
+    normalized.includes("produce") ||
+    normalized.includes("potatoes")
+  ) {
+    return 2;
+  }
+
+  return 3;
+}
+
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -351,12 +399,44 @@ export function SmartCartApp() {
     );
   }, [formState.pantryItems, fullyStocked, runningLow, restock]);
 
-  const groceriesByCategory = useMemo(() => {
-    if (!generatedPlan) {
-      return [];
-    }
+  const derivedGroceryList = useMemo(() => {
+    const flattenedMealIngredients = weeklyMenu.flatMap((meal) =>
+      (meal.ingredients ?? []).map((ingredient) => ({
+        category: "Meal Ingredients",
+        item: ingredient.name,
+        estimated_price: ingredient.estimatedPrice,
+      })),
+    );
 
-    const grouped = generatedPlan.grocery_list.reduce<Record<string, GroceryListItem[]>>(
+    const restockItems = Array.from(restock).map((item) => ({
+      category: "Restock",
+      item: `${item} [RESTOCK]`,
+      estimated_price: estimateRestockPrice(item),
+    }));
+
+    const dedupedItems = [...flattenedMealIngredients, ...restockItems].reduce<
+      Record<string, GroceryListItem>
+    >((accumulator, item) => {
+      const normalizedKey = `${item.category}::${item.item.trim().toLowerCase()}`;
+      if (!accumulator[normalizedKey]) {
+        accumulator[normalizedKey] = { ...item };
+        return accumulator;
+      }
+
+      accumulator[normalizedKey] = {
+        ...accumulator[normalizedKey],
+        estimated_price:
+          accumulator[normalizedKey].estimated_price + item.estimated_price,
+      };
+
+      return accumulator;
+    }, {});
+
+    return Object.values(dedupedItems);
+  }, [restock, weeklyMenu]);
+
+  const groceriesByCategory = useMemo(() => {
+    const grouped = derivedGroceryList.reduce<Record<string, GroceryListItem[]>>(
       (accumulator, item) => {
         const category = item.category || "Other";
         if (!accumulator[category]) {
@@ -369,7 +449,7 @@ export function SmartCartApp() {
     );
 
     return Object.entries(grouped);
-  }, [generatedPlan]);
+  }, [derivedGroceryList]);
 
   const shoppingListText = useMemo(() => {
     return groceriesByCategory
@@ -395,7 +475,14 @@ export function SmartCartApp() {
     formState.budget.trim().length > 0 &&
     Number.isFinite(parsedBudget) &&
     parsedBudget > 0;
-  const totalCost = generatedPlan?.estimated_total_cost ?? 0;
+  const totalCost = useMemo(
+    () =>
+      derivedGroceryList.reduce(
+        (sum, item) => sum + item.estimated_price,
+        0,
+      ),
+    [derivedGroceryList],
+  );
   const targetBudget = Math.max(parsedBudget || 0, 1);
   const rawBudgetPercentage = (totalCost / targetBudget) * 100;
   const budgetPercentage = Math.min(rawBudgetPercentage, 100);
@@ -819,6 +906,10 @@ export function SmartCartApp() {
         name: data.title,
         servings: meal.servings,
         notes: `${data.description} Ingredients: ${data.ingredients.join(", ")}. Approx. prep time: ${data.prepTime} minutes.`,
+        ingredients: data.ingredients.map((ingredient) => ({
+          name: ingredient,
+          estimatedPrice: estimateRestockPrice(ingredient),
+        })),
       };
 
       setGeneratedPlan((current) => {
@@ -1244,7 +1335,7 @@ export function SmartCartApp() {
                 <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="font-display text-3xl text-ink">Your 5-day plan</p>
+                    <p className="font-display text-3xl text-ink">Your 8 meal picks</p>
                     <p className="mt-2 text-sm italic leading-6 text-ink/70">
                       Images are dynamically sourced for visual inspiration and may not perfectly
                       reflect the specific AI-generated recipe.
@@ -1253,7 +1344,7 @@ export function SmartCartApp() {
                   <div className="rounded-2xl bg-pine px-4 py-3 text-cream">
                     <p className="text-xs uppercase tracking-[0.2em] text-cream/75">Estimated total</p>
                     <p className="font-display text-2xl">
-                      {formatCurrency(generatedPlan.estimated_total_cost)}
+                      {formatCurrency(totalCost)}
                     </p>
                   </div>
                 </div>
