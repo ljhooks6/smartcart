@@ -55,6 +55,50 @@ const openai = new OpenAI({
 const DEFAULT_MEAL_IMAGE =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80";
 
+function estimateRestockPrice(itemName: string) {
+  const normalized = itemName.trim().toLowerCase();
+
+  if (
+    normalized.includes("steak") ||
+    normalized.includes("salmon") ||
+    normalized.includes("shrimp") ||
+    normalized.includes("seafood")
+  ) {
+    return 10;
+  }
+
+  if (
+    normalized.includes("chicken") ||
+    normalized.includes("pork") ||
+    normalized.includes("beef") ||
+    normalized.includes("cheese")
+  ) {
+    return 6;
+  }
+
+  if (
+    normalized.includes("oil") ||
+    normalized.includes("sauce") ||
+    normalized.includes("butter") ||
+    normalized.includes("milk")
+  ) {
+    return 4;
+  }
+
+  if (
+    normalized.includes("rice") ||
+    normalized.includes("pasta") ||
+    normalized.includes("beans") ||
+    normalized.includes("carrots") ||
+    normalized.includes("produce") ||
+    normalized.includes("potatoes")
+  ) {
+    return 2;
+  }
+
+  return 3;
+}
+
 async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
   if (!process.env.UNSPLASH_ACCESS_KEY) {
     return DEFAULT_MEAL_IMAGE;
@@ -268,7 +312,7 @@ ${apply_upgrades
       .map((item) => ({
         category: "Restock",
         item: `${item} [RESTOCK]`,
-        estimated_price: 3,
+        estimated_price: estimateRestockPrice(item),
       }));
 
     const finalGroceryList = [
