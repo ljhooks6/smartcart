@@ -1229,7 +1229,7 @@ export function SmartCartApp() {
           </div>
         </div>
 
-        <section className="mt-10 space-y-6 pb-16">
+        <section className="mt-10 pb-16">
           {generatedPlan ? (
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
               <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur lg:col-span-8">
@@ -1457,7 +1457,7 @@ export function SmartCartApp() {
                 )}
               </div>
 
-              <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl lg:sticky lg:top-4 lg:col-span-4 lg:self-start">
+              <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl lg:col-span-4 lg:self-start lg:sticky lg:top-4">
                 <p className="font-display text-3xl text-ink">Grocery list</p>
                 <p className="mt-2 text-sm italic leading-6 text-gray-500">
                   Prices are AI-generated national averages for estimation. Actual costs may be
@@ -1564,15 +1564,15 @@ export function SmartCartApp() {
               </aside>
             </div>
           ) : (
-              <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
-                <p className="font-display text-2xl text-ink">Your generated plan will appear here</p>
-                <p className="mt-3 text-sm leading-7">
-                  Select your preferences and pantry items above to get started.
-                </p>
-              </div>
-            )}
+            <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
+              <p className="font-display text-2xl text-ink">Your generated plan will appear here</p>
+              <p className="mt-3 text-sm leading-7">
+                Select your preferences and pantry items above to get started.
+              </p>
+            </div>
+          )}
 
-          <section className="rounded-[2.25rem] border border-stone-200 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-8">
+          <section className="mt-6 rounded-[2.25rem] border border-stone-200 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-8">
             <div className="mx-auto max-w-3xl text-center">
               <p className="font-display text-3xl text-ink">
                 The Ultimate Grocery Map is Coming
