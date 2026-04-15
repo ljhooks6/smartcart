@@ -17,11 +17,17 @@ type GenerateListRequest = {
   apply_upgrades?: boolean;
 };
 
+const ingredientSchema = z.object({
+  name: z.string().min(1),
+  estimatedPrice: z.number().nonnegative(),
+});
+
 const mealSchema = z.object({
   day: z.string().min(1),
   name: z.string().min(1),
   servings: z.number().int().positive(),
   notes: z.string().min(1),
+  ingredients: z.array(ingredientSchema).min(1),
   imageUrl: z.string().url().optional(),
 });
 
@@ -37,16 +43,17 @@ const dessertSchema = z.object({
   imageUrl: z.string().url().optional(),
 });
 
-const generateListResponseSchema = z.object({
-  meals: z.array(mealSchema).length(5),
-  grocery_list: z.array(groceryItemSchema).min(1),
+const aiGenerateListResponseSchema = z.object({
+  meals: z.array(mealSchema).length(8),
   estimated_total_cost: z.number().nonnegative(),
   budget_summary: z.string().min(1),
   upgrade_available: z.boolean(),
   dessert: dessertSchema.nullable().optional(),
 });
 
-type GenerateListResponse = z.infer<typeof generateListResponseSchema>;
+type GenerateListResponse = z.infer<typeof aiGenerateListResponseSchema> & {
+  restock_items: Array<z.infer<typeof groceryItemSchema>>;
+};
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -196,17 +203,21 @@ export async function POST(request: Request) {
 
   const systemPrompt = `
 You are an expert, budget-conscious logistical meal planner.
-Create a 5-day meal plan and grocery list that strictly adheres to the user's budget, diet, household size, and pantry items.
+Create 8 meal suggestions that strictly adhere to the user's budget, diet, household size, and pantry items.
 
 Rules:
 - Always generate a lean, frugal list first unless the user explicitly asks to apply upgrades.
-- Return exactly 5 meals, one for each day in the 5-day plan.
+- Return exactly 8 meals.
 - Respect the budget strictly.
 - Respect the diet exactly.
 - Reuse pantry items whenever possible.
 - Use pantry items from the "fully stocked", "running low", and "restock" lists to shape the meals.
-- The grocery_list should only contain ingredients required for the meals and dessert you generate.
-- CRITICAL: If an ingredient is included in the user's pantryItems list, it MUST NOT be included in the generated groceryList array. The user already owns these items. You must strictly filter out pantry items from the final shopping list and estimated total.
+- Do not generate a root-level grocery list.
+- Every meal must include its own localized "ingredients" array.
+- Each ingredient object must contain:
+  - "name": string
+  - "estimatedPrice": number
+- Only include ingredients required for that specific meal inside that meal's ingredients array.
 - Adventure Level enforcement: if the user selected "Try new cuisines" or "Mix it up", you MUST generate diverse, global, or creative recipes and strictly avoid generic fallbacks like "Vegetable Stir-fry", plain pasta, or repetitive default meals. If the user selected "Stick to basics", keep the meals familiar and approachable.
 - CRITICAL: You must strictly tailor the cuisine types to the user's adventureLevel preference.
 - If Stick to basics: Generate classic, familiar comfort foods. You MUST prioritize styles like Soul Food, classic BBQ, traditional American fare (for example burgers and fries, pork chops), and simple homestyle meals. STRICTLY avoid trendy bowls or complex international dishes.
@@ -214,11 +225,10 @@ Rules:
 - If Try new cuisines: Focus entirely on diverse, authentic global flavors (for example Mediterranean, Asian, Indian, regional Mexican).
 - Budget Tightness enforcement: if budgetTightness is false, you MUST NOT force heavy ingredient overlap. Prioritize culinary variety, distinct flavor profiles, and different lead ingredients across the week. Only force strong cross-utilization and ingredient overlap if budgetTightness is true.
 - If budgetTightness is false, you MUST utilize between 50% and 65% of the user's total budget. Do not go below 50% of the budget. You must select premium, high-quality ingredients to hit this minimum threshold. Do not exceed 65% of the total budget.
-- CRITICAL: When budgetTightness is false, you MUST perform a mathematical check before responding. The total sum of all items in the groceryList MUST fall between 50% and 65% of the user's total budget. If your total is below 50%, you must upgrade to premium ingredients or upscale the recipes until you hit that 50% minimum threshold.
-- If includeDessert is true, evaluate the remaining budget after planning the 5 main meals. If there is room, generate exactly ONE dessert recipe for the week. Prioritize utilizing the user's pantry baking staples to keep costs low and add any missing items to the grocery list. If the budget is too tight to afford the 5 meals AND a dessert, set "dessert" to null.
-- If a must_have_ingredient is provided, you MUST feature it prominently in AT LEAST ONE, but strictly NO MORE THAN TWO of the 5 meals. You must ensure the remaining meals use completely different flavor profiles and main ingredients to provide variety and prevent ingredient fatigue.
-- Strict Consistency: Every single item in the grocery_list must be explicitly used in the name or notes of at least one meal in the meals array. Do not include any grocery item that is not required by the generated meals.
-- The grocery_list must be organized by category. Every grocery item must include a "category" field such as "Produce", "Meat/Seafood", "Dairy", or "Center Aisle".
+- CRITICAL: When budgetTightness is false, you MUST perform a mathematical check before responding. The total sum of all meal ingredient prices must fall between 50% and 65% of the user's total budget. If your total is below 50%, you must upgrade to premium ingredients or upscale the recipes until you hit that 50% minimum threshold.
+- If includeDessert is true, evaluate the remaining budget after planning the 8 meals. If there is room, generate exactly ONE dessert recipe for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 8 meals AND a dessert, set "dessert" to null.
+- If a must_have_ingredient is provided, you MUST feature it prominently in AT LEAST ONE, but strictly NO MORE THAN TWO of the 8 meals. You must ensure the remaining meals use completely different flavor profiles and main ingredients to provide variety and prevent ingredient fatigue.
+- Strict Consistency: Every ingredient listed inside a meal's ingredients array must be explicitly used in that meal's title or notes.
 - Pay close attention to the budget. If the plan is far below the target budget, use higher-quality ingredient upgrades to better maximize the budget, such as fresh herbs instead of dried herbs or a better-quality protein.
 - Include a final budget note that compares the estimated total cost against the target budget.
 - If the estimated total cost is less than 80% of the user's maximum budget, set "upgrade_available" to true. Otherwise set it to false.
@@ -230,14 +240,13 @@ Rules:
       "day": "Day 1",
       "name": "string",
       "servings": number,
-      "notes": "string"
-    }
-  ],
-  "grocery_list": [
-    {
-      "category": "Produce",
-      "item": "string",
-      "estimated_price": number
+      "notes": "string",
+      "ingredients": [
+        {
+          "name": "string",
+          "estimatedPrice": number
+        }
+      ]
     }
   ],
   "estimated_total_cost": number,
@@ -251,7 +260,7 @@ Rules:
 `;
 
   const userPrompt = `
-Build a 5-day meal plan and grocery list with these inputs:
+Build 8 meal suggestions with localized ingredients using these inputs:
 
 Budget: ${budget}
 Diet: ${diet}
@@ -290,21 +299,7 @@ ${apply_upgrades
       );
     }
 
-    const parsed = generateListResponseSchema.parse(JSON.parse(content));
-
-    const pantryTokens = [
-      ...(Array.isArray(fullyStocked) ? fullyStocked : []),
-      ...(Array.isArray(runningLow) ? runningLow : []),
-    ]
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean);
-
-    const filteredGroceryList = parsed.grocery_list.filter((item) => {
-      const itemName = item.item.trim().toLowerCase();
-      return !pantryTokens.some(
-        (token) => itemName.includes(token) || token.includes(itemName),
-      );
-    });
+    const parsed = aiGenerateListResponseSchema.parse(JSON.parse(content));
 
     const deterministicRestockItems = (Array.isArray(restock) ? restock : [])
       .map((item) => item.trim())
@@ -315,15 +310,12 @@ ${apply_upgrades
         estimated_price: estimateRestockPrice(item),
       }));
 
-    const finalGroceryList = [
-      ...filteredGroceryList,
-      ...deterministicRestockItems,
-    ];
-
-    const recalculatedTotal = finalGroceryList.reduce(
-      (sum, item) => sum + item.estimated_price,
-      0,
-    );
+    const recalculatedTotal =
+      parsed.estimated_total_cost +
+      deterministicRestockItems.reduce(
+        (sum, item) => sum + item.estimated_price,
+        0,
+      );
 
     const dessertQuery = parsed.dessert
       ? encodeURIComponent(`${parsed.dessert.title} dessert`)
@@ -347,7 +339,7 @@ ${apply_upgrades
     return NextResponse.json({
       ...parsed,
       meals: mealsWithImages,
-      grocery_list: finalGroceryList,
+      restock_items: deterministicRestockItems,
       estimated_total_cost: recalculatedTotal,
       dessert: dessertWithImage,
     });
