@@ -11,15 +11,18 @@ type MealPlanItem = {
     name: string;
     amount: string;
     estimatedPrice: number;
+    description?: string;
   }>;
   imageUrl?: string;
 };
 
 type GroceryListItem = {
   category: string;
-  item: string;
+  name: string;
   amount?: string;
   estimated_price: number;
+  description?: string;
+  item?: string;
 };
 
 type GenerateListResponse = {
@@ -415,9 +418,10 @@ export function SmartCartApp() {
           if (!existingItem) {
             accumulator[normalizedKey] = {
               category: "Meal Ingredients",
-              item: ingredient.name.trim(),
+              name: ingredient.name.trim(),
               amount: ingredient.amount.trim(),
-              estimated_price: ingredient.estimatedPrice,
+              estimated_price: Math.max(1, ingredient.estimatedPrice),
+              description: ingredient.description?.trim(),
             };
             continue;
           }
@@ -428,7 +432,8 @@ export function SmartCartApp() {
               ? `${existingItem.amount} + ${ingredient.amount.trim()}`
               : ingredient.amount.trim(),
             estimated_price:
-              existingItem.estimated_price + ingredient.estimatedPrice,
+              existingItem.estimated_price + Math.max(1, ingredient.estimatedPrice),
+            description: existingItem.description ?? ingredient.description?.trim(),
           };
         }
 
@@ -455,7 +460,7 @@ export function SmartCartApp() {
 
       groupedItems[normalizedKey] = {
         category: "Restock",
-        item: `${restockItem.trim()} [RESTOCK]`,
+        name: `${restockItem.trim()} [RESTOCK]`,
         amount: "(+ Restock)",
         estimated_price: restockPrice,
       };
@@ -484,7 +489,7 @@ export function SmartCartApp() {
     return groceriesByCategory
       .map(([category, items]) =>
         `${category}\n${items
-          .map((item) => `- ${item.item} (${formatCurrency(item.estimated_price)})`)
+          .map((item) => `- ${item.amount ? `${item.amount} ` : ""}${item.name} (${formatCurrency(item.estimated_price)})`)
           .join("\n")}`,
       )
       .join("\n\n");
@@ -938,7 +943,7 @@ export function SmartCartApp() {
         ingredients: data.ingredients.map((ingredient) => ({
           name: ingredient,
           amount: "1 item",
-          estimatedPrice: estimateRestockPrice(ingredient),
+          estimatedPrice: Math.max(1, estimateRestockPrice(ingredient)),
         })),
       };
 
@@ -1606,43 +1611,48 @@ export function SmartCartApp() {
                       <ul className="mt-4 space-y-3">
                         {items.map((item) => {
                           const isRestock =
-                            item.item.includes("[RESTOCK]") ||
+                            item.name.includes("[RESTOCK]") ||
                             item.amount?.includes("(+ Restock)") === true;
-                          const displayName = item.item
+                          const displayName = item.name
                             .replace(/\s*\[RESTOCK\]\s*/gi, " ")
                             .trim();
+                          const lineItemText = item.amount
+                            ? `${item.amount} ${displayName}`.trim()
+                            : displayName;
 
                           return (
                             <li
-                              key={`${category}-${item.item}`}
+                              key={`${category}-${item.name}`}
                               className="flex items-center justify-between gap-4"
                             >
-                              <label className="flex items-center gap-3">
+                              <label className="flex items-start gap-3">
                                 <input
-                                  checked={checkedItems.has(`${category}-${item.item}`)}
-                                  className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                                  onChange={() => toggleCheckedItem(`${category}-${item.item}`)}
+                                  checked={checkedItems.has(`${category}-${item.name}`)}
+                                  className="mt-0.5 h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
+                                  onChange={() => toggleCheckedItem(`${category}-${item.name}`)}
                                   type="checkbox"
                                 />
-                                <span
-                                  className={`flex items-center gap-2 text-sm font-medium text-ink ${
-                                    checkedItems.has(`${category}-${item.item}`)
-                                      ? "line-through opacity-60"
-                                      : ""
-                                  }`}
-                                >
-                                  <span>{displayName}</span>
-                                  {isRestock && (
-                                    <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
-                                      Restock
+                                <span className="flex flex-col">
+                                  <span
+                                    className={`flex items-center gap-2 text-sm font-medium text-ink ${
+                                      checkedItems.has(`${category}-${item.name}`)
+                                        ? "line-through opacity-60"
+                                        : ""
+                                    }`}
+                                  >
+                                    <span>{lineItemText}</span>
+                                    {isRestock && (
+                                      <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
+                                        Restock
+                                      </span>
+                                    )}
+                                  </span>
+                                  {item.description && (
+                                    <span className="mt-1 text-xs text-ink/55">
+                                      {item.description}
                                     </span>
                                   )}
                                 </span>
-                                {item.amount && (
-                                  <span className="block text-xs text-ink/55">
-                                    {item.amount}
-                                  </span>
-                                )}
                               </label>
                               <span className="text-sm font-semibold text-pine">
                                 {formatCurrency(item.estimated_price)}
@@ -1681,7 +1691,7 @@ export function SmartCartApp() {
                   </div>
                   {generatedPlan.upgrade_available &&
                     !hasAppliedUpgrades &&
-                    rawBudgetPercentage < 80 && (
+                    budgetPercentage < 80 && (
                     <button
                       className="mt-4 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={isLoading}

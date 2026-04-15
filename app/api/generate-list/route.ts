@@ -21,6 +21,7 @@ const ingredientSchema = z.object({
   name: z.string().min(1),
   amount: z.string().min(1),
   estimatedPrice: z.number().nonnegative(),
+  description: z.string().min(1).optional(),
 });
 
 const mealSchema = z.object({
@@ -219,9 +220,13 @@ Rules:
   - "name": string
   - "amount": string
   - "estimatedPrice": number
+- Each ingredient may include:
+  - "description": string
 - Only include ingredients required for that specific meal inside that meal's ingredients array.
 - You MUST be specific with ingredient names (for example "Red Bell Peppers" or "Roma Tomatoes", not just "Peppers").
 - NEVER append conversational text like "(assumed purchase)" to ingredient names.
+- You are a professional grocery curator. You are FORBIDDEN from using generic names. You must specify types: "Red Bell Peppers", "English Cucumber", "Honeycrisp Apples", "80/20 Ground Beef". Every ingredient MUST have a realistic store-bought quantity (for example "16oz jar", "1 lb pack", "Bundle of 5").
+- No ingredient or pantry item should ever be priced below $1.00. Even tiny-use items must reflect the cost of buying a standard store container.
 - Adventure Level enforcement: if the user selected "Try new cuisines" or "Mix it up", you MUST generate diverse, global, or creative recipes and strictly avoid generic fallbacks like "Vegetable Stir-fry", plain pasta, or repetitive default meals. If the user selected "Stick to basics", keep the meals familiar and approachable.
 - CRITICAL: You must strictly tailor the cuisine types to the user's adventureLevel preference.
 - If Stick to basics: Generate classic, familiar comfort foods. You MUST prioritize styles like Soul Food, classic BBQ, traditional American fare (for example burgers and fries, pork chops), and simple homestyle meals. STRICTLY avoid trendy bowls or complex international dishes.
@@ -249,7 +254,8 @@ Rules:
         {
           "name": "string",
           "amount": "string",
-          "estimatedPrice": number
+          "estimatedPrice": number,
+          "description": "string"
         }
       ]
     }
@@ -305,6 +311,18 @@ ${apply_upgrades
     }
 
     const parsed = aiGenerateListResponseSchema.parse(JSON.parse(content));
+    const sanitizedMeals = parsed.meals.map((meal) => ({
+      ...meal,
+      ingredients: meal.ingredients.map((ingredient) => ({
+        ...ingredient,
+        estimatedPrice: Math.max(1, ingredient.estimatedPrice),
+      })),
+    }));
+
+    const sanitizedParsed = {
+      ...parsed,
+      meals: sanitizedMeals,
+    };
 
     const deterministicRestockItems = (Array.isArray(restock) ? restock : [])
       .map((item) => item.trim())
@@ -312,37 +330,46 @@ ${apply_upgrades
       .map((item) => ({
         category: "Restock",
         item: `${item} [RESTOCK]`,
-        estimated_price: estimateRestockPrice(item),
+        estimated_price: Math.max(1, estimateRestockPrice(item)),
       }));
 
     const recalculatedTotal =
-      parsed.estimated_total_cost +
+      sanitizedParsed.meals.reduce(
+        (sum, meal) =>
+          sum +
+          meal.ingredients.reduce(
+            (ingredientSum, ingredient) =>
+              ingredientSum + Math.max(1, ingredient.estimatedPrice),
+            0,
+          ),
+        0,
+      ) +
       deterministicRestockItems.reduce(
         (sum, item) => sum + item.estimated_price,
         0,
       );
 
-    const dessertQuery = parsed.dessert
-      ? encodeURIComponent(`${parsed.dessert.title} dessert`)
+    const dessertQuery = sanitizedParsed.dessert
+      ? encodeURIComponent(`${sanitizedParsed.dessert.title} dessert`)
       : "";
     const [mealImages, dessertImage] = await Promise.all([
-      Promise.all(parsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
-      parsed.dessert
+      Promise.all(sanitizedParsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
+      sanitizedParsed.dessert
         ? fetchUnsplashImage(dessertQuery, true)
         : Promise.resolve(""),
     ]);
 
-    const mealsWithImages = parsed.meals.map((meal, index) => ({
+    const mealsWithImages = sanitizedParsed.meals.map((meal, index) => ({
       ...meal,
       imageUrl: mealImages[index],
     }));
 
-    const dessertWithImage = parsed.dessert
-      ? { ...parsed.dessert, imageUrl: dessertImage || DEFAULT_MEAL_IMAGE }
-      : parsed.dessert;
+    const dessertWithImage = sanitizedParsed.dessert
+      ? { ...sanitizedParsed.dessert, imageUrl: dessertImage || DEFAULT_MEAL_IMAGE }
+      : sanitizedParsed.dessert;
 
     return NextResponse.json({
-      ...parsed,
+      ...sanitizedParsed,
       meals: mealsWithImages,
       restock_items: deterministicRestockItems,
       estimated_total_cost: recalculatedTotal,
