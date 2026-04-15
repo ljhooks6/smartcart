@@ -871,12 +871,9 @@ export function SmartCartApp() {
   }
 
   return (
-    <main className="relative overflow-hidden bg-stone-50 font-body">
-      <div className="absolute inset-x-0 top-0 -z-10 h-[32rem] bg-grain-glow blur-3xl" />
-
-      <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
-          <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
+      <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
+        <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
               SmartCart
               <span className="h-2.5 w-2.5 rounded-full bg-sage" />
@@ -921,17 +918,17 @@ export function SmartCartApp() {
             >
               {activeFeature ? featureDescriptions[activeFeature as keyof typeof featureDescriptions] : null}
             </div>
+        </div>
+
+        <div className="rounded-[2.25rem] border border-stone-200 bg-[#fcfaf6]/95 p-6 shadow-xl backdrop-blur xl:p-8">
+          <div className="mb-6">
+            <p className="font-display text-3xl text-ink">The Smart Context Form</p>
+            <p className="mt-2 text-sm leading-6 text-ink/70">
+              Give the planner enough context to keep meals affordable and realistic.
+            </p>
           </div>
 
-          <div className="rounded-[2.25rem] border border-stone-200 bg-[#fcfaf6]/95 p-6 shadow-xl backdrop-blur xl:p-8">
-            <div className="mb-6">
-              <p className="font-display text-3xl text-ink">The Smart Context Form</p>
-              <p className="mt-2 text-sm leading-6 text-ink/70">
-                Give the planner enough context to keep meals affordable and realistic.
-              </p>
-            </div>
-
-            <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-ink">Weekly Budget</span>
@@ -1225,14 +1222,14 @@ export function SmartCartApp() {
                   Clear Form
                 </button>
               </div>
-            </form>
-          </div>
+          </form>
         </div>
 
         <section className="mt-10 pb-16">
           {generatedPlan ? (
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-              <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur lg:col-span-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-8 flex flex-col gap-6">
+                <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="font-display text-3xl text-ink">Your 5-day plan</p>
@@ -1328,6 +1325,7 @@ export function SmartCartApp() {
                       </div>
                     </article>
                   ))}
+                </div>
                 </div>
 
                 <section className="mt-8 rounded-3xl border border-stone-200 bg-[#f8f4ec] p-5 shadow-xl">
@@ -1457,7 +1455,8 @@ export function SmartCartApp() {
                 )}
               </div>
 
-              <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl lg:col-span-4 lg:self-start lg:sticky lg:top-4">
+              <div className="lg:col-span-4 sticky top-4">
+                <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl">
                 <p className="font-display text-3xl text-ink">Grocery list</p>
                 <p className="mt-2 text-sm italic leading-6 text-gray-500">
                   Prices are AI-generated national averages for estimation. Actual costs may be
@@ -1561,7 +1560,8 @@ export function SmartCartApp() {
                     <span className="text-sm font-semibold text-pine">Copied!</span>
                   )}
                 </div>
-              </aside>
+                </aside>
+              </div>
             </div>
           ) : (
             <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
@@ -1614,7 +1614,7 @@ export function SmartCartApp() {
             </div>
           </section>
         </section>
-      </section>
+      </div>
 
       {activeRecipeMeal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4 py-8 backdrop-blur-sm">
