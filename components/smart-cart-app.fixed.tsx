@@ -395,16 +395,28 @@ export function SmartCartApp() {
     formState.budget.trim().length > 0 &&
     Number.isFinite(parsedBudget) &&
     parsedBudget > 0;
-  const budgetProgress = generatedPlan
-    ? (generatedPlan.estimated_total_cost / Math.max(parsedBudget || 0, 1)) * 100
-    : 0;
-  const budgetProgressWidth = Math.min(budgetProgress, 100);
+  const totalCost = generatedPlan?.estimated_total_cost ?? 0;
+  const targetBudget = Math.max(parsedBudget || 0, 1);
+  const rawBudgetPercentage = (totalCost / targetBudget) * 100;
+  const budgetPercentage = Math.min(rawBudgetPercentage, 100);
   const budgetProgressBarClass =
-    budgetProgress > 100
+    rawBudgetPercentage > 100
       ? "bg-red-500"
-      : budgetProgress >= 80
+      : rawBudgetPercentage >= 80
         ? "bg-yellow-500"
         : "bg-green-500";
+  const budgetStatusLabel =
+    rawBudgetPercentage > 100
+      ? "Over Budget"
+      : rawBudgetPercentage >= 80
+        ? "Nearing Limit"
+        : "On Track";
+  const budgetStatusTextClass =
+    rawBudgetPercentage > 100
+      ? "text-red-600"
+      : rawBudgetPercentage >= 80
+        ? "text-yellow-600"
+        : "text-green-600";
 
   async function submitPlan(applyUpgrades = false) {
     setValidationError(null);
@@ -1517,22 +1529,27 @@ export function SmartCartApp() {
 
                 <div className="mt-6 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
-                      Budget Progress
-                    </p>
-                    <p className="text-sm font-semibold text-ink">
-                      {formatCurrency(generatedPlan.estimated_total_cost)} / {formatCurrency(parsedBudget)}
-                    </p>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
+                        Budget Progress
+                      </p>
+                      <p className="mt-1 text-base font-bold text-ink">
+                        {formatCurrency(totalCost)} / {formatCurrency(parsedBudget)}
+                      </p>
+                    </div>
+                    <span className={`text-sm font-semibold ${budgetStatusTextClass}`}>
+                      {budgetStatusLabel}
+                    </span>
                   </div>
-                  <div className="mt-4 h-3 overflow-hidden rounded-full bg-stone-200">
+                  <div className="mt-4 w-full h-4 overflow-hidden rounded-full bg-gray-200">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${budgetProgressBarClass}`}
-                      style={{ width: `${budgetProgressWidth}%` }}
+                      style={{ width: `${budgetPercentage}%` }}
                     />
                   </div>
                   <div className="mt-3 flex items-center justify-between text-xs font-medium text-ink/60">
-                    <span>{Math.round(budgetProgress)}% of budget used</span>
-                    <span>{budgetProgress > 100 ? "Over budget" : "On track"}</span>
+                    <span>{Math.round(rawBudgetPercentage)}% of budget used</span>
+                    <span className={budgetStatusTextClass}>{budgetStatusLabel}</span>
                   </div>
                   {generatedPlan.upgrade_available && !hasAppliedUpgrades && (
                     <button
