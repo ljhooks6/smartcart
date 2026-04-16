@@ -1970,6 +1970,7 @@ export function SmartCartApp() {
                           const bellPepperPattern = /bell pepper/i;
                           const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
                           const trimmedName = item.name.trim();
+                          const isRestoredItem = restoredItems.includes(item.name);
                           const displayName =
                             bellPepperPattern.test(trimmedName) &&
                             !bellPepperColorPattern.test(trimmedName)
@@ -2006,6 +2007,19 @@ export function SmartCartApp() {
                                       <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
                                         Restock
                                       </span>
+                                    )}
+                                    {isRestoredItem && (
+                                      <button
+                                        className="text-xs font-semibold text-red-400 transition hover:text-red-500"
+                                        onClick={() =>
+                                          setRestoredItems((current) =>
+                                            current.filter((name) => name !== item.name),
+                                          )
+                                        }
+                                        type="button"
+                                      >
+                                        - Remove
+                                      </button>
                                     )}
                                   </span>
                                 </span>
@@ -2097,25 +2111,9 @@ export function SmartCartApp() {
                     <span>{Math.round(rawBudgetPercentage)}% of budget used</span>
                     <span className={budgetStatusTextClass}>{budgetStatusLabel}</span>
                   </div>
-                  {((generatedPlan.upgrade_available && budgetPercentage < 80) ||
-                    isPremiumMode) && (
-                    <button
-                      className={`mt-4 inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
-                        isPremiumMode
-                          ? "bg-stone-300 text-stone-800 hover:bg-stone-400"
-                          : "bg-orange-500 text-white hover:bg-orange-600"
-                      }`}
-                      onClick={handleUpgradePlan}
-                      type="button"
-                    >
-                      {isPremiumMode
-                        ? "Revert to Standard Ingredients"
-                        : "You have extra budget! Click to upgrade ingredients."}
-                    </button>
-                  )}
                 </div>
 
-                <div className="mt-4 flex items-center gap-3">
+                <div className="mt-4 flex items-center gap-4">
                   <button
                     className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"
                     onClick={handleCopyShoppingList}
@@ -2123,6 +2121,22 @@ export function SmartCartApp() {
                   >
                     Copy Shopping List
                   </button>
+                  {((generatedPlan.upgrade_available && budgetPercentage < 80) ||
+                    isPremiumMode) && (
+                    <button
+                      className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
+                        isPremiumMode
+                          ? "bg-stone-300 text-stone-800 hover:bg-stone-400"
+                          : "bg-orange-500 text-white hover:bg-orange-600"
+                      }`}
+                      onClick={() => setIsPremiumMode(!isPremiumMode)}
+                      type="button"
+                    >
+                      {isPremiumMode
+                        ? "Revert to Standard"
+                        : "Upgrade to Premium Ingredients"}
+                    </button>
+                  )}
                   {copied && (
                     <span className="text-sm font-semibold text-pine">Copied!</span>
                   )}
