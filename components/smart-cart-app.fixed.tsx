@@ -329,6 +329,7 @@ export function SmartCartApp() {
   const [restock, setRestock] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
+  const [isPremiumMode, setIsPremiumMode] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
     "idle" | "submitting" | "success"
@@ -566,15 +567,78 @@ export function SmartCartApp() {
     return Object.entries(grouped);
   }, [derivedGroceryList]);
 
+  const displayGroceryList = useMemo(() => {
+    if (!isPremiumMode) {
+      return derivedGroceryList;
+    }
+
+    return derivedGroceryList.map((item) => {
+      const lowerName = item.name.toLowerCase();
+      let prefix = "Premium ";
+
+      if (
+        lowerName.includes("beef") ||
+        lowerName.includes("chicken") ||
+        lowerName.includes("turkey") ||
+        lowerName.includes("pork") ||
+        lowerName.includes("eggs")
+      ) {
+        prefix = "Organic Pasture-Raised ";
+      } else if (
+        lowerName.includes("milk") ||
+        lowerName.includes("cheese") ||
+        lowerName.includes("butter")
+      ) {
+        prefix = "Organic Grass-Fed ";
+      } else if (
+        lowerName.includes("pasta") ||
+        lowerName.includes("rice") ||
+        lowerName.includes("bread")
+      ) {
+        prefix = "Artisanal ";
+      } else if (
+        lowerName.includes("broccoli") ||
+        lowerName.includes("spinach") ||
+        lowerName.includes("tomatoes") ||
+        lowerName.includes("apples") ||
+        lowerName.includes("berries")
+      ) {
+        prefix = "Local Organic ";
+      }
+
+      return {
+        ...item,
+        name: `${prefix}${item.name}`,
+        estimated_price: Number((item.estimated_price * 1.5).toFixed(2)),
+      };
+    });
+  }, [derivedGroceryList, isPremiumMode]);
+
+  const displayGroceriesByCategory = useMemo(() => {
+    const grouped = displayGroceryList.reduce<Record<string, GroceryListItem[]>>(
+      (accumulator, item) => {
+        const category = item.category || "Other";
+        if (!accumulator[category]) {
+          accumulator[category] = [];
+        }
+        accumulator[category].push(item);
+        return accumulator;
+      },
+      {},
+    );
+
+    return Object.entries(grouped);
+  }, [displayGroceryList]);
+
   const shoppingListText = useMemo(() => {
-    return groceriesByCategory
+    return displayGroceriesByCategory
       .map(([category, items]) =>
         `${category}\n${items
           .map((item) => `- ${item.amount ? `${item.amount} ` : ""}${item.name} (${formatCurrency(item.estimated_price)})`)
           .join("\n")}`,
       )
       .join("\n\n");
-  }, [groceriesByCategory]);
+  }, [displayGroceriesByCategory]);
 
   const activeRecipe = activeRecipeMeal
     ? recipeCache[activeRecipeMeal.name]
@@ -596,11 +660,11 @@ export function SmartCartApp() {
     parsedBudget > 0;
   const totalCost = useMemo(
     () =>
-      derivedGroceryList.reduce(
+      displayGroceryList.reduce(
         (sum, item) => sum + item.estimated_price,
         0,
       ),
-    [derivedGroceryList],
+    [displayGroceryList],
   );
   const targetBudget = Math.max(parsedBudget || 0, 1);
   const rawBudgetPercentage = (totalCost / targetBudget) * 100;
@@ -762,8 +826,8 @@ export function SmartCartApp() {
     }
   }
 
-  async function handleUpgradePlan() {
-    await submitPlan(true);
+  function handleUpgradePlan() {
+    setIsPremiumMode((current) => !current);
   }
 
   async function fetchRecipeForMeal(meal: MealPlanItem) {
@@ -996,6 +1060,7 @@ export function SmartCartApp() {
     setRestock(new Set());
     setCopied(false);
     setHasAppliedUpgrades(false);
+    setIsPremiumMode(false);
     setRecipeCache({});
     setActiveRecipeMeal(null);
     setRecipeError(null);
@@ -1877,7 +1942,7 @@ export function SmartCartApp() {
                 </p>
 
                 <div className="mt-6 space-y-5">
-                  {groceriesByCategory.map(([category, items]) => (
+                  {displayGroceriesByCategory.map(([category, items]) => (
                     <section
                       key={category}
                       className="rounded-3xl border border-stone-200 bg-white p-4 shadow-lg"
@@ -1957,17 +2022,19 @@ export function SmartCartApp() {
                     <span>{Math.round(rawBudgetPercentage)}% of budget used</span>
                     <span className={budgetStatusTextClass}>{budgetStatusLabel}</span>
                   </div>
-                  {generatedPlan.upgrade_available &&
-                    !hasAppliedUpgrades &&
-                    budgetPercentage < 80 && (
+                  {((generatedPlan.upgrade_available && budgetPercentage < 80) ||
+                    isPremiumMode) && (
                     <button
-                      className="mt-4 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={isLoading}
+                      className={`mt-4 inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
+                        isPremiumMode
+                          ? "bg-stone-300 text-stone-800 hover:bg-stone-400"
+                          : "bg-orange-500 text-white hover:bg-orange-600"
+                      }`}
                       onClick={handleUpgradePlan}
                       type="button"
                     >
-                      {isLoading
-                        ? "Cooking up your plan..."
+                      {isPremiumMode
+                        ? "Revert to Standard Ingredients"
                         : "You have extra budget! Click to upgrade ingredients."}
                     </button>
                   )}
