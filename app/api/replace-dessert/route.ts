@@ -13,6 +13,15 @@ type ReplaceDessertRequest = {
 const replaceDessertResponseSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
+  ingredients: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        amount: z.string().min(1),
+        price: z.number().min(0.01),
+      }),
+    )
+    .min(1),
   imageUrl: z.string().url().optional(),
 });
 
@@ -102,11 +111,19 @@ Rules:
 - It must feel different from the rejected dessert title.
 - Keep it practical, appealing, and budget-conscious.
 - Prefer pantry-friendly desserts when possible.
+- Include a localized "ingredients" array using this exact shape for each item: { "name": "string", "amount": "string", "price": number }.
 - Return valid JSON only.
 - Use this exact JSON shape:
 {
   "title": "string",
-  "description": "string"
+  "description": "string",
+  "ingredients": [
+    {
+      "name": "string",
+      "amount": "string",
+      "price": number
+    }
+  ]
 }
 `;
 

@@ -41,6 +41,7 @@ const groceryItemSchema = z.object({
 const dessertSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
+  ingredients: z.array(ingredientSchema).min(1),
   imageUrl: z.string().url().optional(),
 });
 
@@ -227,6 +228,7 @@ Rules:
 - If budgetTightness is false, you MUST utilize between 50% and 65% of the user's total budget. Do not go below 50% of the budget. You must select premium, high-quality ingredients to hit this minimum threshold. Do not exceed 65% of the total budget.
 - CRITICAL: When budgetTightness is false, you MUST perform a mathematical check before responding. The total sum of all meal ingredient prices must fall between 50% and 65% of the user's total budget. If your total is below 50%, you must upgrade to premium ingredients or upscale the recipes until you hit that 50% minimum threshold.
 - If includeDessert is true, evaluate the remaining budget after planning the 8 meals. If there is room, generate exactly ONE dessert recipe for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 8 meals AND a dessert, set "dessert" to null.
+- If you generate a dessert, it must include its own localized "ingredients" array using the exact same ingredient format as meals.
 - If a must_have_ingredient is provided, you MUST feature it prominently in AT LEAST ONE, but strictly NO MORE THAN TWO of the 8 meals. You must ensure the remaining meals use completely different flavor profiles and main ingredients to provide variety and prevent ingredient fatigue.
 - Strict Consistency: Every ingredient listed inside a meal's ingredients array must be explicitly used in that meal's title or notes.
 - Pay close attention to the budget. If the plan is far below the target budget, use higher-quality ingredient upgrades to better maximize the budget, such as fresh herbs instead of dried herbs or a better-quality protein.
@@ -255,7 +257,14 @@ Rules:
   "upgrade_available": boolean,
   "dessert": {
     "title": "string",
-    "description": "string"
+    "description": "string",
+    "ingredients": [
+      {
+        "name": "string",
+        "amount": "string",
+        "price": number
+      }
+    ]
   } | null
 }
 `;
