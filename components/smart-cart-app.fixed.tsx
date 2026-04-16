@@ -416,8 +416,8 @@ export function SmartCartApp() {
 
       if (parsed.fullyStocked || parsed.runningLow) {
         setFullyStocked(new Set(parsed.fullyStocked ?? []));
-        setRunningLow(new Set(parsed.runningLow ?? []));
-        setRestock(new Set(parsed.restock ?? []));
+        setRunningLow(new Set());
+        setRestock(new Set());
       } else {
         setFullyStocked(new Set(parsed.selectedQuickItems ?? []));
         setRunningLow(new Set());
@@ -491,12 +491,10 @@ export function SmartCartApp() {
     return Array.from(
       new Set([
         ...Array.from(fullyStocked),
-        ...Array.from(runningLow),
-        ...Array.from(restock),
         ...typedItems,
       ]),
     );
-  }, [formState.pantryItems, fullyStocked, runningLow, restock]);
+  }, [formState.pantryItems, fullyStocked]);
 
   const { derivedGroceryList, skippedGroceryList } = useMemo(() => {
     const pantry = [...Array.from(fullyStocked), ...Array.from(runningLow)];
@@ -812,37 +810,18 @@ export function SmartCartApp() {
 
   function toggleQuickItem(item: string) {
     const isFullyStocked = fullyStocked.has(item);
-    const isRunningLow = runningLow.has(item);
-    const isRestock = restock.has(item);
 
-    if (!isFullyStocked && !isRunningLow && !isRestock) {
-      setFullyStocked(new Set([...fullyStocked, item]));
-      return;
-    }
-
-    if (isFullyStocked) {
-      const nextFully = new Set(fullyStocked);
-      nextFully.delete(item);
-      const nextLow = new Set(runningLow);
-      nextLow.add(item);
-      setFullyStocked(nextFully);
-      setRunningLow(nextLow);
-      return;
-    }
-
-    if (isRunningLow) {
-      const nextLow = new Set(runningLow);
-      nextLow.delete(item);
-      const nextRestock = new Set(restock);
-      nextRestock.add(item);
-      setRunningLow(nextLow);
-      setRestock(nextRestock);
-      return;
-    }
-
-    const nextRestock = new Set(restock);
-    nextRestock.delete(item);
-    setRestock(nextRestock);
+    setFullyStocked((current) => {
+      const next = new Set(current);
+      if (isFullyStocked) {
+        next.delete(item);
+      } else {
+        next.add(item);
+      }
+      return next;
+    });
+    setRunningLow(new Set());
+    setRestock(new Set());
   }
 
   async function handleCopyShoppingList() {
@@ -1451,7 +1430,10 @@ export function SmartCartApp() {
                   <div className="mb-4 space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
                     <p>
                       <strong>
-                        <span aria-hidden="true">{"🟩 "}</span>
+                        <span
+                          aria-hidden="true"
+                          className="mr-1 inline-block h-4 w-4 rounded border border-green-800 bg-green-700 align-middle shadow-sm"
+                        />
                         Clicked (Owned):
                       </strong>{" "}
                       The app will <strong>SKIP</strong>{" "}
@@ -1460,7 +1442,10 @@ export function SmartCartApp() {
                     </p>
                     <p>
                       <strong>
-                        <span aria-hidden="true">{"⬜ "}</span>
+                        <span
+                          aria-hidden="true"
+                          className="mr-1 inline-block h-4 w-4 rounded border border-gray-300 bg-white align-middle shadow-sm"
+                        />
                         Unclicked (Need to Buy):
                       </strong>{" "}
                       The app will calculate exactly
@@ -1480,15 +1465,9 @@ export function SmartCartApp() {
                       <div className="mt-2 flex flex-wrap gap-2">
                         {items.map((item) => {
                           const isFullyStocked = fullyStocked.has(item);
-                          const isRunningLow = runningLow.has(item);
-                          const isRestock = restock.has(item);
                           const stateClass = isFullyStocked
-                            ? "border-pine bg-pine text-white"
-                            : isRunningLow
-                              ? "border-yellow-400 bg-yellow-300 text-ink"
-                              : isRestock
-                                ? "border-orange-500 bg-orange-400 text-ink"
-                              : "border-white/80 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
+                            ? "border-green-800 bg-green-700 text-white"
+                            : "border-gray-300 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
 
                           return (
                             <button
@@ -1988,7 +1967,14 @@ export function SmartCartApp() {
                       <ul className="mt-4 space-y-3">
                         {items.map((item) => {
                           const isRestock = item.name.includes("(Includes Restock)");
-                          const displayName = item.name.trim();
+                          const bellPepperPattern = /bell pepper/i;
+                          const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
+                          const trimmedName = item.name.trim();
+                          const displayName =
+                            bellPepperPattern.test(trimmedName) &&
+                            !bellPepperColorPattern.test(trimmedName)
+                              ? `${trimmedName} (Any color)`
+                              : trimmedName;
 
                           return (
                             <li
