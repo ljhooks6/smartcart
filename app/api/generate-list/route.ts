@@ -20,7 +20,7 @@ type GenerateListRequest = {
 const ingredientSchema = z.object({
   name: z.string().min(1),
   amount: z.string().min(1),
-  price: z.number().min(1),
+  price: z.number().min(0.01),
 });
 
 const mealSchema = z.object({
@@ -301,18 +301,6 @@ ${apply_upgrades
     }
 
     const parsed = aiGenerateListResponseSchema.parse(JSON.parse(content));
-    const sanitizedMeals = parsed.meals.map((meal) => ({
-      ...meal,
-      ingredients: meal.ingredients.map((ingredient) => ({
-        ...ingredient,
-        price: Math.max(1, ingredient.price),
-      })),
-    }));
-
-    const sanitizedParsed = {
-      ...parsed,
-      meals: sanitizedMeals,
-    };
 
     const deterministicRestockItems = (Array.isArray(restock) ? restock : [])
       .map((item) => item.trim())
@@ -324,12 +312,12 @@ ${apply_upgrades
       }));
 
     const recalculatedTotal =
-      sanitizedParsed.meals.reduce(
+      parsed.meals.reduce(
         (sum, meal) =>
           sum +
           meal.ingredients.reduce(
             (ingredientSum, ingredient) =>
-              ingredientSum + Math.max(1, ingredient.price),
+              ingredientSum + ingredient.price,
             0,
           ),
         0,
@@ -339,27 +327,27 @@ ${apply_upgrades
         0,
       );
 
-    const dessertQuery = sanitizedParsed.dessert
-      ? encodeURIComponent(`${sanitizedParsed.dessert.title} dessert`)
+    const dessertQuery = parsed.dessert
+      ? encodeURIComponent(`${parsed.dessert.title} dessert`)
       : "";
     const [mealImages, dessertImage] = await Promise.all([
-      Promise.all(sanitizedParsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
-      sanitizedParsed.dessert
+      Promise.all(parsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
+      parsed.dessert
         ? fetchUnsplashImage(dessertQuery, true)
         : Promise.resolve(""),
     ]);
 
-    const mealsWithImages = sanitizedParsed.meals.map((meal, index) => ({
+    const mealsWithImages = parsed.meals.map((meal, index) => ({
       ...meal,
       imageUrl: mealImages[index],
     }));
 
-    const dessertWithImage = sanitizedParsed.dessert
-      ? { ...sanitizedParsed.dessert, imageUrl: dessertImage || DEFAULT_MEAL_IMAGE }
-      : sanitizedParsed.dessert;
+    const dessertWithImage = parsed.dessert
+      ? { ...parsed.dessert, imageUrl: dessertImage || DEFAULT_MEAL_IMAGE }
+      : parsed.dessert;
 
     return NextResponse.json({
-      ...sanitizedParsed,
+      ...parsed,
       meals: mealsWithImages,
       restock_items: deterministicRestockItems,
       estimated_total_cost: recalculatedTotal,

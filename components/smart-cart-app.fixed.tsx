@@ -407,7 +407,7 @@ export function SmartCartApp() {
       for (const ingredient of meal.ingredients ?? []) {
         const normalizedKey = normalizeIngredientName(ingredient.name);
         const existingItem = groupedItems.get(normalizedKey);
-        const nextPrice = Math.max(1, Number(ingredient.price));
+        const adjustedPrice = Math.max(1, Number(ingredient.price));
         const nextAmount = ingredient.amount.trim();
 
         if (!existingItem) {
@@ -415,7 +415,7 @@ export function SmartCartApp() {
             category: "Meal Ingredients",
             name: ingredient.name.trim(),
             amount: nextAmount,
-            estimated_price: nextPrice,
+            estimated_price: adjustedPrice,
           });
           continue;
         }
@@ -425,7 +425,7 @@ export function SmartCartApp() {
           amount: existingItem.amount
             ? `${existingItem.amount} + ${nextAmount}`
             : nextAmount,
-          estimated_price: existingItem.estimated_price + nextPrice,
+          estimated_price: existingItem.estimated_price + adjustedPrice,
         });
       }
     }
