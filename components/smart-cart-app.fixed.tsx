@@ -350,6 +350,8 @@ export function SmartCartApp() {
   const [email, setEmail] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [cloudSyncMessage, setCloudSyncMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -1135,6 +1137,90 @@ export function SmartCartApp() {
     }
 
     setIsAuthLoading(false);
+  }
+
+  async function saveSessionToCloud() {
+    if (!user) {
+      return;
+    }
+
+    if (!generatedPlan) {
+      setCloudSyncMessage("Generate a plan before saving it to the cloud.");
+      return;
+    }
+
+    setIsSaving(true);
+    setCloudSyncMessage("");
+
+    try {
+      const { error: archiveError } = await supabase
+        .from("weekly_menus")
+        .update({ status: "archived" })
+        .eq("user_id", user.id)
+        .eq("status", "active_week");
+
+      if (archiveError) {
+        throw archiveError;
+      }
+
+      const weeklyMenuRows = [
+        ...generatedPlan.meals.map((meal) => ({
+          meal_title: meal.name,
+          type: "dinner",
+          status: "active_week",
+          user_id: user.id,
+        })),
+        ...generatedPlan.desserts.map((dessert) => ({
+          meal_title: dessert.title,
+          type: "sweet_treat",
+          status: "active_week",
+          user_id: user.id,
+        })),
+      ];
+
+      if (weeklyMenuRows.length > 0) {
+        const { error: insertMenuError } = await supabase
+          .from("weekly_menus")
+          .insert(weeklyMenuRows);
+
+        if (insertMenuError) {
+          throw insertMenuError;
+        }
+      }
+
+      const { error: deletePantryError } = await supabase
+        .from("pantry_inventory")
+        .delete()
+        .eq("user_id", user.id);
+
+      if (deletePantryError) {
+        throw deletePantryError;
+      }
+
+      const pantryRows = combinedPantryItems.map((ingredient) => ({
+        ingredient_name: ingredient,
+        is_owned: true,
+        user_id: user.id,
+      }));
+
+      if (pantryRows.length > 0) {
+        const { error: insertPantryError } = await supabase
+          .from("pantry_inventory")
+          .insert(pantryRows);
+
+        if (insertPantryError) {
+          throw insertPantryError;
+        }
+      }
+
+      setCloudSyncMessage("✨ Cloud sync complete! Your week is saved.");
+    } catch (error) {
+      setCloudSyncMessage(
+        error instanceof Error ? error.message : "Cloud sync failed.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
@@ -2304,22 +2390,41 @@ export function SmartCartApp() {
                       ) : null}
                     </>
                   ) : (
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="font-display text-xl text-ink">
-                          Save your pantry &amp; settings for next week
-                        </h4>
-                        <p className="mt-2 text-sm leading-6 text-ink/70">
-                          Signed in as: {user.email}
-                        </p>
+                    <div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h4 className="font-display text-xl text-ink">
+                            Save your pantry &amp; settings for next week
+                          </h4>
+                          <p className="mt-2 text-sm leading-6 text-ink/70">
+                            Signed in as: {user.email}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button
+                            className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={isSaving}
+                            onClick={saveSessionToCloud}
+                            type="button"
+                          >
+                            {isSaving
+                              ? "Saving..."
+                              : "💾 Save This Week's Menu & Pantry"}
+                          </button>
+                          <button
+                            className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                            onClick={() => supabase.auth.signOut()}
+                            type="button"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                        onClick={() => supabase.auth.signOut()}
-                        type="button"
-                      >
-                        Sign Out
-                      </button>
+                      {cloudSyncMessage ? (
+                        <p className="mt-3 text-sm font-medium text-ink/70">
+                          {cloudSyncMessage}
+                        </p>
+                      ) : null}
                     </div>
                   )}
                 </div>
