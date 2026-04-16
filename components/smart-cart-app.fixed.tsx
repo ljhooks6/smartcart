@@ -316,6 +316,34 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
   return `${displayValue} ${baseParts.unit}`;
 }
 
+function groupIngredientList(ingredients: IngredientItem[]) {
+  const groupedItems = new Map<string, GroceryListItem>();
+
+  ingredients.forEach((ingredient) => {
+    const normalizedKey = normalizeIngredientName(ingredient.name);
+    const existingItem = groupedItems.get(normalizedKey);
+    const adjustedPrice = Math.max(1, Number(ingredient.price));
+
+    if (!existingItem) {
+      groupedItems.set(normalizedKey, {
+        category: "Meal Ingredients",
+        name: ingredient.name.trim(),
+        amount: ingredient.amount.trim(),
+        estimated_price: adjustedPrice,
+      });
+      return;
+    }
+
+    groupedItems.set(normalizedKey, {
+      ...existingItem,
+      amount: mergeAmounts(existingItem.amount, ingredient.amount),
+      estimated_price: existingItem.estimated_price + adjustedPrice,
+    });
+  });
+
+  return groupedItems;
+}
+
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -330,6 +358,7 @@ export function SmartCartApp() {
   const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
+  const [restoredItems, setRestoredItems] = useState<string[]>([]);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
     "idle" | "submitting" | "success"
@@ -469,7 +498,7 @@ export function SmartCartApp() {
     );
   }, [formState.pantryItems, fullyStocked, runningLow, restock]);
 
-  const derivedGroceryList = useMemo(() => {
+  const { derivedGroceryList, skippedGroceryList } = useMemo(() => {
     const pantry = [...Array.from(fullyStocked), ...Array.from(runningLow)];
 
     // 1. Sanitize Pantry
@@ -481,11 +510,13 @@ export function SmartCartApp() {
     const savedMeals = weeklyMenu;
     const allMeals = [...savedMeals, ...savedDesserts];
     const rawGroceryList: IngredientItem[] = [];
+    const rawSkippedList: IngredientItem[] = [];
 
     // 3. The Strict 'NOT OWNED' Filter
     allMeals.forEach((meal) => {
       (meal.ingredients ?? []).forEach((ingredient) => {
         const ingName = ingredient.name.toLowerCase();
+        const isForced = restoredItems.includes(ingredient.name);
 
         const isOwned = validPantry.some((pItem) => {
           const singularPItem = pItem.endsWith("s") ? pItem.slice(0, -1) : pItem;
@@ -493,37 +524,17 @@ export function SmartCartApp() {
           return ingName.includes(pItem) || ingName.includes(singularPItem);
         });
 
-        // CRITICAL: ONLY ADD IF NOT OWNED
-        if (!isOwned) {
+        if (!isOwned || isForced) {
           rawGroceryList.push(ingredient);
+        } else {
+          rawSkippedList.push(ingredient);
         }
       });
     });
 
     // 4. Aggregation (Optional but recommended)
-    const groupedItems = new Map<string, GroceryListItem>();
-
-    rawGroceryList.forEach((ingredient) => {
-      const normalizedKey = normalizeIngredientName(ingredient.name);
-      const existingItem = groupedItems.get(normalizedKey);
-      const adjustedPrice = Math.max(1, Number(ingredient.price));
-
-      if (!existingItem) {
-        groupedItems.set(normalizedKey, {
-          category: "Meal Ingredients",
-          name: ingredient.name.trim(),
-          amount: ingredient.amount.trim(),
-          estimated_price: adjustedPrice,
-        });
-        return;
-      }
-
-      groupedItems.set(normalizedKey, {
-        ...existingItem,
-        amount: mergeAmounts(existingItem.amount, ingredient.amount),
-        estimated_price: existingItem.estimated_price + adjustedPrice,
-      });
-    });
+    const groupedItems = groupIngredientList(rawGroceryList);
+    const groupedSkippedItems = groupIngredientList(rawSkippedList);
 
     // 5. Clean Restock Append
     Array.from(restock).forEach((restockItem) => {
@@ -548,8 +559,11 @@ export function SmartCartApp() {
       });
     });
 
-    return Array.from(groupedItems.values());
-  }, [fullyStocked, restock, runningLow, savedDesserts, weeklyMenu]);
+    return {
+      derivedGroceryList: Array.from(groupedItems.values()),
+      skippedGroceryList: Array.from(groupedSkippedItems.values()),
+    };
+  }, [fullyStocked, restock, restoredItems, runningLow, savedDesserts, weeklyMenu]);
 
   const groceriesByCategory = useMemo(() => {
     const grouped = derivedGroceryList.reduce<Record<string, GroceryListItem[]>>(
@@ -629,6 +643,22 @@ export function SmartCartApp() {
 
     return Object.entries(grouped);
   }, [displayGroceryList]);
+
+  const skippedGroceriesByCategory = useMemo(() => {
+    const grouped = skippedGroceryList.reduce<Record<string, GroceryListItem[]>>(
+      (accumulator, item) => {
+        const category = item.category || "Other";
+        if (!accumulator[category]) {
+          accumulator[category] = [];
+        }
+        accumulator[category].push(item);
+        return accumulator;
+      },
+      {},
+    );
+
+    return Object.entries(grouped);
+  }, [skippedGroceryList]);
 
   const shoppingListText = useMemo(() => {
     return displayGroceriesByCategory
@@ -751,6 +781,7 @@ export function SmartCartApp() {
       setRecipeError(null);
       setHasAppliedUpgrades(applyUpgrades);
       setSavedDesserts([]);
+      setRestoredItems([]);
       setExpandedDetailCards(new Set());
     } catch (error) {
       setGeneratedPlan(null);
@@ -1061,6 +1092,7 @@ export function SmartCartApp() {
     setCopied(false);
     setHasAppliedUpgrades(false);
     setIsPremiumMode(false);
+    setRestoredItems([]);
     setRecipeCache({});
     setActiveRecipeMeal(null);
     setRecipeError(null);
@@ -1940,6 +1972,10 @@ export function SmartCartApp() {
                   Prices are AI-generated national averages for estimation. Actual costs may be
                   higher or lower depending on your location and local store.
                 </p>
+                <p className="mb-4 mt-2 text-xs italic text-gray-500">
+                  *Note: Quantities reflect the exact amount needed for your selected meals. Buy
+                  the standard package size available at your store.*
+                </p>
 
                 <div className="mt-6 space-y-5">
                   {displayGroceriesByCategory.map(([category, items]) => (
@@ -1997,6 +2033,47 @@ export function SmartCartApp() {
                     </section>
                   ))}
                 </div>
+
+                {skippedGroceriesByCategory.length > 0 && (
+                  <div className="mt-6 border-t border-stone-200 pt-6">
+                    <h4 className="mb-2 mt-6 text-sm font-bold uppercase text-gray-500">
+                      Skipped (In Your Pantry)
+                    </h4>
+                    <div className="space-y-4">
+                      {skippedGroceriesByCategory.map(([category, items]) => (
+                        <section key={`skipped-${category}`}>
+                          <p className="text-sm font-semibold text-gray-400">{category}</p>
+                          <ul className="mt-3 space-y-3">
+                            {items.map((item) => (
+                              <li
+                                key={`skipped-${category}-${item.name}`}
+                                className="flex items-center justify-between gap-4 text-gray-400"
+                              >
+                                <span className="flex items-center gap-2 text-sm">
+                                  {item.amount && <span className="font-medium">{item.amount}</span>}
+                                  <span>{item.name}</span>
+                                </span>
+                                <button
+                                  className="text-xs font-semibold text-orange-500 transition hover:text-orange-600"
+                                  onClick={() =>
+                                    setRestoredItems((current) =>
+                                      current.includes(item.name)
+                                        ? current
+                                        : [...current, item.name],
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  + Add Back
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-6 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
