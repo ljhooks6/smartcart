@@ -327,17 +327,10 @@ function ingredientMatchesPantryItem(
     return false;
   }
 
-  if (normalizedIngredient === normalizedPantryItem) {
-    return true;
-  }
-
-  if (normalizedPantryItem.includes(" ")) {
-    return normalizedIngredient === normalizedPantryItem;
-  }
-
   return (
-    normalizedIngredient.endsWith(` ${normalizedPantryItem}`) ||
-    normalizedIngredient === `ground ${normalizedPantryItem}`
+    normalizedPantryItem === normalizedIngredient ||
+    `${normalizedPantryItem}s` === normalizedIngredient ||
+    normalizedPantryItem === `${normalizedIngredient}s`
   );
 }
 
