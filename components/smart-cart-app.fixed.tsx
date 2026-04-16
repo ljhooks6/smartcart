@@ -359,6 +359,8 @@ export function SmartCartApp() {
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
   const [restoredItems, setRestoredItems] = useState<string[]>([]);
+  const [customItems, setCustomItems] = useState<string[]>([]);
+  const [newCustomItem, setNewCustomItem] = useState("");
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
     "idle" | "submitting" | "success"
@@ -1436,9 +1438,7 @@ export function SmartCartApp() {
                         />
                         Clicked (Owned):
                       </strong>{" "}
-                      The app will <strong>SKIP</strong>{" "}
-                      buying this. (Don&apos;t worry about exact amounts yet—we&apos;ll let you
-                      double-check at the end!)
+                      You have a good amount. (App will <strong>SKIP</strong> buying this).
                     </p>
                     <p>
                       <strong>
@@ -1448,8 +1448,8 @@ export function SmartCartApp() {
                         />
                         Unclicked (Need to Buy):
                       </strong>{" "}
-                      The app will calculate exactly
-                      what you need and <strong>ADD</strong> it to your grocery list.
+                      Leave unclicked if you have none OR very little. (App will{" "}
+                      <strong>ADD</strong> it to your list).
                     </p>
                   </div>
                 </div>
@@ -2087,6 +2087,60 @@ export function SmartCartApp() {
                   </div>
                 )}
 
+                <div className="mt-8 border-t border-stone-200 pt-6">
+                  <h4 className="mb-2 mt-8 text-sm font-bold uppercase text-gray-500">
+                    Extras & Household (Not in Budget)
+                  </h4>
+                  {customItems.length > 0 ? (
+                    <ul className="space-y-2">
+                      {customItems.map((item) => (
+                        <li
+                          key={`custom-${item}`}
+                          className="flex items-center justify-between gap-4 text-sm text-ink/75"
+                        >
+                          <span>{item}</span>
+                          <button
+                            className="text-xs font-semibold text-red-400 transition hover:text-red-500"
+                            onClick={() =>
+                              setCustomItems((current) =>
+                                current.filter((currentItem) => currentItem !== item),
+                              )
+                            }
+                            type="button"
+                          >
+                            - Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-400">
+                      Add snacks, paper towels, or any other extras you want to remember.
+                    </p>
+                  )}
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      value={newCustomItem}
+                      onChange={(e) => setNewCustomItem(e.target.value)}
+                      placeholder="Add snacks, paper towels..."
+                      className="flex-1 rounded border px-2 py-1 text-sm"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newCustomItem.trim()) {
+                          setCustomItems([...customItems, newCustomItem.trim()]);
+                          setNewCustomItem("");
+                        }
+                      }}
+                      className="rounded bg-gray-200 px-3 py-1 text-sm font-medium"
+                      type="button"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
                 <div className="mt-6 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -2115,28 +2169,29 @@ export function SmartCartApp() {
 
                 <div className="mt-4 flex items-center gap-4">
                   <button
+                    onClick={() => setIsPremiumMode(!isPremiumMode)}
+                    className="mb-2 w-full rounded-md bg-orange-100 px-4 py-3 font-bold text-orange-700"
+                    type="button"
+                  >
+                    {isPremiumMode ? (
+                      <>
+                        <span aria-hidden="true">{"↩ "}</span>
+                        Revert to Standard
+                      </>
+                    ) : (
+                      <>
+                        <span aria-hidden="true">{"✨ "}</span>
+                        Upgrade to Premium Ingredients
+                      </>
+                    )}
+                  </button>
+                  <button
                     className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"
                     onClick={handleCopyShoppingList}
                     type="button"
                   >
                     Copy Shopping List
                   </button>
-                  {((generatedPlan.upgrade_available && budgetPercentage < 80) ||
-                    isPremiumMode) && (
-                    <button
-                      className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
-                        isPremiumMode
-                          ? "bg-stone-300 text-stone-800 hover:bg-stone-400"
-                          : "bg-orange-500 text-white hover:bg-orange-600"
-                      }`}
-                      onClick={() => setIsPremiumMode(!isPremiumMode)}
-                      type="button"
-                    >
-                      {isPremiumMode
-                        ? "Revert to Standard"
-                        : "Upgrade to Premium Ingredients"}
-                    </button>
-                  )}
                   {copied && (
                     <span className="text-sm font-semibold text-pine">Copied!</span>
                   )}
