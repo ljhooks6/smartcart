@@ -316,24 +316,6 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
   return `${displayValue} ${baseParts.unit}`;
 }
 
-function ingredientMatchesPantryItem(
-  ingredientName: string,
-  pantryItem: string,
-) {
-  const normalizedIngredient = normalizeIngredientName(ingredientName);
-  const normalizedPantryItem = normalizeIngredientName(pantryItem);
-
-  if (!normalizedPantryItem) {
-    return false;
-  }
-
-  return (
-    normalizedPantryItem === normalizedIngredient ||
-    `${normalizedPantryItem}s` === normalizedIngredient ||
-    normalizedPantryItem === `${normalizedIngredient}s`
-  );
-}
-
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -488,16 +470,18 @@ export function SmartCartApp() {
 
   const derivedGroceryList = useMemo(() => {
     const groupedItems = new Map<string, GroceryListItem>();
-    const pantryExclusions = [...Array.from(fullyStocked), ...Array.from(runningLow)];
+    const cleanPantry = [...Array.from(fullyStocked), ...Array.from(runningLow)]
+      .filter((item) => item.trim() !== "")
+      .map((item) => item.toLowerCase().trim());
     const cartMeals = [...weeklyMenu, ...savedDesserts];
 
     for (const meal of cartMeals) {
       for (const ingredient of meal.ingredients ?? []) {
-        if (
-          pantryExclusions.some((pantryItem) =>
-            ingredientMatchesPantryItem(ingredient.name, pantryItem),
-          )
-        ) {
+        const isOwned = cleanPantry.includes(
+          ingredient.name.toLowerCase().trim(),
+        );
+
+        if (isOwned) {
           continue;
         }
 
