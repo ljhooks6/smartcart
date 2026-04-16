@@ -469,23 +469,40 @@ export function SmartCartApp() {
   }, [formState.pantryItems, fullyStocked, runningLow, restock]);
 
   const derivedGroceryList = useMemo(() => {
+    const pantry = [...Array.from(fullyStocked), ...Array.from(runningLow)];
+
+    // 1. Sanitize Pantry
+    const validPantry = pantry
+      .map((p) => p.toLowerCase().trim())
+      .filter((p) => p.length > 2);
+
+    // 2. Combine ALL saved items (Dinners + Desserts)
+    const savedMeals = weeklyMenu;
+    const allMeals = [...savedMeals, ...savedDesserts];
+    const rawGroceryList: IngredientItem[] = [];
+
+    // 3. The Strict 'NOT OWNED' Filter
+    allMeals.forEach((meal) => {
+      (meal.ingredients ?? []).forEach((ingredient) => {
+        const ingName = ingredient.name.toLowerCase();
+
+        const isOwned = validPantry.some((pItem) => {
+          const singularPItem = pItem.endsWith("s") ? pItem.slice(0, -1) : pItem;
+          // Strict boundary check so "oil" doesn't match "foil"
+          return ingName.includes(pItem) || ingName.includes(singularPItem);
+        });
+
+        // CRITICAL: ONLY ADD IF NOT OWNED
+        if (!isOwned) {
+          rawGroceryList.push(ingredient);
+        }
+      });
+    });
+
+    // 4. Aggregation (Optional but recommended)
     const groupedItems = new Map<string, GroceryListItem>();
-    const cleanPantry = [...Array.from(fullyStocked), ...Array.from(runningLow)]
-      .filter((item) => item.trim() !== "")
-      .map((item) => item.toLowerCase().trim());
-    const allIngredients = [...weeklyMenu, ...savedDesserts].flatMap(
-      (meal) => meal.ingredients ?? [],
-    );
 
-    for (const ingredient of allIngredients) {
-      const isOwned = cleanPantry.some((pantryItem) =>
-        ingredient.name.toLowerCase().includes(pantryItem),
-      );
-
-      if (isOwned) {
-        continue;
-      }
-
+    rawGroceryList.forEach((ingredient) => {
       const normalizedKey = normalizeIngredientName(ingredient.name);
       const existingItem = groupedItems.get(normalizedKey);
       const adjustedPrice = Math.max(1, Number(ingredient.price));
@@ -497,16 +514,18 @@ export function SmartCartApp() {
           amount: ingredient.amount.trim(),
           estimated_price: adjustedPrice,
         });
-        continue;
+        return;
       }
 
       groupedItems.set(normalizedKey, {
         ...existingItem,
+        amount: mergeAmounts(existingItem.amount, ingredient.amount),
         estimated_price: existingItem.estimated_price + adjustedPrice,
       });
-    }
+    });
 
-    for (const restockItem of Array.from(restock)) {
+    // 5. Clean Restock Append
+    Array.from(restock).forEach((restockItem) => {
       const normalizedKey = normalizeIngredientName(restockItem);
       const restockPrice = Math.max(1, estimateRestockPrice(restockItem));
       const existingItem = groupedItems.get(normalizedKey);
@@ -515,10 +534,9 @@ export function SmartCartApp() {
         groupedItems.set(normalizedKey, {
           ...existingItem,
           name: `${existingItem.name.replace(/\s*\(Includes Restock\)$/i, "")} (Includes Restock)`,
-          amount: mergeAmounts(existingItem.amount, "1 restock"),
           estimated_price: existingItem.estimated_price + restockPrice,
         });
-        continue;
+        return;
       }
 
       groupedItems.set(normalizedKey, {
@@ -527,7 +545,7 @@ export function SmartCartApp() {
         amount: "1",
         estimated_price: restockPrice,
       });
-    }
+    });
 
     return Array.from(groupedItems.values());
   }, [fullyStocked, restock, runningLow, savedDesserts, weeklyMenu]);
