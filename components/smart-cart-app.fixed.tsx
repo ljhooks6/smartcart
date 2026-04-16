@@ -1448,23 +1448,30 @@ export function SmartCartApp() {
                   <p className="mt-1 text-sm leading-6 text-ink/65">
                     Tap common staples to add them before typing anything custom.
                   </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-semibold text-ink/70">
-                    <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full border border-pine bg-pine" />
-                      <span>Fully Stocked</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full border border-yellow-400 bg-yellow-300" />
-                      <span>Running Low</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full border border-orange-500 bg-orange-400" />
-                      <span>Restock (Add to List)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full border border-white/80 bg-white" />
-                      <span>Don&#39;t Have</span>
-                    </div>
+                  <div className="mb-4 mt-3 space-y-1 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+                    <p>
+                      <strong>
+                        <span className="text-emerald-600">Fully Stocked:</span>
+                      </strong>{" "}
+                      You have enough for the whole
+                      week. (Removes from shopping list)
+                    </p>
+                    <p>
+                      <strong>
+                        <span className="text-yellow-600">Running Low</span> /{" "}
+                        <span className="text-orange-600">Restock:</span>
+                      </strong>{" "}
+                      You need more.
+                      (Forces item onto shopping list)
+                    </p>
+                    <p>
+                      <strong>
+                        <span className="text-gray-600">Don&apos;t Have (Unclicked):</span>
+                      </strong>{" "}
+                      App will
+                      automatically calculate and add what you need based on your
+                      meals.
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -2039,6 +2046,14 @@ export function SmartCartApp() {
                     <h4 className="mb-2 mt-6 text-sm font-bold uppercase text-gray-500">
                       Skipped (In Your Pantry)
                     </h4>
+                    <div className="my-3 border-l-4 border-blue-400 bg-blue-50 p-3 text-xs text-blue-800">
+                      <strong>Why are these here?</strong> We left these off your
+                      shopping list because you marked them as &apos;Fully
+                      Stocked&apos;. Please verify you actually have the specific
+                      amounts listed below in your kitchen right now. If you
+                      don&apos;t have enough, click <strong>[+ Add Back]</strong> to
+                      put them on your grocery list!
+                    </div>
                     <div className="space-y-4">
                       {skippedGroceriesByCategory.map(([category, items]) => (
                         <section key={`skipped-${category}`}>
