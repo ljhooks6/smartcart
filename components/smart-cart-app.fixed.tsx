@@ -114,12 +114,20 @@ const pantryQuickSelectOptions = {
     "Shrimp",
     "Salmon",
     "Tofu",
+  ],
+  "DAIRY & REFRIGERATED": [
+    "Milk",
+    "Heavy cream",
+    "Cheddar cheese",
+    "Parmesan",
+    "Mozzarella",
+    "Yogurt",
     "Eggs",
+    "Butter",
   ],
   "Oils & Condiments": [
     "Olive oil",
     "Vegetable oil",
-    "Butter",
     "Soy sauce",
     "Vinegar",
     "Mustard",
@@ -168,12 +176,23 @@ const pantryQuickSelectOptions = {
     "Quinoa",
     "Tortillas",
   ],
-  "Produce (Long-lasting)": [
+  VEGETABLES: [
     "Onions",
     "Garlic cloves",
     "Potatoes",
     "Carrots",
+    "Bell peppers",
+    "Tomatoes",
+    "Spinach",
+    "Broccoli",
+  ],
+  FRUITS: [
     "Lemons",
+    "Limes",
+    "Apples",
+    "Bananas",
+    "Berries",
+    "Avocados",
   ],
 } as const;
 
@@ -197,12 +216,14 @@ const fallbackFoodImages = [
 ];
 const pantryCategoryStyles: Record<string, string> = {
   "Proteins (Freezer & Fridge)": "border-rose-200 bg-rose-50",
+  "DAIRY & REFRIGERATED": "border-cyan-200 bg-cyan-50",
   "Oils & Condiments": "border-orange-200 bg-orange-50",
   "Spices & Seasonings": "border-rose-200 bg-rose-50",
   "Baking Staples": "border-amber-200 bg-amber-50",
   "Canned & Jarred": "border-sky-200 bg-sky-50",
   "Grains & Carbs": "border-violet-200 bg-violet-50",
-  "Produce (Long-lasting)": "border-emerald-200 bg-emerald-50",
+  VEGETABLES: "border-emerald-200 bg-emerald-50",
+  FRUITS: "border-lime-200 bg-lime-50",
 };
 
 function formatCurrency(value: number) {
@@ -256,6 +277,45 @@ function normalizeIngredientName(itemName: string) {
   return itemName.trim().toLowerCase();
 }
 
+function getAmountParts(amount: string) {
+  const normalizedAmount = amount.trim().toLowerCase();
+  const match = normalizedAmount.match(/^(\d+(?:\.\d+)?)\s*(.+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    value: Number(match[1]),
+    unit: match[2].trim(),
+  };
+}
+
+function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
+  if (!baseAmount) {
+    return nextAmount.trim();
+  }
+
+  const normalizedBase = baseAmount.trim();
+  const normalizedNext = nextAmount.trim();
+  const baseParts = getAmountParts(normalizedBase);
+  const nextParts = getAmountParts(normalizedNext);
+
+  if (!baseParts || !nextParts) {
+    return normalizedBase === normalizedNext
+      ? normalizedBase
+      : `${normalizedBase} + ${normalizedNext}`;
+  }
+
+  if (baseParts.unit !== nextParts.unit) {
+    return normalizedBase;
+  }
+
+  const totalValue = baseParts.value + nextParts.value;
+  const displayValue = Number.isInteger(totalValue) ? totalValue : totalValue.toFixed(2);
+  return `${displayValue} ${baseParts.unit}`;
+}
+
 function ingredientMatchesPantryItem(
   ingredientName: string,
   pantryItem: string,
@@ -263,10 +323,21 @@ function ingredientMatchesPantryItem(
   const normalizedIngredient = normalizeIngredientName(ingredientName);
   const normalizedPantryItem = normalizeIngredientName(pantryItem);
 
+  if (!normalizedPantryItem) {
+    return false;
+  }
+
+  if (normalizedIngredient === normalizedPantryItem) {
+    return true;
+  }
+
+  if (normalizedPantryItem.includes(" ")) {
+    return normalizedIngredient === normalizedPantryItem;
+  }
+
   return (
-    normalizedIngredient === normalizedPantryItem ||
-    normalizedIngredient.includes(normalizedPantryItem) ||
-    normalizedPantryItem.includes(normalizedIngredient)
+    normalizedIngredient.endsWith(` ${normalizedPantryItem}`) ||
+    normalizedIngredient === `ground ${normalizedPantryItem}`
   );
 }
 
@@ -454,9 +525,7 @@ export function SmartCartApp() {
 
         groupedItems.set(normalizedKey, {
           ...existingItem,
-          amount: existingItem.amount
-            ? `${existingItem.amount} + ${nextAmount}`
-            : nextAmount,
+          amount: mergeAmounts(existingItem.amount, nextAmount),
           estimated_price: existingItem.estimated_price + adjustedPrice,
         });
       }
@@ -471,6 +540,7 @@ export function SmartCartApp() {
         groupedItems.set(normalizedKey, {
           ...existingItem,
           name: `${existingItem.name.replace(/\s*\(Includes Restock\)$/i, "")} (Includes Restock)`,
+          amount: mergeAmounts(existingItem.amount, "1 restock"),
           estimated_price: existingItem.estimated_price + restockPrice,
         });
         continue;
@@ -478,7 +548,7 @@ export function SmartCartApp() {
 
       groupedItems.set(normalizedKey, {
         category: "Restock",
-        name: `${restockItem.trim()} (Includes Restock)`,
+        name: restockItem.trim(),
         amount: "1",
         estimated_price: restockPrice,
       });
