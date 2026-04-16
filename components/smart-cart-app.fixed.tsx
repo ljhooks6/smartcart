@@ -473,39 +473,37 @@ export function SmartCartApp() {
     const cleanPantry = [...Array.from(fullyStocked), ...Array.from(runningLow)]
       .filter((item) => item.trim() !== "")
       .map((item) => item.toLowerCase().trim());
-    const cartMeals = [...weeklyMenu, ...savedDesserts];
+    const allIngredients = [...weeklyMenu, ...savedDesserts].flatMap(
+      (meal) => meal.ingredients ?? [],
+    );
 
-    for (const meal of cartMeals) {
-      for (const ingredient of meal.ingredients ?? []) {
-        const isOwned = cleanPantry.includes(
-          ingredient.name.toLowerCase().trim(),
-        );
+    for (const ingredient of allIngredients) {
+      const isOwned = cleanPantry.some((pantryItem) =>
+        ingredient.name.toLowerCase().includes(pantryItem),
+      );
 
-        if (isOwned) {
-          continue;
-        }
-
-        const normalizedKey = normalizeIngredientName(ingredient.name);
-        const existingItem = groupedItems.get(normalizedKey);
-        const adjustedPrice = Math.max(1, Number(ingredient.price));
-        const nextAmount = ingredient.amount.trim();
-
-        if (!existingItem) {
-          groupedItems.set(normalizedKey, {
-            category: "Meal Ingredients",
-            name: ingredient.name.trim(),
-            amount: nextAmount,
-            estimated_price: adjustedPrice,
-          });
-          continue;
-        }
-
-        groupedItems.set(normalizedKey, {
-          ...existingItem,
-          amount: mergeAmounts(existingItem.amount, nextAmount),
-          estimated_price: existingItem.estimated_price + adjustedPrice,
-        });
+      if (isOwned) {
+        continue;
       }
+
+      const normalizedKey = normalizeIngredientName(ingredient.name);
+      const existingItem = groupedItems.get(normalizedKey);
+      const adjustedPrice = Math.max(1, Number(ingredient.price));
+
+      if (!existingItem) {
+        groupedItems.set(normalizedKey, {
+          category: "Meal Ingredients",
+          name: ingredient.name.trim(),
+          amount: ingredient.amount.trim(),
+          estimated_price: adjustedPrice,
+        });
+        continue;
+      }
+
+      groupedItems.set(normalizedKey, {
+        ...existingItem,
+        estimated_price: existingItem.estimated_price + adjustedPrice,
+      });
     }
 
     for (const restockItem of Array.from(restock)) {
@@ -1770,6 +1768,46 @@ export function SmartCartApp() {
                                 ? "Hide Details"
                                 : "Show Details"}
                             </button>
+                            <button
+                              className="mt-4 ml-3 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
+                              onClick={() =>
+                                handleToggleIngredients({
+                                  day: `Sweet Treat ${index + 1}`,
+                                  name: dessert.title,
+                                  servings: Number(formState.householdSize) || 2,
+                                  notes: dessert.description,
+                                  ingredients: dessert.ingredients,
+                                  imageUrl: dessert.imageUrl,
+                                })
+                              }
+                              type="button"
+                            >
+                              {expandedIngredientsMeals.has(`Sweet Treat ${index + 1}::${dessert.title}`)
+                                ? "Hide Ingredients"
+                                : "View Ingredients"}
+                            </button>
+                            {expandedIngredientsMeals.has(
+                              `Sweet Treat ${index + 1}::${dessert.title}`,
+                            ) && (
+                              <div className="mt-4 w-full rounded-[1rem] bg-cream px-3 py-3">
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                                  Ingredients
+                                </p>
+                                <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
+                                  {dessert.ingredients.map((ingredient) => (
+                                    <li
+                                      key={`${dessert.title}-${ingredient.name}-${ingredient.amount}`}
+                                      className="flex gap-2"
+                                    >
+                                      <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
+                                      <span>
+                                        {ingredient.amount} {ingredient.name}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                             <div className="mt-4 flex flex-wrap gap-3">
                               <button
                                 className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
