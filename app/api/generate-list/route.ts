@@ -50,7 +50,7 @@ const aiGenerateListResponseSchema = z.object({
   estimated_total_cost: z.number().nonnegative(),
   budget_summary: z.string().min(1),
   upgrade_available: z.boolean(),
-  dessert: dessertSchema.nullable().optional(),
+  desserts: z.union([z.array(dessertSchema).length(2), z.array(dessertSchema).length(0)]),
 });
 
 type GenerateListResponse = z.infer<typeof aiGenerateListResponseSchema> & {
@@ -207,6 +207,7 @@ Rules:
 - Return exactly 8 meals.
 - Respect the budget strictly.
 - Respect the diet exactly.
+- This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.
 - Reuse pantry items whenever possible.
 - Use pantry items from the "fully stocked", "running low", and "restock" lists to shape the meals.
 - Do not generate a root-level grocery list.
@@ -218,6 +219,7 @@ Rules:
 - NEVER append conversational text like "(assumed purchase)" to ingredient names.
 - BANNED: Any text like "1 item", "(assumed purchase)", or "to taste". If an amount is small, use "1 pinch" or "1 tsp".
 - You are a professional grocery curator. You are FORBIDDEN from using generic names. You must specify types: "Red Bell Peppers", "English Cucumber", "Honeycrisp Apples", "80/20 Ground Beef". Every ingredient MUST have a realistic store-bought quantity (for example "16oz jar", "1 lb pack", "Bundle of 5").
+- Write a rich, helpful 2-3 sentence description for every dinner meal and every dessert option. Do not use one-sentence descriptions.
 - No ingredient or pantry item should ever be priced below $1.00. Even tiny-use items must reflect the cost of buying a standard store container.
 - Adventure Level enforcement: if the user selected "Try new cuisines" or "Mix it up", you MUST generate diverse, global, or creative recipes and strictly avoid generic fallbacks like "Vegetable Stir-fry", plain pasta, or repetitive default meals. If the user selected "Stick to basics", keep the meals familiar and approachable.
 - CRITICAL: You must strictly tailor the cuisine types to the user's adventureLevel preference.
@@ -227,9 +229,10 @@ Rules:
 - Budget Tightness enforcement: if budgetTightness is false, you MUST NOT force heavy ingredient overlap. Prioritize culinary variety, distinct flavor profiles, and different lead ingredients across the week. Only force strong cross-utilization and ingredient overlap if budgetTightness is true.
 - If budgetTightness is false, you MUST utilize between 50% and 65% of the user's total budget. Do not go below 50% of the budget. You must select premium, high-quality ingredients to hit this minimum threshold. Do not exceed 65% of the total budget.
 - CRITICAL: When budgetTightness is false, you MUST perform a mathematical check before responding. The total sum of all meal ingredient prices must fall between 50% and 65% of the user's total budget. If your total is below 50%, you must upgrade to premium ingredients or upscale the recipes until you hit that 50% minimum threshold.
-- If includeDessert is true, evaluate the remaining budget after planning the 8 meals. If there is room, generate exactly ONE dessert recipe for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 8 meals AND a dessert, set "dessert" to null.
-- If you generate a dessert, it must include its own localized "ingredients" array using the exact same ingredient format as meals.
-- If a must_have_ingredient is provided, you MUST feature it prominently in AT LEAST ONE, but strictly NO MORE THAN TWO of the 8 meals. You must ensure the remaining meals use completely different flavor profiles and main ingredients to provide variety and prevent ingredient fatigue.
+- If includeDessert is true, evaluate the remaining budget after planning the 8 meals. If there is room, generate exactly TWO dessert options for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 8 meals AND two dessert options, return an empty "desserts" array.
+- If includeDessert is false, return an empty "desserts" array.
+- Every dessert option must include its own localized "ingredients" array using the exact same ingredient format as meals.
+- If a must_have_ingredient is provided, you MUST feature this exact ingredient prominently in AT LEAST 3 of the 8 dinner meals, regardless of budget.
 - Strict Consistency: Every ingredient listed inside a meal's ingredients array must be explicitly used in that meal's title or notes.
 - Pay close attention to the budget. If the plan is far below the target budget, use higher-quality ingredient upgrades to better maximize the budget, such as fresh herbs instead of dried herbs or a better-quality protein.
 - Include a final budget note that compares the estimated total cost against the target budget.
@@ -255,17 +258,19 @@ Rules:
   "estimated_total_cost": number,
   "budget_summary": "string",
   "upgrade_available": boolean,
-  "dessert": {
-    "title": "string",
-    "description": "string",
-    "ingredients": [
-      {
-        "name": "string",
-        "amount": "string",
-        "price": number
-      }
-    ]
-  } | null
+  "desserts": [
+    {
+      "title": "string",
+      "description": "string",
+      "ingredients": [
+        {
+          "name": "string",
+          "amount": "string",
+          "price": number
+        }
+      ]
+    }
+  ]
 }
 `;
 
@@ -336,14 +341,13 @@ ${apply_upgrades
         0,
       );
 
-    const dessertQuery = parsed.dessert
-      ? encodeURIComponent(`${parsed.dessert.title} dessert`)
-      : "";
-    const [mealImages, dessertImage] = await Promise.all([
+    const [mealImages, dessertImages] = await Promise.all([
       Promise.all(parsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
-      parsed.dessert
-        ? fetchUnsplashImage(dessertQuery, true)
-        : Promise.resolve(""),
+      Promise.all(
+        parsed.desserts.map((dessert) =>
+          fetchUnsplashImage(encodeURIComponent(`${dessert.title} dessert`), true),
+        ),
+      ),
     ]);
 
     const mealsWithImages = parsed.meals.map((meal, index) => ({
@@ -351,16 +355,17 @@ ${apply_upgrades
       imageUrl: mealImages[index],
     }));
 
-    const dessertWithImage = parsed.dessert
-      ? { ...parsed.dessert, imageUrl: dessertImage || DEFAULT_MEAL_IMAGE }
-      : parsed.dessert;
+    const dessertsWithImages = parsed.desserts.map((dessert, index) => ({
+      ...dessert,
+      imageUrl: dessertImages[index] || DEFAULT_MEAL_IMAGE,
+    }));
 
     return NextResponse.json({
       ...parsed,
       meals: mealsWithImages,
       restock_items: deterministicRestockItems,
       estimated_total_cost: recalculatedTotal,
-      dessert: dessertWithImage,
+      desserts: dessertsWithImages,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

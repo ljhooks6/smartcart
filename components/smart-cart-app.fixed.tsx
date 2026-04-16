@@ -30,12 +30,12 @@ type GenerateListResponse = {
   estimated_total_cost: number;
   budget_summary: string;
   upgrade_available: boolean;
-  dessert?: {
+  desserts: Array<{
     title: string;
     description: string;
     ingredients: IngredientItem[];
     imageUrl?: string;
-  } | null;
+  }>;
 };
 
 type RecipeResponse = {
@@ -296,12 +296,15 @@ export function SmartCartApp() {
   const [recipeError, setRecipeError] = useState<string | null>(null);
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
   const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
-  const [isDessertSaved, setIsDessertSaved] = useState(false);
+  const [savedDesserts, setSavedDesserts] = useState<MealPlanItem[]>([]);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
-  const [isReplacingDessert, setIsReplacingDessert] = useState(false);
+  const [replacingDessertKey, setReplacingDessertKey] = useState<string | null>(null);
   const [expandedIngredientsMeals, setExpandedIngredientsMeals] = useState<
     Set<string>
   >(new Set());
+  const [expandedDetailCards, setExpandedDetailCards] = useState<Set<string>>(
+    new Set(),
+  );
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
 
   useEffect(() => {
@@ -419,27 +422,10 @@ export function SmartCartApp() {
     );
   }, [formState.pantryItems, fullyStocked, runningLow, restock]);
 
-  const savedDessertMeal = useMemo<MealPlanItem | null>(() => {
-    if (!generatedPlan?.dessert || !isDessertSaved) {
-      return null;
-    }
-
-    return {
-      day: "Sweet Treat",
-      name: generatedPlan.dessert.title,
-      servings: Number(formState.householdSize) || 1,
-      notes: generatedPlan.dessert.description,
-      ingredients: generatedPlan.dessert.ingredients,
-      imageUrl: generatedPlan.dessert.imageUrl,
-    };
-  }, [formState.householdSize, generatedPlan?.dessert, isDessertSaved]);
-
   const derivedGroceryList = useMemo(() => {
     const groupedItems = new Map<string, GroceryListItem>();
     const pantryExclusions = [...Array.from(fullyStocked), ...Array.from(runningLow)];
-    const cartMeals = savedDessertMeal
-      ? [...weeklyMenu, savedDessertMeal]
-      : weeklyMenu;
+    const cartMeals = [...weeklyMenu, ...savedDesserts];
 
     for (const meal of cartMeals) {
       for (const ingredient of meal.ingredients ?? []) {
@@ -499,7 +485,7 @@ export function SmartCartApp() {
     }
 
     return Array.from(groupedItems.values());
-  }, [fullyStocked, restock, runningLow, savedDessertMeal, weeklyMenu]);
+  }, [fullyStocked, restock, runningLow, savedDesserts, weeklyMenu]);
 
   const groceriesByCategory = useMemo(() => {
     const grouped = derivedGroceryList.reduce<Record<string, GroceryListItem[]>>(
@@ -534,6 +520,10 @@ export function SmartCartApp() {
   const savedMealKeys = useMemo(
     () => new Set(weeklyMenu.map((meal) => `${meal.day}::${meal.name}`)),
     [weeklyMenu],
+  );
+  const savedDessertKeys = useMemo(
+    () => new Set(savedDesserts.map((dessert) => dessert.name)),
+    [savedDesserts],
   );
 
   const parsedBudget = Number(formState.budget);
@@ -633,7 +623,8 @@ export function SmartCartApp() {
       setActiveRecipeMeal(null);
       setRecipeError(null);
       setHasAppliedUpgrades(applyUpgrades);
-      setIsDessertSaved(false);
+      setSavedDesserts([]);
+      setExpandedDetailCards(new Set());
     } catch (error) {
       setGeneratedPlan(null);
       setRequestError(
@@ -768,27 +759,32 @@ export function SmartCartApp() {
     await fetchRecipeForMeal(meal);
   }
 
-  async function handleGetDessertRecipe() {
-    if (!generatedPlan?.dessert) {
-      return;
-    }
-
+  async function handleGetDessertRecipe(
+    dessert: GenerateListResponse["desserts"][number],
+    index: number,
+  ) {
     const dessertMeal: MealPlanItem = {
-      day: "Sweet Treat",
-      name: generatedPlan.dessert.title,
+      day: `Sweet Treat ${index + 1}`,
+      name: dessert.title,
       servings: Number(formState.householdSize) || 2,
-      notes: generatedPlan.dessert.description,
+      notes: dessert.description,
+      ingredients: dessert.ingredients,
+      imageUrl: dessert.imageUrl,
     };
 
     await handleGetRecipe(dessertMeal);
   }
 
-  async function handleReplaceDessert() {
-    if (!generatedPlan?.dessert) {
+  async function handleReplaceDessert(
+    dessert: GenerateListResponse["desserts"][number],
+    index: number,
+  ) {
+    if (!generatedPlan) {
       return;
     }
 
-    setIsReplacingDessert(true);
+    const dessertKey = `${dessert.title}-${index}`;
+    setReplacingDessertKey(dessertKey);
     setRequestError(null);
 
     try {
@@ -798,7 +794,7 @@ export function SmartCartApp() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          rejectedDessertTitle: generatedPlan.dessert.title,
+          rejectedDessertTitle: dessert.title,
           budget: Number(formState.budget),
           diet: formState.diet.trim() || "No specific diet provided",
           householdSize: Number(formState.householdSize),
@@ -819,23 +815,43 @@ export function SmartCartApp() {
         current
           ? {
               ...current,
-              dessert: {
-                title: data.title,
-                description: data.description,
-                ingredients: data.ingredients,
-                imageUrl: data.imageUrl,
-              },
+              desserts: current.desserts.map((currentDessert, dessertIndex) =>
+                dessertIndex === index
+                  ? {
+                      title: data.title,
+                      description: data.description,
+                      ingredients: data.ingredients,
+                      imageUrl: data.imageUrl,
+                    }
+                  : currentDessert,
+              ),
             }
           : current,
       );
 
-      if (activeRecipeMeal?.day === "Sweet Treat") {
+      setSavedDesserts((current) =>
+        current.map((savedDessert) =>
+          savedDessert.name === dessert.title
+            ? {
+                ...savedDessert,
+                day: `Sweet Treat ${index + 1}`,
+                name: data.title,
+                notes: data.description,
+                ingredients: data.ingredients,
+                imageUrl: data.imageUrl,
+              }
+            : savedDessert,
+        ),
+      );
+
+      if (activeRecipeMeal?.name === dessert.title) {
         setActiveRecipeMeal({
-          day: "Sweet Treat",
+          day: `Sweet Treat ${index + 1}`,
           name: data.title,
           servings: Number(formState.householdSize) || 2,
           notes: data.description,
           ingredients: data.ingredients,
+          imageUrl: data.imageUrl,
         });
       }
     } catch (error) {
@@ -843,7 +859,7 @@ export function SmartCartApp() {
         error instanceof Error ? error.message : "Failed to replace dessert.",
       );
     } finally {
-      setIsReplacingDessert(false);
+      setReplacingDessertKey(null);
     }
   }
 
@@ -873,8 +889,36 @@ export function SmartCartApp() {
     );
   }
 
-  function handleToggleDessertSave() {
-    setIsDessertSaved((current) => !current);
+  function handleToggleDessertSave(
+    dessert: GenerateListResponse["desserts"][number],
+    index: number,
+  ) {
+    const dessertMeal: MealPlanItem = {
+      day: `Sweet Treat ${index + 1}`,
+      name: dessert.title,
+      servings: Number(formState.householdSize) || 2,
+      notes: dessert.description,
+      ingredients: dessert.ingredients,
+      imageUrl: dessert.imageUrl,
+    };
+
+    setSavedDesserts((current) =>
+      current.some((savedDessert) => savedDessert.name === dessert.title)
+        ? current.filter((savedDessert) => savedDessert.name !== dessert.title)
+        : [...current, dessertMeal],
+    );
+  }
+
+  function handleToggleCardDetails(cardKey: string) {
+    setExpandedDetailCards((current) => {
+      const next = new Set(current);
+      if (next.has(cardKey)) {
+        next.delete(cardKey);
+      } else {
+        next.add(cardKey);
+      }
+      return next;
+    });
   }
 
   function handleClearForm() {
@@ -894,10 +938,11 @@ export function SmartCartApp() {
     setRecipeError(null);
     setRecipeLoadingMeal(null);
     setWeeklyMenu([]);
-    setIsDessertSaved(false);
+    setSavedDesserts([]);
     setReplacingMealKey(null);
-    setIsReplacingDessert(false);
+    setReplacingDessertKey(null);
     setExpandedIngredientsMeals(new Set());
+    setExpandedDetailCards(new Set());
 
     window.localStorage.removeItem(SMART_CART_FORM_STORAGE_KEY);
     window.localStorage.removeItem(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
@@ -1378,7 +1423,7 @@ export function SmartCartApp() {
                   type="checkbox"
                 />
                 <span className="text-sm font-semibold text-ink">
-                  Include a Weekly Dessert (If budget allows)
+                  Include 2 Weekly Dessert Options (If budget allows)
                 </span>
               </label>
 
@@ -1429,11 +1474,16 @@ export function SmartCartApp() {
                 </div>
 
                 <div className="mt-5 rounded-[1.5rem] border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-900 shadow-sm">
-                  Build Your Menu: Pick up to 5 meals below and watch your grocery list build in real-time!
+                  <span aria-hidden="true">🍽️ </span>
+                  Build Your Menu: Pick up to 5 meals below and watch your grocery
+                  list build in real-time!
                 </div>
 
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  {generatedPlan.meals.map((meal, index) => (
+                  {generatedPlan.meals.map((meal, index) => {
+                    const mealCardKey = `generated-${meal.day}::${meal.name}`;
+
+                    return (
                     <article
                       key={`${meal.day}-${meal.name}-${index}`}
                       className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
@@ -1469,7 +1519,18 @@ export function SmartCartApp() {
                       </div>
 
                       <div className="space-y-4 p-5">
-                        <p className="text-sm leading-7 text-ink/75">{meal.notes}</p>
+                        {expandedDetailCards.has(mealCardKey) && (
+                          <p className="text-sm leading-7 text-ink/75">{meal.notes}</p>
+                        )}
+                        <button
+                          className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                          onClick={() => handleToggleCardDetails(mealCardKey)}
+                          type="button"
+                        >
+                          {expandedDetailCards.has(mealCardKey)
+                            ? "Hide Details"
+                            : "Show Details"}
+                        </button>
                         <div className="flex flex-wrap gap-3">
                           <button
                             className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
@@ -1518,7 +1579,8 @@ export function SmartCartApp() {
                         </div>
                       </div>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
                 </div>
 
@@ -1551,6 +1613,20 @@ export function SmartCartApp() {
                           <p className="mt-2 text-sm leading-6 text-ink/70">
                             Serves {meal.servings}
                           </p>
+                          {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`) && (
+                            <p className="mt-3 text-sm leading-7 text-ink/75">{meal.notes}</p>
+                          )}
+                          <button
+                            className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
+                            onClick={() =>
+                              handleToggleCardDetails(`saved-${meal.day}::${meal.name}`)
+                            }
+                            type="button"
+                          >
+                            {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`)
+                              ? "Hide Details"
+                              : "Show Details"}
+                          </button>
                           <div className="mt-4 flex flex-wrap gap-2">
                             <button
                               className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
@@ -1606,57 +1682,84 @@ export function SmartCartApp() {
                   )}
                 </section>
 
-                {generatedPlan.dessert && (
-                  <section className="mt-6 overflow-hidden rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
+                {generatedPlan.desserts.length > 0 && (
+                  <section className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
                       Sweet Treat
                     </p>
-                    <div className="mt-4 overflow-hidden rounded-[1.5rem]">
-                      <img
-                        alt={generatedPlan.dessert.title}
-                        className="h-48 w-full rounded-[1.5rem] object-cover"
-                        src={generatedPlan.dessert.imageUrl || fallbackFoodImages[0]}
-                      />
-                    </div>
-                    <h3 className="mt-2 font-display text-2xl text-ink">
-                      {generatedPlan.dessert.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-7 text-ink/80">
-                      {generatedPlan.dessert.description}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <button
-                        className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
-                          isDessertSaved
-                            ? "bg-orange-500 text-white"
-                            : "bg-orange-50 text-orange-700 hover:bg-orange-100"
-                        }`}
-                        onClick={handleToggleDessertSave}
-                        type="button"
-                      >
-                        {isDessertSaved ? "Remove Dessert" : "Save Dessert to Menu"}
-                      </button>
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={
-                          recipeLoadingMeal === generatedPlan.dessert.title ||
-                          isReplacingDessert
-                        }
-                        onClick={handleGetDessertRecipe}
-                        type="button"
-                      >
-                        {recipeLoadingMeal === generatedPlan.dessert.title
-                          ? "Loading recipe..."
-                          : "Get Recipe"}
-                      </button>
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={isReplacingDessert}
-                        onClick={handleReplaceDessert}
-                        type="button"
-                      >
-                        {isReplacingDessert ? "Replacing..." : "Replace"}
-                      </button>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      {generatedPlan.desserts.map((dessert, index) => {
+                        const dessertCardKey = `dessert-${dessert.title}-${index}`;
+                        const isDessertSaved = savedDessertKeys.has(dessert.title);
+                        const isReplacingThisDessert =
+                          replacingDessertKey === `${dessert.title}-${index}`;
+
+                        return (
+                          <article
+                            key={dessertCardKey}
+                            className="overflow-hidden rounded-[1.5rem] border border-rose-200 bg-white p-4 shadow-md"
+                          >
+                            <div className="overflow-hidden rounded-[1.25rem]">
+                              <img
+                                alt={dessert.title}
+                                className="h-48 w-full rounded-[1.25rem] object-cover"
+                                src={dessert.imageUrl || fallbackFoodImages[0]}
+                              />
+                            </div>
+                            <h3 className="mt-3 font-display text-2xl text-ink">
+                              {dessert.title}
+                            </h3>
+                            {expandedDetailCards.has(dessertCardKey) && (
+                              <p className="mt-3 text-sm leading-7 text-ink/80">
+                                {dessert.description}
+                              </p>
+                            )}
+                            <button
+                              className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                              onClick={() => handleToggleCardDetails(dessertCardKey)}
+                              type="button"
+                            >
+                              {expandedDetailCards.has(dessertCardKey)
+                                ? "Hide Details"
+                                : "Show Details"}
+                            </button>
+                            <div className="mt-4 flex flex-wrap gap-3">
+                              <button
+                                className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
+                                  isDessertSaved
+                                    ? "bg-orange-500 text-white"
+                                    : "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                                }`}
+                                onClick={() => handleToggleDessertSave(dessert, index)}
+                                type="button"
+                              >
+                                {isDessertSaved ? "Remove" : "Save Dessert to Menu"}
+                              </button>
+                              <button
+                                className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={
+                                  recipeLoadingMeal === dessert.title ||
+                                  isReplacingThisDessert
+                                }
+                                onClick={() => handleGetDessertRecipe(dessert, index)}
+                                type="button"
+                              >
+                                {recipeLoadingMeal === dessert.title
+                                  ? "Loading recipe..."
+                                  : "Get Recipe"}
+                              </button>
+                              <button
+                                className="inline-flex items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={isReplacingThisDessert}
+                                onClick={() => handleReplaceDessert(dessert, index)}
+                                type="button"
+                              >
+                                {isReplacingThisDessert ? "Replacing..." : "Replace"}
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
                   </section>
                 )}
