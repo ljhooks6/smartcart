@@ -661,14 +661,21 @@ export function SmartCartApp() {
   }, [skippedGroceryList]);
 
   const shoppingListText = useMemo(() => {
-    return displayGroceriesByCategory
+    let listText = displayGroceriesByCategory
       .map(([category, items]) =>
         `${category}\n${items
           .map((item) => `- ${item.amount ? `${item.amount} ` : ""}${item.name} (${formatCurrency(item.estimated_price)})`)
           .join("\n")}`,
       )
       .join("\n\n");
-  }, [displayGroceriesByCategory]);
+
+    if (customItems.length > 0) {
+      listText += "\n\nEXTRAS & HOUSEHOLD:\n";
+      listText += customItems.map((item) => `- [ ] ${item}`).join("\n");
+    }
+
+    return listText;
+  }, [customItems, displayGroceriesByCategory]);
 
   const activeRecipe = activeRecipeMeal
     ? recipeCache[activeRecipeMeal.name]
