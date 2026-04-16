@@ -61,9 +61,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const DEFAULT_MEAL_IMAGE =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80";
-
 function estimateRestockPrice(itemName: string) {
   const normalized = itemName.trim().toLowerCase();
   let estimate = 3;
@@ -103,9 +100,13 @@ function estimateRestockPrice(itemName: string) {
   return Math.max(1, estimate);
 }
 
+function getImageSearchBase(title: string) {
+  return title.split(/\s+with\s+/i)[0]?.trim() || title.trim();
+}
+
 async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
   if (!process.env.UNSPLASH_ACCESS_KEY) {
-    return DEFAULT_MEAL_IMAGE;
+    return undefined;
   }
 
   const searchQuery = queryIsEncoded ? query : `${query} food`;
@@ -121,7 +122,7 @@ async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      return DEFAULT_MEAL_IMAGE;
+      return undefined;
     }
 
     const data = (await response.json()) as {
@@ -136,15 +137,15 @@ async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
     }
 
     if (!data?.results || data.results.length === 0) {
-      return DEFAULT_MEAL_IMAGE;
+      return undefined;
     }
 
     const imageUrl =
       data.results[0]?.urls?.regular ?? data.results[0]?.urls?.small;
 
-    return imageUrl || DEFAULT_MEAL_IMAGE;
+    return imageUrl || undefined;
   } catch {
-    return DEFAULT_MEAL_IMAGE;
+    return undefined;
   }
 }
 
@@ -344,10 +345,17 @@ ${apply_upgrades
       );
 
     const [mealImages, dessertImages] = await Promise.all([
-      Promise.all(parsed.meals.map((meal) => fetchUnsplashImage(meal.name))),
+      Promise.all(
+        parsed.meals.map((meal) =>
+          fetchUnsplashImage(getImageSearchBase(meal.name)),
+        ),
+      ),
       Promise.all(
         parsed.desserts.map((dessert) =>
-          fetchUnsplashImage(encodeURIComponent(`${dessert.title} dessert`), true),
+          fetchUnsplashImage(
+            encodeURIComponent(`${getImageSearchBase(dessert.title)} dessert`),
+            true,
+          ),
         ),
       ),
     ]);
@@ -359,7 +367,7 @@ ${apply_upgrades
 
     const dessertsWithImages = parsed.desserts.map((dessert, index) => ({
       ...dessert,
-      imageUrl: dessertImages[index] || DEFAULT_MEAL_IMAGE,
+      imageUrl: dessertImages[index],
     }));
 
     return NextResponse.json({

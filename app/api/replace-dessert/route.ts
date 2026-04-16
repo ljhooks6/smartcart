@@ -29,12 +29,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const DEFAULT_DESSERT_IMAGE =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80";
+function getImageSearchBase(title: string) {
+  return title.split(/\s+with\s+/i)[0]?.trim() || title.trim();
+}
 
 async function fetchUnsplashImage(encodedQuery: string) {
   if (!process.env.UNSPLASH_ACCESS_KEY) {
-    return DEFAULT_DESSERT_IMAGE;
+    return undefined;
   }
 
   const url = `https://api.unsplash.com/search/photos?query=${encodedQuery}&client_id=${process.env.UNSPLASH_ACCESS_KEY}&per_page=1`;
@@ -42,7 +43,7 @@ async function fetchUnsplashImage(encodedQuery: string) {
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      return DEFAULT_DESSERT_IMAGE;
+      return undefined;
     }
 
     const data = (await response.json()) as {
@@ -50,15 +51,15 @@ async function fetchUnsplashImage(encodedQuery: string) {
     };
 
     if (!data?.results || data.results.length === 0) {
-      return DEFAULT_DESSERT_IMAGE;
+      return undefined;
     }
 
     const imageUrl =
       data.results[0]?.urls?.regular ?? data.results[0]?.urls?.small;
 
-    return imageUrl || DEFAULT_DESSERT_IMAGE;
+    return imageUrl || undefined;
   } catch {
-    return DEFAULT_DESSERT_IMAGE;
+    return undefined;
   }
 }
 
@@ -160,7 +161,9 @@ The new dessert must be clearly different from "${rejectedDessertTitle}".
     }
 
     const parsed = replaceDessertResponseSchema.parse(JSON.parse(content));
-    const dessertQuery = encodeURIComponent(`${parsed.title} dessert`);
+    const dessertQuery = encodeURIComponent(
+      `${getImageSearchBase(parsed.title)} dessert`,
+    );
     const imageUrl = await fetchUnsplashImage(dessertQuery);
     return NextResponse.json({ ...parsed, imageUrl });
   } catch (error) {
