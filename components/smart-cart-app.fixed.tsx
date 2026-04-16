@@ -1448,29 +1448,23 @@ export function SmartCartApp() {
                   <p className="mt-1 text-sm leading-6 text-ink/65">
                     Tap common staples to add them before typing anything custom.
                   </p>
-                  <div className="mb-4 mt-3 space-y-1 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+                  <div className="mb-4 space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
                     <p>
                       <strong>
-                        <span className="text-emerald-600">Fully Stocked:</span>
+                        <span aria-hidden="true">{"🟩 "}</span>
+                        Clicked (Owned):
                       </strong>{" "}
-                      You have enough for the whole
-                      week. (Removes from shopping list)
+                      The app will <strong>SKIP</strong>{" "}
+                      buying this. (Don&apos;t worry about exact amounts yet—we&apos;ll let you
+                      double-check at the end!)
                     </p>
                     <p>
                       <strong>
-                        <span className="text-yellow-600">Running Low</span> /{" "}
-                        <span className="text-orange-600">Restock:</span>
+                        <span aria-hidden="true">{"⬜ "}</span>
+                        Unclicked (Need to Buy):
                       </strong>{" "}
-                      You need more.
-                      (Forces item onto shopping list)
-                    </p>
-                    <p>
-                      <strong>
-                        <span className="text-gray-600">Don&apos;t Have (Unclicked):</span>
-                      </strong>{" "}
-                      App will
-                      automatically calculate and add what you need based on your
-                      meals.
+                      The app will calculate exactly
+                      what you need and <strong>ADD</strong> it to your grocery list.
                     </p>
                   </div>
                 </div>
@@ -2046,13 +2040,16 @@ export function SmartCartApp() {
                     <h4 className="mb-2 mt-6 text-sm font-bold uppercase text-gray-500">
                       Skipped (In Your Pantry)
                     </h4>
-                    <div className="my-3 border-l-4 border-blue-400 bg-blue-50 p-3 text-xs text-blue-800">
-                      <strong>Why are these here?</strong> We left these off your
-                      shopping list because you marked them as &apos;Fully
-                      Stocked&apos;. Please verify you actually have the specific
-                      amounts listed below in your kitchen right now. If you
-                      don&apos;t have enough, click <strong>[+ Add Back]</strong> to
-                      put them on your grocery list!
+                    <div className="my-3 border-l-4 border-blue-500 bg-blue-50 p-3 text-xs text-blue-900">
+                      <strong>
+                        <span aria-hidden="true">{"⚠️ "}</span>
+                        Double-Check Your Kitchen!
+                      </strong>{" "}
+                      We skipped buying these items
+                      because you marked them as owned. The amounts listed below are exactly what
+                      you need to cook your selected meals. If your current stash is smaller than
+                      the amount shown, click <strong>[+ Add Back]</strong> so you don&apos;t run
+                      out!
                     </div>
                     <div className="space-y-4">
                       {skippedGroceriesByCategory.map(([category, items]) => (
