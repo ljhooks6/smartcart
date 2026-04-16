@@ -207,13 +207,6 @@ const featureDescriptions = {
   "Fast setup":
     "Skip the endless scrolling and get a personalized, 5-day dinner plan in seconds.",
 } as const;
-const fallbackFoodImages = [
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80",
-  "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=600&q=80",
-  "https://images.unsplash.com/photo-1490645935967-10de6ba8232e?w=600&q=80",
-  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80",
-  "https://images.unsplash.com/photo-1432139555190-58524dae6a5a?w=600&q=80",
-];
 const pantryCategoryStyles: Record<string, string> = {
   "Proteins (Freezer & Fridge)": "border-rose-200 bg-rose-50",
   "DAIRY & REFRIGERATED": "border-cyan-200 bg-cyan-50",
@@ -232,6 +225,12 @@ function formatCurrency(value: number) {
     currency: "USD",
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatCardEyebrow(day: string) {
+  return day.trim().toLowerCase().startsWith("sweet treat")
+    ? "SWEET TREAT"
+    : day;
 }
 
 function estimateRestockPrice(itemName: string) {
@@ -384,6 +383,9 @@ export function SmartCartApp() {
     new Set(),
   );
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
+  const [hiddenCardImages, setHiddenCardImages] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
     try {
@@ -1629,103 +1631,121 @@ export function SmartCartApp() {
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                   {generatedPlan.meals.map((meal, index) => {
                     const mealCardKey = `generated-${meal.day}::${meal.name}`;
+                    const mealEyebrow = formatCardEyebrow(meal.day);
+                    const showMealImage =
+                      Boolean(meal.imageUrl?.trim()) &&
+                      !hiddenCardImages.has(mealCardKey);
 
                     return (
-                    <article
-                      key={`${meal.day}-${meal.name}-${index}`}
-                      className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
-                    >
-                      <div className="relative h-48 overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          alt={meal.name}
-                          className="h-full w-full object-cover"
-                          onError={(event) => {
-                            event.currentTarget.onerror = null;
-                            event.currentTarget.src = fallbackFoodImages[0];
-                          }}
-                          src={
-                            meal.imageUrl ??
-                            fallbackFoodImages[index % fallbackFoodImages.length]
-                          }
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
-                        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cream/80">
-                              {meal.day}
-                            </p>
-                            <h2 className="mt-2 font-display text-2xl text-white">
-                              {meal.name}
-                            </h2>
+                      <article
+                        key={`${meal.day}-${meal.name}-${index}`}
+                        className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
+                      >
+                        {showMealImage ? (
+                          <div className="relative h-48 overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              alt={meal.name}
+                              className="h-full w-full object-cover"
+                              onError={() =>
+                                setHiddenCardImages((current) =>
+                                  new Set(current).add(mealCardKey),
+                                )
+                              }
+                              src={meal.imageUrl}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
+                            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cream/80">
+                                  {mealEyebrow}
+                                </p>
+                                <h2 className="mt-2 font-display text-2xl text-white">
+                                  {meal.name}
+                                </h2>
+                              </div>
+                              <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
+                                Serves {meal.servings}
+                              </span>
+                            </div>
                           </div>
-                          <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
-                            Serves {meal.servings}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 p-5">
-                        {expandedDetailCards.has(mealCardKey) && (
-                          <p className="text-sm leading-7 text-ink/75">{meal.notes}</p>
+                        ) : (
+                          <div className="flex items-start justify-between gap-3 p-5 pb-0">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                                {mealEyebrow}
+                              </p>
+                              <h2 className="mt-2 font-display text-2xl text-ink">
+                                {meal.name}
+                              </h2>
+                            </div>
+                            <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                              Serves {meal.servings}
+                            </span>
+                          </div>
                         )}
-                        <button
-                          className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                          onClick={() => handleToggleCardDetails(mealCardKey)}
-                          type="button"
-                        >
-                          {expandedDetailCards.has(mealCardKey)
-                            ? "Hide Details"
-                            : "Show Details"}
-                        </button>
-                        <div className="flex flex-wrap gap-3">
+
+                        <div className="space-y-4 p-5">
+                          {expandedDetailCards.has(mealCardKey) && (
+                            <p className="text-sm leading-7 text-ink/75">{meal.notes}</p>
+                          )}
                           <button
-                            className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
-                              savedMealKeys.has(`${meal.day}::${meal.name}`)
-                                ? "bg-orange-500 text-white"
+                            className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                            onClick={() => handleToggleCardDetails(mealCardKey)}
+                            type="button"
+                          >
+                            {expandedDetailCards.has(mealCardKey)
+                              ? "Hide Details"
+                              : "Show Details"}
+                          </button>
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
+                                savedMealKeys.has(`${meal.day}::${meal.name}`)
+                                  ? "bg-orange-500 text-white"
+                                  : weeklyMenu.length >= 5
+                                    ? "bg-stone-100 text-stone-400"
+                                    : "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                              }`}
+                              disabled={
+                                weeklyMenu.length >= 5 &&
+                                !savedMealKeys.has(`${meal.day}::${meal.name}`)
+                              }
+                              onClick={() => handleSaveToWeeklyMenu(meal)}
+                              type="button"
+                            >
+                              {savedMealKeys.has(`${meal.day}::${meal.name}`)
+                                ? "Saved"
                                 : weeklyMenu.length >= 5
-                                  ? "bg-stone-100 text-stone-400"
-                                  : "bg-orange-50 text-orange-700 hover:bg-orange-100"
-                            }`}
-                            disabled={
-                              weeklyMenu.length >= 5 &&
-                              !savedMealKeys.has(`${meal.day}::${meal.name}`)
-                            }
-                            onClick={() => handleSaveToWeeklyMenu(meal)}
-                            type="button"
-                          >
-                            {savedMealKeys.has(`${meal.day}::${meal.name}`)
-                              ? "Saved"
-                              : weeklyMenu.length >= 5
-                                ? "Menu Full"
-                                : "Save to Menu"}
-                          </button>
-                          <button
-                            className="inline-flex items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={replacingMealKey === `${meal.day}::${meal.name}`}
-                            onClick={() => handleReplaceMeal(meal, index)}
-                            type="button"
-                          >
-                            {replacingMealKey === `${meal.day}::${meal.name}`
-                              ? "Replacing..."
-                              : "Replace"}
-                          </button>
-                          <button
-                            className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={
-                              recipeLoadingMeal === meal.name ||
-                              replacingMealKey === `${meal.day}::${meal.name}`
-                            }
-                            onClick={() => handleGetRecipe(meal)}
-                            type="button"
-                          >
-                            {recipeLoadingMeal === meal.name
-                              ? "Loading recipe..."
-                              : "Get Recipe"}
-                          </button>
+                                  ? "Menu Full"
+                                  : "Save to Menu"}
+                            </button>
+                            <button
+                              className="inline-flex items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={replacingMealKey === `${meal.day}::${meal.name}`}
+                              onClick={() => handleReplaceMeal(meal, index)}
+                              type="button"
+                            >
+                              {replacingMealKey === `${meal.day}::${meal.name}`
+                                ? "Replacing..."
+                                : "Replace"}
+                            </button>
+                            <button
+                              className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                              disabled={
+                                recipeLoadingMeal === meal.name ||
+                                replacingMealKey === `${meal.day}::${meal.name}`
+                              }
+                              onClick={() => handleGetRecipe(meal)}
+                              type="button"
+                            >
+                              {recipeLoadingMeal === meal.name
+                                ? "Loading recipe..."
+                                : "Get Recipe"}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </article>
+                      </article>
                     );
                   })}
                 </div>
@@ -1752,7 +1772,7 @@ export function SmartCartApp() {
                           className="rounded-3xl border border-stone-200 bg-white px-4 py-4 shadow-lg"
                         >
                           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                            {meal.day}
+                            {formatCardEyebrow(meal.day)}
                           </p>
                           <h3 className="mt-2 font-display text-xl text-ink">
                             {meal.name}
@@ -1840,19 +1860,33 @@ export function SmartCartApp() {
                         const isDessertSaved = savedDessertKeys.has(dessert.title);
                         const isReplacingThisDessert =
                           replacingDessertKey === `${dessert.title}-${index}`;
+                        const showDessertImage =
+                          Boolean(dessert.imageUrl?.trim()) &&
+                          !hiddenCardImages.has(dessertCardKey);
 
                         return (
                           <article
                             key={dessertCardKey}
                             className="overflow-hidden rounded-[1.5rem] border border-rose-200 bg-white p-4 shadow-md"
                           >
-                            <div className="overflow-hidden rounded-[1.25rem]">
-                              <img
-                                alt={dessert.title}
-                                className="h-48 w-full rounded-[1.25rem] object-cover"
-                                src={dessert.imageUrl || fallbackFoodImages[0]}
-                              />
-                            </div>
+                            {showDessertImage ? (
+                              <div className="overflow-hidden rounded-[1.25rem]">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  alt={dessert.title}
+                                  className="h-48 w-full rounded-[1.25rem] object-cover"
+                                  onError={() =>
+                                    setHiddenCardImages((current) =>
+                                      new Set(current).add(dessertCardKey),
+                                    )
+                                  }
+                                  src={dessert.imageUrl}
+                                />
+                              </div>
+                            ) : null}
+                            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                              SWEET TREAT
+                            </p>
                             <h3 className="mt-3 font-display text-2xl text-ink">
                               {dessert.title}
                             </h3>

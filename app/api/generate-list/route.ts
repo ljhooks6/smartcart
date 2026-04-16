@@ -208,6 +208,7 @@ Rules:
 - Respect the budget strictly.
 - Respect the diet exactly.
 - This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.
+- CRITICAL RULE: Stop defaulting to cheap LLM tropes like Chickpea Curry, Lentil Soup, or Bean Tacos unless the user explicitly marked those items as owned in their pantry. You must prioritize the actual proteins the user selected. Do not force legumes into the menu just to keep the budget low. Be creative with the ingredients provided.
 - Reuse pantry items whenever possible.
 - Use pantry items from the "fully stocked", "running low", and "restock" lists to shape the meals.
 - Do not generate a root-level grocery list.
