@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { supabase } from "../lib/supabase";
 
 type IngredientItem = {
   name: string;
@@ -345,6 +346,10 @@ function groupIngredientList(ingredients: IngredientItem[]) {
 
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
+  const [user, setUser] = useState<any>(null);
+  const [email, setEmail] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -386,6 +391,20 @@ export function SmartCartApp() {
   const [hiddenCardImages, setHiddenCardImages] = useState<Set<string>>(
     new Set(),
   );
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     try {
@@ -1100,6 +1119,22 @@ export function SmartCartApp() {
 
   function handleFeatureToggle(feature: keyof typeof featureDescriptions) {
     setActiveFeature((current) => (current === feature ? null : feature));
+  }
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsAuthLoading(true);
+    setAuthMessage("");
+
+    const { error } = await supabase.auth.signInWithOtp({ email });
+
+    if (error) {
+      setAuthMessage(error.message);
+    } else {
+      setAuthMessage("✨ Check your email for the magic link!");
+    }
+
+    setIsAuthLoading(false);
   }
 
   async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
@@ -2235,6 +2270,57 @@ export function SmartCartApp() {
                   </button>
                   {copied && (
                     <span className="text-sm font-semibold text-pine">Copied!</span>
+                  )}
+                </div>
+
+                <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+                  {!user ? (
+                    <>
+                      <h4 className="font-display text-xl text-ink">
+                        Save your pantry &amp; settings for next week
+                      </h4>
+                      <p className="mt-2 text-sm leading-6 text-ink/70">
+                        Drop in your email and we&apos;ll send a magic link so you can come back
+                        to SmartCart without creating a password.
+                      </p>
+                      <form className="mt-4 space-y-3" onSubmit={handleLogin}>
+                        <input
+                          className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+                          onChange={(event) => setEmail(event.target.value)}
+                          placeholder="Enter your email"
+                          type="email"
+                          value={email}
+                        />
+                        <button
+                          className="w-full rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isAuthLoading}
+                          type="submit"
+                        >
+                          {isAuthLoading ? "Sending magic link..." : "Send Magic Link"}
+                        </button>
+                      </form>
+                      {authMessage ? (
+                        <p className="mt-3 text-sm font-medium text-ink/70">{authMessage}</p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h4 className="font-display text-xl text-ink">
+                          Save your pantry &amp; settings for next week
+                        </h4>
+                        <p className="mt-2 text-sm leading-6 text-ink/70">
+                          Signed in as: {user.email}
+                        </p>
+                      </div>
+                      <button
+                        className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                        onClick={() => supabase.auth.signOut()}
+                        type="button"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
                   )}
                 </div>
                 </aside>
