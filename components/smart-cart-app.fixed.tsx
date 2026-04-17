@@ -6,11 +6,12 @@ import { supabase } from "../lib/supabase";
 type IngredientItem = {
   name: string;
   amount: string;
-  price: number;
+  price?: number;
 };
 
 type MealPlanItem = {
   dbId?: number | string;
+  user_id?: string;
   day: string;
   name: string;
   servings: number;
@@ -400,7 +401,7 @@ export function SmartCartApp() {
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
   const [isGroceryOpen, setIsGroceryOpen] = useState(false);
-  const [isPantrySnapshotOpen, setIsPantrySnapshotOpen] = useState(false);
+  const [isPantryOpen, setIsPantryOpen] = useState(false);
   const [restoredItems, setRestoredItems] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [newCustomItem, setNewCustomItem] = useState("");
@@ -1467,6 +1468,11 @@ export function SmartCartApp() {
 
     return {
       dbId: fallback.dbId,
+      user_id: safeTrim(
+        ("user_id" in (record ?? {})
+          ? (record as Partial<MealPlanItem>).user_id
+          : undefined) ?? fallback.user_id,
+      ),
       day: safeTrim(
         ("day" in (record ?? {}) ? (record as Partial<MealPlanItem>).day : undefined) ??
           fallback.day,
@@ -1491,34 +1497,49 @@ export function SmartCartApp() {
   }
 
   async function fetchSavedMeals(userId: string) {
+    if (!user?.id) {
+      return { dinners: [], desserts: [] };
+    }
+
     const { data, error } = await supabase
       .from("weekly_menus")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .eq("status", "active_week");
 
     if (error) {
       throw error;
     }
 
-    const rows = data ?? [];
+    const sanitized = (data ?? []).map((row) => ({
+      ...row,
+      name: safeTrim((row as { name?: string }).name),
+      ingredients: Array.isArray((row as { ingredients?: unknown[] }).ingredients)
+        ? ((row as { ingredients?: IngredientItem[] }).ingredients ?? [])
+        : [],
+      instructions: Array.isArray((row as { instructions?: unknown[] }).instructions)
+        ? ((row as { instructions?: string[] }).instructions ?? [])
+        : [],
+    }));
 
-    const dinners = rows
+    const dinners = sanitized
       .filter((row) => row.type === "dinner")
       .map((row) =>
         rehydrateMealRecord(row.recipe_data as Partial<MealPlanItem> | null, {
           dbId: row.id,
+          user_id: safeTrim(row.user_id),
         }),
       )
       .filter((meal): meal is MealPlanItem => Boolean(meal));
 
-    const desserts = rows
+    const desserts = sanitized
       .filter((row) => row.type === "sweet_treat")
       .map((row, index) =>
         rehydrateMealRecord(
           row.recipe_data as GenerateListResponse["desserts"][number] | null,
           {
             dbId: row.id,
+            user_id: safeTrim(row.user_id),
             day: `Sweet Treat ${index + 1}`,
             servings: Number(formState.householdSize) || 2,
           },
@@ -1530,17 +1551,32 @@ export function SmartCartApp() {
   }
 
   async function fetchArchivedMeals(userId: string) {
+    if (!user?.id) {
+      return [];
+    }
+
     const { data, error } = await supabase
       .from("weekly_menus")
       .select("*")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .eq("status", "archived");
 
     if (error) {
       throw error;
     }
 
-    return (data ?? [])
+    const sanitized = (data ?? []).map((row) => ({
+      ...row,
+      name: safeTrim((row as { name?: string }).name),
+      ingredients: Array.isArray((row as { ingredients?: unknown[] }).ingredients)
+        ? ((row as { ingredients?: IngredientItem[] }).ingredients ?? [])
+        : [],
+      instructions: Array.isArray((row as { instructions?: unknown[] }).instructions)
+        ? ((row as { instructions?: string[] }).instructions ?? [])
+        : [],
+    }));
+
+    return sanitized
       .map((row) =>
         rehydrateMealRecord(
           row.recipe_data as
@@ -1549,6 +1585,7 @@ export function SmartCartApp() {
             | null,
           {
             dbId: row.id,
+            user_id: safeTrim(row.user_id),
             day: row.type === "sweet_treat" ? "Sweet Treat" : "",
             servings: Number(formState.householdSize) || 2,
           },
@@ -2136,15 +2173,15 @@ export function SmartCartApp() {
               <div className="rounded-[1.75rem] border border-pine/10 bg-pine text-cream">
                 <button
                   className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
-                  onClick={() => setIsPantrySnapshotOpen((current) => !current)}
+                  onClick={() => setIsPantryOpen((current) => !current)}
                   type="button"
                 >
                   <span className="font-display text-xl">Pantry Snapshot</span>
                   <span className="text-xs uppercase tracking-[0.2em] text-cream/70">
-                    {isPantrySnapshotOpen ? "Hide" : "View Pantry Snapshot"}
+                    {isPantryOpen ? "Hide" : "View Pantry Snapshot"}
                   </span>
                 </button>
-                {isPantrySnapshotOpen ? (
+                {isPantryOpen ? (
                   <div className="border-t border-white/10 px-6 pb-5 pt-4">
                     <div className="flex flex-wrap gap-2">
                       {combinedPantryItems.length > 0 ? (
@@ -2347,7 +2384,7 @@ export function SmartCartApp() {
                                 {mealEyebrow}
                               </p>
                               <h2 className="mt-2 font-display text-2xl text-ink">
-                                {meal.name}
+                                {safeTrim(meal.name)}
                               </h2>
                             </div>
                             <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
@@ -2446,13 +2483,15 @@ export function SmartCartApp() {
                             {index < 7 ? `DAY ${index + 1}` : "BONUS MEAL"}
                           </p>
                           <h3 className="mt-2 font-display text-xl text-ink">
-                            {meal.name}
+                            {safeTrim(meal.name)}
                           </h3>
                           <p className="mt-2 text-sm leading-6 text-ink/70">
                             Serves {meal.servings}
                           </p>
                           {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`) && (
-                            <p className="mt-3 text-sm leading-7 text-ink/75">{meal.notes}</p>
+                            <p className="mt-3 text-sm leading-7 text-ink/75">
+                              {safeTrim(meal.notes)}
+                            </p>
                           )}
                           <button
                             className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
@@ -2588,13 +2627,15 @@ export function SmartCartApp() {
                                 {formatCardEyebrow(meal.day)}
                               </p>
                               <h3 className="mt-2 font-display text-xl text-ink">
-                                {meal.name}
+                                {safeTrim(meal.name)}
                               </h3>
                               <p className="mt-2 text-sm leading-6 text-ink/70">
                                 Serves {meal.servings}
                               </p>
                               {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`) && (
-                                <p className="mt-3 text-sm leading-7 text-ink/75">{meal.notes}</p>
+                                <p className="mt-3 text-sm leading-7 text-ink/75">
+                                  {safeTrim(meal.notes)}
+                                </p>
                               )}
                               <button
                                 className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
@@ -2734,11 +2775,11 @@ export function SmartCartApp() {
                               SWEET TREAT
                             </p>
                             <h3 className="mt-3 font-display text-2xl text-ink">
-                              {dessert.title}
+                              {safeTrim(dessert.title)}
                             </h3>
                             {expandedDetailCards.has(dessertCardKey) && (
                               <p className="mt-3 text-sm leading-7 text-ink/80">
-                                {dessert.description}
+                                {safeTrim(dessert.description)}
                               </p>
                             )}
                             <button
