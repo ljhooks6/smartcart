@@ -395,7 +395,7 @@ export function SmartCartApp() {
   const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
-  const [isGroceryOpen, setIsGroceryOpen] = useState(true);
+  const [isGroceryOpen, setIsGroceryOpen] = useState(false);
   const [restoredItems, setRestoredItems] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [newCustomItem, setNewCustomItem] = useState("");
@@ -927,10 +927,15 @@ export function SmartCartApp() {
   }
 
   async function handleConsolidateList() {
-    const rawIngredients = weeklyMenu.flatMap((meal) =>
-      (meal.ingredients ?? []).map(
-        (ingredient) => `${ingredient.amount} ${ingredient.name}`.trim(),
-      ),
+    const rawIngredients = [...weeklyMenu, ...savedDesserts].flatMap((meal) =>
+      (meal.ingredients ?? [])
+        .filter(
+          (ingredient) =>
+            ingredient &&
+            typeof ingredient.name === "string" &&
+            typeof ingredient.amount === "string",
+        )
+        .map((ingredient) => `${ingredient.amount} ${ingredient.name}`.trim()),
     );
 
     if (rawIngredients.length === 0) {
@@ -2372,12 +2377,25 @@ export function SmartCartApp() {
                                 </p>
                                 <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
                                   {(meal.ingredients && meal.ingredients.length > 0
-                                    ? meal.ingredients.map(
-                                        (ingredient) =>
-                                          `${ingredient.amount} ${ingredient.name}`,
+                                    ? meal.ingredients
+                                        .filter(
+                                          (ingredient) =>
+                                            ingredient &&
+                                            typeof ingredient.name === "string" &&
+                                            typeof ingredient.amount === "string",
+                                        )
+                                        .map(
+                                          (ingredient) =>
+                                            `${ingredient.amount} ${ingredient.name}`,
+                                        )
+                                    : (recipeCache[meal.name]?.ingredients ?? []).filter(
+                                        (ingredient) => typeof ingredient === "string",
                                       )
-                                    : recipeCache[meal.name]?.ingredients ?? []
-                                  ).map((ingredient) => (
+                                  )
+                                    .filter((ingredient) => typeof ingredient === "string")
+                                    .map((ingredient) => ingredient.trim())
+                                    .filter(Boolean)
+                                    .map((ingredient) => (
                                     <li key={`${meal.name}-${ingredient}`} className="flex gap-2">
                                       <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
                                       <span>{ingredient}</span>
@@ -2493,12 +2511,25 @@ export function SmartCartApp() {
                                     </p>
                                     <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
                                       {(meal.ingredients && meal.ingredients.length > 0
-                                        ? meal.ingredients.map(
-                                            (ingredient) =>
-                                              `${ingredient.amount} ${ingredient.name}`,
+                                        ? meal.ingredients
+                                            .filter(
+                                              (ingredient) =>
+                                                ingredient &&
+                                                typeof ingredient.name === "string" &&
+                                                typeof ingredient.amount === "string",
+                                            )
+                                            .map(
+                                              (ingredient) =>
+                                                `${ingredient.amount} ${ingredient.name}`,
+                                            )
+                                        : (recipeCache[meal.name]?.ingredients ?? []).filter(
+                                            (ingredient) => typeof ingredient === "string",
                                           )
-                                        : recipeCache[meal.name]?.ingredients ?? []
-                                      ).map((ingredient) => (
+                                      )
+                                        .filter((ingredient) => typeof ingredient === "string")
+                                        .map((ingredient) => ingredient.trim())
+                                        .filter(Boolean)
+                                        .map((ingredient) => (
                                         <li
                                           key={`${meal.name}-${ingredient}`}
                                           className="flex gap-2"
@@ -2603,7 +2634,14 @@ export function SmartCartApp() {
                                   Ingredients
                                 </p>
                                 <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                                  {dessert.ingredients.map((ingredient) => (
+                                  {dessert.ingredients
+                                    .filter(
+                                      (ingredient) =>
+                                        ingredient &&
+                                        typeof ingredient.name === "string" &&
+                                        typeof ingredient.amount === "string",
+                                    )
+                                    .map((ingredient) => (
                                     <li
                                       key={`${dessert.title}-${ingredient.name}-${ingredient.amount}`}
                                       className="flex gap-2"
@@ -3182,7 +3220,11 @@ export function SmartCartApp() {
                   <section className="rounded-[1.5rem] border border-pine/10 bg-cream px-5 py-5">
                     <p className="font-display text-2xl text-pine">Ingredients</p>
                     <ul className="mt-4 space-y-3 text-sm leading-7 text-ink/80">
-                      {activeRecipe.ingredients.map((ingredient) => (
+                      {activeRecipe.ingredients
+                        .filter((ingredient) => typeof ingredient === "string")
+                        .map((ingredient) => ingredient.trim())
+                        .filter(Boolean)
+                        .map((ingredient) => (
                         <li key={ingredient} className="flex gap-3">
                           <span className="mt-2 h-2 w-2 rounded-full bg-berry" />
                           <span>{ingredient}</span>
@@ -3194,7 +3236,11 @@ export function SmartCartApp() {
                   <section className="rounded-[1.5rem] border border-ink/10 bg-[#fffaf4] px-5 py-5">
                     <p className="font-display text-2xl text-ink">Steps</p>
                     <ol className="mt-4 space-y-4 text-sm leading-7 text-ink/80">
-                      {activeRecipe.steps.map((step, index) => (
+                      {activeRecipe.steps
+                        .filter((step) => typeof step === "string")
+                        .map((step) => step.trim())
+                        .filter(Boolean)
+                        .map((step, index) => (
                         <li
                           key={`${activeRecipe.title}-step-${index + 1}`}
                           className="flex gap-4"
