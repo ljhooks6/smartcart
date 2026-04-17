@@ -1408,7 +1408,7 @@ export function SmartCartApp() {
           ...(item.recipe_data as MealPlanItem),
           dbId: item.id,
         }))
-        .filter((meal) => meal && meal.name);
+        .filter((meal): meal is MealPlanItem => Boolean(meal && meal.name));
 
       const hydratedDessertRecipes = activeMenuRows
         .filter((item) => item.type === "sweet_treat")
@@ -1458,7 +1458,7 @@ export function SmartCartApp() {
             dbId: item.id,
           };
         })
-        .filter((meal): meal is MealPlanItem => Boolean(meal && meal.name));
+        .filter((item): item is MealPlanItem => item !== null);
 
       setWeeklyMenu(hydratedDinners);
       setSavedDesserts(hydratedDesserts);
