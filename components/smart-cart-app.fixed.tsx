@@ -11,7 +11,7 @@ type IngredientItem = {
 
 type MealPlanItem = {
   dbId?: number | string;
-  user_id?: string;
+  user_id: string;
   day: string;
   name: string;
   servings: number;
@@ -1064,6 +1064,7 @@ export function SmartCartApp() {
     index: number,
   ) {
     const dessertMeal: MealPlanItem = {
+      user_id: safeTrim(user?.id),
       day: `Sweet Treat ${index + 1}`,
       name: dessert.title,
       servings: Number(formState.householdSize) || 2,
@@ -1146,6 +1147,7 @@ export function SmartCartApp() {
 
       if (activeRecipeMeal?.name === dessert.title) {
         setActiveRecipeMeal({
+          user_id: safeTrim(user?.id),
           day: `Sweet Treat ${index + 1}`,
           name: data.title,
           servings: Number(formState.householdSize) || 2,
@@ -1330,6 +1332,7 @@ export function SmartCartApp() {
     index: number,
   ) {
     const dessertMeal: MealPlanItem = {
+      user_id: safeTrim(user?.id),
       day: `Sweet Treat ${index + 1}`,
       name: dessert.title,
       servings: Number(formState.householdSize) || 2,
@@ -1831,6 +1834,7 @@ export function SmartCartApp() {
       }
 
       const replacementMeal: MealPlanItem = {
+        user_id: safeTrim(meal.user_id) || safeTrim(user?.id),
         day: meal.day,
         name: data.title,
         servings: meal.servings,
@@ -2795,6 +2799,7 @@ export function SmartCartApp() {
                               className="mt-4 ml-3 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
                               onClick={() =>
                                 handleToggleIngredients({
+                                  user_id: safeTrim(user?.id),
                                   day: `Sweet Treat ${index + 1}`,
                                   name: dessert.title,
                                   servings: Number(formState.householdSize) || 2,
