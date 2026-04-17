@@ -3080,7 +3080,7 @@ export function SmartCartApp() {
                   )}
                 </div>
                   </>
-                ) : null}
+                )}
                 </aside>
               </div>
             </div>
