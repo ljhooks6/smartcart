@@ -397,12 +397,18 @@ export function SmartCartApp() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user?.id) {
+        void loadSessionFromCloud(session.user.id);
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user?.id) {
+        void loadSessionFromCloud(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -1137,6 +1143,89 @@ export function SmartCartApp() {
     }
 
     setIsAuthLoading(false);
+  }
+
+  async function loadSessionFromCloud(userId: string) {
+    try {
+      const [{ data: pantryData, error: pantryError }, { data: menuData, error: menuError }] =
+        await Promise.all([
+          supabase
+            .from("pantry_inventory")
+            .select("ingredient_name, is_owned")
+            .eq("user_id", userId),
+          supabase
+            .from("weekly_menus")
+            .select("meal_title, type, status")
+            .eq("user_id", userId)
+            .eq("status", "active_week"),
+        ]);
+
+      if (pantryError) {
+        throw pantryError;
+      }
+
+      if (menuError) {
+        throw menuError;
+      }
+
+      const ownedPantryItems = (pantryData ?? [])
+        .filter((item) => item.is_owned)
+        .map((item) => item.ingredient_name.trim())
+        .filter(Boolean);
+
+      setFullyStocked(new Set(ownedPantryItems));
+      setRunningLow(new Set());
+      setRestock(new Set());
+      setFormState((current) => ({
+        ...current,
+        pantryItems: "",
+      }));
+
+      const activeMenuRows = menuData ?? [];
+      const hydratedDinners: MealPlanItem[] = activeMenuRows
+        .filter((item) => item.type === "dinner")
+        .map((item, index) => ({
+          day: `Day ${index + 1}`,
+          name: item.meal_title,
+          servings: Number(formState.householdSize) || 2,
+          notes: "Loaded from your saved cloud menu.",
+          ingredients: [],
+        }));
+
+      const hydratedDesserts: MealPlanItem[] = activeMenuRows
+        .filter((item) => item.type === "sweet_treat")
+        .map((item, index) => ({
+          day: `Sweet Treat ${index + 1}`,
+          name: item.meal_title,
+          servings: Number(formState.householdSize) || 2,
+          notes: "Loaded from your saved cloud menu.",
+          ingredients: [],
+        }));
+
+      setWeeklyMenu(hydratedDinners);
+      setSavedDesserts(hydratedDesserts);
+
+      if (hydratedDinners.length > 0 || hydratedDesserts.length > 0) {
+        setGeneratedPlan({
+          meals: hydratedDinners,
+          restock_items: [],
+          estimated_total_cost: 0,
+          budget_summary: "Loaded from your saved cloud menu.",
+          upgrade_available: false,
+          desserts: hydratedDesserts.map((dessert) => ({
+            title: dessert.name,
+            description: dessert.notes,
+            ingredients: [],
+          })),
+        });
+      } else {
+        setGeneratedPlan(null);
+      }
+    } catch (error) {
+      setCloudSyncMessage(
+        error instanceof Error ? error.message : "Failed to load cloud data.",
+      );
+    }
   }
 
   async function saveSessionToCloud() {
