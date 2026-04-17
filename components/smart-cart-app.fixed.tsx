@@ -1489,7 +1489,7 @@ export function SmartCartApp() {
         ) || 2,
       notes: resolvedNotes,
       ingredients: hydratedIngredients,
-      instructions: rawInstructions.filter(
+      instructions: (rawInstructions || []).filter(
         (instruction): instruction is string => typeof instruction === "string",
       ),
       imageUrl: safeTrim(
@@ -2614,7 +2614,7 @@ export function SmartCartApp() {
                       onClick={() => void handleClearVault()}
                       type="button"
                     >
-                      Clear All
+                      Delete All Archived Meals
                     </button>
                   ) : null}
 
