@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   const systemPrompt =
-    "You are a culinary data parser. Combine duplicate ingredients from the provided list. Mathematically add matching or convertible units (e.g., 2 cups + 2 cups = 4 cups). Return ONLY a flat, valid JSON array of consolidated ingredient strings. Do not return markdown, code blocks, or conversational text.";
+    "You are a culinary data parser. Combine duplicate ingredients from the provided list. Mathematically add matching or convertible units (e.g., 2 cups + 2 cups = 4 cups). You MUST completely deduplicate the list. If an item appears twice, combine them into a single line item. Return ONLY a flat, valid JSON array of consolidated ingredient strings. Do not return markdown, code blocks, or conversational text.";
 
   try {
     const response = await openai.chat.completions.create({

@@ -53,6 +53,12 @@ type CustomItem = {
   isChecked: boolean;
 };
 
+type ConsolidatedItem = {
+  id: string;
+  name: string;
+  isChecked: boolean;
+};
+
 type ReplaceMealResponse = {
   title: string;
   description: string;
@@ -375,7 +381,7 @@ export function SmartCartApp() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [cloudSyncMessage, setCloudSyncMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [consolidatedList, setConsolidatedList] = useState<string[] | null>(null);
+  const [consolidatedList, setConsolidatedList] = useState<ConsolidatedItem[] | null>(null);
   const [isConsolidating, setIsConsolidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -529,7 +535,7 @@ export function SmartCartApp() {
 
   useEffect(() => {
     setConsolidatedList(null);
-  }, [weeklyMenu]);
+  }, [savedDesserts, weeklyMenu]);
 
   useEffect(() => {
     if (!activeRecipeMeal) {
@@ -757,7 +763,8 @@ export function SmartCartApp() {
   const existingMealTitles = useMemo(
     () =>
       [...(generatedPlan?.meals ?? []), ...weeklyMenu]
-        .map((meal) => meal.name)
+        .map((meal) => meal?.name || "")
+        .filter(Boolean)
         .join(", "),
     [generatedPlan?.meals, weeklyMenu],
   );
@@ -952,7 +959,13 @@ export function SmartCartApp() {
         return;
       }
 
-      setConsolidatedList(data as string[]);
+      const interactiveList = (data as string[]).map((item) => ({
+        id: crypto.randomUUID(),
+        name: item,
+        isChecked: false,
+      }));
+
+      setConsolidatedList(interactiveList);
     } catch (error) {
       setRequestError(
         error instanceof Error ? error.message : "Failed to consolidate ingredients.",
@@ -1395,7 +1408,7 @@ export function SmartCartApp() {
           ...(item.recipe_data as MealPlanItem),
           dbId: item.id,
         }))
-        .filter(Boolean);
+        .filter((meal) => meal && meal.name);
 
       const hydratedDessertRecipes = activeMenuRows
         .filter((item) => item.type === "sweet_treat")
@@ -1403,7 +1416,7 @@ export function SmartCartApp() {
           (item) =>
             item.recipe_data as GenerateListResponse["desserts"][number],
         )
-        .filter(Boolean);
+        .filter((dessert) => dessert && dessert.title);
 
       const archivedMenuRows = allMenuRows.filter(
         (item) => item.status === "archived",
@@ -1426,6 +1439,9 @@ export function SmartCartApp() {
           if (item.type === "sweet_treat") {
             const dessert =
               item.recipe_data as GenerateListResponse["desserts"][number];
+            if (!dessert || !dessert.title) {
+              return null;
+            }
             return {
               dbId: item.id,
               day: "Sweet Treat",
@@ -1442,7 +1458,7 @@ export function SmartCartApp() {
             dbId: item.id,
           };
         })
-        .filter(Boolean);
+        .filter((meal): meal is MealPlanItem => Boolean(meal && meal.name));
 
       setWeeklyMenu(hydratedDinners);
       setSavedDesserts(hydratedDesserts);
@@ -2281,13 +2297,13 @@ export function SmartCartApp() {
 
                   {weeklyMenu.length > 0 ? (
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      {weeklyMenu.map((meal) => (
+                      {weeklyMenu.map((meal, index) => (
                         <article
                           key={`saved-${meal.day}-${meal.name}`}
                           className="rounded-3xl border border-stone-200 bg-white px-4 py-4 shadow-lg"
                         >
                           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                            {formatCardEyebrow(meal.day)}
+                            {index < 7 ? `DAY ${index + 1}` : "BONUS MEAL"}
                           </p>
                           <h3 className="mt-2 font-display text-xl text-ink">
                             {meal.name}
@@ -2379,10 +2395,14 @@ export function SmartCartApp() {
                     </div>
                   )}
 
-                  <p className="mt-6 text-sm leading-6 text-ink/65">
-                    Save recipes here for future weeks without adding them to your current
-                    grocery list.
-                  </p>
+                  <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                    <strong>💡 HOW TO USE THE VAULT:</strong> Click
+                    {" "}
+                    <strong>[🗄️ Stash in Vault]</strong>
+                    {" "}
+                    on any active meal above to save its recipe here for future weeks. This
+                    removes it from your current grocery budget.
+                  </div>
                   <button
                     className="mt-6 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
                     onClick={() => setIsVaultOpen(!isVaultOpen)}
@@ -2641,19 +2661,21 @@ export function SmartCartApp() {
 
               <div className="lg:col-span-4 sticky top-4">
                 <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-display text-3xl text-ink">Grocery list</p>
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                    onClick={() => setIsGroceryOpen(!isGroceryOpen)}
-                    type="button"
-                  >
-                    <span aria-hidden="true">{"🛒 "}</span>
-                    {isGroceryOpen ? "Close Grocery List" : "Open Grocery List"}
-                  </button>
-                </div>
+                <button
+                  className="w-full rounded-lg bg-gray-100 p-4 text-left font-display text-2xl font-bold text-ink"
+                  onClick={() => setIsGroceryOpen(!isGroceryOpen)}
+                  type="button"
+                >
+                  <span className="flex items-center justify-between gap-3">
+                    <span>
+                      <span aria-hidden="true">{"🛒 "}</span>
+                      Grocery List
+                    </span>
+                    <span>{isGroceryOpen ? "▲" : "▼"}</span>
+                  </span>
+                </button>
 
-                {isGroceryOpen ? (
+                {isGroceryOpen && (
                   <>
                 <p className="mt-2 text-sm italic leading-6 text-gray-500">
                   Prices are AI-generated national averages for estimation. Actual costs may be
@@ -2683,11 +2705,33 @@ export function SmartCartApp() {
                       <ul className="mt-4 space-y-3">
                         {consolidatedList.map((ingredient) => (
                           <li
-                            key={`consolidated-${ingredient}`}
+                            key={`consolidated-${ingredient.id}`}
                             className="flex items-center gap-3 text-sm font-medium text-ink"
                           >
-                            <span className="mt-0.5 h-2 w-2 rounded-full bg-pine" />
-                            <span>{ingredient}</span>
+                            <input
+                              checked={ingredient.isChecked}
+                              className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
+                              onChange={() =>
+                                setConsolidatedList((current) =>
+                                  current
+                                    ? current.map((currentItem) =>
+                                        currentItem.id === ingredient.id
+                                          ? {
+                                              ...currentItem,
+                                              isChecked: !currentItem.isChecked,
+                                            }
+                                          : currentItem,
+                                      )
+                                    : current,
+                                )
+                              }
+                              type="checkbox"
+                            />
+                            <span
+                              className={ingredient.isChecked ? "line-through opacity-60" : ""}
+                            >
+                              {ingredient.name}
+                            </span>
                           </li>
                         ))}
                       </ul>
