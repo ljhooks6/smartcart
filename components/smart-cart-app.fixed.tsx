@@ -357,6 +357,8 @@ export function SmartCartApp() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [cloudSyncMessage, setCloudSyncMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [consolidatedList, setConsolidatedList] = useState<string[] | null>(null);
+  const [isConsolidating, setIsConsolidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -502,6 +504,10 @@ export function SmartCartApp() {
       SMART_CART_WEEKLY_MENU_STORAGE_KEY,
       JSON.stringify(weeklyMenu),
     );
+  }, [weeklyMenu]);
+
+  useEffect(() => {
+    setConsolidatedList(null);
   }, [weeklyMenu]);
 
   useEffect(() => {
@@ -886,6 +892,49 @@ export function SmartCartApp() {
       setRequestError(
         error instanceof Error ? error.message : "Failed to copy shopping list.",
       );
+    }
+  }
+
+  async function handleConsolidateList() {
+    const rawIngredients = weeklyMenu.flatMap((meal) =>
+      (meal.ingredients ?? []).map(
+        (ingredient) => `${ingredient.amount} ${ingredient.name}`.trim(),
+      ),
+    );
+
+    if (rawIngredients.length === 0) {
+      setConsolidatedList([]);
+      return;
+    }
+
+    setIsConsolidating(true);
+    setRequestError(null);
+
+    try {
+      const response = await fetch("/api/consolidate-ingredients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ingredients: rawIngredients,
+        }),
+      });
+
+      const data = (await response.json()) as string[] & { error?: string };
+
+      if (!response.ok) {
+        setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
+        return;
+      }
+
+      setConsolidatedList(data as string[]);
+    } catch (error) {
+      setRequestError(
+        error instanceof Error ? error.message : "Failed to consolidate ingredients.",
+      );
+    } finally {
+      setIsConsolidating(false);
     }
   }
 
@@ -2487,81 +2536,111 @@ export function SmartCartApp() {
                 </p>
 
                 <div className="mt-6 space-y-5">
-                  {displayGroceriesByCategory.map(([category, items]) => (
-                    <section
-                      key={category}
-                      className="rounded-3xl border border-stone-200 bg-white p-4 shadow-lg"
-                    >
-                      <p className="font-display text-xl text-pine">{category}</p>
-                      <ul className="mt-4 space-y-3">
-                        {items.map((item) => {
-                          const isRestock = item.name.includes("(Includes Restock)");
-                          const bellPepperPattern = /bell pepper/i;
-                          const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
-                          const trimmedName = item.name.trim();
-                          const isRestoredItem = restoredItems.includes(item.name);
-                          const displayName =
-                            bellPepperPattern.test(trimmedName) &&
-                            !bellPepperColorPattern.test(trimmedName)
-                              ? `${trimmedName} (Any color)`
-                              : trimmedName;
+                  <section className="rounded-3xl border border-stone-200 bg-white p-4 shadow-lg">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-display text-xl text-pine">Meal Ingredients</p>
+                      <button
+                        className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isConsolidating}
+                        onClick={() => void handleConsolidateList()}
+                        type="button"
+                      >
+                        <span aria-hidden="true">{"🪄 "}</span>
+                        {isConsolidating ? "Consolidating..." : "Consolidate List"}
+                      </button>
+                    </div>
 
-                          return (
-                            <li
-                              key={`${category}-${item.name}`}
-                              className="flex items-center justify-between gap-4"
-                            >
-                              <label className="flex items-start gap-3">
-                                <input
-                                  checked={checkedItems.has(`${category}-${item.name}`)}
-                                  className="mt-0.5 h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                                  onChange={() => toggleCheckedItem(`${category}-${item.name}`)}
-                                  type="checkbox"
-                                />
-                                <span className="flex flex-col">
-                                  <span
-                                    className={`flex items-center gap-2 text-sm font-medium text-ink ${
-                                      checkedItems.has(`${category}-${item.name}`)
-                                        ? "line-through opacity-60"
-                                      : ""
-                                    }`}
-                                  >
-                                    {item.amount && (
-                                      <span className="font-semibold text-ink">
-                                        {item.amount}
-                                      </span>
-                                    )}
-                                    <span>{displayName}</span>
-                                    {isRestock && (
-                                      <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
-                                        Restock
-                                      </span>
-                                    )}
-                                    {isRestoredItem && (
-                                      <button
-                                        className="text-xs font-semibold text-red-400 transition hover:text-red-500"
-                                        onClick={() =>
-                                          setRestoredItems((current) =>
-                                            current.filter((name) => name !== item.name),
-                                          )
-                                        }
-                                        type="button"
-                                      >
-                                        - Remove
-                                      </button>
-                                    )}
-                                  </span>
-                                </span>
-                              </label>
-                              <span className="text-sm font-semibold text-pine">
-                                {formatCurrency(item.estimated_price)}
-                              </span>
-                            </li>
-                          );
-                        })}
+                    {consolidatedList !== null ? (
+                      <ul className="mt-4 space-y-3">
+                        {consolidatedList.map((ingredient) => (
+                          <li
+                            key={`consolidated-${ingredient}`}
+                            className="flex items-center gap-3 text-sm font-medium text-ink"
+                          >
+                            <span className="mt-0.5 h-2 w-2 rounded-full bg-pine" />
+                            <span>{ingredient}</span>
+                          </li>
+                        ))}
                       </ul>
-                    </section>
-                  ))}
+                    ) : (
+                      <div className="mt-4 space-y-5">
+                        {displayGroceriesByCategory.map(([category, items]) => (
+                          <section key={category}>
+                            <p className="font-display text-lg text-pine">{category}</p>
+                            <ul className="mt-4 space-y-3">
+                              {items.map((item) => {
+                                const isRestock = item.name.includes("(Includes Restock)");
+                                const bellPepperPattern = /bell pepper/i;
+                                const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
+                                const trimmedName = item.name.trim();
+                                const isRestoredItem = restoredItems.includes(item.name);
+                                const displayName =
+                                  bellPepperPattern.test(trimmedName) &&
+                                  !bellPepperColorPattern.test(trimmedName)
+                                    ? `${trimmedName} (Any color)`
+                                    : trimmedName;
+
+                                return (
+                                  <li
+                                    key={`${category}-${item.name}`}
+                                    className="flex items-center justify-between gap-4"
+                                  >
+                                    <label className="flex items-start gap-3">
+                                      <input
+                                        checked={checkedItems.has(`${category}-${item.name}`)}
+                                        className="mt-0.5 h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
+                                        onChange={() =>
+                                          toggleCheckedItem(`${category}-${item.name}`)
+                                        }
+                                        type="checkbox"
+                                      />
+                                      <span className="flex flex-col">
+                                        <span
+                                          className={`flex items-center gap-2 text-sm font-medium text-ink ${
+                                            checkedItems.has(`${category}-${item.name}`)
+                                              ? "line-through opacity-60"
+                                              : ""
+                                          }`}
+                                        >
+                                          {item.amount && (
+                                            <span className="font-semibold text-ink">
+                                              {item.amount}
+                                            </span>
+                                          )}
+                                          <span>{displayName}</span>
+                                          {isRestock && (
+                                            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
+                                              Restock
+                                            </span>
+                                          )}
+                                          {isRestoredItem && (
+                                            <button
+                                              className="text-xs font-semibold text-red-400 transition hover:text-red-500"
+                                              onClick={() =>
+                                                setRestoredItems((current) =>
+                                                  current.filter((name) => name !== item.name),
+                                                )
+                                              }
+                                              type="button"
+                                            >
+                                              - Remove
+                                            </button>
+                                          )}
+                                        </span>
+                                      </span>
+                                    </label>
+                                    <span className="text-sm font-semibold text-pine">
+                                      {formatCurrency(item.estimated_price)}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </section>
+                        ))}
+                      </div>
+                    )}
+                  </section>
                 </div>
 
                 {skippedGroceriesByCategory.length > 0 && (
