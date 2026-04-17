@@ -12,6 +12,7 @@ type ReplaceMealRequest = {
   adventureLevel?: string;
   mustHaveIngredient?: string;
   existingMeals?: string;
+  availableEquipment?: string[];
 };
 
 const replaceMealResponseSchema = z.object({
@@ -47,7 +48,13 @@ export async function POST(request: Request) {
     adventureLevel,
     mustHaveIngredient,
     existingMeals,
+    availableEquipment,
   } = (body as Partial<ReplaceMealRequest>) ?? {};
+
+  const selectedEquipment =
+    Array.isArray(availableEquipment) && availableEquipment.length > 0
+      ? availableEquipment.join(", ")
+      : "Oven, Stovetop, Microwave";
 
   if (
     typeof budget !== "number" ||
@@ -79,6 +86,7 @@ Rules:
 - Generate exactly ONE replacement meal.
 - The replacement must feel clearly different from the rejected meal title in flavor profile, format, and primary ingredients.
 - CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals?.trim() || "None provided"}.
+- CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.
 - Respect the user's budget, diet, household size, pantry items, and prep-time preference.
 - Use pantry items where reasonable.
 - Keep the replacement practical for a weeknight home cook.
@@ -103,6 +111,7 @@ Rejected Meal Title: ${rejectedMealTitle}
 Prep Time Preference: ${prepTime || "No preference provided"}
 Adventure Level: ${adventureLevel || "No preference provided"}
 Must-Have Ingredient: ${mustHaveIngredient?.trim() || "None provided"}
+Available Kitchen Equipment: ${selectedEquipment}
 
 The new meal must be distinctly different from "${rejectedMealTitle}".
 `;

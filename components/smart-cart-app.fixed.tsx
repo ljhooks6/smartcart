@@ -47,6 +47,12 @@ type RecipeResponse = {
   steps: string[];
 };
 
+type CustomItem = {
+  id: string;
+  name: string;
+  isChecked: boolean;
+};
+
 type ReplaceMealResponse = {
   title: string;
   description: string;
@@ -71,6 +77,7 @@ type FormState = {
   prepTime: string;
   adventureLevel: string;
   isBudgetTight: boolean;
+  availableEquipment: string[];
 };
 
 const initialFormState: FormState = {
@@ -83,6 +90,7 @@ const initialFormState: FormState = {
   prepTime: "Under 30 mins",
   adventureLevel: "Mix it up",
   isBudgetTight: true,
+  availableEquipment: ["Oven", "Stovetop", "Microwave"],
 };
 
 const clearedFormState: FormState = {
@@ -95,6 +103,7 @@ const clearedFormState: FormState = {
   prepTime: "Under 30 mins",
   adventureLevel: "Stick to basics",
   isBudgetTight: true,
+  availableEquipment: ["Oven", "Stovetop", "Microwave"],
 };
 
 const prepTimeOptions = ["Under 30 mins", "Under 1 hour", "No limit"] as const;
@@ -102,6 +111,15 @@ const adventureLevelOptions = [
   "Stick to basics",
   "Mix it up",
   "Try new cuisines",
+] as const;
+const equipmentOptions = [
+  "Oven",
+  "Stovetop",
+  "Microwave",
+  "Grill",
+  "Air Fryer",
+  "Slow Cooker",
+  "Blender",
 ] as const;
 
 const pantryQuickSelectOptions = {
@@ -371,8 +389,9 @@ export function SmartCartApp() {
   const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
+  const [isGroceryOpen, setIsGroceryOpen] = useState(true);
   const [restoredItems, setRestoredItems] = useState<string[]>([]);
-  const [customItems, setCustomItems] = useState<string[]>([]);
+  const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [newCustomItem, setNewCustomItem] = useState("");
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
@@ -452,6 +471,8 @@ export function SmartCartApp() {
         prepTime: parsed.prepTime ?? current.prepTime,
         adventureLevel: parsed.adventureLevel ?? current.adventureLevel,
         isBudgetTight: parsed.isBudgetTight ?? current.isBudgetTight,
+        availableEquipment:
+          parsed.availableEquipment ?? current.availableEquipment,
       }));
 
       if (parsed.fullyStocked || parsed.runningLow) {
@@ -713,7 +734,9 @@ export function SmartCartApp() {
 
     if (customItems.length > 0) {
       listText += "\n\nEXTRAS & HOUSEHOLD:\n";
-      listText += customItems.map((item) => `- [ ] ${item}`).join("\n");
+      listText += customItems
+        .map((item) => `- [${item.isChecked ? "x" : " "}] ${item.name}`)
+        .join("\n");
     }
 
     return listText;
@@ -817,6 +840,7 @@ export function SmartCartApp() {
           includeDessert: formState.includeDessert,
           adventureLevel: formState.adventureLevel,
           budgetTightness: formState.isBudgetTight,
+          availableEquipment: formState.availableEquipment,
           apply_upgrades: applyUpgrades,
           existingMeals: existingMealTitles,
         }),
@@ -1130,32 +1154,44 @@ export function SmartCartApp() {
     );
   }
 
-  function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
-    const mealKey = `${meal.day}::${meal.name}`;
+  function handleRemoveMeal(meal: MealPlanItem) {
+    const mealMatcher = (candidate: MealPlanItem) =>
+      meal.dbId
+        ? candidate.dbId === meal.dbId
+        : candidate.name === meal.name;
 
-    setWeeklyMenu((current) =>
-      current.filter(
-        (savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey,
-      ),
+    setWeeklyMenu((current) => current.filter((savedMeal) => !mealMatcher(savedMeal)));
+    setSavedDesserts((current) =>
+      current.filter((savedDessert) => !mealMatcher(savedDessert)),
     );
-    setArchivedMeals((current) => [...current, meal]);
+    setArchivedMeals((current) =>
+      current.some((archivedMeal) => mealMatcher(archivedMeal))
+        ? current
+        : [...current, meal],
+    );
   }
 
   function handleRestoreMeal(meal: MealPlanItem) {
+    const mealMatcher = (candidate: MealPlanItem) =>
+      meal.dbId
+        ? candidate.dbId === meal.dbId
+        : candidate.name === meal.name;
+
     setArchivedMeals((current) =>
-      current.filter(
-        (archivedMeal) =>
-          `${archivedMeal.day}::${archivedMeal.name}` !== `${meal.day}::${meal.name}`,
-      ),
+      current.filter((archivedMeal) => !mealMatcher(archivedMeal)),
     );
 
     if (isSweetTreatMeal(meal)) {
-      setSavedDesserts((current) => [...current, meal]);
+      setSavedDesserts((current) =>
+        current.some((savedDessert) => mealMatcher(savedDessert))
+          ? current
+          : [...current, meal],
+      );
       return;
     }
 
     setWeeklyMenu((current) => {
-      if (current.some((savedMeal) => `${savedMeal.day}::${savedMeal.name}` === `${meal.day}::${meal.name}`)) {
+      if (current.some((savedMeal) => mealMatcher(savedMeal))) {
         return current;
       }
 
@@ -1171,6 +1207,11 @@ export function SmartCartApp() {
     if (!user) {
       return;
     }
+
+    const mealMatcher = (candidate: MealPlanItem) =>
+      meal.dbId
+        ? candidate.dbId === meal.dbId
+        : candidate.name === meal.name;
 
     try {
       if (meal.dbId) {
@@ -1196,11 +1237,12 @@ export function SmartCartApp() {
         }
       }
 
+      setWeeklyMenu((current) => current.filter((savedMeal) => !mealMatcher(savedMeal)));
+      setSavedDesserts((current) =>
+        current.filter((savedDessert) => !mealMatcher(savedDessert)),
+      );
       setArchivedMeals((current) =>
-        current.filter(
-          (archivedMeal) =>
-            `${archivedMeal.day}::${archivedMeal.name}` !== `${meal.day}::${meal.name}`,
-        ),
+        current.filter((archivedMeal) => !mealMatcher(archivedMeal)),
       );
     } catch (error) {
       setCloudSyncMessage(
@@ -1242,11 +1284,27 @@ export function SmartCartApp() {
   }
 
   function handleClearForm() {
+    const shouldClear = window.confirm(
+      "Are you sure? This will clear your form and active weekly menu, but your Recipe Vault will remain safe.",
+    );
+
+    if (!shouldClear) {
+      return;
+    }
+
     setFormState(clearedFormState);
     setValidationError(null);
     setRequestError(null);
     setIsLoading(false);
-    setGeneratedPlan(null);
+    setGeneratedPlan((current) =>
+      current
+        ? {
+            ...current,
+            meals: [],
+            desserts: [],
+          }
+        : null,
+    );
     setCheckedItems(new Set());
     setFullyStocked(new Set());
     setRunningLow(new Set());
@@ -1254,6 +1312,8 @@ export function SmartCartApp() {
     setCopied(false);
     setHasAppliedUpgrades(false);
     setIsPremiumMode(false);
+    setConsolidatedList(null);
+    setIsConsolidating(false);
     setRestoredItems([]);
     setRecipeCache({});
     setActiveRecipeMeal(null);
@@ -1261,8 +1321,6 @@ export function SmartCartApp() {
     setRecipeLoadingMeal(null);
     setWeeklyMenu([]);
     setSavedDesserts([]);
-    setArchivedMeals([]);
-    setIsVaultOpen(false);
     setReplacingMealKey(null);
     setReplacingDessertKey(null);
     setExpandedIngredientsMeals(new Set());
@@ -1573,6 +1631,7 @@ export function SmartCartApp() {
           prepTime: formState.prepTime,
           adventureLevel: formState.adventureLevel,
           mustHaveIngredient: formState.mustHaveIngredient.trim(),
+          availableEquipment: formState.availableEquipment,
           existingMeals: existingMealTitles,
         }),
       });
@@ -1817,6 +1876,50 @@ export function SmartCartApp() {
                     ))}
                   </select>
                 </label>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-ink">
+                    Available Kitchen Equipment
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-ink/65">
+                    Recipes will only use the hardware you select here.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {equipmentOptions.map((equipment) => {
+                    const isSelected = formState.availableEquipment.includes(equipment);
+
+                    return (
+                      <label
+                        key={equipment}
+                        className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                          isSelected
+                            ? "border-pine bg-pine text-white"
+                            : "border-ink/10 bg-white text-ink hover:border-orange-300 hover:bg-orange-50"
+                        }`}
+                      >
+                        <input
+                          checked={isSelected}
+                          className="sr-only"
+                          onChange={() =>
+                            setFormState((current) => ({
+                              ...current,
+                              availableEquipment: current.availableEquipment.includes(equipment)
+                                ? current.availableEquipment.filter(
+                                    (item) => item !== equipment,
+                                  )
+                                : [...current.availableEquipment, equipment],
+                            }))
+                          }
+                          type="checkbox"
+                        />
+                        <span>{equipment}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="rounded-[1.75rem] border border-pine/10 bg-pine px-6 py-5 text-cream">
@@ -2228,11 +2331,20 @@ export function SmartCartApp() {
                                 : "View Ingredients"}
                             </button>
                             <button
-                              className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                              onClick={() => handleRemoveFromWeeklyMenu(meal)}
+                              className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                              onClick={() => handleRemoveMeal(meal)}
                               type="button"
                             >
-                              Remove
+                              <span aria-hidden="true">{"🗄️ "}</span>
+                              Stash in Vault
+                            </button>
+                            <button
+                              className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                              onClick={() => void handlePermanentDelete(meal)}
+                              type="button"
+                            >
+                              <span aria-hidden="true">{"🗑️ "}</span>
+                              Remove entirely
                             </button>
                           </div>
                           {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
@@ -2267,6 +2379,10 @@ export function SmartCartApp() {
                     </div>
                   )}
 
+                  <p className="mt-6 text-sm leading-6 text-ink/65">
+                    Save recipes here for future weeks without adding them to your current
+                    grocery list.
+                  </p>
                   <button
                     className="mt-6 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
                     onClick={() => setIsVaultOpen(!isVaultOpen)}
@@ -2525,7 +2641,20 @@ export function SmartCartApp() {
 
               <div className="lg:col-span-4 sticky top-4">
                 <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl">
-                <p className="font-display text-3xl text-ink">Grocery list</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-display text-3xl text-ink">Grocery list</p>
+                  <button
+                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                    onClick={() => setIsGroceryOpen(!isGroceryOpen)}
+                    type="button"
+                  >
+                    <span aria-hidden="true">{"🛒 "}</span>
+                    {isGroceryOpen ? "Close Grocery List" : "Open Grocery List"}
+                  </button>
+                </div>
+
+                {isGroceryOpen ? (
+                  <>
                 <p className="mt-2 text-sm italic leading-6 text-gray-500">
                   Prices are AI-generated national averages for estimation. Actual costs may be
                   higher or lower depending on your location and local store.
@@ -2703,15 +2832,40 @@ export function SmartCartApp() {
                     <ul className="space-y-2">
                       {customItems.map((item) => (
                         <li
-                          key={`custom-${item}`}
+                          key={`custom-${item.id}`}
                           className="flex items-center justify-between gap-4 text-sm text-ink/75"
                         >
-                          <span>{item}</span>
+                          <label className="flex items-center gap-3">
+                            <input
+                              checked={item.isChecked}
+                              className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
+                              onChange={() =>
+                                setCustomItems((current) =>
+                                  current.map((currentItem) =>
+                                    currentItem.id === item.id
+                                      ? {
+                                          ...currentItem,
+                                          isChecked: !currentItem.isChecked,
+                                        }
+                                      : currentItem,
+                                  ),
+                                )
+                              }
+                              type="checkbox"
+                            />
+                            <span
+                              className={
+                                item.isChecked ? "line-through opacity-60" : ""
+                              }
+                            >
+                              {item.name}
+                            </span>
+                          </label>
                           <button
                             className="text-xs font-semibold text-red-400 transition hover:text-red-500"
                             onClick={() =>
                               setCustomItems((current) =>
-                                current.filter((currentItem) => currentItem !== item),
+                                current.filter((currentItem) => currentItem.id !== item.id),
                               )
                             }
                             type="button"
@@ -2737,7 +2891,14 @@ export function SmartCartApp() {
                     <button
                       onClick={() => {
                         if (newCustomItem.trim()) {
-                          setCustomItems([...customItems, newCustomItem.trim()]);
+                          setCustomItems([
+                            ...customItems,
+                            {
+                              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                              name: newCustomItem.trim(),
+                              isChecked: false,
+                            },
+                          ]);
                           setNewCustomItem("");
                         }
                       }}
@@ -2874,6 +3035,8 @@ export function SmartCartApp() {
                     </div>
                   )}
                 </div>
+                  </>
+                ) : null}
                 </aside>
               </div>
             </div>
