@@ -15,6 +15,7 @@ type GenerateListRequest = {
   adventureLevel?: string;
   budgetTightness?: boolean;
   apply_upgrades?: boolean;
+  existingMeals?: string;
 };
 
 const ingredientSchema = z.object({
@@ -174,6 +175,7 @@ export async function POST(request: Request) {
     adventureLevel,
     budgetTightness,
     apply_upgrades,
+    existingMeals,
   } =
     (body as Partial<GenerateListRequest>) ?? {};
 
@@ -211,6 +213,7 @@ Rules:
 - This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.
 - CRITICAL RULE: Stop defaulting to cheap LLM tropes like Chickpea Curry, Lentil Soup, or Bean Tacos unless the user explicitly marked those items as owned in their pantry. You must prioritize the actual proteins the user selected. Do not force legumes into the menu just to keep the budget low. Be creative with the ingredients provided.
 - CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes (for example "Baked Chicken"). You must suggest fully composed plates (for example "Baked Chicken with Roasted Potatoes and Green Beans" or a complete one-pan dish like "Beef and Broccoli Stir-Fry over Rice"). If you suggest a protein, you MUST include a complementary side dish in the meal title.
+- CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals?.trim() || "None provided"}.
 - Reuse pantry items whenever possible.
 - Use pantry items from the "fully stocked", "running low", and "restock" lists to shape the meals.
 - Do not generate a root-level grocery list.

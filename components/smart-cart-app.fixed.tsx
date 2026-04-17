@@ -718,6 +718,13 @@ export function SmartCartApp() {
     () => new Set(savedDesserts.map((dessert) => dessert.name)),
     [savedDesserts],
   );
+  const existingMealTitles = useMemo(
+    () =>
+      [...(generatedPlan?.meals ?? []), ...weeklyMenu]
+        .map((meal) => meal.name)
+        .join(", "),
+    [generatedPlan?.meals, weeklyMenu],
+  );
 
   const parsedBudget = Number(formState.budget);
   const isBudgetValid =
@@ -798,6 +805,7 @@ export function SmartCartApp() {
           adventureLevel: formState.adventureLevel,
           budgetTightness: formState.isBudgetTight,
           apply_upgrades: applyUpgrades,
+          existingMeals: existingMealTitles,
         }),
       });
 
@@ -1052,6 +1060,18 @@ export function SmartCartApp() {
 
       return [...current, meal];
     });
+
+    setGeneratedPlan((current) =>
+      current
+        ? {
+            ...current,
+            meals: current.meals.filter(
+              (generatedMeal) =>
+                `${generatedMeal.day}::${generatedMeal.name}` !== mealKey,
+            ),
+          }
+        : current,
+    );
   }
 
   function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
@@ -1211,12 +1231,12 @@ export function SmartCartApp() {
 
       if (hydratedDinners.length > 0 || hydratedDesserts.length > 0) {
         setGeneratedPlan({
-          meals: hydratedDinners,
+          meals: [],
           restock_items: [],
           estimated_total_cost: 0,
           budget_summary: "Loaded from your saved cloud menu.",
           upgrade_available: false,
-          desserts: hydratedDessertRecipes,
+          desserts: [],
         });
       } else {
         setGeneratedPlan(null);
@@ -1374,6 +1394,7 @@ export function SmartCartApp() {
           prepTime: formState.prepTime,
           adventureLevel: formState.adventureLevel,
           mustHaveIngredient: formState.mustHaveIngredient.trim(),
+          existingMeals: existingMealTitles,
         }),
       });
 
