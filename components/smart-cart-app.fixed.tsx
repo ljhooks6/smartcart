@@ -10,6 +10,7 @@ type IngredientItem = {
 };
 
 type MealPlanItem = {
+  dbId?: number | string;
   day: string;
   name: string;
   servings: number;
@@ -234,6 +235,10 @@ function formatCardEyebrow(day: string) {
     : day;
 }
 
+function isSweetTreatMeal(meal: MealPlanItem) {
+  return meal.day.trim().toLowerCase().startsWith("sweet treat");
+}
+
 function estimateRestockPrice(itemName: string) {
   const normalized = itemName.trim().toLowerCase();
   let estimate = 3;
@@ -381,6 +386,8 @@ export function SmartCartApp() {
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
   const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
   const [savedDesserts, setSavedDesserts] = useState<MealPlanItem[]>([]);
+  const [archivedMeals, setArchivedMeals] = useState<MealPlanItem[]>([]);
+  const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
   const [replacingDessertKey, setReplacingDessertKey] = useState<string | null>(null);
   const [expandedIngredientsMeals, setExpandedIngredientsMeals] = useState<
@@ -1082,6 +1089,75 @@ export function SmartCartApp() {
         (savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey,
       ),
     );
+    setArchivedMeals((current) => [...current, meal]);
+  }
+
+  function handleRestoreMeal(meal: MealPlanItem) {
+    setArchivedMeals((current) =>
+      current.filter(
+        (archivedMeal) =>
+          `${archivedMeal.day}::${archivedMeal.name}` !== `${meal.day}::${meal.name}`,
+      ),
+    );
+
+    if (isSweetTreatMeal(meal)) {
+      setSavedDesserts((current) => [...current, meal]);
+      return;
+    }
+
+    setWeeklyMenu((current) => {
+      if (current.some((savedMeal) => `${savedMeal.day}::${savedMeal.name}` === `${meal.day}::${meal.name}`)) {
+        return current;
+      }
+
+      if (current.length >= 5) {
+        return current;
+      }
+
+      return [...current, meal];
+    });
+  }
+
+  async function handlePermanentDelete(meal: MealPlanItem) {
+    if (!user) {
+      return;
+    }
+
+    try {
+      if (meal.dbId) {
+        const { error } = await supabase
+          .from("weekly_menus")
+          .delete()
+          .eq("id", meal.dbId)
+          .eq("user_id", user.id);
+
+        if (error) {
+          throw error;
+        }
+      } else {
+        const { error } = await supabase
+          .from("weekly_menus")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("meal_title", meal.name)
+          .eq("status", "archived");
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      setArchivedMeals((current) =>
+        current.filter(
+          (archivedMeal) =>
+            `${archivedMeal.day}::${archivedMeal.name}` !== `${meal.day}::${meal.name}`,
+        ),
+      );
+    } catch (error) {
+      setCloudSyncMessage(
+        error instanceof Error ? error.message : "Failed to permanently delete meal.",
+      );
+    }
   }
 
   function handleToggleDessertSave(
@@ -1136,6 +1212,8 @@ export function SmartCartApp() {
     setRecipeLoadingMeal(null);
     setWeeklyMenu([]);
     setSavedDesserts([]);
+    setArchivedMeals([]);
+    setIsVaultOpen(false);
     setReplacingMealKey(null);
     setReplacingDessertKey(null);
     setExpandedIngredientsMeals(new Set());
@@ -1175,9 +1253,8 @@ export function SmartCartApp() {
             .eq("user_id", userId),
           supabase
             .from("weekly_menus")
-            .select("meal_title, type, status, recipe_data")
-            .eq("user_id", userId)
-            .eq("status", "active_week"),
+            .select("id, meal_title, type, status, recipe_data")
+            .eq("user_id", userId),
         ]);
 
       if (pantryError) {
@@ -1201,10 +1278,16 @@ export function SmartCartApp() {
         pantryItems: "",
       }));
 
-      const activeMenuRows = menuData ?? [];
+      const allMenuRows = menuData ?? [];
+      const activeMenuRows = allMenuRows.filter(
+        (item) => item.status === "active_week",
+      );
       const hydratedDinners: MealPlanItem[] = activeMenuRows
         .filter((item) => item.type === "dinner")
-        .map((item) => item.recipe_data as MealPlanItem)
+        .map((item) => ({
+          ...(item.recipe_data as MealPlanItem),
+          dbId: item.id,
+        }))
         .filter(Boolean);
 
       const hydratedDessertRecipes = activeMenuRows
@@ -1215,8 +1298,13 @@ export function SmartCartApp() {
         )
         .filter(Boolean);
 
+      const archivedMenuRows = allMenuRows.filter(
+        (item) => item.status === "archived",
+      );
+
       const hydratedDesserts: MealPlanItem[] = hydratedDessertRecipes.map(
         (dessert, index) => ({
+          dbId: activeMenuRows.filter((item) => item.type === "sweet_treat")[index]?.id,
           day: `Sweet Treat ${index + 1}`,
           name: dessert.title,
           servings: Number(formState.householdSize) || 2,
@@ -1226,8 +1314,32 @@ export function SmartCartApp() {
         }),
       );
 
+      const hydratedArchivedMeals: MealPlanItem[] = archivedMenuRows
+        .map((item) => {
+          if (item.type === "sweet_treat") {
+            const dessert =
+              item.recipe_data as GenerateListResponse["desserts"][number];
+            return {
+              dbId: item.id,
+              day: "Sweet Treat",
+              name: dessert.title,
+              servings: Number(formState.householdSize) || 2,
+              notes: dessert.description,
+              ingredients: dessert.ingredients,
+              imageUrl: dessert.imageUrl,
+            };
+          }
+
+          return {
+            ...(item.recipe_data as MealPlanItem),
+            dbId: item.id,
+          };
+        })
+        .filter(Boolean);
+
       setWeeklyMenu(hydratedDinners);
       setSavedDesserts(hydratedDesserts);
+      setArchivedMeals(hydratedArchivedMeals);
 
       if (hydratedDinners.length > 0 || hydratedDesserts.length > 0) {
         setGeneratedPlan({
@@ -1253,11 +1365,6 @@ export function SmartCartApp() {
       return;
     }
 
-    if (!generatedPlan) {
-      setCloudSyncMessage("Generate a plan before saving it to the cloud.");
-      return;
-    }
-
     setIsSaving(true);
     setCloudSyncMessage("");
 
@@ -1272,21 +1379,44 @@ export function SmartCartApp() {
         throw archiveError;
       }
 
+      const activeDessertRows = savedDesserts.map((dessert) => ({
+        meal_title: dessert.name,
+        recipe_data: {
+          title: dessert.name,
+          description: dessert.notes,
+          ingredients: dessert.ingredients ?? [],
+          imageUrl: dessert.imageUrl,
+        },
+        type: "sweet_treat",
+        status: "active_week",
+        user_id: user.id,
+      }));
+
+      const archivedMealRows = archivedMeals.map((meal) => ({
+        meal_title: meal.name,
+        recipe_data: isSweetTreatMeal(meal)
+          ? {
+              title: meal.name,
+              description: meal.notes,
+              ingredients: meal.ingredients ?? [],
+              imageUrl: meal.imageUrl,
+            }
+          : meal,
+        type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
+        status: "archived",
+        user_id: user.id,
+      }));
+
       const weeklyMenuRows = [
-        ...generatedPlan.meals.map((meal) => ({
+        ...weeklyMenu.map((meal) => ({
           meal_title: meal.name,
           recipe_data: meal,
           type: "dinner",
           status: "active_week",
           user_id: user.id,
         })),
-        ...generatedPlan.desserts.map((dessert) => ({
-          meal_title: dessert.title,
-          recipe_data: dessert,
-          type: "sweet_treat",
-          status: "active_week",
-          user_id: user.id,
-        })),
+        ...activeDessertRows,
+        ...archivedMealRows,
       ];
 
       if (weeklyMenuRows.length > 0) {
@@ -2057,13 +2187,20 @@ export function SmartCartApp() {
                             </button>
                           </div>
                           {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
-                            recipeCache[meal.name] && (
+                            ((meal.ingredients && meal.ingredients.length > 0) ||
+                              recipeCache[meal.name]) && (
                               <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
                                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
                                   Ingredients
                                 </p>
                                 <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                                  {recipeCache[meal.name].ingredients.map((ingredient) => (
+                                  {(meal.ingredients && meal.ingredients.length > 0
+                                    ? meal.ingredients.map(
+                                        (ingredient) =>
+                                          `${ingredient.amount} ${ingredient.name}`,
+                                      )
+                                    : recipeCache[meal.name]?.ingredients ?? []
+                                  ).map((ingredient) => (
                                     <li key={`${meal.name}-${ingredient}`} className="flex gap-2">
                                       <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
                                       <span>{ingredient}</span>
@@ -2080,6 +2217,124 @@ export function SmartCartApp() {
                       Tap the heart on any meal card to build your weekly menu.
                     </div>
                   )}
+
+                  <button
+                    className="mt-6 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                    onClick={() => setIsVaultOpen(!isVaultOpen)}
+                    type="button"
+                  >
+                    <span aria-hidden="true">{"🗄️ "}</span>
+                    {isVaultOpen
+                      ? "Close Recipe Vault"
+                      : `Open Recipe Vault (${archivedMeals.length})`}
+                  </button>
+
+                  {isVaultOpen ? (
+                    <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+                      {archivedMeals.length > 0 ? (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {archivedMeals.map((meal) => (
+                            <article
+                              key={`vault-${meal.dbId ?? `${meal.day}-${meal.name}`}`}
+                              className="rounded-3xl border border-stone-200 bg-[#fffdf9] px-4 py-4 shadow-lg"
+                            >
+                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                                {formatCardEyebrow(meal.day)}
+                              </p>
+                              <h3 className="mt-2 font-display text-xl text-ink">
+                                {meal.name}
+                              </h3>
+                              <p className="mt-2 text-sm leading-6 text-ink/70">
+                                Serves {meal.servings}
+                              </p>
+                              {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`) && (
+                                <p className="mt-3 text-sm leading-7 text-ink/75">{meal.notes}</p>
+                              )}
+                              <button
+                                className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
+                                onClick={() =>
+                                  handleToggleCardDetails(`vault-${meal.day}::${meal.name}`)
+                                }
+                                type="button"
+                              >
+                                {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)
+                                  ? "Hide Details"
+                                  : "Show Details"}
+                              </button>
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={recipeLoadingMeal === meal.name}
+                                  onClick={() => handleGetRecipe(meal)}
+                                  type="button"
+                                >
+                                  {recipeLoadingMeal === meal.name
+                                    ? "Loading recipe..."
+                                    : "Get Recipe"}
+                                </button>
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={recipeLoadingMeal === meal.name}
+                                  onClick={() => handleToggleIngredients(meal)}
+                                  type="button"
+                                >
+                                  {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
+                                    ? "Hide Ingredients"
+                                    : "View Ingredients"}
+                                </button>
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full bg-pine px-3 py-2 text-sm font-semibold text-white transition hover:bg-pine/90"
+                                  onClick={() => handleRestoreMeal(meal)}
+                                  type="button"
+                                >
+                                  <span aria-hidden="true">{"➕ "}</span>
+                                  Add to This Week
+                                </button>
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                  onClick={() => void handlePermanentDelete(meal)}
+                                  type="button"
+                                >
+                                  <span aria-hidden="true">{"🗑️ "}</span>
+                                  Permanent Delete
+                                </button>
+                              </div>
+                              {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
+                                ((meal.ingredients && meal.ingredients.length > 0) ||
+                                  recipeCache[meal.name]) && (
+                                  <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                                      Ingredients
+                                    </p>
+                                    <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
+                                      {(meal.ingredients && meal.ingredients.length > 0
+                                        ? meal.ingredients.map(
+                                            (ingredient) =>
+                                              `${ingredient.amount} ${ingredient.name}`,
+                                          )
+                                        : recipeCache[meal.name]?.ingredients ?? []
+                                      ).map((ingredient) => (
+                                        <li
+                                          key={`${meal.name}-${ingredient}`}
+                                          className="flex gap-2"
+                                        >
+                                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
+                                          <span>{ingredient}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-ink/60">
+                          No archived recipes yet. Removed meals will land here for future weeks.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
                 </section>
 
                 {generatedPlan.desserts.length > 0 && (
