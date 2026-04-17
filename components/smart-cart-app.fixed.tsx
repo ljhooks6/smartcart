@@ -56,6 +56,7 @@ type CustomItem = {
 type ConsolidatedItem = {
   id: string;
   name: string;
+  price: number;
   isChecked: boolean;
 };
 
@@ -557,7 +558,7 @@ export function SmartCartApp() {
     const typedItems = formState.pantryItems
       .split(",")
       .filter((item) => typeof item === "string")
-      .map((item) => item.trim())
+      .map((item) => item?.trim?.() || "")
       .filter(Boolean);
 
     return Array.from(
@@ -574,7 +575,7 @@ export function SmartCartApp() {
     // 1. Sanitize Pantry
     const validPantry = pantry
       .filter((p) => typeof p === "string")
-      .map((p) => p.toLowerCase().trim())
+      .map((p) => p?.toLowerCase?.()?.trim?.() || "")
       .filter((p) => p.length > 2);
 
     // 2. Combine ALL saved items (Dinners + Desserts)
@@ -939,7 +940,7 @@ export function SmartCartApp() {
         )
         .map((ingredient) => `${ingredient.amount} ${ingredient.name}`)
         .filter((ingredient) => typeof ingredient === "string")
-        .map((ingredient) => ingredient.trim())
+        .map((ingredient) => ingredient?.trim?.() || "")
         .filter(Boolean),
     );
 
@@ -962,18 +963,26 @@ export function SmartCartApp() {
         }),
       });
 
-      const data = (await response.json()) as string[] & { error?: string };
+      const data = (await response.json()) as
+        | Array<{ name?: string; estimated_price?: number }>
+        | { error?: string };
 
       if (!response.ok) {
-        setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
+        setRequestError(
+          `Error ${response.status}: ${"error" in data ? data.error || "Request failed." : "Request failed."}`,
+        );
         return;
       }
 
-      const interactiveList = (data as string[]).map((item) => ({
-        id: crypto.randomUUID(),
-        name: item,
-        isChecked: false,
-      }));
+      const interactiveList = (Array.isArray(data) ? data : [])
+        .filter((item) => typeof item?.name === "string")
+        .map((item) => ({
+          id: crypto.randomUUID(),
+          name: item.name?.trim?.() || "",
+          price: Math.max(0, Number(item.estimated_price ?? 0)),
+          isChecked: false,
+        }))
+        .filter((item) => item.name);
 
       setConsolidatedList(interactiveList);
     } catch (error) {
@@ -1399,7 +1408,7 @@ export function SmartCartApp() {
         .filter((item) => item.is_owned)
         .map((item) => item.ingredient_name)
         .filter((ingredientName) => typeof ingredientName === "string")
-        .map((ingredientName) => ingredientName.trim())
+        .map((ingredientName) => ingredientName?.trim?.() || "")
         .filter(Boolean);
 
       setFullyStocked(new Set(ownedPantryItems));
@@ -2393,14 +2402,13 @@ export function SmartCartApp() {
                                         )
                                         .map(
                                           (ingredient) =>
-                                            `${ingredient.amount} ${ingredient.name}`,
+                                            `${ingredient.amount?.trim?.() || ""} ${ingredient.name?.trim?.() || ""}`,
                                         )
                                     : (recipeCache[meal.name]?.ingredients ?? []).filter(
                                         (ingredient) => typeof ingredient === "string",
                                       )
                                   )
-                                    .filter((ingredient) => typeof ingredient === "string")
-                                    .map((ingredient) => ingredient.trim())
+                                    .map((ingredient) => ingredient?.trim?.() || "")
                                     .filter(Boolean)
                                     .map((ingredient) => (
                                     <li key={`${meal.name}-${ingredient}`} className="flex gap-2">
@@ -2527,14 +2535,13 @@ export function SmartCartApp() {
                                             )
                                             .map(
                                               (ingredient) =>
-                                                `${ingredient.amount} ${ingredient.name}`,
+                                                `${ingredient.amount?.trim?.() || ""} ${ingredient.name?.trim?.() || ""}`,
                                             )
                                         : (recipeCache[meal.name]?.ingredients ?? []).filter(
                                             (ingredient) => typeof ingredient === "string",
                                           )
                                       )
-                                        .filter((ingredient) => typeof ingredient === "string")
-                                        .map((ingredient) => ingredient.trim())
+                                        .map((ingredient) => ingredient?.trim?.() || "")
                                         .filter(Boolean)
                                         .map((ingredient) => (
                                         <li
@@ -2655,7 +2662,7 @@ export function SmartCartApp() {
                                     >
                                       <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
                                       <span>
-                                        {ingredient.amount} {ingredient.name}
+                                        {ingredient.amount?.trim?.() || ""} {ingredient.name?.trim?.() || ""}
                                       </span>
                                     </li>
                                   ))}
@@ -2747,39 +2754,57 @@ export function SmartCartApp() {
                     </div>
 
                     {consolidatedList !== null ? (
-                      <ul className="mt-4 space-y-3">
-                        {consolidatedList.map((ingredient) => (
-                          <li
-                            key={`consolidated-${ingredient.id}`}
-                            className="flex items-center gap-3 text-sm font-medium text-ink"
-                          >
-                            <input
-                              checked={ingredient.isChecked}
-                              className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                              onChange={() =>
-                                setConsolidatedList((current) =>
-                                  current
-                                    ? current.map((currentItem) =>
-                                        currentItem.id === ingredient.id
-                                          ? {
-                                              ...currentItem,
-                                              isChecked: !currentItem.isChecked,
-                                            }
-                                          : currentItem,
-                                      )
-                                    : current,
-                                )
-                              }
-                              type="checkbox"
-                            />
-                            <span
-                              className={ingredient.isChecked ? "line-through opacity-60" : ""}
+                      <>
+                        <ul className="mt-4 space-y-3">
+                          {consolidatedList.map((ingredient) => (
+                            <li
+                              key={`consolidated-${ingredient.id}`}
+                              className="flex items-center justify-between gap-3 text-sm font-medium text-ink"
                             >
-                              {ingredient.name}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
+                              <div className="flex min-w-0 items-center gap-3">
+                                <input
+                                  checked={ingredient.isChecked}
+                                  className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
+                                  onChange={() =>
+                                    setConsolidatedList((current) =>
+                                      current
+                                        ? current.map((currentItem) =>
+                                            currentItem.id === ingredient.id
+                                              ? {
+                                                  ...currentItem,
+                                                  isChecked: !currentItem.isChecked,
+                                                }
+                                              : currentItem,
+                                          )
+                                        : current,
+                                    )
+                                  }
+                                  type="checkbox"
+                                />
+                                <span
+                                  className={ingredient.isChecked ? "line-through opacity-60" : ""}
+                                >
+                                  {ingredient.name?.trim?.() || ""}
+                                </span>
+                              </div>
+                              <span className="shrink-0 text-sm font-semibold text-ink/70">
+                                {formatCurrency(ingredient.price)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-4 flex items-center justify-between border-t border-stone-200 pt-4 text-sm font-semibold text-ink">
+                          <span>Total Estimated Cost</span>
+                          <span>
+                            {formatCurrency(
+                              consolidatedList.reduce(
+                                (sum, item) => sum + Number(item.price ?? 0),
+                                0,
+                              ),
+                            )}
+                          </span>
+                        </div>
+                      </>
                     ) : (
                       <div className="mt-4 space-y-5">
                         {displayGroceriesByCategory.map(([category, items]) => (
@@ -3229,7 +3254,7 @@ export function SmartCartApp() {
                     <ul className="mt-4 space-y-3 text-sm leading-7 text-ink/80">
                       {activeRecipe.ingredients
                         .filter((ingredient) => typeof ingredient === "string")
-                        .map((ingredient) => ingredient.trim())
+                        .map((ingredient) => ingredient?.trim?.() || "")
                         .filter(Boolean)
                         .map((ingredient) => (
                         <li key={ingredient} className="flex gap-3">
@@ -3245,7 +3270,7 @@ export function SmartCartApp() {
                     <ol className="mt-4 space-y-4 text-sm leading-7 text-ink/80">
                       {activeRecipe.steps
                         .filter((step) => typeof step === "string")
-                        .map((step) => step.trim())
+                        .map((step) => step?.trim?.() || "")
                         .filter(Boolean)
                         .map((step, index) => (
                         <li
