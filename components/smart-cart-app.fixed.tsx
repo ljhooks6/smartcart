@@ -1155,7 +1155,7 @@ export function SmartCartApp() {
             .eq("user_id", userId),
           supabase
             .from("weekly_menus")
-            .select("meal_title, type, status")
+            .select("meal_title, type, status, recipe_data")
             .eq("user_id", userId)
             .eq("status", "active_week"),
         ]);
@@ -1184,23 +1184,27 @@ export function SmartCartApp() {
       const activeMenuRows = menuData ?? [];
       const hydratedDinners: MealPlanItem[] = activeMenuRows
         .filter((item) => item.type === "dinner")
-        .map((item, index) => ({
-          day: `Day ${index + 1}`,
-          name: item.meal_title,
-          servings: Number(formState.householdSize) || 2,
-          notes: "Loaded from your saved cloud menu.",
-          ingredients: [],
-        }));
+        .map((item) => item.recipe_data as MealPlanItem)
+        .filter(Boolean);
 
-      const hydratedDesserts: MealPlanItem[] = activeMenuRows
+      const hydratedDessertRecipes = activeMenuRows
         .filter((item) => item.type === "sweet_treat")
-        .map((item, index) => ({
+        .map(
+          (item) =>
+            item.recipe_data as GenerateListResponse["desserts"][number],
+        )
+        .filter(Boolean);
+
+      const hydratedDesserts: MealPlanItem[] = hydratedDessertRecipes.map(
+        (dessert, index) => ({
           day: `Sweet Treat ${index + 1}`,
-          name: item.meal_title,
+          name: dessert.title,
           servings: Number(formState.householdSize) || 2,
-          notes: "Loaded from your saved cloud menu.",
-          ingredients: [],
-        }));
+          notes: dessert.description,
+          ingredients: dessert.ingredients,
+          imageUrl: dessert.imageUrl,
+        }),
+      );
 
       setWeeklyMenu(hydratedDinners);
       setSavedDesserts(hydratedDesserts);
@@ -1212,11 +1216,7 @@ export function SmartCartApp() {
           estimated_total_cost: 0,
           budget_summary: "Loaded from your saved cloud menu.",
           upgrade_available: false,
-          desserts: hydratedDesserts.map((dessert) => ({
-            title: dessert.name,
-            description: dessert.notes,
-            ingredients: [],
-          })),
+          desserts: hydratedDessertRecipes,
         });
       } else {
         setGeneratedPlan(null);
@@ -1255,12 +1255,14 @@ export function SmartCartApp() {
       const weeklyMenuRows = [
         ...generatedPlan.meals.map((meal) => ({
           meal_title: meal.name,
+          recipe_data: meal,
           type: "dinner",
           status: "active_week",
           user_id: user.id,
         })),
         ...generatedPlan.desserts.map((dessert) => ({
           meal_title: dessert.title,
+          recipe_data: dessert,
           type: "sweet_treat",
           status: "active_week",
           user_id: user.id,
