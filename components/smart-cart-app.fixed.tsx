@@ -16,6 +16,7 @@ type MealPlanItem = {
   servings: number;
   notes: string;
   ingredients?: IngredientItem[];
+  instructions?: string[];
   imageUrl?: string;
 };
 
@@ -246,6 +247,8 @@ const pantryCategoryStyles: Record<string, string> = {
   FRUITS: "border-lime-200 bg-lime-50",
 };
 
+const safeTrim = (val: any) => (typeof val === "string" ? val.trim() : "");
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -255,17 +258,17 @@ function formatCurrency(value: number) {
 }
 
 function formatCardEyebrow(day: string) {
-  return day.trim().toLowerCase().startsWith("sweet treat")
+  return safeTrim(day).toLowerCase().startsWith("sweet treat")
     ? "SWEET TREAT"
-    : day;
+    : safeTrim(day);
 }
 
 function isSweetTreatMeal(meal: MealPlanItem) {
-  return meal.day.trim().toLowerCase().startsWith("sweet treat");
+  return safeTrim(meal.day).toLowerCase().startsWith("sweet treat");
 }
 
 function estimateRestockPrice(itemName: string) {
-  const normalized = itemName.trim().toLowerCase();
+  const normalized = safeTrim(itemName).toLowerCase();
   let estimate = 3;
 
   if (
@@ -304,11 +307,11 @@ function estimateRestockPrice(itemName: string) {
 }
 
 function normalizeIngredientName(itemName: string) {
-  return itemName.trim().toLowerCase();
+  return safeTrim(itemName).toLowerCase();
 }
 
 function getAmountParts(amount: string) {
-  const normalizedAmount = amount.trim().toLowerCase();
+  const normalizedAmount = safeTrim(amount).toLowerCase();
   const match = normalizedAmount.match(/^(\d+(?:\.\d+)?)\s*(.+)$/);
 
   if (!match) {
@@ -317,17 +320,17 @@ function getAmountParts(amount: string) {
 
   return {
     value: Number(match[1]),
-    unit: match[2].trim(),
+    unit: safeTrim(match[2]),
   };
 }
 
 function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
   if (!baseAmount) {
-    return nextAmount.trim();
+    return safeTrim(nextAmount);
   }
 
-  const normalizedBase = baseAmount.trim();
-  const normalizedNext = nextAmount.trim();
+  const normalizedBase = safeTrim(baseAmount);
+  const normalizedNext = safeTrim(nextAmount);
   const baseParts = getAmountParts(normalizedBase);
   const nextParts = getAmountParts(normalizedNext);
 
@@ -357,8 +360,8 @@ function groupIngredientList(ingredients: IngredientItem[]) {
     if (!existingItem) {
       groupedItems.set(normalizedKey, {
         category: "Meal Ingredients",
-        name: ingredient.name.trim(),
-        amount: ingredient.amount.trim(),
+        name: safeTrim(ingredient.name),
+        amount: safeTrim(ingredient.amount),
         estimated_price: adjustedPrice,
       });
       return;
@@ -397,6 +400,7 @@ export function SmartCartApp() {
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [isPremiumMode, setIsPremiumMode] = useState(false);
   const [isGroceryOpen, setIsGroceryOpen] = useState(false);
+  const [isPantrySnapshotOpen, setIsPantrySnapshotOpen] = useState(false);
   const [restoredItems, setRestoredItems] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [newCustomItem, setNewCustomItem] = useState("");
@@ -558,7 +562,7 @@ export function SmartCartApp() {
     const typedItems = formState.pantryItems
       .split(",")
       .filter((item) => typeof item === "string")
-      .map((item) => item?.trim?.() || "")
+      .map((item) => safeTrim(item))
       .filter(Boolean);
 
     return Array.from(
@@ -575,7 +579,7 @@ export function SmartCartApp() {
     // 1. Sanitize Pantry
     const validPantry = pantry
       .filter((p) => typeof p === "string")
-      .map((p) => p?.toLowerCase?.()?.trim?.() || "")
+      .map((p) => safeTrim(p).toLowerCase())
       .filter((p) => p.length > 2);
 
     // 2. Combine ALL saved items (Dinners + Desserts)
@@ -625,7 +629,7 @@ export function SmartCartApp() {
 
       groupedItems.set(normalizedKey, {
         category: "Restock",
-        name: restockItem.trim(),
+        name: safeTrim(restockItem),
         amount: "1",
         estimated_price: restockPrice,
       });
@@ -774,7 +778,7 @@ export function SmartCartApp() {
 
   const parsedBudget = Number(formState.budget);
   const isBudgetValid =
-    formState.budget.trim().length > 0 &&
+    safeTrim(formState.budget).length > 0 &&
     Number.isFinite(parsedBudget) &&
     parsedBudget > 0;
   const totalCost = useMemo(
@@ -840,13 +844,13 @@ export function SmartCartApp() {
         },
         body: JSON.stringify({
           budget,
-          diet: formState.diet.trim() || "No specific diet provided",
+          diet: safeTrim(formState.diet) || "No specific diet provided",
           householdSize,
           combinedPantryItems: combinedPantryItems.join(", "),
           fullyStocked: Array.from(fullyStocked),
           runningLow: Array.from(runningLow),
           restock: Array.from(restock),
-          mustHaveIngredient: formState.mustHaveIngredient.trim(),
+          mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
           includeDessert: formState.includeDessert,
           adventureLevel: formState.adventureLevel,
           budgetTightness: formState.isBudgetTight,
@@ -940,7 +944,7 @@ export function SmartCartApp() {
         )
         .map((ingredient) => `${ingredient.amount} ${ingredient.name}`)
         .filter((ingredient) => typeof ingredient === "string")
-        .map((ingredient) => ingredient?.trim?.() || "")
+        .map((ingredient) => safeTrim(ingredient))
         .filter(Boolean),
     );
 
@@ -964,7 +968,7 @@ export function SmartCartApp() {
       });
 
       const data = (await response.json()) as
-        | Array<{ name?: string; estimated_price?: number }>
+        | Array<{ name?: string; price?: number }>
         | { error?: string };
 
       if (!response.ok) {
@@ -978,8 +982,8 @@ export function SmartCartApp() {
         .filter((item) => typeof item?.name === "string")
         .map((item) => ({
           id: crypto.randomUUID(),
-          name: item.name?.trim?.() || "",
-          price: Math.max(0, Number(item.estimated_price ?? 0)),
+          name: safeTrim(item.name),
+          price: Math.max(0, Number(item.price ?? 0)),
           isChecked: false,
         }))
         .filter((item) => item.name);
@@ -1091,7 +1095,7 @@ export function SmartCartApp() {
         body: JSON.stringify({
           rejectedDessertTitle: dessert.title,
           budget: Number(formState.budget),
-          diet: formState.diet.trim() || "No specific diet provided",
+          diet: safeTrim(formState.diet) || "No specific diet provided",
           householdSize: Number(formState.householdSize),
           combinedPantryItems: combinedPantryItems.join(", "),
         }),
@@ -1283,6 +1287,43 @@ export function SmartCartApp() {
     }
   }
 
+  async function handleClearVault() {
+    if (!user) {
+      return;
+    }
+
+    try {
+      const { error: archivedMealsError } = await supabase
+        .from("archived_meals")
+        .delete()
+        .eq("user_id", user.id);
+
+      if (
+        archivedMealsError &&
+        !/does not exist|relation .*archived_meals/i.test(archivedMealsError.message)
+      ) {
+        throw archivedMealsError;
+      }
+
+      const { error: weeklyMenusError } = await supabase
+        .from("weekly_menus")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("status", "archived");
+
+      if (weeklyMenusError) {
+        throw weeklyMenusError;
+      }
+
+      setArchivedMeals([]);
+      setCloudSyncMessage("Vault cleared.");
+    } catch (error) {
+      setCloudSyncMessage(
+        error instanceof Error ? error.message : "Failed to clear vault.",
+      );
+    }
+  }
+
   function handleToggleDessertSave(
     dessert: GenerateListResponse["desserts"][number],
     index: number,
@@ -1382,33 +1423,165 @@ export function SmartCartApp() {
     setIsAuthLoading(false);
   }
 
+  function rehydrateMealRecord(
+    record: Partial<MealPlanItem> | GenerateListResponse["desserts"][number] | null | undefined,
+    fallback: Partial<MealPlanItem> = {},
+  ): MealPlanItem | null {
+    const resolvedName = safeTrim(
+      "name" in (record ?? {})
+        ? (record as Partial<MealPlanItem>).name
+        : (record as GenerateListResponse["desserts"][number] | undefined)?.title,
+    );
+
+    if (!resolvedName) {
+      return null;
+    }
+
+    const resolvedNotes = safeTrim(
+      "notes" in (record ?? {})
+        ? (record as Partial<MealPlanItem>).notes
+        : (record as GenerateListResponse["desserts"][number] | undefined)?.description,
+    );
+
+    const rawIngredients =
+      record && "ingredients" in record && Array.isArray(record.ingredients)
+        ? record.ingredients
+        : [];
+
+    const hydratedIngredients = rawIngredients.filter(
+      (ingredient): ingredient is IngredientItem =>
+        Boolean(
+          ingredient &&
+            typeof ingredient === "object" &&
+            safeTrim((ingredient as IngredientItem).name) &&
+            safeTrim((ingredient as IngredientItem).amount),
+        ),
+    );
+
+    const rawInstructions =
+      record &&
+      "instructions" in record &&
+      Array.isArray((record as Partial<MealPlanItem>).instructions)
+        ? (record as Partial<MealPlanItem>).instructions
+        : [];
+
+    return {
+      dbId: fallback.dbId,
+      day: safeTrim(
+        ("day" in (record ?? {}) ? (record as Partial<MealPlanItem>).day : undefined) ??
+          fallback.day,
+      ),
+      name: resolvedName,
+      servings:
+        Number(
+          ("servings" in (record ?? {})
+            ? (record as Partial<MealPlanItem>).servings
+            : undefined) ?? fallback.servings,
+        ) || 2,
+      notes: resolvedNotes,
+      ingredients: hydratedIngredients,
+      instructions: rawInstructions.filter(
+        (instruction): instruction is string => typeof instruction === "string",
+      ),
+      imageUrl: safeTrim(
+        ("imageUrl" in (record ?? {}) ? (record as Partial<MealPlanItem>).imageUrl : undefined) ??
+          fallback.imageUrl,
+      ) || undefined,
+    };
+  }
+
+  async function fetchSavedMeals(userId: string) {
+    const { data, error } = await supabase
+      .from("weekly_menus")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active_week");
+
+    if (error) {
+      throw error;
+    }
+
+    const rows = data ?? [];
+
+    const dinners = rows
+      .filter((row) => row.type === "dinner")
+      .map((row) =>
+        rehydrateMealRecord(row.recipe_data as Partial<MealPlanItem> | null, {
+          dbId: row.id,
+        }),
+      )
+      .filter((meal): meal is MealPlanItem => Boolean(meal));
+
+    const desserts = rows
+      .filter((row) => row.type === "sweet_treat")
+      .map((row, index) =>
+        rehydrateMealRecord(
+          row.recipe_data as GenerateListResponse["desserts"][number] | null,
+          {
+            dbId: row.id,
+            day: `Sweet Treat ${index + 1}`,
+            servings: Number(formState.householdSize) || 2,
+          },
+        ),
+      )
+      .filter((meal): meal is MealPlanItem => Boolean(meal));
+
+    return { dinners, desserts };
+  }
+
+  async function fetchArchivedMeals(userId: string) {
+    const { data, error } = await supabase
+      .from("weekly_menus")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "archived");
+
+    if (error) {
+      throw error;
+    }
+
+    return (data ?? [])
+      .map((row) =>
+        rehydrateMealRecord(
+          row.recipe_data as
+            | Partial<MealPlanItem>
+            | GenerateListResponse["desserts"][number]
+            | null,
+          {
+            dbId: row.id,
+            day: row.type === "sweet_treat" ? "Sweet Treat" : "",
+            servings: Number(formState.householdSize) || 2,
+          },
+        ),
+      )
+      .filter((meal): meal is MealPlanItem => Boolean(meal));
+  }
+
   async function loadSessionFromCloud(userId: string) {
     try {
-      const [{ data: pantryData, error: pantryError }, { data: menuData, error: menuError }] =
+      const [
+        { data: pantryData, error: pantryError },
+        { dinners: hydratedDinners, desserts: hydratedDesserts },
+        hydratedArchivedMeals,
+      ] =
         await Promise.all([
           supabase
             .from("pantry_inventory")
             .select("ingredient_name, is_owned")
             .eq("user_id", userId),
-          supabase
-            .from("weekly_menus")
-            .select("id, meal_title, type, status, recipe_data")
-            .eq("user_id", userId),
+          fetchSavedMeals(userId),
+          fetchArchivedMeals(userId),
         ]);
 
       if (pantryError) {
         throw pantryError;
       }
 
-      if (menuError) {
-        throw menuError;
-      }
-
       const ownedPantryItems = (pantryData ?? [])
         .filter((item) => item.is_owned)
         .map((item) => item.ingredient_name)
         .filter((ingredientName) => typeof ingredientName === "string")
-        .map((ingredientName) => ingredientName?.trim?.() || "")
+        .map((ingredientName) => safeTrim(ingredientName))
         .filter(Boolean);
 
       setFullyStocked(new Set(ownedPantryItems));
@@ -1418,68 +1591,6 @@ export function SmartCartApp() {
         ...current,
         pantryItems: "",
       }));
-
-      const allMenuRows = menuData ?? [];
-      const activeMenuRows = allMenuRows.filter(
-        (item) => item.status === "active_week",
-      );
-      const hydratedDinners: MealPlanItem[] = activeMenuRows
-        .filter((item) => item.type === "dinner")
-        .map((item) => ({
-          ...(item.recipe_data as MealPlanItem),
-          dbId: item.id,
-        }))
-        .filter((meal) => Boolean(meal && meal.name)) as MealPlanItem[];
-
-      const hydratedDessertRecipes = activeMenuRows
-        .filter((item) => item.type === "sweet_treat")
-        .map(
-          (item) =>
-            item.recipe_data as GenerateListResponse["desserts"][number],
-        )
-        .filter((dessert) => dessert && dessert.title);
-
-      const archivedMenuRows = allMenuRows.filter(
-        (item) => item.status === "archived",
-      );
-
-      const hydratedDesserts: MealPlanItem[] = hydratedDessertRecipes.map(
-        (dessert, index) => ({
-          dbId: activeMenuRows.filter((item) => item.type === "sweet_treat")[index]?.id,
-          day: `Sweet Treat ${index + 1}`,
-          name: dessert.title,
-          servings: Number(formState.householdSize) || 2,
-          notes: dessert.description,
-          ingredients: dessert.ingredients,
-          imageUrl: dessert.imageUrl,
-        }),
-      );
-
-      const hydratedArchivedMeals: MealPlanItem[] = archivedMenuRows
-        .map((item) => {
-          if (item.type === "sweet_treat") {
-            const dessert =
-              item.recipe_data as GenerateListResponse["desserts"][number];
-            if (!dessert || !dessert.title) {
-              return null;
-            }
-            return {
-              dbId: item.id,
-              day: "Sweet Treat",
-              name: dessert.title,
-              servings: Number(formState.householdSize) || 2,
-              notes: dessert.description,
-              ingredients: dessert.ingredients,
-              imageUrl: dessert.imageUrl,
-            };
-          }
-
-          return {
-            ...(item.recipe_data as MealPlanItem),
-            dbId: item.id,
-          };
-        })
-        .filter((item) => item !== null) as MealPlanItem[];
 
       setWeeklyMenu(hydratedDinners);
       setSavedDesserts(hydratedDesserts);
@@ -1611,7 +1722,7 @@ export function SmartCartApp() {
   async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!waitlistEmail.trim()) {
+    if (!safeTrim(waitlistEmail)) {
       return;
     }
 
@@ -1624,7 +1735,7 @@ export function SmartCartApp() {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ email: waitlistEmail.trim() }),
+        body: JSON.stringify({ email: safeTrim(waitlistEmail) }),
       });
 
       if (!response.ok) {
@@ -1661,13 +1772,13 @@ export function SmartCartApp() {
         },
         body: JSON.stringify({
           budget,
-          diet: formState.diet.trim() || "No specific diet provided",
+          diet: safeTrim(formState.diet) || "No specific diet provided",
           householdSize,
           combinedPantryItems: combinedPantryItems.join(", "),
           rejectedMealTitle: meal.name,
           prepTime: formState.prepTime,
           adventureLevel: formState.adventureLevel,
-          mustHaveIngredient: formState.mustHaveIngredient.trim(),
+          mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
           availableEquipment: formState.availableEquipment,
           existingMeals: existingMealTitles,
         }),
@@ -2022,29 +2133,37 @@ export function SmartCartApp() {
                 </div>
               </div>
 
-              <div className="rounded-[1.75rem] border border-pine/10 bg-pine px-6 py-5 text-cream">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="font-display text-xl">Pantry Snapshot</p>
+              <div className="rounded-[1.75rem] border border-pine/10 bg-pine text-cream">
+                <button
+                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                  onClick={() => setIsPantrySnapshotOpen((current) => !current)}
+                  type="button"
+                >
+                  <span className="font-display text-xl">Pantry Snapshot</span>
                   <span className="text-xs uppercase tracking-[0.2em] text-cream/70">
-                    Live update
+                    {isPantrySnapshotOpen ? "Hide" : "View Pantry Snapshot"}
                   </span>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {combinedPantryItems.length > 0 ? (
-                    combinedPantryItems.map((item) => (
-                      <span
-                        key={item}
-                        className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
-                      >
-                        {item}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-cream/80">
-                      Add a few pantry ingredients and they&apos;ll show up here.
-                    </span>
-                  )}
-                </div>
+                </button>
+                {isPantrySnapshotOpen ? (
+                  <div className="border-t border-white/10 px-6 pb-5 pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {combinedPantryItems.length > 0 ? (
+                        combinedPantryItems.map((item) => (
+                          <span
+                            key={item}
+                            className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
+                          >
+                            {item}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-cream/80">
+                          Add a few pantry ingredients and they&apos;ll show up here.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <label className="space-y-2">
@@ -2185,7 +2304,7 @@ export function SmartCartApp() {
                     const mealCardKey = `generated-${meal.day}::${meal.name}`;
                     const mealEyebrow = formatCardEyebrow(meal.day);
                     const showMealImage =
-                      Boolean(meal.imageUrl?.trim()) &&
+                      Boolean(safeTrim(meal.imageUrl)) &&
                       !hiddenCardImages.has(mealCardKey);
 
                     return (
@@ -2402,13 +2521,13 @@ export function SmartCartApp() {
                                         )
                                         .map(
                                           (ingredient) =>
-                                            `${ingredient.amount?.trim?.() || ""} ${ingredient.name?.trim?.() || ""}`,
+                                            `${safeTrim(ingredient.amount)} ${safeTrim(ingredient.name)}`,
                                         )
                                     : (recipeCache[meal.name]?.ingredients ?? []).filter(
                                         (ingredient) => typeof ingredient === "string",
                                       )
                                   )
-                                    .map((ingredient) => ingredient?.trim?.() || "")
+                                    .map((ingredient) => safeTrim(ingredient))
                                     .filter(Boolean)
                                     .map((ingredient) => (
                                     <li key={`${meal.name}-${ingredient}`} className="flex gap-2">
@@ -2446,6 +2565,15 @@ export function SmartCartApp() {
                       ? "Close Recipe Vault"
                       : `Open Recipe Vault (${archivedMeals.length})`}
                   </button>
+                  {isVaultOpen && archivedMeals.length > 0 ? (
+                    <button
+                      className="mt-3 inline-flex items-center justify-center rounded-full border border-red-300 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                      onClick={() => void handleClearVault()}
+                      type="button"
+                    >
+                      Clear All
+                    </button>
+                  ) : null}
 
                   {isVaultOpen ? (
                     <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
@@ -2535,13 +2663,13 @@ export function SmartCartApp() {
                                             )
                                             .map(
                                               (ingredient) =>
-                                                `${ingredient.amount?.trim?.() || ""} ${ingredient.name?.trim?.() || ""}`,
+                                                `${safeTrim(ingredient.amount)} ${safeTrim(ingredient.name)}`,
                                             )
                                         : (recipeCache[meal.name]?.ingredients ?? []).filter(
                                             (ingredient) => typeof ingredient === "string",
                                           )
                                       )
-                                        .map((ingredient) => ingredient?.trim?.() || "")
+                                        .map((ingredient) => safeTrim(ingredient))
                                         .filter(Boolean)
                                         .map((ingredient) => (
                                         <li
@@ -2579,7 +2707,7 @@ export function SmartCartApp() {
                         const isReplacingThisDessert =
                           replacingDessertKey === `${dessert.title}-${index}`;
                         const showDessertImage =
-                          Boolean(dessert.imageUrl?.trim()) &&
+                          Boolean(safeTrim(dessert.imageUrl)) &&
                           !hiddenCardImages.has(dessertCardKey);
 
                         return (
@@ -2662,7 +2790,7 @@ export function SmartCartApp() {
                                     >
                                       <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
                                       <span>
-                                        {ingredient.amount?.trim?.() || ""} {ingredient.name?.trim?.() || ""}
+                                        {safeTrim(ingredient.amount)} {safeTrim(ingredient.name)}
                                       </span>
                                     </li>
                                   ))}
@@ -2784,7 +2912,7 @@ export function SmartCartApp() {
                                 <span
                                   className={ingredient.isChecked ? "line-through opacity-60" : ""}
                                 >
-                                  {ingredient.name?.trim?.() || ""}
+                                  {safeTrim(ingredient.name)}
                                 </span>
                               </div>
                               <span className="shrink-0 text-sm font-semibold text-ink/70">
@@ -2815,7 +2943,7 @@ export function SmartCartApp() {
                                 const isRestock = item.name.includes("(Includes Restock)");
                                 const bellPepperPattern = /bell pepper/i;
                                 const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
-                                const trimmedName = item.name.trim();
+                                const trimmedName = safeTrim(item.name);
                                 const isRestoredItem = restoredItems.includes(item.name);
                                 const displayName =
                                   bellPepperPattern.test(trimmedName) &&
@@ -3004,12 +3132,12 @@ export function SmartCartApp() {
                     />
                     <button
                       onClick={() => {
-                        if (newCustomItem.trim()) {
+                        if (safeTrim(newCustomItem)) {
                           setCustomItems([
                             ...customItems,
                             {
                               id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                              name: newCustomItem.trim(),
+                              name: safeTrim(newCustomItem),
                               isChecked: false,
                             },
                           ]);
@@ -3254,7 +3382,7 @@ export function SmartCartApp() {
                     <ul className="mt-4 space-y-3 text-sm leading-7 text-ink/80">
                       {activeRecipe.ingredients
                         .filter((ingredient) => typeof ingredient === "string")
-                        .map((ingredient) => ingredient?.trim?.() || "")
+                        .map((ingredient) => safeTrim(ingredient))
                         .filter(Boolean)
                         .map((ingredient) => (
                         <li key={ingredient} className="flex gap-3">
@@ -3270,7 +3398,7 @@ export function SmartCartApp() {
                     <ol className="mt-4 space-y-4 text-sm leading-7 text-ink/80">
                       {activeRecipe.steps
                         .filter((step) => typeof step === "string")
-                        .map((step) => step?.trim?.() || "")
+                        .map((step) => safeTrim(step))
                         .filter(Boolean)
                         .map((step, index) => (
                         <li
