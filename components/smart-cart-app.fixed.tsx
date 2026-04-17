@@ -556,6 +556,7 @@ export function SmartCartApp() {
   const combinedPantryItems = useMemo(() => {
     const typedItems = formState.pantryItems
       .split(",")
+      .filter((item) => typeof item === "string")
       .map((item) => item.trim())
       .filter(Boolean);
 
@@ -572,6 +573,7 @@ export function SmartCartApp() {
 
     // 1. Sanitize Pantry
     const validPantry = pantry
+      .filter((p) => typeof p === "string")
       .map((p) => p.toLowerCase().trim())
       .filter((p) => p.length > 2);
 
@@ -935,7 +937,10 @@ export function SmartCartApp() {
             typeof ingredient.name === "string" &&
             typeof ingredient.amount === "string",
         )
-        .map((ingredient) => `${ingredient.amount} ${ingredient.name}`.trim()),
+        .map((ingredient) => `${ingredient.amount} ${ingredient.name}`)
+        .filter((ingredient) => typeof ingredient === "string")
+        .map((ingredient) => ingredient.trim())
+        .filter(Boolean),
     );
 
     if (rawIngredients.length === 0) {
@@ -1392,7 +1397,9 @@ export function SmartCartApp() {
 
       const ownedPantryItems = (pantryData ?? [])
         .filter((item) => item.is_owned)
-        .map((item) => item.ingredient_name.trim())
+        .map((item) => item.ingredient_name)
+        .filter((ingredientName) => typeof ingredientName === "string")
+        .map((ingredientName) => ingredientName.trim())
         .filter(Boolean);
 
       setFullyStocked(new Set(ownedPantryItems));
@@ -1943,31 +1950,6 @@ export function SmartCartApp() {
                 </div>
               </div>
 
-              <div className="rounded-[1.75rem] border border-pine/10 bg-pine px-6 py-5 text-cream">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="font-display text-xl">Pantry Snapshot</p>
-                  <span className="text-xs uppercase tracking-[0.2em] text-cream/70">
-                    Live update
-                  </span>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {combinedPantryItems.length > 0 ? (
-                    combinedPantryItems.map((item) => (
-                      <span
-                        key={item}
-                        className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
-                      >
-                        {item}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-cream/80">
-                      Add a few pantry ingredients and they&apos;ll show up here.
-                    </span>
-                  )}
-                </div>
-              </div>
-
               <div className="space-y-3">
                 <div>
                   <p className="text-sm font-semibold text-ink">Pantry Quick-Select</p>
@@ -2028,6 +2010,31 @@ export function SmartCartApp() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-pine/10 bg-pine px-6 py-5 text-cream">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="font-display text-xl">Pantry Snapshot</p>
+                  <span className="text-xs uppercase tracking-[0.2em] text-cream/70">
+                    Live update
+                  </span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {combinedPantryItems.length > 0 ? (
+                    combinedPantryItems.map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
+                      >
+                        {item}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-cream/80">
+                      Add a few pantry ingredients and they&apos;ll show up here.
+                    </span>
+                  )}
                 </div>
               </div>
 
