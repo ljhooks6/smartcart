@@ -6,7 +6,9 @@ import { supabase } from "../lib/supabase";
 type IngredientItem = {
   name: string;
   amount: string;
-  price: number;
+  price?: number;
+  checked?: boolean;
+  skipped?: boolean;
 };
 
 type MealPlanItem = {
@@ -59,7 +61,7 @@ type ConsolidatedItem = {
   id: string;
   name: string;
   price: number;
-  isChecked: boolean;
+  checked: boolean;
 };
 
 type ReplaceMealResponse = {
@@ -450,11 +452,12 @@ export function SmartCartApp() {
   }, []);
 
   useEffect(() => {
-    if (!user?.id) {
+    const userId = user?.id || "";
+    if (!userId) {
       return;
     }
 
-    void loadSessionFromCloud(user.id);
+    void loadSessionFromCloud(userId);
   }, [user]);
 
   useEffect(() => {
@@ -943,9 +946,16 @@ export function SmartCartApp() {
   }
 
   async function handleConsolidateList() {
-    const rawIngredients = displayGroceryList
-      .filter((item) => !checkedItems.has(`${item.category}-${item.name}`))
-      .map((item) => `${item.amount ? `${safeTrim(item.amount)} ` : ""}${safeTrim(item.name)}`)
+    const consolidatableItems = displayGroceryList.map((item) => ({
+      name: safeTrim(item.name),
+      amount: safeTrim(item.amount),
+      checked: checkedItems.has(`${item.category}-${item.name}`),
+      skipped: false,
+    }));
+
+    const rawIngredients = consolidatableItems
+      .filter((item) => item.checked !== true && item.skipped !== true)
+      .map((item) => `${item.amount ? `${item.amount} ` : ""}${item.name}`)
       .map((ingredient) => safeTrim(ingredient))
       .filter(Boolean);
 
@@ -1001,7 +1011,7 @@ export function SmartCartApp() {
           id: crypto.randomUUID(),
           name: item.name,
           price: item.price,
-          isChecked: item.checked,
+          checked: item.checked,
         }));
 
       setConsolidatedList(interactiveList);
@@ -1258,7 +1268,8 @@ export function SmartCartApp() {
   }
 
   async function handlePermanentDelete(meal: MealPlanItem) {
-    if (!user) {
+    const userId = user?.id || "";
+    if (!userId) {
       return;
     }
 
@@ -1273,7 +1284,7 @@ export function SmartCartApp() {
           .from("weekly_menus")
           .delete()
           .eq("id", meal.dbId)
-          .eq("user_id", user.id);
+          .eq("user_id", userId);
 
         if (error) {
           throw error;
@@ -1282,7 +1293,7 @@ export function SmartCartApp() {
         const { error } = await supabase
           .from("weekly_menus")
           .delete()
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .eq("meal_title", meal.name)
           .eq("status", "archived");
 
@@ -1487,14 +1498,18 @@ export function SmartCartApp() {
   }
 
   async function fetchSavedMeals(userId: string) {
-    if (!user || !user.id) {
+    if (!user) {
+      return { dinners: [], desserts: [] };
+    }
+    const currentUserId = user?.id || "";
+    if (!currentUserId) {
       return { dinners: [], desserts: [] };
     }
 
     const { data, error } = await supabase
       .from("weekly_menus")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", currentUserId)
       .eq("status", "active_week");
 
     if (error) {
@@ -1541,14 +1556,18 @@ export function SmartCartApp() {
   }
 
   async function fetchArchivedMeals(userId: string) {
-    if (!user || !user.id) {
+    if (!user) {
+      return [];
+    }
+    const currentUserId = user?.id || "";
+    if (!currentUserId) {
       return [];
     }
 
     const { data, error } = await supabase
       .from("weekly_menus")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", currentUserId)
       .eq("status", "archived");
 
     if (error) {
@@ -1695,12 +1714,13 @@ export function SmartCartApp() {
   }
 
   async function syncSessionData() {
-    if (!user?.id) {
+    const userId = user?.id || "";
+    if (!userId) {
       return;
     }
 
     const payload = {
-      user_id: user.id,
+      user_id: userId,
       weekly_menu: weeklyMenu,
       saved_desserts: savedDesserts,
       selected_pantry_items: selectedPantryItems,
@@ -1718,7 +1738,8 @@ export function SmartCartApp() {
   }
 
   async function saveSessionToCloud() {
-    if (!user) {
+    const userId = user?.id || "";
+    if (!userId) {
       return;
     }
 
@@ -1729,7 +1750,7 @@ export function SmartCartApp() {
       const { error: archiveError } = await supabase
         .from("weekly_menus")
         .update({ status: "archived" })
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("status", "active_week");
 
       if (archiveError) {
@@ -1746,7 +1767,7 @@ export function SmartCartApp() {
         },
         type: "sweet_treat",
         status: "active_week",
-        user_id: user.id,
+        user_id: userId,
       }));
 
       const archivedMealRows = archivedMeals.map((meal) => ({
@@ -1761,7 +1782,7 @@ export function SmartCartApp() {
           : meal,
         type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
         status: "archived",
-        user_id: user.id,
+        user_id: userId,
       }));
 
       const weeklyMenuRows = [
@@ -1770,7 +1791,7 @@ export function SmartCartApp() {
           recipe_data: meal,
           type: "dinner",
           status: "active_week",
-          user_id: user.id,
+          user_id: userId,
         })),
         ...activeDessertRows,
         ...archivedMealRows,
@@ -1789,7 +1810,7 @@ export function SmartCartApp() {
       const { error: deletePantryError } = await supabase
         .from("pantry_inventory")
         .delete()
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       if (deletePantryError) {
         throw deletePantryError;
@@ -1798,7 +1819,7 @@ export function SmartCartApp() {
       const pantryRows = combinedPantryItems.map((ingredient) => ({
         ingredient_name: ingredient,
         is_owned: true,
-        user_id: user.id,
+        user_id: userId,
       }));
 
       if (pantryRows.length > 0) {
@@ -3168,7 +3189,7 @@ export function SmartCartApp() {
                             >
                               <div className="flex min-w-0 items-center gap-3">
                                 <input
-                                  checked={ingredient.isChecked}
+                                  checked={ingredient.checked}
                                   className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
                                   onChange={() =>
                                     setConsolidatedList((current) =>
@@ -3177,7 +3198,7 @@ export function SmartCartApp() {
                                             currentItem.id === ingredient.id
                                               ? {
                                                   ...currentItem,
-                                                  isChecked: !currentItem.isChecked,
+                                                  checked: !currentItem.checked,
                                                 }
                                               : currentItem,
                                           )
@@ -3187,7 +3208,7 @@ export function SmartCartApp() {
                                   type="checkbox"
                                 />
                                 <span
-                                  className={ingredient.isChecked ? "line-through opacity-60" : ""}
+                                  className={ingredient.checked ? "line-through opacity-60" : ""}
                                 >
                                   {safeTrim(ingredient.name)}
                                 </span>
