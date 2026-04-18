@@ -246,6 +246,7 @@ Rules:
 - If includeDessert is true, evaluate the remaining budget after planning the 8 meals. If there is room, generate exactly TWO dessert options for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 8 meals AND two dessert options, return an empty "desserts" array.
 - If includeDessert is false, return an empty "desserts" array.
 - Every dessert option must include its own localized "ingredients" array using the exact same ingredient format as meals.
+- Generate only sweet, sugary desserts. Do not suggest savory items, biscuits, or bread-based side dishes like cheddar biscuits or spinach biscuits.
 - If a must_have_ingredient is provided, you MUST feature this exact ingredient prominently in AT LEAST 3 of the 8 dinner meals, regardless of budget.
 - Strict Consistency: Every ingredient listed inside a meal's ingredients array must be explicitly used in that meal's title or notes.
 - Pay close attention to the budget. If the plan is far below the target budget, use higher-quality ingredient upgrades to better maximize the budget, such as fresh herbs instead of dried herbs or a better-quality protein.

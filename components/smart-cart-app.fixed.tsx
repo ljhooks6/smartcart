@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 type IngredientItem = {
   name: string;
   amount: string;
-  price?: number;
+  price: number;
 };
 
 type MealPlanItem = {
@@ -438,22 +438,24 @@ export function SmartCartApp() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user?.id) {
-        void loadSessionFromCloud(session.user.id);
-      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user?.id) {
-        void loadSessionFromCloud(session.user.id);
-      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    void loadSessionFromCloud(user.id);
+  }, [user]);
 
   useEffect(() => {
     try {
@@ -941,19 +943,11 @@ export function SmartCartApp() {
   }
 
   async function handleConsolidateList() {
-    const rawIngredients = [...weeklyMenu, ...savedDesserts].flatMap((meal) =>
-      (meal.ingredients ?? [])
-        .filter(
-          (ingredient) =>
-            ingredient &&
-            typeof ingredient.name === "string" &&
-            typeof ingredient.amount === "string",
-        )
-        .map((ingredient) => `${ingredient.amount} ${ingredient.name}`)
-        .filter((ingredient) => typeof ingredient === "string")
-        .map((ingredient) => safeTrim(ingredient))
-        .filter(Boolean),
-    );
+    const rawIngredients = displayGroceryList
+      .filter((item) => !checkedItems.has(`${item.category}-${item.name}`))
+      .map((item) => `${item.amount ? `${safeTrim(item.amount)} ` : ""}${safeTrim(item.name)}`)
+      .map((ingredient) => safeTrim(ingredient))
+      .filter(Boolean);
 
     if (rawIngredients.length === 0) {
       setConsolidatedList([]);
@@ -1436,15 +1430,24 @@ export function SmartCartApp() {
         ? record.ingredients
         : [];
 
-    const hydratedIngredients = rawIngredients.filter(
-      (ingredient): ingredient is IngredientItem =>
-        Boolean(
-          ingredient &&
-            typeof ingredient === "object" &&
-            safeTrim((ingredient as IngredientItem).name) &&
-            safeTrim((ingredient as IngredientItem).amount),
-        ),
-    );
+    const hydratedIngredients = rawIngredients
+      .filter(
+        (ingredient): ingredient is Partial<IngredientItem> =>
+          Boolean(
+            ingredient &&
+              typeof ingredient === "object" &&
+              safeTrim((ingredient as IngredientItem).name) &&
+              safeTrim((ingredient as IngredientItem).amount),
+          ),
+      )
+      .map((ingredient) => ({
+        name: safeTrim(ingredient.name),
+        amount: safeTrim(ingredient.amount),
+        price:
+          typeof ingredient.price === "number" && Number.isFinite(ingredient.price)
+            ? ingredient.price
+            : 0,
+      }));
 
     const rawInstructions =
       record &&
@@ -1484,7 +1487,7 @@ export function SmartCartApp() {
   }
 
   async function fetchSavedMeals(userId: string) {
-    if (!user?.id) {
+    if (!user || !user.id) {
       return { dinners: [], desserts: [] };
     }
 
@@ -1538,7 +1541,7 @@ export function SmartCartApp() {
   }
 
   async function fetchArchivedMeals(userId: string) {
-    if (!user?.id) {
+    if (!user || !user.id) {
       return [];
     }
 
