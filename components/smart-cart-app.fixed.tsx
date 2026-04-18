@@ -968,7 +968,12 @@ export function SmartCartApp() {
         }),
       });
 
-      const data = (await response.json()) as
+      const responseText = await response.text();
+      const cleanJson =
+        responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/)?.[1] ??
+        responseText.match(/(\[[\s\S]*\]|\{[\s\S]*\})/)?.[1] ??
+        responseText;
+      const data = JSON.parse(cleanJson) as
         | Array<{ name?: string; price?: number }>
         | { error?: string };
 
@@ -979,15 +984,20 @@ export function SmartCartApp() {
         return;
       }
 
-      const interactiveList = (Array.isArray(data) ? data : [])
-        .filter((item) => typeof item?.name === "string")
+      const aiJson = Array.isArray(data) ? data : [];
+      const pricedItems = aiJson.map((item) => ({
+        name: safeTrim(item.name),
+        price: typeof item.price === "number" ? item.price : 0,
+        checked: false,
+      }));
+      const interactiveList = pricedItems
+        .filter((item) => item.name)
         .map((item) => ({
           id: crypto.randomUUID(),
-          name: safeTrim(item.name),
-          price: Math.max(0, Number(item.price ?? 0)),
-          isChecked: false,
-        }))
-        .filter((item) => item.name);
+          name: item.name,
+          price: item.price,
+          isChecked: item.checked,
+        }));
 
       setConsolidatedList(interactiveList);
     } catch (error) {
@@ -1299,12 +1309,10 @@ export function SmartCartApp() {
       const { error: archivedMealsError } = await supabase
         .from("archived_meals")
         .delete()
-        .eq("user_id", user.id);
+        .match({ user_id: user.id });
 
-      if (
-        archivedMealsError &&
-        !/does not exist|relation .*archived_meals/i.test(archivedMealsError.message)
-      ) {
+      if (archivedMealsError) {
+        console.log("Supabase archived_meals delete error:", archivedMealsError);
         throw archivedMealsError;
       }
 
@@ -1315,12 +1323,14 @@ export function SmartCartApp() {
         .eq("status", "archived");
 
       if (weeklyMenusError) {
+        console.log("Supabase weekly_menus archived delete error:", weeklyMenusError);
         throw weeklyMenusError;
       }
 
       setArchivedMeals([]);
       setCloudSyncMessage("Vault cleared.");
     } catch (error) {
+      console.log("handleClearVault failed:", error);
       setCloudSyncMessage(
         error instanceof Error ? error.message : "Failed to clear vault.",
       );
