@@ -1989,10 +1989,12 @@ export function SmartCartApp() {
               <p className="font-display text-sm uppercase tracking-[0.35em] text-berry/75">
                 Budget-conscious meal planning
               </p>
-              <p className="max-w-2xl text-lg leading-8 text-ink/75">
-                SmartCart turns your pantry, budget, and time constraints into a practical dinner
-                plan with a grocery checklist you can actually shop.
-              </p>
+              <div className="max-w-3xl rounded-2xl bg-slate-50/50 p-5 shadow-sm">
+                <p className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-xl font-extrabold leading-tight text-transparent sm:text-2xl">
+                  SmartCart turns your pantry, budget, and time constraints into a practical dinner
+                  plan with a grocery checklist you can actually shop.
+                </p>
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
