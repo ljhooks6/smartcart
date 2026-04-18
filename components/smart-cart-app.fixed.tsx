@@ -1311,43 +1311,6 @@ export function SmartCartApp() {
     }
   }
 
-  async function handleClearVault() {
-    if (!user) {
-      return;
-    }
-
-    try {
-      const { error: archivedMealsError } = await supabase
-        .from("archived_meals")
-        .delete()
-        .match({ user_id: user.id });
-
-      if (archivedMealsError) {
-        console.log("Supabase archived_meals delete error:", archivedMealsError);
-        throw archivedMealsError;
-      }
-
-      const { error: weeklyMenusError } = await supabase
-        .from("weekly_menus")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("status", "archived");
-
-      if (weeklyMenusError) {
-        console.log("Supabase weekly_menus archived delete error:", weeklyMenusError);
-        throw weeklyMenusError;
-      }
-
-      setArchivedMeals([]);
-      setCloudSyncMessage("Vault cleared.");
-    } catch (error) {
-      console.log("handleClearVault failed:", error);
-      setCloudSyncMessage(
-        error instanceof Error ? error.message : "Failed to clear vault.",
-      );
-    }
-  }
-
   function handleToggleDessertSave(
     dessert: GenerateListResponse["desserts"][number],
     index: number,
@@ -2026,9 +1989,6 @@ export function SmartCartApp() {
               <p className="font-display text-sm uppercase tracking-[0.35em] text-berry/75">
                 Budget-conscious meal planning
               </p>
-              <h1 className="max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl lg:text-6xl">
-                SmartCart builds practical weekly meals around your real pantry and budget.
-              </h1>
               <p className="max-w-2xl text-lg leading-8 text-ink/75">
                 SmartCart turns your pantry, budget, and time constraints into a practical dinner
                 plan with a grocery checklist you can actually shop.
@@ -2217,39 +2177,6 @@ export function SmartCartApp() {
                 </div>
               </div>
 
-              <div className="rounded-[1.75rem] border border-pine/10 bg-pine text-cream">
-                <button
-                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
-                  onClick={() => setIsPantryOpen((current) => !current)}
-                  type="button"
-                >
-                  <span className="font-display text-xl">Pantry Snapshot</span>
-                  <span className="text-xs uppercase tracking-[0.2em] text-cream/70">
-                    {isPantryOpen ? "Hide" : "View Pantry Snapshot"}
-                  </span>
-                </button>
-                {isPantryOpen ? (
-                  <div className="border-t border-white/10 px-6 pb-5 pt-4">
-                    <div className="flex flex-wrap gap-2">
-                      {combinedPantryItems.length > 0 ? (
-                        combinedPantryItems.map((item) => (
-                          <span
-                            key={item}
-                            className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
-                          >
-                            {item}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-cream/80">
-                          Add a few pantry ingredients and they&apos;ll show up here.
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
               <div className="rounded-[1.75rem] border border-stone-200 bg-white shadow-sm">
                 <button
                   className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
@@ -2321,6 +2248,39 @@ export function SmartCartApp() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="rounded-[1.75rem] border border-pine/10 bg-pine text-cream">
+                <button
+                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                  onClick={() => setIsPantryOpen((current) => !current)}
+                  type="button"
+                >
+                  <span className="font-display text-xl">Pantry Snapshot</span>
+                  <span className="text-xs uppercase tracking-[0.2em] text-cream/70">
+                    {isPantryOpen ? "Hide" : "View Pantry Snapshot"}
+                  </span>
+                </button>
+                {isPantryOpen ? (
+                  <div className="border-t border-white/10 px-6 pb-5 pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {combinedPantryItems.length > 0 ? (
+                        combinedPantryItems.map((item) => (
+                          <span
+                            key={item}
+                            className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
+                          >
+                            {item}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-cream/80">
+                          Add a few pantry ingredients and they&apos;ll show up here.
+                        </span>
+                      )}
                     </div>
                   </div>
                 ) : null}
@@ -2884,16 +2844,6 @@ export function SmartCartApp() {
                       ? "Close Recipe Vault"
                       : `Open Recipe Vault (${archivedMeals.length})`}
                   </button>
-                  {isVaultOpen && archivedMeals.length > 0 ? (
-                    <button
-                      className="mt-3 inline-flex items-center justify-center rounded-full border border-red-300 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                      onClick={() => void handleClearVault()}
-                      type="button"
-                    >
-                      Delete All Archived Meals
-                    </button>
-                  ) : null}
-
                   {isVaultOpen ? (
                     <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
                       {archivedMeals.length > 0 ? (
