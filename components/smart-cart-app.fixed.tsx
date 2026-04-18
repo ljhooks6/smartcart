@@ -57,13 +57,6 @@ type CustomItem = {
   isChecked: boolean;
 };
 
-type ConsolidatedItem = {
-  id: string;
-  name: string;
-  price: number;
-  checked: boolean;
-};
-
 type ReplaceMealResponse = {
   title: string;
   description: string;
@@ -352,34 +345,6 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
   return `${displayValue} ${baseParts.unit}`;
 }
 
-function groupIngredientList(ingredients: IngredientItem[]) {
-  const groupedItems = new Map<string, GroceryListItem>();
-
-  ingredients.forEach((ingredient) => {
-    const normalizedKey = normalizeIngredientName(ingredient.name);
-    const existingItem = groupedItems.get(normalizedKey);
-    const adjustedPrice = Math.max(1, Number(ingredient.price));
-
-    if (!existingItem) {
-      groupedItems.set(normalizedKey, {
-        category: "Meal Ingredients",
-        name: safeTrim(ingredient.name),
-        amount: safeTrim(ingredient.amount),
-        estimated_price: adjustedPrice,
-      });
-      return;
-    }
-
-    groupedItems.set(normalizedKey, {
-      ...existingItem,
-      amount: mergeAmounts(existingItem.amount, ingredient.amount),
-      estimated_price: existingItem.estimated_price + adjustedPrice,
-    });
-  });
-
-  return groupedItems;
-}
-
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [user, setUser] = useState<any>(null);
@@ -388,8 +353,6 @@ export function SmartCartApp() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [cloudSyncMessage, setCloudSyncMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [consolidatedList, setConsolidatedList] = useState<ConsolidatedItem[] | null>(null);
-  const [isConsolidating, setIsConsolidating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -458,6 +421,23 @@ export function SmartCartApp() {
     }
 
     void loadSessionFromCloud(userId);
+  }, [user]);
+
+  useEffect(() => {
+    const userId = user?.id || "";
+    if (!userId) {
+      return;
+    }
+
+    void fetchArchivedMeals(userId)
+      .then((meals) => {
+        setArchivedMeals(meals);
+      })
+      .catch((error) => {
+        setCloudSyncMessage(
+          error instanceof Error ? error.message : "Failed to load archived meals.",
+        );
+      });
   }, [user]);
 
   useEffect(() => {
@@ -546,10 +526,6 @@ export function SmartCartApp() {
   }, [weeklyMenu]);
 
   useEffect(() => {
-    setConsolidatedList(null);
-  }, [savedDesserts, weeklyMenu]);
-
-  useEffect(() => {
     if (!activeRecipeMeal) {
       return;
     }
@@ -620,36 +596,30 @@ export function SmartCartApp() {
       });
     });
 
-    // 4. Aggregation (Optional but recommended)
-    const groupedItems = groupIngredientList(rawGroceryList);
-    const groupedSkippedItems = groupIngredientList(rawSkippedList);
+    const directGroceryList: GroceryListItem[] = rawGroceryList.map((ingredient) => ({
+      category: "Meal Ingredients",
+      name: safeTrim(ingredient.name),
+      amount: safeTrim(ingredient.amount),
+      estimated_price: Math.max(1, Number(ingredient.price ?? 0)),
+    }));
 
-    // 5. Clean Restock Append
-    Array.from(restock).forEach((restockItem) => {
-      const normalizedKey = normalizeIngredientName(restockItem);
-      const restockPrice = Math.max(1, estimateRestockPrice(restockItem));
-      const existingItem = groupedItems.get(normalizedKey);
+    const directSkippedList: GroceryListItem[] = rawSkippedList.map((ingredient) => ({
+      category: "Meal Ingredients",
+      name: safeTrim(ingredient.name),
+      amount: safeTrim(ingredient.amount),
+      estimated_price: Math.max(1, Number(ingredient.price ?? 0)),
+    }));
 
-      if (existingItem) {
-        groupedItems.set(normalizedKey, {
-          ...existingItem,
-          name: `${existingItem.name.replace(/\s*\(Includes Restock\)$/i, "")} (Includes Restock)`,
-          estimated_price: existingItem.estimated_price + restockPrice,
-        });
-        return;
-      }
-
-      groupedItems.set(normalizedKey, {
-        category: "Restock",
-        name: safeTrim(restockItem),
-        amount: "1",
-        estimated_price: restockPrice,
-      });
-    });
+    const restockItems: GroceryListItem[] = Array.from(restock).map((restockItem) => ({
+      category: "Restock",
+      name: safeTrim(restockItem),
+      amount: "1",
+      estimated_price: Math.max(1, estimateRestockPrice(restockItem)),
+    }));
 
     return {
-      derivedGroceryList: Array.from(groupedItems.values()),
-      skippedGroceryList: Array.from(groupedSkippedItems.values()),
+      derivedGroceryList: [...directGroceryList, ...restockItems],
+      skippedGroceryList: directSkippedList,
     };
   }, [fullyStocked, restock, restoredItems, runningLow, savedDesserts, weeklyMenu]);
 
@@ -942,85 +912,6 @@ export function SmartCartApp() {
       setRequestError(
         error instanceof Error ? error.message : "Failed to copy shopping list.",
       );
-    }
-  }
-
-  async function handleConsolidateList() {
-    const consolidatableItems = displayGroceryList.map((item) => ({
-      name: safeTrim(item.name),
-      amount: safeTrim(item.amount),
-      checked: checkedItems.has(`${item.category}-${item.name}`),
-      skipped: false,
-    }));
-
-    const rawIngredients = consolidatableItems
-      .filter((item) => item.checked !== true && item.skipped !== true)
-      .map((item) => `${item.amount ? `${item.amount} ` : ""}${item.name}`)
-      .map((ingredient) => safeTrim(ingredient))
-      .filter(Boolean);
-
-    if (rawIngredients.length === 0) {
-      setConsolidatedList([]);
-      return;
-    }
-
-    setIsConsolidating(true);
-    setRequestError(null);
-
-    try {
-      const response = await fetch("/api/consolidate-ingredients", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ingredients: rawIngredients,
-        }),
-      });
-
-      const responseText = await response.text();
-      const cleanJson =
-        responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/)?.[1] ??
-        responseText.match(/(\[[\s\S]*\]|\{[\s\S]*\})/)?.[1] ??
-        responseText;
-      const data = JSON.parse(cleanJson) as
-        | Array<{ name?: string; price?: number; estimated_price?: number }>
-        | { error?: string };
-
-      if (!response.ok) {
-        setRequestError(
-          `Error ${response.status}: ${"error" in data ? data.error || "Request failed." : "Request failed."}`,
-        );
-        return;
-      }
-
-      const aiJson = Array.isArray(data) ? data : [];
-      const pricedItems = aiJson.map((item) => ({
-        name: safeTrim(item.name),
-        price:
-          typeof item.price === "number"
-            ? item.price
-            : typeof item.estimated_price === "number"
-              ? item.estimated_price
-              : 0,
-        checked: false,
-      }));
-      const interactiveList = pricedItems
-        .filter((item) => item.name)
-        .map((item) => ({
-          id: crypto.randomUUID(),
-          name: item.name,
-          price: item.price,
-          checked: item.checked,
-        }));
-
-      setConsolidatedList(interactiveList);
-    } catch (error) {
-      setRequestError(
-        error instanceof Error ? error.message : "Failed to consolidate ingredients.",
-      );
-    } finally {
-      setIsConsolidating(false);
     }
   }
 
@@ -1349,6 +1240,29 @@ export function SmartCartApp() {
     });
   }
 
+  function handleRemovePantryItem(itemToRemove: string) {
+    const cleanedTarget = safeTrim(itemToRemove);
+
+    setFullyStocked((current) => {
+      const next = new Set(current);
+      next.delete(cleanedTarget);
+      return next;
+    });
+
+    setFormState((current) => {
+      const nextPantryItems = current.pantryItems
+        .split(",")
+        .map((item) => safeTrim(item))
+        .filter((item) => item && item.toLowerCase() !== cleanedTarget.toLowerCase())
+        .join(", ");
+
+      return {
+        ...current,
+        pantryItems: nextPantryItems,
+      };
+    });
+  }
+
   function handleClearForm() {
     const shouldClear = window.confirm(
       "Are you sure? This will clear your form and active weekly menu, but your Recipe Vault will remain safe.",
@@ -1378,8 +1292,6 @@ export function SmartCartApp() {
     setCopied(false);
     setHasAppliedUpgrades(false);
     setIsPremiumMode(false);
-    setConsolidatedList(null);
-    setIsConsolidating(false);
     setRestoredItems([]);
     setRecipeCache({});
     setActiveRecipeMeal(null);
@@ -1557,37 +1469,29 @@ export function SmartCartApp() {
     }
 
     const { data, error } = await supabase
-      .from("weekly_menus")
+      .from("archived_meals")
       .select("*")
-      .eq("user_id", currentUserId)
-      .eq("status", "archived");
+      .eq("user_id", currentUserId);
 
     if (error) {
       throw error;
     }
 
-    const sanitized = (data ?? []).map((row) => ({
-      ...row,
-      name: safeTrim((row as { name?: string }).name),
-      ingredients: Array.isArray((row as { ingredients?: unknown[] }).ingredients)
-        ? ((row as { ingredients?: IngredientItem[] }).ingredients ?? [])
-        : [],
-      instructions: Array.isArray((row as { instructions?: unknown[] }).instructions)
-        ? ((row as { instructions?: string[] }).instructions ?? [])
-        : [],
-    }));
-
-    return sanitized
+    return (data ?? [])
       .map((row) =>
         rehydrateMealRecord(
-          row.recipe_data as
+          ((row as { recipe_data?: unknown }).recipe_data ??
+            row) as
             | Partial<MealPlanItem>
             | GenerateListResponse["desserts"][number]
             | null,
           {
-            dbId: row.id,
-            user_id: safeTrim(row.user_id),
-            day: row.type === "sweet_treat" ? "Sweet Treat" : "",
+            dbId: (row as { id?: number | string | null }).id ?? undefined,
+            user_id: safeTrim((row as { user_id?: string | null }).user_id),
+            day:
+              safeTrim((row as { type?: string | null }).type).toLowerCase() === "sweet_treat"
+                ? "Sweet Treat"
+                : "",
             servings: Number(formState.householdSize) || 2,
           },
         ),
@@ -1600,7 +1504,6 @@ export function SmartCartApp() {
       const [
         { data: pantryData, error: pantryError },
         { dinners: hydratedDinners, desserts: hydratedDesserts },
-        hydratedArchivedMeals,
         { data: sessionData, error: sessionError },
       ] =
         await Promise.all([
@@ -1609,7 +1512,6 @@ export function SmartCartApp() {
             .select("ingredient_name, is_owned")
             .eq("user_id", userId),
           fetchSavedMeals(userId),
-          fetchArchivedMeals(userId),
           supabase.from("user_sessions").select("*").eq("user_id", userId).maybeSingle(),
         ]);
 
@@ -1684,7 +1586,6 @@ export function SmartCartApp() {
 
       setWeeklyMenu(resolvedWeeklyMenu);
       setSavedDesserts(resolvedSavedDesserts);
-      setArchivedMeals(hydratedArchivedMeals);
 
       if (resolvedWeeklyMenu.length > 0 || resolvedSavedDesserts.length > 0) {
         setGeneratedPlan({
@@ -1726,6 +1627,32 @@ export function SmartCartApp() {
 
     if (error) {
       console.log("user_sessions upsert failed:", error);
+    }
+
+    const { error: deleteArchivedError } = await supabase
+      .from("archived_meals")
+      .delete()
+      .eq("user_id", userId);
+
+    if (deleteArchivedError) {
+      console.log("archived_meals delete failed:", deleteArchivedError);
+    }
+
+    if (archivedMeals.length > 0) {
+      const archivedRows = archivedMeals.map((meal) => ({
+        user_id: userId,
+        meal_title: safeTrim(meal.name),
+        recipe_data: meal,
+        type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
+      }));
+
+      const { error: insertArchivedError } = await supabase
+        .from("archived_meals")
+        .insert(archivedRows);
+
+      if (insertArchivedError) {
+        console.log("archived_meals insert failed:", insertArchivedError);
+      }
     }
   }
 
@@ -1842,7 +1769,7 @@ export function SmartCartApp() {
     }
 
     void syncSessionData();
-  }, [user?.id, weeklyMenu, savedDesserts, selectedPantryItems, formState.pantryItems]);
+  }, [user?.id, weeklyMenu, savedDesserts, archivedMeals, selectedPantryItems, formState.pantryItems]);
 
   async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2271,6 +2198,24 @@ export function SmartCartApp() {
                 ) : null}
               </div>
 
+              <label className="space-y-2">
+                <span className="text-sm font-semibold text-ink">
+                  Must-Have Ingredient (Optional)
+                </span>
+                <input
+                  className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      mustHaveIngredient: event.target.value,
+                    }))
+                  }
+                  placeholder="e.g., Chicken breast, heavy cream"
+                  type="text"
+                  value={formState.mustHaveIngredient}
+                />
+              </label>
+
               <div className="rounded-[1.75rem] border border-pine/10 bg-pine text-cream">
                 <button
                   className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
@@ -2289,9 +2234,16 @@ export function SmartCartApp() {
                         combinedPantryItems.map((item) => (
                           <span
                             key={item}
-                            className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
+                            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
                           >
-                            {item}
+                            <span>{item}</span>
+                            <button
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-white/10 text-xs text-cream transition hover:bg-white/20"
+                              onClick={() => handleRemovePantryItem(item)}
+                              type="button"
+                            >
+                              ×
+                            </button>
                           </span>
                         ))
                       ) : (
@@ -2316,24 +2268,6 @@ export function SmartCartApp() {
                   }
                   placeholder="Type any additional ingredients you have that are not listed above (e.g., leftover chicken, half an onion)..."
                   value={formState.pantryItems}
-                />
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-ink">
-                  Must-Have Ingredient (Optional)
-                </span>
-                <input
-                  className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      mustHaveIngredient: event.target.value,
-                    }))
-                  }
-                  placeholder="e.g., Chicken breast, heavy cream"
-                  type="text"
-                  value={formState.mustHaveIngredient}
                 />
               </label>
 
@@ -2798,6 +2732,7 @@ export function SmartCartApp() {
                                     onClick={() => handleRemoveMeal(meal)}
                                     type="button"
                                   >
+                                    <span aria-hidden="true">{"🗄️ "}</span>
                                     Stash in Vault
                                   </button>
                                   <button
@@ -3160,71 +3095,9 @@ export function SmartCartApp() {
                   <section className="rounded-3xl border border-stone-200 bg-white p-4 shadow-lg">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-display text-xl text-pine">Meal Ingredients</p>
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={isConsolidating}
-                        onClick={() => void handleConsolidateList()}
-                        type="button"
-                      >
-                        <span aria-hidden="true">{"🪄 "}</span>
-                        {isConsolidating ? "Consolidating..." : "Consolidate List"}
-                      </button>
                     </div>
 
-                    {consolidatedList !== null ? (
-                      <>
-                        <ul className="mt-4 space-y-3">
-                          {consolidatedList.map((ingredient) => (
-                            <li
-                              key={`consolidated-${ingredient.id}`}
-                              className="flex items-center justify-between gap-3 text-sm font-medium text-ink"
-                            >
-                              <div className="flex min-w-0 items-center gap-3">
-                                <input
-                                  checked={ingredient.checked}
-                                  className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                                  onChange={() =>
-                                    setConsolidatedList((current) =>
-                                      current
-                                        ? current.map((currentItem) =>
-                                            currentItem.id === ingredient.id
-                                              ? {
-                                                  ...currentItem,
-                                                  checked: !currentItem.checked,
-                                                }
-                                              : currentItem,
-                                          )
-                                        : current,
-                                    )
-                                  }
-                                  type="checkbox"
-                                />
-                                <span
-                                  className={ingredient.checked ? "line-through opacity-60" : ""}
-                                >
-                                  {safeTrim(ingredient.name)}
-                                </span>
-                              </div>
-                              <span className="shrink-0 text-sm font-semibold text-ink/70">
-                                {formatCurrency(ingredient.price)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                        <div className="mt-4 flex items-center justify-between border-t border-stone-200 pt-4 text-sm font-semibold text-ink">
-                          <span>Total Estimated Cost</span>
-                          <span>
-                            {formatCurrency(
-                              consolidatedList.reduce(
-                                (sum, item) => sum + Number(item.price ?? 0),
-                                0,
-                              ),
-                            )}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="mt-4 space-y-5">
+                    <div className="mt-4 space-y-5">
                         {displayGroceriesByCategory.map(([category, items]) => (
                           <section key={category}>
                             <p className="font-display text-lg text-pine">{category}</p>
@@ -3299,8 +3172,7 @@ export function SmartCartApp() {
                             </ul>
                           </section>
                         ))}
-                      </div>
-                    )}
+                    </div>
                   </section>
                 </div>
 
@@ -3712,6 +3584,7 @@ export function SmartCartApp() {
     </main>
   );
 }
+
 
 
 
