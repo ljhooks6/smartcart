@@ -402,6 +402,7 @@ export function SmartCartApp() {
   const [isPremiumMode, setIsPremiumMode] = useState(false);
   const [isGroceryOpen, setIsGroceryOpen] = useState(false);
   const [isPantryOpen, setIsPantryOpen] = useState(false);
+  const [isPantrySelectionOpen, setIsPantrySelectionOpen] = useState(false);
   const [restoredItems, setRestoredItems] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [newCustomItem, setNewCustomItem] = useState("");
@@ -573,6 +574,11 @@ export function SmartCartApp() {
       ]),
     );
   }, [formState.pantryItems, fullyStocked]);
+
+  const selectedPantryItems = useMemo(
+    () => Array.from(fullyStocked).map((item) => safeTrim(item)).filter(Boolean),
+    [fullyStocked],
+  );
 
   const { derivedGroceryList, skippedGroceryList } = useMemo(() => {
     const pantry = [...Array.from(fullyStocked), ...Array.from(runningLow)];
@@ -974,7 +980,7 @@ export function SmartCartApp() {
         responseText.match(/(\[[\s\S]*\]|\{[\s\S]*\})/)?.[1] ??
         responseText;
       const data = JSON.parse(cleanJson) as
-        | Array<{ name?: string; price?: number }>
+        | Array<{ name?: string; price?: number; estimated_price?: number }>
         | { error?: string };
 
       if (!response.ok) {
@@ -987,7 +993,12 @@ export function SmartCartApp() {
       const aiJson = Array.isArray(data) ? data : [];
       const pricedItems = aiJson.map((item) => ({
         name: safeTrim(item.name),
-        price: typeof item.price === "number" ? item.price : 0,
+        price:
+          typeof item.price === "number"
+            ? item.price
+            : typeof item.estimated_price === "number"
+              ? item.estimated_price
+              : 0,
         checked: false,
       }));
       const interactiveList = pricedItems
@@ -1613,6 +1624,7 @@ export function SmartCartApp() {
         { data: pantryData, error: pantryError },
         { dinners: hydratedDinners, desserts: hydratedDesserts },
         hydratedArchivedMeals,
+        { data: sessionData, error: sessionError },
       ] =
         await Promise.all([
           supabase
@@ -1621,10 +1633,15 @@ export function SmartCartApp() {
             .eq("user_id", userId),
           fetchSavedMeals(userId),
           fetchArchivedMeals(userId),
+          supabase.from("user_sessions").select("*").eq("user_id", userId).maybeSingle(),
         ]);
 
       if (pantryError) {
         throw pantryError;
+      }
+
+      if (sessionError) {
+        throw sessionError;
       }
 
       const ownedPantryItems = (pantryData ?? [])
@@ -1634,19 +1651,65 @@ export function SmartCartApp() {
         .map((ingredientName) => safeTrim(ingredientName))
         .filter(Boolean);
 
-      setFullyStocked(new Set(ownedPantryItems));
+      const sessionWeeklyMenu = Array.isArray((sessionData as { weekly_menu?: unknown[] } | null)?.weekly_menu)
+        ? (((sessionData as { weekly_menu?: unknown[] }).weekly_menu ?? [])
+            .map((meal, index) =>
+              rehydrateMealRecord(meal as Partial<MealPlanItem> | null, {
+                user_id: userId,
+                day: `Day ${index + 1}`,
+                servings: Number(formState.householdSize) || 2,
+              }),
+            )
+            .filter(Boolean) as MealPlanItem[])
+        : [];
+
+      const sessionSavedDesserts = Array.isArray(
+        (sessionData as { saved_desserts?: unknown[] } | null)?.saved_desserts,
+      )
+        ? (((sessionData as { saved_desserts?: unknown[] }).saved_desserts ?? [])
+            .map((dessert, index) =>
+              rehydrateMealRecord(dessert as Partial<MealPlanItem> | null, {
+                user_id: userId,
+                day: `Sweet Treat ${index + 1}`,
+                servings: Number(formState.householdSize) || 2,
+              }),
+            )
+            .filter(Boolean) as MealPlanItem[])
+        : [];
+
+      const sessionPantryItems = Array.isArray(
+        (sessionData as { selected_pantry_items?: unknown[] } | null)?.selected_pantry_items,
+      )
+        ? ((sessionData as { selected_pantry_items?: unknown[] }).selected_pantry_items ?? [])
+            .filter((item) => typeof item === "string")
+            .map((item) => safeTrim(item))
+            .filter(Boolean)
+        : [];
+
+      const sessionPantryText = safeTrim(
+        (sessionData as { pantry_text?: string } | null)?.pantry_text,
+      );
+
+      const resolvedWeeklyMenu =
+        sessionWeeklyMenu.length > 0 ? sessionWeeklyMenu : hydratedDinners;
+      const resolvedSavedDesserts =
+        sessionSavedDesserts.length > 0 ? sessionSavedDesserts : hydratedDesserts;
+      const resolvedPantryItems =
+        sessionPantryItems.length > 0 ? sessionPantryItems : ownedPantryItems;
+
+      setFullyStocked(new Set(resolvedPantryItems));
       setRunningLow(new Set());
       setRestock(new Set());
       setFormState((current) => ({
         ...current,
-        pantryItems: "",
+        pantryItems: sessionPantryText,
       }));
 
-      setWeeklyMenu(hydratedDinners);
-      setSavedDesserts(hydratedDesserts);
+      setWeeklyMenu(resolvedWeeklyMenu);
+      setSavedDesserts(resolvedSavedDesserts);
       setArchivedMeals(hydratedArchivedMeals);
 
-      if (hydratedDinners.length > 0 || hydratedDesserts.length > 0) {
+      if (resolvedWeeklyMenu.length > 0 || resolvedSavedDesserts.length > 0) {
         setGeneratedPlan({
           meals: [],
           restock_items: [],
@@ -1662,6 +1725,29 @@ export function SmartCartApp() {
       setCloudSyncMessage(
         error instanceof Error ? error.message : "Failed to load cloud data.",
       );
+    }
+  }
+
+  async function syncSessionData() {
+    if (!user?.id) {
+      return;
+    }
+
+    const payload = {
+      user_id: user.id,
+      weekly_menu: weeklyMenu,
+      saved_desserts: savedDesserts,
+      selected_pantry_items: selectedPantryItems,
+      pantry_text: formState.pantryItems,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("user_sessions").upsert(payload, {
+      onConflict: "user_id",
+    });
+
+    if (error) {
+      console.log("user_sessions upsert failed:", error);
     }
   }
 
@@ -1759,6 +1845,8 @@ export function SmartCartApp() {
         }
       }
 
+      await syncSessionData();
+
       setCloudSyncMessage("✨ Cloud sync complete! Your week is saved.");
     } catch (error) {
       setCloudSyncMessage(
@@ -1768,6 +1856,14 @@ export function SmartCartApp() {
       setIsSaving(false);
     }
   }
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    void syncSessionData();
+  }, [user?.id, weeklyMenu, savedDesserts, selectedPantryItems, formState.pantryItems]);
 
   async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1931,7 +2027,7 @@ export function SmartCartApp() {
                 Budget-conscious meal planning
               </p>
               <h1 className="max-w-3xl font-display text-4xl leading-tight text-ink sm:text-5xl lg:text-6xl">
-                Stretch every grocery dollar without defaulting to the same tired dinners.
+                SmartCart builds practical weekly meals around your real pantry and budget.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-ink/75">
                 SmartCart turns your pantry, budget, and time constraints into a practical dinner
@@ -2121,69 +2217,6 @@ export function SmartCartApp() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-semibold text-ink">Pantry Quick-Select</p>
-                  <p className="mt-1 text-sm leading-6 text-ink/65">
-                    Tap common staples to add them before typing anything custom.
-                  </p>
-                  <div className="mb-4 space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
-                    <p>
-                      <strong>
-                        <span
-                          aria-hidden="true"
-                          className="mr-1 inline-block h-4 w-4 rounded border border-green-800 bg-green-700 align-middle shadow-sm"
-                        />
-                        Clicked (Owned):
-                      </strong>{" "}
-                      You have a good amount. (App will <strong>SKIP</strong> buying this).
-                    </p>
-                    <p>
-                      <strong>
-                        <span
-                          aria-hidden="true"
-                          className="mr-1 inline-block h-4 w-4 rounded border border-gray-300 bg-white align-middle shadow-sm"
-                        />
-                        Unclicked (Need to Buy):
-                      </strong>{" "}
-                      Leave unclicked if you have none OR very little. (App will{" "}
-                      <strong>ADD</strong> it to your list).
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {Object.entries(pantryQuickSelectOptions).map(([category, items]) => (
-                    <div
-                      key={category}
-                      className={`rounded-3xl border p-4 ${pantryCategoryStyles[category] ?? "border-stone-200 bg-white"}`}
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                        {category}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {items.map((item) => {
-                          const isFullyStocked = fullyStocked.has(item);
-                          const stateClass = isFullyStocked
-                            ? "border-green-800 bg-green-700 text-white"
-                            : "border-gray-300 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
-
-                          return (
-                            <button
-                              key={item}
-                              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${stateClass}`}
-                              onClick={() => toggleQuickItem(item)}
-                              type="button"
-                            >
-                              {item}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               <div className="rounded-[1.75rem] border border-pine/10 bg-pine text-cream">
                 <button
                   className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
@@ -2212,6 +2245,82 @@ export function SmartCartApp() {
                           Add a few pantry ingredients and they&apos;ll show up here.
                         </span>
                       )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="rounded-[1.75rem] border border-stone-200 bg-white shadow-sm">
+                <button
+                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                  onClick={() => setIsPantrySelectionOpen((current) => !current)}
+                  type="button"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-ink">Pantry Quick-Select</p>
+                    <p className="mt-1 text-sm leading-6 text-ink/65">
+                      Tap common staples to add them before typing anything custom.
+                    </p>
+                  </div>
+                  <span className="text-xs uppercase tracking-[0.2em] text-ink/55">
+                    {isPantrySelectionOpen ? "Hide" : "Select Pantry Items"}
+                  </span>
+                </button>
+                {isPantrySelectionOpen ? (
+                  <div className="border-t border-stone-200 px-6 pb-5 pt-4">
+                    <div className="mb-4 space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+                      <p>
+                        <strong>
+                          <span
+                            aria-hidden="true"
+                            className="mr-1 inline-block h-4 w-4 rounded border border-green-800 bg-green-700 align-middle shadow-sm"
+                          />
+                          Clicked (Owned):
+                        </strong>{" "}
+                        You have a good amount. (App will <strong>SKIP</strong> buying this).
+                      </p>
+                      <p>
+                        <strong>
+                          <span
+                            aria-hidden="true"
+                            className="mr-1 inline-block h-4 w-4 rounded border border-gray-300 bg-white align-middle shadow-sm"
+                          />
+                          Unclicked (Need to Buy):
+                        </strong>{" "}
+                        Leave unclicked if you have none OR very little. (App will{" "}
+                        <strong>ADD</strong> it to your list).
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {Object.entries(pantryQuickSelectOptions).map(([category, items]) => (
+                        <div
+                          key={category}
+                          className={`rounded-3xl border p-4 ${pantryCategoryStyles[category] ?? "border-stone-200 bg-white"}`}
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                            {category}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {items.map((item) => {
+                              const isFullyStocked = fullyStocked.has(item);
+                              const stateClass = isFullyStocked
+                                ? "border-green-800 bg-green-700 text-white"
+                                : "border-gray-300 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
+
+                              return (
+                                <button
+                                  key={item}
+                                  className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${stateClass}`}
+                                  onClick={() => toggleQuickItem(item)}
+                                  type="button"
+                                >
+                                  {item}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ) : null}
@@ -2367,7 +2476,7 @@ export function SmartCartApp() {
                           <div className="relative h-48 overflow-hidden">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              alt={meal.name}
+                              alt={safeTrim(meal.name)}
                               className="h-full w-full object-cover"
                               onError={() =>
                                 setHiddenCardImages((current) =>
@@ -2383,7 +2492,7 @@ export function SmartCartApp() {
                                   {mealEyebrow}
                                 </p>
                                 <h2 className="mt-2 font-display text-2xl text-white">
-                                  {meal.name}
+                                  {safeTrim(meal.name)}
                                 </h2>
                               </div>
                               <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
@@ -2409,7 +2518,7 @@ export function SmartCartApp() {
 
                         <div className="space-y-4 p-5">
                           {expandedDetailCards.has(mealCardKey) && (
-                            <p className="text-sm leading-7 text-ink/75">{meal.notes}</p>
+                            <p className="text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
                           )}
                           <button
                             className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
@@ -2599,6 +2708,163 @@ export function SmartCartApp() {
                       Tap the heart on any meal card to build your weekly menu.
                     </div>
                   )}
+
+                  {savedDesserts.length > 0 ? (
+                    <div className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-display text-2xl text-ink">Saved Desserts</p>
+                          <p className="mt-1 text-sm leading-6 text-ink/70">
+                            Keep your favorite sweet treats in this week&apos;s plan.
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-berry">
+                          {savedDesserts.length} saved
+                        </span>
+                      </div>
+                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                        {savedDesserts.map((meal, index) => {
+                          const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
+                          const showMealImage =
+                            Boolean(safeTrim(meal.imageUrl)) &&
+                            !hiddenCardImages.has(`saved-dessert-${mealKey}`);
+
+                          return (
+                            <article
+                              key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
+                              className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
+                            >
+                              {showMealImage ? (
+                                <div className="relative h-48 overflow-hidden">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    alt={safeTrim(meal.name)}
+                                    className="h-full w-full object-cover"
+                                    onError={() =>
+                                      setHiddenCardImages((current) =>
+                                        new Set(current).add(`saved-dessert-${mealKey}`),
+                                      )
+                                    }
+                                    src={meal.imageUrl}
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
+                                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                                    <div>
+                                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cream/80">
+                                        {formatCardEyebrow(safeTrim(meal.day))}
+                                      </p>
+                                      <h3 className="mt-2 font-display text-2xl text-white">
+                                        {safeTrim(meal.name)}
+                                      </h3>
+                                    </div>
+                                    <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
+                                      Serves {meal.servings}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-start justify-between gap-3 p-5 pb-0">
+                                  <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                                      {formatCardEyebrow(safeTrim(meal.day))}
+                                    </p>
+                                    <h3 className="mt-2 font-display text-2xl text-ink">
+                                      {safeTrim(meal.name)}
+                                    </h3>
+                                  </div>
+                                  <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                                    Serves {meal.servings}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="space-y-4 p-5">
+                                {expandedDetailCards.has(`saved-dessert-${mealKey}`) && (
+                                  <p className="text-sm leading-7 text-ink/75">
+                                    {safeTrim(meal.notes)}
+                                  </p>
+                                )}
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                                  onClick={() =>
+                                    handleToggleCardDetails(`saved-dessert-${mealKey}`)
+                                  }
+                                  type="button"
+                                >
+                                  {expandedDetailCards.has(`saved-dessert-${mealKey}`)
+                                    ? "Hide Details"
+                                    : "Show Details"}
+                                </button>
+                                <div className="flex flex-wrap gap-3">
+                                  <button
+                                    className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                    disabled={recipeLoadingMeal === safeTrim(meal.name)}
+                                    onClick={() => handleGetRecipe(meal)}
+                                    type="button"
+                                  >
+                                    {recipeLoadingMeal === safeTrim(meal.name)
+                                      ? "Loading recipe..."
+                                      : "Get Recipe"}
+                                  </button>
+                                  <button
+                                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
+                                    onClick={() => handleToggleIngredients(meal)}
+                                    type="button"
+                                  >
+                                    {expandedIngredientsMeals.has(mealKey)
+                                      ? "Hide Ingredients"
+                                      : "View Ingredients"}
+                                  </button>
+                                  <button
+                                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                                    onClick={() => handleRemoveMeal(meal)}
+                                    type="button"
+                                  >
+                                    Stash in Vault
+                                  </button>
+                                  <button
+                                    className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                    onClick={() => void handlePermanentDelete(meal)}
+                                    type="button"
+                                  >
+                                    Remove entirely
+                                  </button>
+                                </div>
+                                {expandedIngredientsMeals.has(mealKey) &&
+                                  (meal.ingredients ?? []).length > 0 && (
+                                    <div className="rounded-[1rem] bg-cream px-3 py-3">
+                                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                                        Ingredients
+                                      </p>
+                                      <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
+                                        {(meal.ingredients ?? [])
+                                          .filter(
+                                            (ingredient) =>
+                                              ingredient &&
+                                              typeof ingredient.name === "string" &&
+                                              typeof ingredient.amount === "string",
+                                          )
+                                          .map((ingredient) => (
+                                            <li
+                                              key={`${safeTrim(meal.name)}-${safeTrim(ingredient.name)}-${safeTrim(ingredient.amount)}`}
+                                              className="flex gap-2"
+                                            >
+                                              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
+                                              <span>
+                                                {safeTrim(ingredient.amount)} {safeTrim(ingredient.name)}
+                                              </span>
+                                            </li>
+                                          ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
                     <strong>💡 HOW TO USE THE VAULT:</strong> Click
