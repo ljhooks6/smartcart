@@ -1441,24 +1441,16 @@ export function SmartCartApp() {
         ? record.ingredients
         : [];
 
-    const hydratedIngredients = rawIngredients
-      .filter(
-        (ingredient): ingredient is Partial<IngredientItem> =>
-          Boolean(
-            ingredient &&
-              typeof ingredient === "object" &&
-              safeTrim((ingredient as IngredientItem).name) &&
-              safeTrim((ingredient as IngredientItem).amount),
-          ),
+    const hydratedIngredients = (rawIngredients || [])
+      .filter((ingredient: any) =>
+        Boolean(ingredient && typeof ingredient === "object" && ingredient.name),
       )
-      .map((ingredient) => ({
-        name: safeTrim(ingredient.name),
-        amount: safeTrim(ingredient.amount),
-        price:
-          typeof ingredient.price === "number" && Number.isFinite(ingredient.price)
-            ? ingredient.price
-            : 0,
-      }));
+      .map((ingredient: any) => ({
+        ...ingredient,
+        name: safeTrim(ingredient.name || ""),
+        amount: safeTrim(ingredient.amount || ""),
+        price: typeof ingredient.price === "number" ? ingredient.price : 0,
+      })) as IngredientItem[];
 
     const rawInstructions =
       record &&
