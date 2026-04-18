@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 type IngredientItem = {
@@ -413,32 +413,6 @@ export function SmartCartApp() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    const userId = user?.id || "";
-    if (!userId) {
-      return;
-    }
-
-    void loadSessionFromCloud(userId);
-  }, [user]);
-
-  useEffect(() => {
-    const userId = user?.id || "";
-    if (!userId) {
-      return;
-    }
-
-    void fetchArchivedMeals(userId)
-      .then((meals) => {
-        setArchivedMeals(meals);
-      })
-      .catch((error) => {
-        setCloudSyncMessage(
-          error instanceof Error ? error.message : "Failed to load archived meals.",
-        );
-      });
-  }, [user]);
 
   useEffect(() => {
     try {
@@ -1328,10 +1302,10 @@ export function SmartCartApp() {
     setIsAuthLoading(false);
   }
 
-  function rehydrateMealRecord(
+  const rehydrateMealRecord = useCallback((
     record: Partial<MealPlanItem> | GenerateListResponse["desserts"][number] | null | undefined,
     fallback: Partial<MealPlanItem> = {},
-  ): MealPlanItem | null {
+  ): MealPlanItem | null => {
     const resolvedName = safeTrim(
       "name" in (record ?? {})
         ? (record as Partial<MealPlanItem>).name
@@ -1399,21 +1373,17 @@ export function SmartCartApp() {
           fallback.imageUrl,
       ) || undefined,
     };
-  }
+  }, []);
 
-  async function fetchSavedMeals(userId: string) {
-    if (!user) {
-      return { dinners: [], desserts: [] };
-    }
-    const currentUserId = user?.id || "";
-    if (!currentUserId) {
+  const fetchSavedMeals = useCallback(async (userId: string) => {
+    if (!userId) {
       return { dinners: [], desserts: [] };
     }
 
     const { data, error } = await supabase
       .from("weekly_menus")
       .select("*")
-      .eq("user_id", currentUserId)
+      .eq("user_id", userId)
       .eq("status", "active_week");
 
     if (error) {
@@ -1457,21 +1427,17 @@ export function SmartCartApp() {
       .filter((meal): meal is MealPlanItem => Boolean(meal));
 
     return { dinners, desserts };
-  }
+  }, [formState.householdSize, rehydrateMealRecord]);
 
-  async function fetchArchivedMeals(userId: string) {
-    if (!user) {
-      return [];
-    }
-    const currentUserId = user?.id || "";
-    if (!currentUserId) {
+  const fetchArchivedMeals = useCallback(async (userId: string) => {
+    if (!userId) {
       return [];
     }
 
     const { data, error } = await supabase
       .from("archived_meals")
       .select("*")
-      .eq("user_id", currentUserId);
+      .eq("user_id", userId);
 
     if (error) {
       throw error;
@@ -1497,9 +1463,9 @@ export function SmartCartApp() {
         ),
       )
       .filter((meal): meal is MealPlanItem => Boolean(meal));
-  }
+  }, [formState.householdSize, rehydrateMealRecord]);
 
-  async function loadSessionFromCloud(userId: string) {
+  const loadSessionFromCloud = useCallback(async (userId: string) => {
     try {
       const [
         { data: pantryData, error: pantryError },
@@ -1604,9 +1570,9 @@ export function SmartCartApp() {
         error instanceof Error ? error.message : "Failed to load cloud data.",
       );
     }
-  }
+  }, [fetchSavedMeals, formState.householdSize, rehydrateMealRecord]);
 
-  async function syncSessionData() {
+  const syncSessionData = useCallback(async () => {
     const userId = user?.id || "";
     if (!userId) {
       return;
@@ -1654,7 +1620,41 @@ export function SmartCartApp() {
         console.log("archived_meals insert failed:", insertArchivedError);
       }
     }
-  }
+  }, [archivedMeals, formState.pantryItems, savedDesserts, selectedPantryItems, user?.id, weeklyMenu]);
+
+  useEffect(() => {
+    const userId = user?.id || "";
+    if (!userId) {
+      return;
+    }
+
+    void loadSessionFromCloud(userId);
+  }, [loadSessionFromCloud, user]);
+
+  useEffect(() => {
+    const userId = user?.id || "";
+    if (!userId) {
+      return;
+    }
+
+    void fetchArchivedMeals(userId)
+      .then((meals) => {
+        setArchivedMeals(meals);
+      })
+      .catch((error) => {
+        setCloudSyncMessage(
+          error instanceof Error ? error.message : "Failed to load archived meals.",
+        );
+      });
+  }, [fetchArchivedMeals, user]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    void syncSessionData();
+  }, [syncSessionData, user?.id]);
 
   async function saveSessionToCloud() {
     const userId = user?.id || "";
@@ -1762,14 +1762,6 @@ export function SmartCartApp() {
       setIsSaving(false);
     }
   }
-
-  useEffect(() => {
-    if (!user?.id) {
-      return;
-    }
-
-    void syncSessionData();
-  }, [user?.id, weeklyMenu, savedDesserts, archivedMeals, selectedPantryItems, formState.pantryItems]);
 
   async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
