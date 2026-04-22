@@ -396,9 +396,6 @@ export function SmartCartApp() {
     new Set(),
   );
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
-  const [hiddenCardImages, setHiddenCardImages] = useState<Set<string>>(
-    new Set(),
-  );
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -1600,7 +1597,7 @@ export function SmartCartApp() {
       .eq("user_id", userId);
 
     if (deleteArchivedError) {
-      console.error("Supabase Save Error (Check RLS):", deleteArchivedError);
+      console.error("Supabase Save Error:", deleteArchivedError);
       console.log("archived_meals delete failed:", deleteArchivedError);
     }
 
@@ -1617,7 +1614,7 @@ export function SmartCartApp() {
         .insert(archivedRows);
 
       if (insertArchivedError) {
-        console.error("Supabase Save Error (Check RLS):", insertArchivedError);
+        console.error("Supabase Save Error:", insertArchivedError);
         console.log("archived_meals insert failed:", insertArchivedError);
       }
     }
@@ -1646,7 +1643,7 @@ export function SmartCartApp() {
           error instanceof Error ? error.message : "Failed to load archived meals.",
         );
       });
-  }, [user?.id]);
+  }, [user]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -1673,7 +1670,7 @@ export function SmartCartApp() {
         .eq("status", "active_week");
 
       if (archiveError) {
-        console.error("Supabase Save Error (Check RLS):", archiveError);
+        console.error("Supabase Save Error:", archiveError);
         throw archiveError;
       }
 
@@ -1723,7 +1720,7 @@ export function SmartCartApp() {
           .insert(weeklyMenuRows);
 
         if (insertMenuError) {
-          console.error("Supabase Save Error (Check RLS):", insertMenuError);
+          console.error("Supabase Save Error:", insertMenuError);
           throw insertMenuError;
         }
       }
@@ -1734,7 +1731,7 @@ export function SmartCartApp() {
         .eq("user_id", userId);
 
       if (deletePantryError) {
-        console.error("Supabase Save Error (Check RLS):", deletePantryError);
+        console.error("Supabase Save Error:", deletePantryError);
         throw deletePantryError;
       }
 
@@ -1750,7 +1747,7 @@ export function SmartCartApp() {
           .insert(pantryRows);
 
         if (insertPantryError) {
-          console.error("Supabase Save Error (Check RLS):", insertPantryError);
+          console.error("Supabase Save Error:", insertPantryError);
           throw insertPantryError;
         }
       }
@@ -1919,7 +1916,7 @@ export function SmartCartApp() {
     <main className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
         <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
-            <div className="flex w-full items-center justify-between gap-4">
+            <div className="flex justify-between items-center w-full">
               <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
                 SmartCart
                 <span className="h-2.5 w-2.5 rounded-full bg-sage" />
@@ -2424,10 +2421,6 @@ export function SmartCartApp() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="font-display text-3xl text-ink">Your 8 meal picks</p>
-                    <p className="mt-2 text-sm italic leading-6 text-ink/70">
-                      Images are dynamically sourced for visual inspiration and may not perfectly
-                      reflect the specific AI-generated recipe.
-                    </p>
                   </div>
                   <div className="rounded-2xl bg-pine px-4 py-3 text-cream">
                     <p className="text-xs uppercase tracking-[0.2em] text-cream/75">Estimated total</p>
@@ -2447,58 +2440,25 @@ export function SmartCartApp() {
                   {generatedPlan.meals.map((meal, index) => {
                     const mealCardKey = `generated-${meal.day}::${meal.name}`;
                     const mealEyebrow = formatCardEyebrow(meal.day);
-                    const showMealImage =
-                      Boolean(safeTrim(meal.imageUrl)) &&
-                      !hiddenCardImages.has(mealCardKey);
 
                     return (
                       <article
                         key={`${meal.day}-${meal.name}-${index}`}
                         className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
                       >
-                        {showMealImage ? (
-                          <div className="relative h-48 overflow-hidden">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              alt={safeTrim(meal.name)}
-                              className="h-full w-full object-cover"
-                              onError={() =>
-                                setHiddenCardImages((current) =>
-                                  new Set(current).add(mealCardKey),
-                                )
-                              }
-                              src={meal.imageUrl}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
-                            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                              <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cream/80">
-                                  {mealEyebrow}
-                                </p>
-                                <h2 className="mt-2 font-display text-2xl text-white">
-                                  {safeTrim(meal.name)}
-                                </h2>
-                              </div>
-                              <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
-                                Serves {meal.servings}
-                              </span>
-                            </div>
+                        <div className="flex items-start justify-between gap-3 p-5 pb-0">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                              {mealEyebrow}
+                            </p>
+                            <h2 className="mt-2 font-display text-2xl text-ink">
+                              {safeTrim(meal.name)}
+                            </h2>
                           </div>
-                        ) : (
-                          <div className="flex items-start justify-between gap-3 p-5 pb-0">
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                                {mealEyebrow}
-                              </p>
-                              <h2 className="mt-2 font-display text-2xl text-ink">
-                                {safeTrim(meal.name)}
-                              </h2>
-                            </div>
-                            <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                              Serves {meal.servings}
-                            </span>
-                          </div>
-                        )}
+                          <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                            Serves {meal.servings}
+                          </span>
+                        </div>
 
                         <div className="space-y-4 p-5">
                           {expandedDetailCards.has(mealCardKey) && (
@@ -2702,35 +2662,17 @@ export function SmartCartApp() {
                     </p>
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                       {generatedPlan.desserts.map((dessert, index) => {
-                        const dessertCardKey = `dessert-${dessert.title}-${index}`;
                         const isDessertSaved = savedDessertKeys.has(dessert.title);
                         const isReplacingThisDessert =
                           replacingDessertKey === `${dessert.title}-${index}`;
-                        const showDessertImage =
-                          Boolean(safeTrim(dessert.imageUrl)) &&
-                          !hiddenCardImages.has(dessertCardKey);
+                        const dessertCardKey = `dessert-${dessert.title}-${index}`;
 
                         return (
                           <article
                             key={dessertCardKey}
                             className="overflow-hidden rounded-[1.5rem] border border-rose-200 bg-white p-4 shadow-md"
                           >
-                            {showDessertImage ? (
-                              <div className="overflow-hidden rounded-[1.25rem]">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  alt={dessert.title}
-                                  className="h-48 w-full rounded-[1.25rem] object-cover"
-                                  onError={() =>
-                                    setHiddenCardImages((current) =>
-                                      new Set(current).add(dessertCardKey),
-                                    )
-                                  }
-                                  src={dessert.imageUrl}
-                                />
-                              </div>
-                            ) : null}
-                            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
                               SWEET TREAT
                             </p>
                             <h3 className="mt-3 font-display text-2xl text-ink">
@@ -3177,58 +3119,25 @@ export function SmartCartApp() {
                       <div className="mt-5 grid gap-3 sm:grid-cols-2">
                         {savedDesserts.map((meal, index) => {
                           const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
-                          const showMealImage =
-                            Boolean(safeTrim(meal.imageUrl)) &&
-                            !hiddenCardImages.has(`saved-dessert-${mealKey}`);
 
                           return (
                             <article
                               key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
                               className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
                             >
-                              {showMealImage ? (
-                                <div className="relative h-48 overflow-hidden">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    alt={safeTrim(meal.name)}
-                                    className="h-full w-full object-cover"
-                                    onError={() =>
-                                      setHiddenCardImages((current) =>
-                                        new Set(current).add(`saved-dessert-${mealKey}`),
-                                      )
-                                    }
-                                    src={meal.imageUrl}
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
-                                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                                    <div>
-                                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cream/80">
-                                        {formatCardEyebrow(safeTrim(meal.day))}
-                                      </p>
-                                      <h3 className="mt-2 font-display text-2xl text-white">
-                                        {safeTrim(meal.name)}
-                                      </h3>
-                                    </div>
-                                    <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
-                                      Serves {meal.servings}
-                                    </span>
-                                  </div>
+                              <div className="flex items-start justify-between gap-3 p-5 pb-0">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                                    {formatCardEyebrow(safeTrim(meal.day))}
+                                  </p>
+                                  <h3 className="mt-2 font-display text-2xl text-ink">
+                                    {safeTrim(meal.name)}
+                                  </h3>
                                 </div>
-                              ) : (
-                                <div className="flex items-start justify-between gap-3 p-5 pb-0">
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                                      {formatCardEyebrow(safeTrim(meal.day))}
-                                    </p>
-                                    <h3 className="mt-2 font-display text-2xl text-ink">
-                                      {safeTrim(meal.name)}
-                                    </h3>
-                                  </div>
-                                  <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                                    Serves {meal.servings}
-                                  </span>
-                                </div>
-                              )}
+                                <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                                  Serves {meal.servings}
+                                </span>
+                              </div>
 
                               <div className="space-y-4 p-5">
                                 {expandedDetailCards.has(`saved-dessert-${mealKey}`) && (
