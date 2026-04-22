@@ -1632,12 +1632,11 @@ export function SmartCartApp() {
   }, [loadSessionFromCloud, user]);
 
   useEffect(() => {
-    const userId = user?.id || "";
-    if (!userId) {
+    if (!user || !user.id) {
       return;
     }
 
-    void fetchArchivedMeals(userId)
+    void fetchArchivedMeals(user.id)
       .then((meals) => {
         setArchivedMeals(meals);
       })
@@ -2612,304 +2611,8 @@ export function SmartCartApp() {
                       Tap the heart on any meal card to build your weekly menu.
                     </div>
                   )}
-
-                  {savedDesserts.length > 0 ? (
-                    <div className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="font-display text-2xl text-ink">Saved Desserts</p>
-                          <p className="mt-1 text-sm leading-6 text-ink/70">
-                            Keep your favorite sweet treats in this week&apos;s plan.
-                          </p>
-                        </div>
-                        <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-berry">
-                          {savedDesserts.length} saved
-                        </span>
-                      </div>
-                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                        {savedDesserts.map((meal, index) => {
-                          const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
-                          const showMealImage =
-                            Boolean(safeTrim(meal.imageUrl)) &&
-                            !hiddenCardImages.has(`saved-dessert-${mealKey}`);
-
-                          return (
-                            <article
-                              key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
-                              className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
-                            >
-                              {showMealImage ? (
-                                <div className="relative h-48 overflow-hidden">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    alt={safeTrim(meal.name)}
-                                    className="h-full w-full object-cover"
-                                    onError={() =>
-                                      setHiddenCardImages((current) =>
-                                        new Set(current).add(`saved-dessert-${mealKey}`),
-                                      )
-                                    }
-                                    src={meal.imageUrl}
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
-                                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                                    <div>
-                                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cream/80">
-                                        {formatCardEyebrow(safeTrim(meal.day))}
-                                      </p>
-                                      <h3 className="mt-2 font-display text-2xl text-white">
-                                        {safeTrim(meal.name)}
-                                      </h3>
-                                    </div>
-                                    <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
-                                      Serves {meal.servings}
-                                    </span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-start justify-between gap-3 p-5 pb-0">
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                                      {formatCardEyebrow(safeTrim(meal.day))}
-                                    </p>
-                                    <h3 className="mt-2 font-display text-2xl text-ink">
-                                      {safeTrim(meal.name)}
-                                    </h3>
-                                  </div>
-                                  <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                                    Serves {meal.servings}
-                                  </span>
-                                </div>
-                              )}
-
-                              <div className="space-y-4 p-5">
-                                {expandedDetailCards.has(`saved-dessert-${mealKey}`) && (
-                                  <p className="text-sm leading-7 text-ink/75">
-                                    {safeTrim(meal.notes)}
-                                  </p>
-                                )}
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                                  onClick={() =>
-                                    handleToggleCardDetails(`saved-dessert-${mealKey}`)
-                                  }
-                                  type="button"
-                                >
-                                  {expandedDetailCards.has(`saved-dessert-${mealKey}`)
-                                    ? "Hide Details"
-                                    : "Show Details"}
-                                </button>
-                                <div className="flex flex-wrap gap-3">
-                                  <button
-                                    className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                    disabled={recipeLoadingMeal === safeTrim(meal.name)}
-                                    onClick={() => handleGetRecipe(meal)}
-                                    type="button"
-                                  >
-                                    {recipeLoadingMeal === safeTrim(meal.name)
-                                      ? "Loading recipe..."
-                                      : "Get Recipe"}
-                                  </button>
-                                  <button
-                                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                                    onClick={() => handleToggleIngredients(meal)}
-                                    type="button"
-                                  >
-                                    {expandedIngredientsMeals.has(mealKey)
-                                      ? "Hide Ingredients"
-                                      : "View Ingredients"}
-                                  </button>
-                                  <button
-                                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                                    onClick={() => handleRemoveMeal(meal)}
-                                    type="button"
-                                  >
-                                    <span aria-hidden="true">{"🗄️ "}</span>
-                                    Stash in Vault
-                                  </button>
-                                  <button
-                                    className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                                    onClick={() => void handlePermanentDelete(meal)}
-                                    type="button"
-                                  >
-                                    Remove entirely
-                                  </button>
-                                </div>
-                                {expandedIngredientsMeals.has(mealKey) &&
-                                  (meal.ingredients ?? []).length > 0 && (
-                                    <div className="rounded-[1rem] bg-cream px-3 py-3">
-                                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                                        Ingredients
-                                      </p>
-                                      <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                                        {(meal.ingredients ?? [])
-                                          .filter(
-                                            (ingredient) =>
-                                              ingredient &&
-                                              typeof ingredient.name === "string" &&
-                                              typeof ingredient.amount === "string",
-                                          )
-                                          .map((ingredient) => (
-                                            <li
-                                              key={`${safeTrim(meal.name)}-${safeTrim(ingredient.name)}-${safeTrim(ingredient.amount)}`}
-                                              className="flex gap-2"
-                                            >
-                                              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                                              <span>
-                                                {safeTrim(ingredient.amount)} {safeTrim(ingredient.name)}
-                                              </span>
-                                            </li>
-                                          ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-                    <strong>💡 HOW TO USE THE VAULT:</strong> Click
-                    {" "}
-                    <strong>[🗄️ Stash in Vault]</strong>
-                    {" "}
-                    on any active meal above to save its recipe here for future weeks. This
-                    removes it from your current grocery budget.
-                  </div>
-                  <button
-                    className="mt-6 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                    onClick={() => setIsVaultOpen(!isVaultOpen)}
-                    type="button"
-                  >
-                    <span aria-hidden="true">{"🗄️ "}</span>
-                    {isVaultOpen
-                      ? "Close Recipe Vault"
-                      : `Open Recipe Vault (${archivedMeals.length})`}
-                  </button>
-                  {isVaultOpen ? (
-                    <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
-                      {archivedMeals.length > 0 ? (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {archivedMeals.map((meal) => (
-                            <article
-                              key={`vault-${meal.dbId ?? `${meal.day}-${meal.name}`}`}
-                              className="rounded-3xl border border-stone-200 bg-[#fffdf9] px-4 py-4 shadow-lg"
-                            >
-                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                                {formatCardEyebrow(meal.day)}
-                              </p>
-                              <h3 className="mt-2 font-display text-xl text-ink">
-                                {safeTrim(meal.name)}
-                              </h3>
-                              <p className="mt-2 text-sm leading-6 text-ink/70">
-                                Serves {meal.servings}
-                              </p>
-                              {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`) && (
-                                <p className="mt-3 text-sm leading-7 text-ink/75">
-                                  {safeTrim(meal.notes)}
-                                </p>
-                              )}
-                              <button
-                                className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                                onClick={() =>
-                                  handleToggleCardDetails(`vault-${meal.day}::${meal.name}`)
-                                }
-                                type="button"
-                              >
-                                {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)
-                                  ? "Hide Details"
-                                  : "Show Details"}
-                              </button>
-                              <div className="mt-4 flex flex-wrap gap-2">
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                  disabled={recipeLoadingMeal === meal.name}
-                                  onClick={() => handleGetRecipe(meal)}
-                                  type="button"
-                                >
-                                  {recipeLoadingMeal === meal.name
-                                    ? "Loading recipe..."
-                                    : "Get Recipe"}
-                                </button>
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                  disabled={recipeLoadingMeal === meal.name}
-                                  onClick={() => handleToggleIngredients(meal)}
-                                  type="button"
-                                >
-                                  {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
-                                    ? "Hide Ingredients"
-                                    : "View Ingredients"}
-                                </button>
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full bg-pine px-3 py-2 text-sm font-semibold text-white transition hover:bg-pine/90"
-                                  onClick={() => handleRestoreMeal(meal)}
-                                  type="button"
-                                >
-                                  <span aria-hidden="true">{"➕ "}</span>
-                                  Add to This Week
-                                </button>
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                                  onClick={() => void handlePermanentDelete(meal)}
-                                  type="button"
-                                >
-                                  <span aria-hidden="true">{"🗑️ "}</span>
-                                  Permanent Delete
-                                </button>
-                              </div>
-                              {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
-                                ((meal.ingredients && meal.ingredients.length > 0) ||
-                                  recipeCache[meal.name]) && (
-                                  <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                                      Ingredients
-                                    </p>
-                                    <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                                      {(meal.ingredients && meal.ingredients.length > 0
-                                        ? meal.ingredients
-                                            .filter(
-                                              (ingredient) =>
-                                                ingredient &&
-                                                typeof ingredient.name === "string" &&
-                                                typeof ingredient.amount === "string",
-                                            )
-                                            .map(
-                                              (ingredient) =>
-                                                `${safeTrim(ingredient.amount)} ${safeTrim(ingredient.name)}`,
-                                            )
-                                        : (recipeCache[meal.name]?.ingredients ?? []).filter(
-                                            (ingredient) => typeof ingredient === "string",
-                                          )
-                                      )
-                                        .map((ingredient) => safeTrim(ingredient))
-                                        .filter(Boolean)
-                                        .map((ingredient) => (
-                                        <li
-                                          key={`${meal.name}-${ingredient}`}
-                                          className="flex gap-2"
-                                        >
-                                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                                          <span>{ingredient}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                            </article>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-ink/60">
-                          No archived recipes yet. Removed meals will land here for future weeks.
-                        </p>
-                      )}
-                    </div>
-                  ) : null}
                 </section>
+
 
                 {generatedPlan.desserts.length > 0 && (
                   <section className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
@@ -3445,6 +3148,304 @@ export function SmartCartApp() {
             </div>
           )}
 
+          <section className="mt-6 flex flex-col gap-6">
+                  {savedDesserts.length > 0 ? (
+                    <div className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-display text-2xl text-ink">Saved Desserts</p>
+                          <p className="mt-1 text-sm leading-6 text-ink/70">
+                            Keep your favorite sweet treats in this week&apos;s plan.
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-berry">
+                          {savedDesserts.length} saved
+                        </span>
+                      </div>
+                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                        {savedDesserts.map((meal, index) => {
+                          const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
+                          const showMealImage =
+                            Boolean(safeTrim(meal.imageUrl)) &&
+                            !hiddenCardImages.has(`saved-dessert-${mealKey}`);
+
+                          return (
+                            <article
+                              key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
+                              className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
+                            >
+                              {showMealImage ? (
+                                <div className="relative h-48 overflow-hidden">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    alt={safeTrim(meal.name)}
+                                    className="h-full w-full object-cover"
+                                    onError={() =>
+                                      setHiddenCardImages((current) =>
+                                        new Set(current).add(`saved-dessert-${mealKey}`),
+                                      )
+                                    }
+                                    src={meal.imageUrl}
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
+                                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                                    <div>
+                                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cream/80">
+                                        {formatCardEyebrow(safeTrim(meal.day))}
+                                      </p>
+                                      <h3 className="mt-2 font-display text-2xl text-white">
+                                        {safeTrim(meal.name)}
+                                      </h3>
+                                    </div>
+                                    <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
+                                      Serves {meal.servings}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-start justify-between gap-3 p-5 pb-0">
+                                  <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                                      {formatCardEyebrow(safeTrim(meal.day))}
+                                    </p>
+                                    <h3 className="mt-2 font-display text-2xl text-ink">
+                                      {safeTrim(meal.name)}
+                                    </h3>
+                                  </div>
+                                  <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                                    Serves {meal.servings}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="space-y-4 p-5">
+                                {expandedDetailCards.has(`saved-dessert-${mealKey}`) && (
+                                  <p className="text-sm leading-7 text-ink/75">
+                                    {safeTrim(meal.notes)}
+                                  </p>
+                                )}
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                                  onClick={() =>
+                                    handleToggleCardDetails(`saved-dessert-${mealKey}`)
+                                  }
+                                  type="button"
+                                >
+                                  {expandedDetailCards.has(`saved-dessert-${mealKey}`)
+                                    ? "Hide Details"
+                                    : "Show Details"}
+                                </button>
+                                <div className="flex flex-wrap gap-3">
+                                  <button
+                                    className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                    disabled={recipeLoadingMeal === safeTrim(meal.name)}
+                                    onClick={() => handleGetRecipe(meal)}
+                                    type="button"
+                                  >
+                                    {recipeLoadingMeal === safeTrim(meal.name)
+                                      ? "Loading recipe..."
+                                      : "Get Recipe"}
+                                  </button>
+                                  <button
+                                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
+                                    onClick={() => handleToggleIngredients(meal)}
+                                    type="button"
+                                  >
+                                    {expandedIngredientsMeals.has(mealKey)
+                                      ? "Hide Ingredients"
+                                      : "View Ingredients"}
+                                  </button>
+                                  <button
+                                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                                    onClick={() => handleRemoveMeal(meal)}
+                                    type="button"
+                                  >
+                                    <span aria-hidden="true">{"🗄️ "}</span>
+                                    Stash in Vault
+                                  </button>
+                                  <button
+                                    className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                    onClick={() => void handlePermanentDelete(meal)}
+                                    type="button"
+                                  >
+                                    Remove entirely
+                                  </button>
+                                </div>
+                                {expandedIngredientsMeals.has(mealKey) &&
+                                  (meal.ingredients ?? []).length > 0 && (
+                                    <div className="rounded-[1rem] bg-cream px-3 py-3">
+                                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                                        Ingredients
+                                      </p>
+                                      <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
+                                        {(meal.ingredients ?? [])
+                                          .filter(
+                                            (ingredient) =>
+                                              ingredient &&
+                                              typeof ingredient.name === "string" &&
+                                              typeof ingredient.amount === "string",
+                                          )
+                                          .map((ingredient) => (
+                                            <li
+                                              key={`${safeTrim(meal.name)}-${safeTrim(ingredient.name)}-${safeTrim(ingredient.amount)}`}
+                                              className="flex gap-2"
+                                            >
+                                              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
+                                              <span>
+                                                {safeTrim(ingredient.amount)} {safeTrim(ingredient.name)}
+                                              </span>
+                                            </li>
+                                          ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                    <strong>💡 HOW TO USE THE VAULT:</strong> Click
+                    {" "}
+                    <strong>[🗄️ Stash in Vault]</strong>
+                    {" "}
+                    on any active meal above to save its recipe here for future weeks. This
+                    removes it from your current grocery budget.
+                  </div>
+                  <button
+                    className="mt-6 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                    onClick={() => setIsVaultOpen(!isVaultOpen)}
+                    type="button"
+                  >
+                    <span aria-hidden="true">{"🗄️ "}</span>
+                    {isVaultOpen
+                      ? "Close Recipe Vault"
+                      : `Open Recipe Vault (${archivedMeals.length})`}
+                  </button>
+                  {isVaultOpen ? (
+                    <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+                      {archivedMeals.length > 0 ? (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {archivedMeals.map((meal) => (
+                            <article
+                              key={`vault-${meal.dbId ?? `${meal.day}-${meal.name}`}`}
+                              className="rounded-3xl border border-stone-200 bg-[#fffdf9] px-4 py-4 shadow-lg"
+                            >
+                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                                {formatCardEyebrow(meal.day)}
+                              </p>
+                              <h3 className="mt-2 font-display text-xl text-ink">
+                                {safeTrim(meal.name)}
+                              </h3>
+                              <p className="mt-2 text-sm leading-6 text-ink/70">
+                                Serves {meal.servings}
+                              </p>
+                              {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`) && (
+                                <p className="mt-3 text-sm leading-7 text-ink/75">
+                                  {safeTrim(meal.notes)}
+                                </p>
+                              )}
+                              <button
+                                className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
+                                onClick={() =>
+                                  handleToggleCardDetails(`vault-${meal.day}::${meal.name}`)
+                                }
+                                type="button"
+                              >
+                                {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)
+                                  ? "Hide Details"
+                                  : "Show Details"}
+                              </button>
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={recipeLoadingMeal === meal.name}
+                                  onClick={() => handleGetRecipe(meal)}
+                                  type="button"
+                                >
+                                  {recipeLoadingMeal === meal.name
+                                    ? "Loading recipe..."
+                                    : "Get Recipe"}
+                                </button>
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                  disabled={recipeLoadingMeal === meal.name}
+                                  onClick={() => handleToggleIngredients(meal)}
+                                  type="button"
+                                >
+                                  {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
+                                    ? "Hide Ingredients"
+                                    : "View Ingredients"}
+                                </button>
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full bg-pine px-3 py-2 text-sm font-semibold text-white transition hover:bg-pine/90"
+                                  onClick={() => handleRestoreMeal(meal)}
+                                  type="button"
+                                >
+                                  <span aria-hidden="true">{"➕ "}</span>
+                                  Add to This Week
+                                </button>
+                                <button
+                                  className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                                  onClick={() => void handlePermanentDelete(meal)}
+                                  type="button"
+                                >
+                                  <span aria-hidden="true">{"🗑️ "}</span>
+                                  Permanent Delete
+                                </button>
+                              </div>
+                              {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
+                                ((meal.ingredients && meal.ingredients.length > 0) ||
+                                  recipeCache[meal.name]) && (
+                                  <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                                      Ingredients
+                                    </p>
+                                    <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
+                                      {(meal.ingredients && meal.ingredients.length > 0
+                                        ? meal.ingredients
+                                            .filter(
+                                              (ingredient) =>
+                                                ingredient &&
+                                                typeof ingredient.name === "string" &&
+                                                typeof ingredient.amount === "string",
+                                            )
+                                            .map(
+                                              (ingredient) =>
+                                                `${safeTrim(ingredient.amount)} ${safeTrim(ingredient.name)}`,
+                                            )
+                                        : (recipeCache[meal.name]?.ingredients ?? []).filter(
+                                            (ingredient) => typeof ingredient === "string",
+                                          )
+                                      )
+                                        .map((ingredient) => safeTrim(ingredient))
+                                        .filter(Boolean)
+                                        .map((ingredient) => (
+                                        <li
+                                          key={`${meal.name}-${ingredient}`}
+                                          className="flex gap-2"
+                                        >
+                                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
+                                          <span>{ingredient}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-ink/60">
+                          No archived recipes yet. Removed meals will land here for future weeks.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+                </section>
           <section className="mt-6 rounded-[2.25rem] border border-stone-200 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-8">
             <div className="mx-auto max-w-3xl text-center">
               <p className="font-display text-3xl text-ink">
