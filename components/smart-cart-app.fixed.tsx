@@ -399,8 +399,6 @@ export function SmartCartApp() {
   const [hiddenCardImages, setHiddenCardImages] = useState<Set<string>>(
     new Set(),
   );
-  const authenticatedUserId = user?.id || "";
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -1602,7 +1600,7 @@ export function SmartCartApp() {
       .eq("user_id", userId);
 
     if (deleteArchivedError) {
-      console.error("Supabase Save Error:", deleteArchivedError.message);
+      console.error("Supabase Save Error (Check RLS):", deleteArchivedError);
       console.log("archived_meals delete failed:", deleteArchivedError);
     }
 
@@ -1619,7 +1617,7 @@ export function SmartCartApp() {
         .insert(archivedRows);
 
       if (insertArchivedError) {
-        console.error("Supabase Save Error:", insertArchivedError.message);
+        console.error("Supabase Save Error (Check RLS):", insertArchivedError);
         console.log("archived_meals insert failed:", insertArchivedError);
       }
     }
@@ -1635,11 +1633,11 @@ export function SmartCartApp() {
   }, [loadSessionFromCloud, user]);
 
   useEffect(() => {
-    if (!authenticatedUserId) {
+    if (!user?.id) {
       return;
     }
 
-    void fetchArchivedMeals(authenticatedUserId)
+    void fetchArchivedMeals(user.id)
       .then((meals) => {
         setArchivedMeals(meals);
       })
@@ -1648,7 +1646,7 @@ export function SmartCartApp() {
           error instanceof Error ? error.message : "Failed to load archived meals.",
         );
       });
-  }, [authenticatedUserId, fetchArchivedMeals]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -1675,7 +1673,7 @@ export function SmartCartApp() {
         .eq("status", "active_week");
 
       if (archiveError) {
-        console.error("Supabase Save Error:", archiveError.message);
+        console.error("Supabase Save Error (Check RLS):", archiveError);
         throw archiveError;
       }
 
@@ -1725,7 +1723,7 @@ export function SmartCartApp() {
           .insert(weeklyMenuRows);
 
         if (insertMenuError) {
-          console.error("Supabase Save Error:", insertMenuError.message);
+          console.error("Supabase Save Error (Check RLS):", insertMenuError);
           throw insertMenuError;
         }
       }
@@ -1736,7 +1734,7 @@ export function SmartCartApp() {
         .eq("user_id", userId);
 
       if (deletePantryError) {
-        console.error("Supabase Save Error:", deletePantryError.message);
+        console.error("Supabase Save Error (Check RLS):", deletePantryError);
         throw deletePantryError;
       }
 
@@ -1752,7 +1750,7 @@ export function SmartCartApp() {
           .insert(pantryRows);
 
         if (insertPantryError) {
-          console.error("Supabase Save Error:", insertPantryError.message);
+          console.error("Supabase Save Error (Check RLS):", insertPantryError);
           throw insertPantryError;
         }
       }
@@ -1921,13 +1919,13 @@ export function SmartCartApp() {
     <main className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
         <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex w-full items-center justify-between gap-4">
               <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
                 SmartCart
                 <span className="h-2.5 w-2.5 rounded-full bg-sage" />
               </div>
 
-              <div className="w-full max-w-md self-start rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+              <div className="ml-auto w-full max-w-md rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
                 {!user ? (
                   <>
                     <div className="flex items-center justify-between gap-3">
