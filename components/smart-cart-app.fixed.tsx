@@ -399,6 +399,7 @@ export function SmartCartApp() {
   const [hiddenCardImages, setHiddenCardImages] = useState<Set<string>>(
     new Set(),
   );
+  const authenticatedUserId = user?.id || "";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1601,6 +1602,7 @@ export function SmartCartApp() {
       .eq("user_id", userId);
 
     if (deleteArchivedError) {
+      console.error("Supabase Save Error:", deleteArchivedError.message);
       console.log("archived_meals delete failed:", deleteArchivedError);
     }
 
@@ -1617,6 +1619,7 @@ export function SmartCartApp() {
         .insert(archivedRows);
 
       if (insertArchivedError) {
+        console.error("Supabase Save Error:", insertArchivedError.message);
         console.log("archived_meals insert failed:", insertArchivedError);
       }
     }
@@ -1632,11 +1635,11 @@ export function SmartCartApp() {
   }, [loadSessionFromCloud, user]);
 
   useEffect(() => {
-    if (!user || !user.id) {
+    if (!authenticatedUserId) {
       return;
     }
 
-    void fetchArchivedMeals(user.id)
+    void fetchArchivedMeals(authenticatedUserId)
       .then((meals) => {
         setArchivedMeals(meals);
       })
@@ -1645,7 +1648,7 @@ export function SmartCartApp() {
           error instanceof Error ? error.message : "Failed to load archived meals.",
         );
       });
-  }, [fetchArchivedMeals, user]);
+  }, [authenticatedUserId, fetchArchivedMeals]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -1672,6 +1675,7 @@ export function SmartCartApp() {
         .eq("status", "active_week");
 
       if (archiveError) {
+        console.error("Supabase Save Error:", archiveError.message);
         throw archiveError;
       }
 
@@ -1721,6 +1725,7 @@ export function SmartCartApp() {
           .insert(weeklyMenuRows);
 
         if (insertMenuError) {
+          console.error("Supabase Save Error:", insertMenuError.message);
           throw insertMenuError;
         }
       }
@@ -1731,6 +1736,7 @@ export function SmartCartApp() {
         .eq("user_id", userId);
 
       if (deletePantryError) {
+        console.error("Supabase Save Error:", deletePantryError.message);
         throw deletePantryError;
       }
 
@@ -1746,6 +1752,7 @@ export function SmartCartApp() {
           .insert(pantryRows);
 
         if (insertPantryError) {
+          console.error("Supabase Save Error:", insertPantryError.message);
           throw insertPantryError;
         }
       }
@@ -1914,9 +1921,85 @@ export function SmartCartApp() {
     <main className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
         <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
-              SmartCart
-              <span className="h-2.5 w-2.5 rounded-full bg-sage" />
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
+                SmartCart
+                <span className="h-2.5 w-2.5 rounded-full bg-sage" />
+              </div>
+
+              <div className="w-full max-w-md self-start rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+                {!user ? (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-display text-xl text-ink">
+                          Save your pantry &amp; settings
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-ink/70">
+                          Sign in to keep your vault and pantry synced across refreshes.
+                        </p>
+                      </div>
+                    </div>
+                    <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={handleLogin}>
+                      <input
+                        className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+                        onChange={(event) => setEmail(event.target.value)}
+                        placeholder="Enter your email"
+                        type="email"
+                        value={email}
+                      />
+                      <button
+                        className="shrink-0 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isAuthLoading}
+                        type="submit"
+                      >
+                        {isAuthLoading ? "Sending..." : "Send Magic Link"}
+                      </button>
+                    </form>
+                    {authMessage ? (
+                      <p className="mt-3 text-sm font-medium text-ink/70">{authMessage}</p>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-pine text-sm font-semibold text-white">
+                          {safeTrim(user.email?.[0] ?? "U").toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-display text-xl text-ink">Profile</p>
+                          <p className="text-sm leading-6 text-ink/70">
+                            {safeTrim(user.email) || "Signed in"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isSaving}
+                          onClick={saveSessionToCloud}
+                          type="button"
+                        >
+                          {isSaving ? "Saving..." : "💾 Save"}
+                        </button>
+                        <button
+                          className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                          onClick={() => supabase.auth.signOut()}
+                          type="button"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                    {cloudSyncMessage ? (
+                      <p className="mt-3 text-sm font-medium text-ink/70">
+                        {cloudSyncMessage}
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="space-y-5">
@@ -3065,75 +3148,6 @@ export function SmartCartApp() {
                   )}
                 </div>
 
-                <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
-                  {!user ? (
-                    <>
-                      <h4 className="font-display text-xl text-ink">
-                        Save your pantry &amp; settings for next week
-                      </h4>
-                      <p className="mt-2 text-sm leading-6 text-ink/70">
-                        Drop in your email and we&apos;ll send a magic link so you can come back
-                        to SmartCart without creating a password.
-                      </p>
-                      <form className="mt-4 space-y-3" onSubmit={handleLogin}>
-                        <input
-                          className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
-                          onChange={(event) => setEmail(event.target.value)}
-                          placeholder="Enter your email"
-                          type="email"
-                          value={email}
-                        />
-                        <button
-                          className="w-full rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                          disabled={isAuthLoading}
-                          type="submit"
-                        >
-                          {isAuthLoading ? "Sending magic link..." : "Send Magic Link"}
-                        </button>
-                      </form>
-                      {authMessage ? (
-                        <p className="mt-3 text-sm font-medium text-ink/70">{authMessage}</p>
-                      ) : null}
-                    </>
-                  ) : (
-                    <div>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <h4 className="font-display text-xl text-ink">
-                            Save your pantry &amp; settings for next week
-                          </h4>
-                          <p className="mt-2 text-sm leading-6 text-ink/70">
-                            Signed in as: {user.email}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <button
-                            className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={isSaving}
-                            onClick={saveSessionToCloud}
-                            type="button"
-                          >
-                            {isSaving
-                              ? "Saving..."
-                              : "💾 Save This Week's Menu & Pantry"}
-                          </button>
-                          <button
-                            className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                            onClick={() => supabase.auth.signOut()}
-                            type="button"
-                          >
-                            Sign Out
-                          </button>
-                        </div>
-                      </div>
-                      {cloudSyncMessage ? (
-                        <p className="mt-3 text-sm font-medium text-ink/70">
-                          {cloudSyncMessage}
-                        </p>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
                   </>
                 )}
                 </aside>
