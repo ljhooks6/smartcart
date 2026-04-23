@@ -1101,6 +1101,10 @@ export function SmartCartApp() {
     const archivedPayload = {
       user_id: userId,
       meal_title: meal.name,
+      name: meal.name,
+      price: getMealEstimatedPrice(meal),
+      ingredients: meal.ingredients ?? [],
+      instructions: meal.instructions ?? [],
       type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
       recipe_data: meal,
     };
@@ -1504,8 +1508,12 @@ export function SmartCartApp() {
         .map((ingredientName) => safeTrim(ingredientName))
         .filter(Boolean);
 
-      const sessionWeeklyMenu = Array.isArray((sessionData as { weekly_menu?: unknown[] } | null)?.weekly_menu)
-        ? (((sessionData as { weekly_menu?: unknown[] }).weekly_menu ?? [])
+      const sessionWeeklyMenuSource =
+        (sessionData as { weeklymenu?: unknown[]; weekly_menu?: unknown[] } | null)?.weeklymenu ??
+        (sessionData as { weeklymenu?: unknown[]; weekly_menu?: unknown[] } | null)?.weekly_menu;
+
+      const sessionWeeklyMenu = Array.isArray(sessionWeeklyMenuSource)
+        ? (sessionWeeklyMenuSource
             .map((meal, index) =>
               rehydrateMealRecord(meal as Partial<MealPlanItem> | null, {
                 user_id: userId,
@@ -1516,10 +1524,14 @@ export function SmartCartApp() {
             .filter(Boolean) as MealPlanItem[])
         : [];
 
-      const sessionSavedDesserts = Array.isArray(
-        (sessionData as { saved_desserts?: unknown[] } | null)?.saved_desserts,
-      )
-        ? (((sessionData as { saved_desserts?: unknown[] }).saved_desserts ?? [])
+      const sessionSavedDessertsSource =
+        (sessionData as { saveddesserts?: unknown[]; saved_desserts?: unknown[] } | null)
+          ?.saveddesserts ??
+        (sessionData as { saveddesserts?: unknown[]; saved_desserts?: unknown[] } | null)
+          ?.saved_desserts;
+
+      const sessionSavedDesserts = Array.isArray(sessionSavedDessertsSource)
+        ? (sessionSavedDessertsSource
             .map((dessert, index) =>
               rehydrateMealRecord(dessert as Partial<MealPlanItem> | null, {
                 user_id: userId,
@@ -1530,10 +1542,18 @@ export function SmartCartApp() {
             .filter(Boolean) as MealPlanItem[])
         : [];
 
-      const sessionPantryItems = Array.isArray(
-        (sessionData as { selected_pantry_items?: unknown[] } | null)?.selected_pantry_items,
-      )
-        ? ((sessionData as { selected_pantry_items?: unknown[] }).selected_pantry_items ?? [])
+      const sessionPantryItemsSource =
+        (sessionData as {
+          selectedpantryitems?: unknown[];
+          selected_pantry_items?: unknown[];
+        } | null)?.selectedpantryitems ??
+        (sessionData as {
+          selectedpantryitems?: unknown[];
+          selected_pantry_items?: unknown[];
+        } | null)?.selected_pantry_items;
+
+      const sessionPantryItems = Array.isArray(sessionPantryItemsSource)
+        ? (sessionPantryItemsSource ?? [])
             .filter((item) => typeof item === "string")
             .map((item) => safeTrim(item))
             .filter(Boolean)
@@ -1586,16 +1606,14 @@ export function SmartCartApp() {
       return;
     }
 
-    const payload = {
+    const { error } = await supabase.from("user_sessions").upsert({
       user_id: userId,
-      weekly_menu: weeklyMenu,
-      saved_desserts: savedDesserts,
-      selected_pantry_items: selectedPantryItems,
+      weeklymenu: weeklyMenu,
+      saveddesserts: savedDesserts,
+      selectedpantryitems: selectedPantryItems,
       pantry_text: formState.pantryItems,
       updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await supabase.from("user_sessions").upsert(payload, {
+    }, {
       onConflict: "user_id",
     });
 
@@ -1843,6 +1861,7 @@ export function SmartCartApp() {
     const mealKey = `${meal.day}::${meal.name}`;
     const budget = Number(formState.budget);
     const householdSize = Number(formState.householdSize);
+    const currentMealsContext = weeklyMenu.map((savedMeal) => savedMeal.name).join(", ");
 
     setReplacingMealKey(mealKey);
     setRequestError(null);
@@ -1863,7 +1882,7 @@ export function SmartCartApp() {
           adventureLevel: formState.adventureLevel,
           mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
           availableEquipment: formState.availableEquipment,
-          existingMeals: existingMealTitles,
+          existingMeals: currentMealsContext || existingMealTitles,
         }),
       });
 

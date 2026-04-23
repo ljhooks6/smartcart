@@ -86,6 +86,7 @@ Rules:
 - Generate exactly ONE replacement meal.
 - The replacement must feel clearly different from the rejected meal title in flavor profile, format, and primary ingredients.
 - CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals?.trim() || "None provided"}.
+- CURRENT MENU CONTEXT: The user already has these meals: ${existingMeals?.trim() || "None provided"}. STRICT RULE: Look at the current menu and provide a completely different alternative protein and flavor profile.
 - CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.
 - Respect the user's budget, diet, household size, pantry items, and prep-time preference.
 - Use pantry items where reasonable.
