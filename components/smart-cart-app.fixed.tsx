@@ -259,6 +259,13 @@ function formatCardEyebrow(day: string) {
     : safeTrim(day);
 }
 
+function getMealEstimatedPrice(meal: MealPlanItem) {
+  return (meal.ingredients ?? []).reduce((sum, ingredient) => {
+    const price = typeof ingredient?.price === "number" ? ingredient.price : 0;
+    return sum + price;
+  }, 0);
+}
+
 function isSweetTreatMeal(meal: MealPlanItem) {
   return safeTrim(meal.day).toLowerCase().startsWith("sweet treat");
 }
@@ -1079,21 +1086,62 @@ export function SmartCartApp() {
     );
   }
 
-  function handleRemoveMeal(meal: MealPlanItem) {
+  async function handleArchiveMeal(meal: MealPlanItem) {
+    const userId = user?.id || "";
+    if (!userId) {
+      alert("Please sign in before using the Recipe Vault.");
+      return;
+    }
+
     const mealMatcher = (candidate: MealPlanItem) =>
       meal.dbId
         ? candidate.dbId === meal.dbId
         : candidate.name === meal.name;
 
-    setWeeklyMenu((current) => current.filter((savedMeal) => !mealMatcher(savedMeal)));
-    setSavedDesserts((current) =>
-      current.filter((savedDessert) => !mealMatcher(savedDessert)),
-    );
-    setArchivedMeals((current) =>
-      current.some((archivedMeal) => mealMatcher(archivedMeal))
-        ? current
-        : [...current, meal],
-    );
+    const archivedPayload = {
+      user_id: userId,
+      meal_title: meal.name,
+      type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
+      recipe_data: meal,
+    };
+
+    const { data, error } = await supabase
+      .from("archived_meals")
+      .insert([archivedPayload])
+      .select();
+
+    if (error) {
+      console.error("Vault Save Error:", error);
+      alert("Failed to save to cloud. Check console.");
+      return;
+    }
+
+    if (data && data[0]) {
+      const hydratedArchivedMeal = rehydrateMealRecord(
+        ((data[0] as { recipe_data?: unknown }).recipe_data ??
+          data[0]) as Partial<MealPlanItem> | GenerateListResponse["desserts"][number] | null,
+        {
+          dbId: (data[0] as { id?: number | string | null }).id ?? undefined,
+          user_id: safeTrim((data[0] as { user_id?: string | null }).user_id) || userId,
+          day: isSweetTreatMeal(meal) ? meal.day : safeTrim(meal.day),
+          servings: meal.servings,
+        },
+      );
+
+      if (hydratedArchivedMeal) {
+        setArchivedMeals((current) =>
+          current.some((archivedMeal) => mealMatcher(archivedMeal))
+            ? current
+            : [...current, hydratedArchivedMeal],
+        );
+      }
+
+      setWeeklyMenu((current) => current.filter((savedMeal) => !mealMatcher(savedMeal)));
+      setSavedDesserts((current) =>
+        current.filter((savedDessert) => !mealMatcher(savedDessert)),
+      );
+      alert("Meal securely stashed in the Vault!");
+    }
   }
 
   function handleRestoreMeal(meal: MealPlanItem) {
@@ -1425,42 +1473,6 @@ export function SmartCartApp() {
     return { dinners, desserts };
   }, [formState.householdSize, rehydrateMealRecord]);
 
-  const fetchArchivedMeals = useCallback(async (userId: string) => {
-    if (!userId) {
-      return [];
-    }
-
-    const { data, error } = await supabase
-      .from("archived_meals")
-      .select("*")
-      .eq("user_id", userId);
-
-    if (error) {
-      throw error;
-    }
-
-    return (data ?? [])
-      .map((row) =>
-        rehydrateMealRecord(
-          ((row as { recipe_data?: unknown }).recipe_data ??
-            row) as
-            | Partial<MealPlanItem>
-            | GenerateListResponse["desserts"][number]
-            | null,
-          {
-            dbId: (row as { id?: number | string | null }).id ?? undefined,
-            user_id: safeTrim((row as { user_id?: string | null }).user_id),
-            day:
-              safeTrim((row as { type?: string | null }).type).toLowerCase() === "sweet_treat"
-                ? "Sweet Treat"
-                : "",
-            servings: Number(formState.householdSize) || 2,
-          },
-        ),
-      )
-      .filter((meal): meal is MealPlanItem => Boolean(meal));
-  }, [formState.householdSize, rehydrateMealRecord]);
-
   const loadSessionFromCloud = useCallback(async (userId: string) => {
     try {
       const [
@@ -1630,20 +1642,46 @@ export function SmartCartApp() {
   }, [loadSessionFromCloud, user]);
 
   useEffect(() => {
-    if (!user?.id) {
-      return;
-    }
+    if (!user?.id) return;
 
-    void fetchArchivedMeals(user.id)
-      .then((meals) => {
-        setArchivedMeals(meals);
-      })
-      .catch((error) => {
-        setCloudSyncMessage(
-          error instanceof Error ? error.message : "Failed to load archived meals.",
-        );
-      });
-  }, [user]);
+    const loadVault = async () => {
+      const { data, error } = await supabase
+        .from("archived_meals")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Vault Load Error:", error);
+        setCloudSyncMessage("Failed to load archived meals.");
+        return;
+      }
+
+      const hydratedVaultMeals = (data ?? [])
+        .map((row) =>
+          rehydrateMealRecord(
+            ((row as { recipe_data?: unknown }).recipe_data ??
+              row) as
+              | Partial<MealPlanItem>
+              | GenerateListResponse["desserts"][number]
+              | null,
+            {
+              dbId: (row as { id?: number | string | null }).id ?? undefined,
+              user_id: safeTrim((row as { user_id?: string | null }).user_id),
+              day:
+                safeTrim((row as { type?: string | null }).type).toLowerCase() === "sweet_treat"
+                  ? "Sweet Treat"
+                  : "",
+              servings: Number(formState.householdSize) || 2,
+            },
+          ),
+        )
+        .filter((meal): meal is MealPlanItem => Boolean(meal));
+
+      setArchivedMeals(hydratedVaultMeals);
+    };
+
+    void loadVault();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -1971,14 +2009,6 @@ export function SmartCartApp() {
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
                         <button
-                          className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                          disabled={isSaving}
-                          onClick={saveSessionToCloud}
-                          type="button"
-                        >
-                          {isSaving ? "Saving..." : "💾 Save"}
-                        </button>
-                        <button
                           className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-stone-100"
                           onClick={() => supabase.auth.signOut()}
                           type="button"
@@ -1987,11 +2017,6 @@ export function SmartCartApp() {
                         </button>
                       </div>
                     </div>
-                    {cloudSyncMessage ? (
-                      <p className="mt-3 text-sm font-medium text-ink/70">
-                        {cloudSyncMessage}
-                      </p>
-                    ) : null}
                   </>
                 )}
               </div>
@@ -2440,6 +2465,7 @@ export function SmartCartApp() {
                   {generatedPlan.meals.map((meal, index) => {
                     const mealCardKey = `generated-${meal.day}::${meal.name}`;
                     const mealEyebrow = formatCardEyebrow(meal.day);
+                    const mealEstimatedPrice = getMealEstimatedPrice(meal);
 
                     return (
                       <article
@@ -2455,9 +2481,14 @@ export function SmartCartApp() {
                               {safeTrim(meal.name)}
                             </h2>
                           </div>
-                          <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                            Serves {meal.servings}
-                          </span>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                              {formatCurrency(mealEstimatedPrice)}
+                            </span>
+                            <span className="text-sm font-semibold text-ink/65">
+                              Serves {meal.servings}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="space-y-4 p-5">
@@ -2552,9 +2583,14 @@ export function SmartCartApp() {
                           <h3 className="mt-2 font-display text-xl text-ink">
                             {safeTrim(meal.name)}
                           </h3>
-                          <p className="mt-2 text-sm leading-6 text-ink/70">
-                            Serves {meal.servings}
-                          </p>
+                          <div className="mt-2 flex items-center justify-between gap-3">
+                            <p className="text-sm leading-6 text-ink/70">
+                              Serves {meal.servings}
+                            </p>
+                            <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                              {formatCurrency(getMealEstimatedPrice(meal))}
+                            </span>
+                          </div>
                           {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`) && (
                             <p className="mt-3 text-sm leading-7 text-ink/75">
                               {safeTrim(meal.notes)}
@@ -2594,7 +2630,7 @@ export function SmartCartApp() {
                             </button>
                             <button
                               className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                              onClick={() => handleRemoveMeal(meal)}
+                              onClick={() => void handleArchiveMeal(meal)}
                               type="button"
                             >
                               <span aria-hidden="true">{"🗄️ "}</span>
@@ -2666,18 +2702,30 @@ export function SmartCartApp() {
                         const isReplacingThisDessert =
                           replacingDessertKey === `${dessert.title}-${index}`;
                         const dessertCardKey = `dessert-${dessert.title}-${index}`;
+                        const dessertEstimatedPrice = (dessert.ingredients ?? []).reduce(
+                          (sum, ingredient) =>
+                            sum + (typeof ingredient?.price === "number" ? ingredient.price : 0),
+                          0,
+                        );
 
                         return (
                           <article
                             key={dessertCardKey}
                             className="overflow-hidden rounded-[1.5rem] border border-rose-200 bg-white p-4 shadow-md"
                           >
-                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                              SWEET TREAT
-                            </p>
-                            <h3 className="mt-3 font-display text-2xl text-ink">
-                              {safeTrim(dessert.title)}
-                            </h3>
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                                  SWEET TREAT
+                                </p>
+                                <h3 className="mt-3 font-display text-2xl text-ink">
+                                  {safeTrim(dessert.title)}
+                                </h3>
+                              </div>
+                              <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                                {formatCurrency(dessertEstimatedPrice)}
+                              </span>
+                            </div>
                             {expandedDetailCards.has(dessertCardKey) && (
                               <p className="mt-3 text-sm leading-7 text-ink/80">
                                 {safeTrim(dessert.description)}
@@ -3119,6 +3167,7 @@ export function SmartCartApp() {
                       <div className="mt-5 grid gap-3 sm:grid-cols-2">
                         {savedDesserts.map((meal, index) => {
                           const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
+                          const mealEstimatedPrice = getMealEstimatedPrice(meal);
 
                           return (
                             <article
@@ -3134,9 +3183,14 @@ export function SmartCartApp() {
                                     {safeTrim(meal.name)}
                                   </h3>
                                 </div>
-                                <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                                  Serves {meal.servings}
-                                </span>
+                                <div className="flex flex-col items-end gap-2">
+                                  <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
+                                    {formatCurrency(mealEstimatedPrice)}
+                                  </span>
+                                  <span className="text-sm font-semibold text-ink/65">
+                                    Serves {meal.servings}
+                                  </span>
+                                </div>
                               </div>
 
                               <div className="space-y-4 p-5">
@@ -3178,7 +3232,7 @@ export function SmartCartApp() {
                                   </button>
                                   <button
                                     className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                                    onClick={() => handleRemoveMeal(meal)}
+                                    onClick={() => void handleArchiveMeal(meal)}
                                     type="button"
                                   >
                                     <span aria-hidden="true">{"🗄️ "}</span>
@@ -3225,6 +3279,32 @@ export function SmartCartApp() {
                           );
                         })}
                       </div>
+                    </div>
+                  ) : null}
+
+                  {user ? (
+                    <div className="mt-6 rounded-[1.25rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-ink">Save your current week</p>
+                          <p className="text-sm leading-6 text-ink/65">
+                            Sync your dinners, sweet treats, pantry, and vault before you leave.
+                          </p>
+                        </div>
+                        <button
+                          className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isSaving}
+                          onClick={saveSessionToCloud}
+                          type="button"
+                        >
+                          {isSaving ? "Saving..." : "💾 Save"}
+                        </button>
+                      </div>
+                      {cloudSyncMessage ? (
+                        <p className="mt-3 text-sm font-medium text-ink/70">
+                          {cloudSyncMessage}
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
 
