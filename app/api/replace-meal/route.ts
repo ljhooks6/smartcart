@@ -12,6 +12,7 @@ type ReplaceMealRequest = {
   adventureLevel?: string;
   mustHaveIngredient?: string;
   existingMeals?: string;
+  currentMealsContext?: string;
   availableEquipment?: string[];
 };
 
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
     adventureLevel,
     mustHaveIngredient,
     existingMeals,
+    currentMealsContext,
     availableEquipment,
   } = (body as Partial<ReplaceMealRequest>) ?? {};
 
@@ -86,7 +88,7 @@ Rules:
 - Generate exactly ONE replacement meal.
 - The replacement must feel clearly different from the rejected meal title in flavor profile, format, and primary ingredients.
 - CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals?.trim() || "None provided"}.
-- CURRENT MENU CONTEXT: The user already has these meals: ${existingMeals?.trim() || "None provided"}. STRICT RULE: Look at the current menu and provide a completely different alternative protein and flavor profile.
+- CURRENT MENU CONTEXT: The user already has these meals: ${(currentMealsContext ?? existingMeals)?.trim() || "None provided"}. STRICT RULE: Provide a completely different main protein and flavor profile from the majority of the current menu.
 - CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.
 - Respect the user's budget, diet, household size, pantry items, and prep-time preference.
 - Use pantry items where reasonable.

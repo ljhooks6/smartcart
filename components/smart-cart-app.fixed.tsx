@@ -1098,11 +1098,19 @@ export function SmartCartApp() {
         ? candidate.dbId === meal.dbId
         : candidate.name === meal.name;
 
+    const rawPrice = (meal as { price?: string | number }).price;
+    const cleanPrice =
+      typeof rawPrice === "string"
+        ? parseFloat(rawPrice.replace(/[^0-9.]/g, ""))
+        : typeof rawPrice === "number"
+          ? rawPrice
+          : getMealEstimatedPrice(meal);
+
     const archivedPayload = {
       user_id: userId,
       meal_title: meal.name,
       name: meal.name,
-      price: getMealEstimatedPrice(meal),
+      price: Number.isFinite(cleanPrice) ? cleanPrice : getMealEstimatedPrice(meal),
       ingredients: meal.ingredients ?? [],
       instructions: meal.instructions ?? [],
       type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
@@ -1144,7 +1152,7 @@ export function SmartCartApp() {
       setSavedDesserts((current) =>
         current.filter((savedDessert) => !mealMatcher(savedDessert)),
       );
-      alert("Meal securely stashed in the Vault!");
+      alert("Meal Stashed!");
     }
   }
 
@@ -1606,13 +1614,11 @@ export function SmartCartApp() {
       return;
     }
 
-    const { error } = await supabase.from("user_sessions").upsert({
+    const { data, error } = await supabase.from("user_sessions").upsert({
       user_id: userId,
       weeklymenu: weeklyMenu,
       saveddesserts: savedDesserts,
       selectedpantryitems: selectedPantryItems,
-      pantry_text: formState.pantryItems,
-      updated_at: new Date().toISOString(),
     }, {
       onConflict: "user_id",
     });
@@ -1883,6 +1889,7 @@ export function SmartCartApp() {
           mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
           availableEquipment: formState.availableEquipment,
           existingMeals: currentMealsContext || existingMealTitles,
+          currentMealsContext,
         }),
       });
 

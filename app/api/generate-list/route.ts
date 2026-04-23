@@ -218,10 +218,10 @@ Rules:
 - Respect the budget strictly.
 - Respect the diet exactly.
 - This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.
-- CRITICAL RULE: BALANCED PROTEIN VARIETY. You are generating 8 meals. Limit any single main protein (for example chicken) to a MAXIMUM of 2 meals. You MUST use at least 3 to 4 different main proteins to fill the menu.
+- CRITICAL RULE: BALANCED PROTEIN VARIETY. You are generating 8 meals. Limit any single main protein (for example chicken) to a MAXIMUM of 2 meals. You MUST use at least 3 to 4 different main proteins. Do not let the user's pantry limit this rule.
 - CRITICAL RULE: Stop defaulting to cheap LLM tropes like Chickpea Curry, Lentil Soup, or Bean Tacos unless the user explicitly marked those items as owned in their pantry. You must prioritize the actual proteins the user selected. Do not force legumes into the menu just to keep the budget low. Be creative with the ingredients provided.
 - CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes (for example "Baked Chicken"). You must suggest fully composed plates (for example "Baked Chicken with Roasted Potatoes and Green Beans" or a complete one-pan dish like "Beef and Broccoli Stir-Fry over Rice"). If you suggest a protein, you MUST include a complementary side dish in the meal title.
-- CRITICAL RULE: FLAVOR MANDATE. Every recipe must explicitly include at least 3 herbs, spices, or aromatics such as garlic, cumin, paprika, or fresh herbs. Do not generate bland meals. Assume the user has a fully stocked basic spice cabinet.
+- CRITICAL RULE: FLAVOR MANDATE. Every recipe must explicitly include at least 3 herbs, spices, or aromatics.
 - CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals?.trim() || "None provided"}.
 - CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.
 - Reuse pantry items whenever possible.
