@@ -405,6 +405,22 @@ export function SmartCartApp() {
   );
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
+
+  const persistGeneratedPlan = useCallback((plan: GenerateListResponse | null) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!plan) {
+      window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(
+      SMART_CART_GENERATED_PLAN_STORAGE_KEY,
+      JSON.stringify(plan),
+    );
+  }, []);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -530,16 +546,8 @@ export function SmartCartApp() {
       return;
     }
 
-    if (!generatedPlan) {
-      window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
-      return;
-    }
-
-    window.localStorage.setItem(
-      SMART_CART_GENERATED_PLAN_STORAGE_KEY,
-      JSON.stringify(generatedPlan),
-    );
-  }, [generatedPlan, hasLoadedGeneratedPlan]);
+    persistGeneratedPlan(generatedPlan);
+  }, [generatedPlan, hasLoadedGeneratedPlan, persistGeneratedPlan]);
 
   useEffect(() => {
     if (!activeRecipeMeal) {
@@ -864,10 +872,12 @@ export function SmartCartApp() {
 
       if (!response.ok) {
         setGeneratedPlan(null);
+        persistGeneratedPlan(null);
         setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
         return;
       }
       setGeneratedPlan(data);
+      persistGeneratedPlan(data);
       setCheckedItems(new Set());
       setRecipeCache({});
       setActiveRecipeMeal(null);
@@ -878,6 +888,7 @@ export function SmartCartApp() {
       setExpandedDetailCards(new Set());
     } catch (error) {
       setGeneratedPlan(null);
+      persistGeneratedPlan(null);
       setRequestError(
         error instanceof Error ? error.message : "Failed to fetch",
       );
@@ -1044,23 +1055,28 @@ export function SmartCartApp() {
         return;
       }
 
-      setGeneratedPlan((current) =>
-        current
-          ? {
-              ...current,
-              desserts: current.desserts.map((currentDessert, dessertIndex) =>
-                dessertIndex === index
-                  ? {
-                      title: data.title,
-                      description: data.description,
-                      ingredients: data.ingredients,
-                      imageUrl: data.imageUrl,
-                    }
-                  : currentDessert,
-              ),
-            }
-          : current,
-      );
+      setGeneratedPlan((current) => {
+        if (!current) {
+          return current;
+        }
+
+        const nextPlan = {
+          ...current,
+          desserts: current.desserts.map((currentDessert, dessertIndex) =>
+            dessertIndex === index
+              ? {
+                  title: data.title,
+                  description: data.description,
+                  ingredients: data.ingredients,
+                  imageUrl: data.imageUrl,
+                }
+              : currentDessert,
+          ),
+        };
+
+        persistGeneratedPlan(nextPlan);
+        return nextPlan;
+      });
 
       setSavedDesserts((current) =>
         current.map((savedDessert) =>
@@ -1123,6 +1139,17 @@ export function SmartCartApp() {
           }
         : current,
     );
+    persistGeneratedPlan(
+      generatedPlan
+        ? {
+            ...generatedPlan,
+            meals: generatedPlan.meals.filter(
+              (generatedMeal) =>
+                `${generatedMeal.day}::${generatedMeal.name}` !== mealKey,
+            ),
+          }
+        : null,
+    );
   }
 
   async function handleArchiveMeal(meal: MealPlanItem) {
@@ -1137,11 +1164,20 @@ export function SmartCartApp() {
         ? candidate.dbId === meal.dbId
         : candidate.name === meal.name;
 
+    const rawPrice = (meal as { price?: string | number }).price;
+    const cleanPrice =
+      typeof rawPrice === "string"
+        ? parseFloat(rawPrice.replace(/[^0-9.]/g, ""))
+        : typeof rawPrice === "number"
+          ? rawPrice
+          : getMealEstimatedPrice(meal);
+
     const archivedPayload = {
       user_id: userId,
-      meal_title: meal.name,
-      type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
-      recipe_data: meal,
+      name: meal.name,
+      price: Number.isFinite(cleanPrice) ? cleanPrice : getMealEstimatedPrice(meal),
+      ingredients: meal.ingredients ?? [],
+      instructions: meal.instructions ?? [],
     };
 
     const { data, error } = await supabase
@@ -1162,7 +1198,7 @@ export function SmartCartApp() {
         {
           dbId: (data[0] as { id?: number | string | null }).id ?? undefined,
           user_id: safeTrim((data[0] as { user_id?: string | null }).user_id) || userId,
-          day: isSweetTreatMeal(meal) ? meal.day : safeTrim(meal.day),
+          day: meal.day,
           servings: meal.servings,
         },
       );
@@ -1342,6 +1378,7 @@ export function SmartCartApp() {
           }
         : null,
     );
+    persistGeneratedPlan(null);
     setCheckedItems(new Set());
     setFullyStocked(new Set());
     setRunningLow(new Set());
@@ -1949,10 +1986,13 @@ export function SmartCartApp() {
         const nextMeals = [...current.meals];
         nextMeals[index] = replacementMeal;
 
-        return {
+        const nextPlan = {
           ...current,
           meals: nextMeals,
         };
+
+        persistGeneratedPlan(nextPlan);
+        return nextPlan;
       });
 
       setWeeklyMenu((current) =>
