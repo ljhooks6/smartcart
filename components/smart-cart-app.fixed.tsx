@@ -1728,8 +1728,9 @@ export function SmartCartApp() {
       const archivedRows = archivedMeals.map((meal) => ({
         user_id: userId,
         name: safeTrim(meal.name),
-        recipe_data: meal,
-        type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
+        price: getMealEstimatedPrice(meal),
+        ingredients: meal.ingredients ?? [],
+        instructions: meal.instructions ?? [],
       }));
 
       const { error: insertArchivedError } = await supabase
