@@ -1727,7 +1727,7 @@ export function SmartCartApp() {
     if (archivedMeals.length > 0) {
       const archivedRows = archivedMeals.map((meal) => ({
         user_id: userId,
-        meal_title: safeTrim(meal.name),
+        name: safeTrim(meal.name),
         recipe_data: meal,
         type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
       }));
