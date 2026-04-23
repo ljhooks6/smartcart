@@ -1701,7 +1701,7 @@ export function SmartCartApp() {
       return;
     }
 
-    const { data, error } = await supabase.from("user_sessions").upsert({
+    const { error } = await supabase.from("user_sessions").upsert({
       user_id: userId,
       weeklymenu: weeklyMenu,
       saveddesserts: savedDesserts,
@@ -1742,7 +1742,47 @@ export function SmartCartApp() {
         console.log("archived_meals insert failed:", insertArchivedError);
       }
     }
-  }, [archivedMeals, formState.pantryItems, savedDesserts, selectedPantryItems, user?.id, weeklyMenu]);
+  }, [archivedMeals, savedDesserts, selectedPantryItems, user?.id, weeklyMenu]);
+
+  const loadArchivedMeals = useCallback(async () => {
+    if (!user?.id) {
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("archived_meals")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Vault Load Error:", error);
+      setCloudSyncMessage("Failed to load archived meals.");
+      return;
+    }
+
+    const hydratedVaultMeals = (data ?? [])
+      .map((row) =>
+        rehydrateMealRecord(
+          ((row as { recipe_data?: unknown }).recipe_data ??
+            row) as
+            | Partial<MealPlanItem>
+            | GenerateListResponse["desserts"][number]
+            | null,
+          {
+            dbId: (row as { id?: number | string | null }).id ?? undefined,
+            user_id: safeTrim((row as { user_id?: string | null }).user_id),
+            day:
+              safeTrim((row as { type?: string | null }).type).toLowerCase() === "sweet_treat"
+                ? "Sweet Treat"
+                : "",
+            servings: Number(formState.householdSize) || 2,
+          },
+        ),
+      )
+      .filter((meal): meal is MealPlanItem => Boolean(meal));
+
+    setArchivedMeals(hydratedVaultMeals);
+  }, [formState.householdSize, rehydrateMealRecord, user?.id]);
 
   useEffect(() => {
     const userId = user?.id || "";
@@ -1754,46 +1794,8 @@ export function SmartCartApp() {
   }, [loadSessionFromCloud, user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
-
-    const loadVault = async () => {
-      const { data, error } = await supabase
-        .from("archived_meals")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error("Vault Load Error:", error);
-        setCloudSyncMessage("Failed to load archived meals.");
-        return;
-      }
-
-      const hydratedVaultMeals = (data ?? [])
-        .map((row) =>
-          rehydrateMealRecord(
-            ((row as { recipe_data?: unknown }).recipe_data ??
-              row) as
-              | Partial<MealPlanItem>
-              | GenerateListResponse["desserts"][number]
-              | null,
-            {
-              dbId: (row as { id?: number | string | null }).id ?? undefined,
-              user_id: safeTrim((row as { user_id?: string | null }).user_id),
-              day:
-                safeTrim((row as { type?: string | null }).type).toLowerCase() === "sweet_treat"
-                  ? "Sweet Treat"
-                  : "",
-              servings: Number(formState.householdSize) || 2,
-            },
-          ),
-        )
-        .filter((meal): meal is MealPlanItem => Boolean(meal));
-
-      setArchivedMeals(hydratedVaultMeals);
-    };
-
-    void loadVault();
-  }, [user?.id]);
+    void loadArchivedMeals();
+  }, [loadArchivedMeals]);
 
   useEffect(() => {
     if (!user?.id) {
