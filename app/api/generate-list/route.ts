@@ -307,6 +307,7 @@ Include Dessert: ${includeDessert ? "Yes" : "No"}
 Adventure Level: ${adventureLevel?.trim() || "No preference provided"}
 Budget Tightness: ${typeof budgetTightness === "boolean" ? (budgetTightness ? "ON" : "OFF") : "Not provided"}
 Available Kitchen Equipment: ${selectedEquipment}
+Protein Variety Reminder: Even if the pantry only includes chicken, you must still diversify across at least 3 to 4 different main proteins and cap chicken at 2 meals.
 
 ${apply_upgrades
     ? "The user has chosen to upgrade. Rewrite this plan using premium, high-quality ingredients (for example fresh herbs, better proteins, organic ingredients) to get as close to the max budget as possible."

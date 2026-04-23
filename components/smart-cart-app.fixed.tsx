@@ -404,6 +404,7 @@ export function SmartCartApp() {
     new Set(),
   );
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
+  const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -519,10 +520,16 @@ export function SmartCartApp() {
       }
     } catch {
       window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+    } finally {
+      setHasLoadedGeneratedPlan(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!hasLoadedGeneratedPlan) {
+      return;
+    }
+
     if (!generatedPlan) {
       window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
       return;
@@ -532,7 +539,7 @@ export function SmartCartApp() {
       SMART_CART_GENERATED_PLAN_STORAGE_KEY,
       JSON.stringify(generatedPlan),
     );
-  }, [generatedPlan]);
+  }, [generatedPlan, hasLoadedGeneratedPlan]);
 
   useEffect(() => {
     if (!activeRecipeMeal) {
@@ -1130,18 +1137,9 @@ export function SmartCartApp() {
         ? candidate.dbId === meal.dbId
         : candidate.name === meal.name;
 
-    const rawPrice = (meal as { price?: string | number }).price;
-    const cleanPrice =
-      typeof rawPrice === "string"
-        ? parseFloat(rawPrice.replace(/[^0-9.]/g, ""))
-        : typeof rawPrice === "number"
-          ? rawPrice
-          : getMealEstimatedPrice(meal);
-
     const archivedPayload = {
       user_id: userId,
       meal_title: meal.name,
-      price: Number.isFinite(cleanPrice) ? cleanPrice : getMealEstimatedPrice(meal),
       type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
       recipe_data: meal,
     };
