@@ -2,6 +2,22 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
+import {
+  clearStoredJson,
+  fetchArchivedMealRows,
+  fetchOwnedPantryItems,
+  fetchSavedMealRows,
+  replaceActiveWeeklyMenuRows,
+  replacePantryInventory,
+  saveStoredJson,
+  SMART_CART_FORM_STORAGE_KEY,
+  SMART_CART_GENERATED_PLAN_STORAGE_KEY,
+  SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
+  SMART_CART_WEEKLY_MENU_STORAGE_KEY,
+  type SmartCartArchivedMealRow,
+  type SmartCartSavedMealRow,
+  loadStoredJson,
+} from "../lib/smart-cart-persistence";
 
 type IngredientItem = {
   name: string;
@@ -220,10 +236,6 @@ const pantryQuickSelectOptions = {
   ],
 } as const;
 
-const SMART_CART_FORM_STORAGE_KEY = "smartcart-smart-context-form";
-const SMART_CART_WEEKLY_MENU_STORAGE_KEY = "smartcart-weekly-menu";
-const SMART_CART_SAVED_DESSERTS_STORAGE_KEY = "smartcart-saved-desserts";
-const SMART_CART_GENERATED_PLAN_STORAGE_KEY = "smartcart-generated-plan";
 const SMART_CART_WAITLIST_ENDPOINT = "https://formspree.io/f/mqegdoly";
 const featureDescriptions = {
   "Budget first":
@@ -408,19 +420,12 @@ export function SmartCartApp() {
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
 
   const persistGeneratedPlan = useCallback((plan: GenerateListResponse | null) => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
     if (!plan) {
-      window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+      clearStoredJson(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
       return;
     }
 
-    window.localStorage.setItem(
-      SMART_CART_GENERATED_PLAN_STORAGE_KEY,
-      JSON.stringify(plan),
-    );
+    saveStoredJson(SMART_CART_GENERATED_PLAN_STORAGE_KEY, plan);
   }, []);
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -440,20 +445,18 @@ export function SmartCartApp() {
 
   useEffect(() => {
     try {
-      const savedFormState = window.localStorage.getItem(
-        SMART_CART_FORM_STORAGE_KEY,
-      );
+      const parsed = loadStoredJson<
+        Partial<FormState> & {
+          selectedQuickItems?: string[];
+          fullyStocked?: string[];
+          runningLow?: string[];
+          restock?: string[];
+        }
+      >(SMART_CART_FORM_STORAGE_KEY);
 
-      if (!savedFormState) {
+      if (!parsed) {
         return;
       }
-
-      const parsed = JSON.parse(savedFormState) as Partial<FormState> & {
-        selectedQuickItems?: string[];
-        fullyStocked?: string[];
-        runningLow?: string[];
-        restock?: string[];
-      };
 
       setFormState((current) => ({
         ...current,
@@ -481,90 +484,72 @@ export function SmartCartApp() {
         setRestock(new Set());
       }
     } catch {
-      window.localStorage.removeItem(SMART_CART_FORM_STORAGE_KEY);
+      clearStoredJson(SMART_CART_FORM_STORAGE_KEY);
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(
+    saveStoredJson(
       SMART_CART_FORM_STORAGE_KEY,
-      JSON.stringify({
+      {
         ...formState,
         fullyStocked: Array.from(fullyStocked),
         runningLow: Array.from(runningLow),
         restock: Array.from(restock),
-      }),
+      },
     );
   }, [formState, fullyStocked, runningLow, restock]);
 
   useEffect(() => {
     try {
-      const savedWeeklyMenu = window.localStorage.getItem(
+      const parsed = loadStoredJson<MealPlanItem[]>(
         SMART_CART_WEEKLY_MENU_STORAGE_KEY,
       );
 
-      if (!savedWeeklyMenu) {
+      if (!parsed || !Array.isArray(parsed)) {
         return;
       }
-
-      const parsed = JSON.parse(savedWeeklyMenu) as MealPlanItem[];
-      if (Array.isArray(parsed)) {
-        setWeeklyMenu(parsed);
-      }
+      setWeeklyMenu(parsed);
     } catch {
-      window.localStorage.removeItem(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
+      clearStoredJson(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      SMART_CART_WEEKLY_MENU_STORAGE_KEY,
-      JSON.stringify(weeklyMenu),
-    );
+    saveStoredJson(SMART_CART_WEEKLY_MENU_STORAGE_KEY, weeklyMenu);
   }, [weeklyMenu]);
 
   useEffect(() => {
     try {
-      const savedDessertsValue = window.localStorage.getItem(
+      const parsed = loadStoredJson<MealPlanItem[]>(
         SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
       );
 
-      if (!savedDessertsValue) {
+      if (!parsed || !Array.isArray(parsed)) {
         return;
       }
-
-      const parsed = JSON.parse(savedDessertsValue) as MealPlanItem[];
-      if (Array.isArray(parsed)) {
-        setSavedDesserts(parsed);
-      }
+      setSavedDesserts(parsed);
     } catch {
-      window.localStorage.removeItem(SMART_CART_SAVED_DESSERTS_STORAGE_KEY);
+      clearStoredJson(SMART_CART_SAVED_DESSERTS_STORAGE_KEY);
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
-      JSON.stringify(savedDesserts),
-    );
+    saveStoredJson(SMART_CART_SAVED_DESSERTS_STORAGE_KEY, savedDesserts);
   }, [savedDesserts]);
 
   useEffect(() => {
     try {
-      const savedGeneratedPlan = window.localStorage.getItem(
+      const parsed = loadStoredJson<GenerateListResponse | null>(
         SMART_CART_GENERATED_PLAN_STORAGE_KEY,
       );
 
-      if (!savedGeneratedPlan) {
+      if (!parsed || typeof parsed !== "object") {
         return;
       }
-
-      const parsed = JSON.parse(savedGeneratedPlan) as GenerateListResponse | null;
-      if (parsed && typeof parsed === "object") {
-        setGeneratedPlan(parsed);
-      }
+      setGeneratedPlan(parsed);
     } catch {
-      window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+      clearStoredJson(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
     } finally {
       setHasLoadedGeneratedPlan(true);
     }
@@ -1427,10 +1412,12 @@ export function SmartCartApp() {
     setExpandedIngredientsMeals(new Set());
     setExpandedDetailCards(new Set());
 
-    window.localStorage.removeItem(SMART_CART_FORM_STORAGE_KEY);
-    window.localStorage.removeItem(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
-    window.localStorage.removeItem(SMART_CART_SAVED_DESSERTS_STORAGE_KEY);
-    window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+    clearStoredJson(
+      SMART_CART_FORM_STORAGE_KEY,
+      SMART_CART_WEEKLY_MENU_STORAGE_KEY,
+      SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
+      SMART_CART_GENERATED_PLAN_STORAGE_KEY,
+    );
   }
 
   function handleFeatureToggle(feature: keyof typeof featureDescriptions) {
@@ -1531,17 +1518,9 @@ export function SmartCartApp() {
       return { dinners: [], desserts: [] };
     }
 
-    const { data, error } = await supabase
-      .from("weekly_menus")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("status", "active_week");
+    const savedMealRows = await fetchSavedMealRows(userId);
 
-    if (error) {
-      throw error;
-    }
-
-    const sanitized = (data ?? []).map((row) => ({
+    const sanitized = savedMealRows.map((row: SmartCartSavedMealRow) => ({
       ...row,
       name: safeTrim((row as { name?: string }).name),
       ingredients: Array.isArray((row as { ingredients?: unknown[] }).ingredients)
@@ -1556,7 +1535,7 @@ export function SmartCartApp() {
       .filter((row) => row.type === "dinner")
       .map((row) =>
         rehydrateMealRecord(row.recipe_data as Partial<MealPlanItem> | null, {
-          dbId: row.id,
+          dbId: row.id ?? undefined,
           user_id: safeTrim(row.user_id),
         }),
       )
@@ -1568,7 +1547,7 @@ export function SmartCartApp() {
         rehydrateMealRecord(
           row.recipe_data as GenerateListResponse["desserts"][number] | null,
           {
-            dbId: row.id,
+            dbId: row.id ?? undefined,
             user_id: safeTrim(row.user_id),
             day: `Sweet Treat ${index + 1}`,
             servings: Number(formState.householdSize) || 2,
@@ -1582,32 +1561,17 @@ export function SmartCartApp() {
 
   const loadSessionFromCloud = useCallback(async (userId: string) => {
     try {
-      const [
-        { data: pantryData, error: pantryError },
-        { dinners: hydratedDinners, desserts: hydratedDesserts },
-      ] =
+      const [ownedPantryItems, { dinners: hydratedDinners, desserts: hydratedDesserts }] =
         await Promise.all([
-          supabase
-            .from("pantry_inventory")
-            .select("ingredient_name, is_owned")
-            .eq("user_id", userId),
+          fetchOwnedPantryItems(userId),
           fetchSavedMeals(userId),
         ]);
 
-      if (pantryError) {
-        throw pantryError;
-      }
-
-      const ownedPantryItems = (pantryData ?? [])
-        .filter((item) => item.is_owned)
-        .map((item) => item.ingredient_name)
-        .filter((ingredientName) => typeof ingredientName === "string")
-        .map((ingredientName) => safeTrim(ingredientName))
-        .filter(Boolean);
-
       const resolvedWeeklyMenu = hydratedDinners;
       const resolvedSavedDesserts = hydratedDesserts;
-      const resolvedPantryItems = ownedPantryItems;
+      const resolvedPantryItems = ownedPantryItems
+        .map((ingredientName) => safeTrim(ingredientName))
+        .filter(Boolean);
 
       setFullyStocked((current) =>
         current.size > 0 ? current : new Set(resolvedPantryItems),
@@ -1642,39 +1606,36 @@ export function SmartCartApp() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("archived_meals")
-      .select("*")
-      .eq("user_id", user.id);
+    try {
+      const archivedMealRows = await fetchArchivedMealRows(user.id);
 
-    if (error) {
+      const hydratedVaultMeals = archivedMealRows
+        .map((row: SmartCartArchivedMealRow) =>
+          rehydrateMealRecord(
+            ((row as { recipe_data?: unknown }).recipe_data ??
+              row) as
+              | Partial<MealPlanItem>
+              | GenerateListResponse["desserts"][number]
+              | null,
+            {
+              dbId: (row as { id?: number | string | null }).id ?? undefined,
+              user_id: safeTrim((row as { user_id?: string | null }).user_id),
+              day:
+                safeTrim((row as { type?: string | null }).type).toLowerCase() ===
+                "sweet_treat"
+                  ? "Sweet Treat"
+                  : "",
+              servings: Number(formState.householdSize) || 2,
+            },
+          ),
+        )
+        .filter((meal): meal is MealPlanItem => Boolean(meal));
+
+      setArchivedMeals(hydratedVaultMeals);
+    } catch (error) {
       console.error("Vault Load Error:", error);
       setCloudSyncMessage("Failed to load archived meals.");
-      return;
     }
-
-    const hydratedVaultMeals = (data ?? [])
-      .map((row) =>
-        rehydrateMealRecord(
-          ((row as { recipe_data?: unknown }).recipe_data ??
-            row) as
-            | Partial<MealPlanItem>
-            | GenerateListResponse["desserts"][number]
-            | null,
-          {
-            dbId: (row as { id?: number | string | null }).id ?? undefined,
-            user_id: safeTrim((row as { user_id?: string | null }).user_id),
-            day:
-              safeTrim((row as { type?: string | null }).type).toLowerCase() === "sweet_treat"
-                ? "Sweet Treat"
-                : "",
-            servings: Number(formState.householdSize) || 2,
-          },
-        ),
-      )
-      .filter((meal): meal is MealPlanItem => Boolean(meal));
-
-    setArchivedMeals(hydratedVaultMeals);
   }, [formState.householdSize, rehydrateMealRecord, user?.id]);
 
   useEffect(() => {
@@ -1700,17 +1661,6 @@ export function SmartCartApp() {
     setCloudSyncMessage("");
 
     try {
-      const { error: archiveError } = await supabase
-        .from("weekly_menus")
-        .update({ status: "archived" })
-        .eq("user_id", userId)
-        .eq("status", "active_week");
-
-      if (archiveError) {
-        console.error("Supabase Save Error:", archiveError);
-        throw archiveError;
-      }
-
       const activeDessertRows = savedDesserts.map((dessert) => ({
         meal_title: dessert.name,
         recipe_data: {
@@ -1735,46 +1685,12 @@ export function SmartCartApp() {
         ...activeDessertRows,
       ];
 
-      if (weeklyMenuRows.length > 0) {
-        const { error: insertMenuError } = await supabase
-          .from("weekly_menus")
-          .insert(weeklyMenuRows);
-
-        if (insertMenuError) {
-          console.error("Supabase Save Error:", insertMenuError);
-          throw insertMenuError;
-        }
-      }
-
-      const { error: deletePantryError } = await supabase
-        .from("pantry_inventory")
-        .delete()
-        .eq("user_id", userId);
-
-      if (deletePantryError) {
-        console.error("Supabase Save Error:", deletePantryError);
-        throw deletePantryError;
-      }
-
-      const pantryRows = combinedPantryItems.map((ingredient) => ({
-        ingredient_name: ingredient,
-        is_owned: true,
-        user_id: userId,
-      }));
-
-      if (pantryRows.length > 0) {
-        const { error: insertPantryError } = await supabase
-          .from("pantry_inventory")
-          .insert(pantryRows);
-
-        if (insertPantryError) {
-          console.error("Supabase Save Error:", insertPantryError);
-          throw insertPantryError;
-        }
-      }
+      await replaceActiveWeeklyMenuRows(userId, weeklyMenuRows);
+      await replacePantryInventory(userId, combinedPantryItems);
 
       setCloudSyncMessage("✨ Cloud sync complete! Your week is saved.");
     } catch (error) {
+      console.error("Supabase Save Error:", error);
       setCloudSyncMessage(
         error instanceof Error ? error.message : "Cloud sync failed.",
       );
