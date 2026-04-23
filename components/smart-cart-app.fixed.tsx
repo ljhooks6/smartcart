@@ -428,8 +428,10 @@ export function SmartCartApp() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        setUser(session?.user ?? null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -1651,17 +1653,39 @@ export function SmartCartApp() {
         pantryItems: sessionPantryText,
       }));
 
-      setWeeklyMenu(resolvedWeeklyMenu);
-      setSavedDesserts(resolvedSavedDesserts);
+      setWeeklyMenu((currentMenu) => {
+        if (currentMenu && currentMenu.length > 0) {
+          return currentMenu;
+        }
+
+        return resolvedWeeklyMenu;
+      });
+
+      setSavedDesserts((currentDesserts) => {
+        if (currentDesserts && currentDesserts.length > 0) {
+          return currentDesserts;
+        }
+
+        return resolvedSavedDesserts;
+      });
 
       if (resolvedWeeklyMenu.length > 0 || resolvedSavedDesserts.length > 0) {
-        setGeneratedPlan({
-          meals: [],
-          restock_items: [],
-          estimated_total_cost: 0,
-          budget_summary: "Loaded from your saved cloud menu.",
-          upgrade_available: false,
-          desserts: [],
+        setGeneratedPlan((currentPlan) => {
+          if (
+            currentPlan &&
+            ((currentPlan.meals?.length ?? 0) > 0 || (currentPlan.desserts?.length ?? 0) > 0)
+          ) {
+            return currentPlan;
+          }
+
+          return {
+            meals: [],
+            restock_items: [],
+            estimated_total_cost: 0,
+            budget_summary: "Loaded from your saved cloud menu.",
+            upgrade_available: false,
+            desserts: [],
+          };
         });
       }
     } catch (error) {
@@ -1726,7 +1750,7 @@ export function SmartCartApp() {
     }
 
     void loadSessionFromCloud(userId);
-  }, [loadSessionFromCloud, user]);
+  }, [loadSessionFromCloud, user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
