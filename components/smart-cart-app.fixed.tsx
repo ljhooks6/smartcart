@@ -222,6 +222,7 @@ const pantryQuickSelectOptions = {
 
 const SMART_CART_FORM_STORAGE_KEY = "smartcart-smart-context-form";
 const SMART_CART_WEEKLY_MENU_STORAGE_KEY = "smartcart-weekly-menu";
+const SMART_CART_GENERATED_PLAN_STORAGE_KEY = "smartcart-generated-plan";
 const SMART_CART_WAITLIST_ENDPOINT = "https://formspree.io/f/mqegdoly";
 const featureDescriptions = {
   "Budget first":
@@ -501,6 +502,37 @@ export function SmartCartApp() {
       JSON.stringify(weeklyMenu),
     );
   }, [weeklyMenu]);
+
+  useEffect(() => {
+    try {
+      const savedGeneratedPlan = window.localStorage.getItem(
+        SMART_CART_GENERATED_PLAN_STORAGE_KEY,
+      );
+
+      if (!savedGeneratedPlan) {
+        return;
+      }
+
+      const parsed = JSON.parse(savedGeneratedPlan) as GenerateListResponse | null;
+      if (parsed && typeof parsed === "object") {
+        setGeneratedPlan(parsed);
+      }
+    } catch {
+      window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!generatedPlan) {
+      window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(
+      SMART_CART_GENERATED_PLAN_STORAGE_KEY,
+      JSON.stringify(generatedPlan),
+    );
+  }, [generatedPlan]);
 
   useEffect(() => {
     if (!activeRecipeMeal) {
@@ -1109,10 +1141,7 @@ export function SmartCartApp() {
     const archivedPayload = {
       user_id: userId,
       meal_title: meal.name,
-      name: meal.name,
       price: Number.isFinite(cleanPrice) ? cleanPrice : getMealEstimatedPrice(meal),
-      ingredients: meal.ingredients ?? [],
-      instructions: meal.instructions ?? [],
       type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
       recipe_data: meal,
     };
@@ -1336,6 +1365,7 @@ export function SmartCartApp() {
 
     window.localStorage.removeItem(SMART_CART_FORM_STORAGE_KEY);
     window.localStorage.removeItem(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
+    window.localStorage.removeItem(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
   }
 
   function handleFeatureToggle(feature: keyof typeof featureDescriptions) {
@@ -1598,8 +1628,6 @@ export function SmartCartApp() {
           upgrade_available: false,
           desserts: [],
         });
-      } else {
-        setGeneratedPlan(null);
       }
     } catch (error) {
       setCloudSyncMessage(
