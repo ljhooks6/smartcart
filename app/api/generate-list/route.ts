@@ -111,10 +111,6 @@ function estimateRestockPrice(itemName: string) {
   return Math.max(1, estimate);
 }
 
-function getImageSearchBase(title: string) {
-  return title.split(/\s+with\s+/i)[0]?.trim() || title.trim();
-}
-
 function findBlockedContentMatches(
   meals: Array<z.infer<typeof mealSchema>>,
   blockedIngredients: string[],
@@ -269,51 +265,6 @@ function findMissingSelectedEquipmentUsage(
   }
 
   return missing;
-}
-
-async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
-  if (!process.env.UNSPLASH_ACCESS_KEY) {
-    return undefined;
-  }
-
-  const searchQuery = queryIsEncoded ? query : `${query} food`;
-  const encodedQuery = queryIsEncoded
-    ? searchQuery
-    : encodeURIComponent(searchQuery);
-  console.log("--- UNSPLASH DIAGNOSTIC ---");
-  console.log("Query:", searchQuery);
-  console.log("Key exists?", !!process.env.UNSPLASH_ACCESS_KEY);
-
-  const url = `https://api.unsplash.com/search/photos?query=${encodedQuery}&client_id=${process.env.UNSPLASH_ACCESS_KEY}&per_page=1`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const data = (await response.json()) as {
-      results?: Array<{ urls?: { regular?: string; small?: string } }>;
-      errors?: string[];
-    };
-
-    console.log("Response Status:", response.status);
-    console.log("Data Results Length:", data.results?.length);
-    if (data.errors) {
-      console.log("Unsplash API Errors:", data.errors);
-    }
-
-    if (!data?.results || data.results.length === 0) {
-      return undefined;
-    }
-
-    const imageUrl =
-      data.results[0]?.urls?.regular ?? data.results[0]?.urls?.small;
-
-    return imageUrl || undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 export async function POST(request: Request) {
@@ -525,38 +476,12 @@ export async function POST(request: Request) {
         0,
       );
 
-    const [mealImages, dessertImages] = await Promise.all([
-      Promise.all(
-        parsed.meals.map((meal) =>
-          fetchUnsplashImage(getImageSearchBase(meal.name)),
-        ),
-      ),
-      Promise.all(
-        parsed.desserts.map((dessert) =>
-          fetchUnsplashImage(
-            encodeURIComponent(`${getImageSearchBase(dessert.title)} dessert`),
-            true,
-          ),
-        ),
-      ),
-    ]);
-
-    const mealsWithImages = parsed.meals.map((meal, index) => ({
-      ...meal,
-      imageUrl: mealImages[index],
-    }));
-
-    const dessertsWithImages = parsed.desserts.map((dessert, index) => ({
-      ...dessert,
-      imageUrl: dessertImages[index],
-    }));
-
     return NextResponse.json({
       ...parsed,
-      meals: mealsWithImages,
+      meals: parsed.meals,
       restock_items: deterministicRestockItems,
       estimated_total_cost: recalculatedTotal,
-      desserts: dessertsWithImages,
+      desserts: parsed.desserts,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -29,40 +29,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-function getImageSearchBase(title: string) {
-  return title.split(/\s+with\s+/i)[0]?.trim() || title.trim();
-}
-
-async function fetchUnsplashImage(encodedQuery: string) {
-  if (!process.env.UNSPLASH_ACCESS_KEY) {
-    return undefined;
-  }
-
-  const url = `https://api.unsplash.com/search/photos?query=${encodedQuery}&client_id=${process.env.UNSPLASH_ACCESS_KEY}&per_page=1`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const data = (await response.json()) as {
-      results?: Array<{ urls?: { regular?: string; small?: string } }>;
-    };
-
-    if (!data?.results || data.results.length === 0) {
-      return undefined;
-    }
-
-    const imageUrl =
-      data.results[0]?.urls?.regular ?? data.results[0]?.urls?.small;
-
-    return imageUrl || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export async function POST(request: Request) {
   let body: unknown;
 
@@ -163,11 +129,7 @@ The new dessert must be clearly different from "${rejectedDessertTitle}".
     }
 
     const parsed = replaceDessertResponseSchema.parse(JSON.parse(content));
-    const dessertQuery = encodeURIComponent(
-      `${getImageSearchBase(parsed.title)} dessert`,
-    );
-    const imageUrl = await fetchUnsplashImage(dessertQuery);
-    return NextResponse.json({ ...parsed, imageUrl });
+    return NextResponse.json(parsed);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
