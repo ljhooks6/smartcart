@@ -8,6 +8,8 @@ import { SmartCartHeroHeader } from "./smart-cart-hero-header";
 import { SmartCartLibrarySections } from "./smart-cart-library-sections";
 import { SmartCartMealSections } from "./smart-cart-meal-sections";
 import { SmartCartRecipeModal } from "./smart-cart-recipe-modal";
+import { useSmartCartGrocery } from "../hooks/use-smart-cart-grocery";
+import { useSmartCartRecipe } from "../hooks/use-smart-cart-recipe";
 import {
   clearStoredJson,
   fetchArchivedMealRows,
@@ -64,19 +66,6 @@ type GenerateListResponse = {
     ingredients: IngredientItem[];
     imageUrl?: string;
   }>;
-};
-
-type RecipeResponse = {
-  title: string;
-  prep_time_minutes: number;
-  ingredients: string[];
-  steps: string[];
-};
-
-type CustomItem = {
-  id: string;
-  name: string;
-  isChecked: boolean;
 };
 
 type ReplaceMealResponse = {
@@ -385,40 +374,22 @@ export function SmartCartApp() {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedPlan, setGeneratedPlan] =
     useState<GenerateListResponse | null>(null);
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [fullyStocked, setFullyStocked] = useState<Set<string>>(new Set());
   const [runningLow, setRunningLow] = useState<Set<string>>(new Set());
   const [restock, setRestock] = useState<Set<string>>(new Set());
-  const [copied, setCopied] = useState(false);
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
-  const [isPremiumMode, setIsPremiumMode] = useState(false);
-  const [isGroceryOpen, setIsGroceryOpen] = useState(false);
   const [isPantryOpen, setIsPantryOpen] = useState(false);
   const [isPantrySelectionOpen, setIsPantrySelectionOpen] = useState(false);
-  const [restoredItems, setRestoredItems] = useState<string[]>([]);
-  const [customItems, setCustomItems] = useState<CustomItem[]>([]);
-  const [newCustomItem, setNewCustomItem] = useState("");
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
     "idle" | "submitting" | "success"
   >("idle");
-  const [recipeCache, setRecipeCache] = useState<Record<string, RecipeResponse>>(
-    {},
-  );
-  const [activeRecipeMeal, setActiveRecipeMeal] = useState<MealPlanItem | null>(
-    null,
-  );
-  const [recipeError, setRecipeError] = useState<string | null>(null);
-  const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
   const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
   const [savedDesserts, setSavedDesserts] = useState<MealPlanItem[]>([]);
   const [archivedMeals, setArchivedMeals] = useState<MealPlanItem[]>([]);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
   const [replacingDessertKey, setReplacingDessertKey] = useState<string | null>(null);
-  const [expandedIngredientsMeals, setExpandedIngredientsMeals] = useState<
-    Set<string>
-  >(new Set());
   const [expandedDetailCards, setExpandedDetailCards] = useState<Set<string>>(
     new Set(),
   );
@@ -569,22 +540,6 @@ export function SmartCartApp() {
     persistGeneratedPlan(generatedPlan);
   }, [generatedPlan, hasLoadedGeneratedPlan, persistGeneratedPlan]);
 
-  useEffect(() => {
-    if (!activeRecipeMeal) {
-      return;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setActiveRecipeMeal(null);
-        setRecipeError(null);
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeRecipeMeal]);
-
   const combinedPantryItems = useMemo(() => {
     const typedItems = formState.pantryItems
       .split(",")
@@ -604,186 +559,55 @@ export function SmartCartApp() {
     () => Array.from(fullyStocked).map((item) => safeTrim(item)).filter(Boolean),
     [fullyStocked],
   );
+  const {
+    checkedItems,
+    copied,
+    customItems,
+    displayGroceriesByCategory,
+    handleAddCustomItem,
+    handleCopyShoppingList,
+    isGroceryOpen,
+    isPremiumMode,
+    newCustomItem,
+    resetGroceryState,
+    restoredItems,
+    setCustomItemChecked,
+    setGroceryOpen,
+    setNewCustomItem,
+    setPremiumMode,
+    skippedGroceriesByCategory,
+    toggleCheckedItem,
+    totalCost,
+    removeCustomItem,
+    removeRestoredItem,
+    restoreSkippedItem,
+  } = useSmartCartGrocery({
+    formatCurrency,
+    fullyStocked,
+    onCopyError: (message) => setRequestError(message),
+    restock,
+    runningLow,
+    savedDesserts,
+    weeklyMenu,
+  });
 
-  const { derivedGroceryList, skippedGroceryList } = useMemo(() => {
-    const pantry = [...Array.from(fullyStocked), ...Array.from(runningLow)];
-
-    // 1. Sanitize Pantry
-    const validPantry = pantry
-      .filter((p) => typeof p === "string")
-      .map((p) => safeTrim(p).toLowerCase())
-      .filter((p) => p.length > 2);
-
-    // 2. Combine ALL saved items (Dinners + Desserts)
-    const savedMeals = weeklyMenu;
-    const allMeals = [...savedMeals, ...savedDesserts];
-    const rawGroceryList: IngredientItem[] = [];
-    const rawSkippedList: IngredientItem[] = [];
-
-    // 3. The Strict 'NOT OWNED' Filter
-    allMeals.forEach((meal) => {
-      (meal.ingredients ?? []).forEach((ingredient) => {
-        const ingName = ingredient.name.toLowerCase();
-        const isForced = restoredItems.includes(ingredient.name);
-
-        const isOwned = validPantry.some((pItem) => {
-          const singularPItem = pItem.endsWith("s") ? pItem.slice(0, -1) : pItem;
-          // Strict boundary check so "oil" doesn't match "foil"
-          return ingName.includes(pItem) || ingName.includes(singularPItem);
-        });
-
-        if (!isOwned || isForced) {
-          rawGroceryList.push(ingredient);
-        } else {
-          rawSkippedList.push(ingredient);
-        }
-      });
-    });
-
-    const directGroceryList: GroceryListItem[] = rawGroceryList.map((ingredient) => ({
-      category: "Meal Ingredients",
-      name: safeTrim(ingredient.name),
-      amount: safeTrim(ingredient.amount),
-      estimated_price: Math.max(1, Number(ingredient.price ?? 0)),
-    }));
-
-    const directSkippedList: GroceryListItem[] = rawSkippedList.map((ingredient) => ({
-      category: "Meal Ingredients",
-      name: safeTrim(ingredient.name),
-      amount: safeTrim(ingredient.amount),
-      estimated_price: Math.max(1, Number(ingredient.price ?? 0)),
-    }));
-
-    const restockItems: GroceryListItem[] = Array.from(restock).map((restockItem) => ({
-      category: "Restock",
-      name: safeTrim(restockItem),
-      amount: "1",
-      estimated_price: Math.max(1, estimateRestockPrice(restockItem)),
-    }));
-
-    return {
-      derivedGroceryList: [...directGroceryList, ...restockItems],
-      skippedGroceryList: directSkippedList,
-    };
-  }, [fullyStocked, restock, restoredItems, runningLow, savedDesserts, weeklyMenu]);
-
-  const groceriesByCategory = useMemo(() => {
-    const grouped = derivedGroceryList.reduce<Record<string, GroceryListItem[]>>(
-      (accumulator, item) => {
-        const category = item.category || "Other";
-        if (!accumulator[category]) {
-          accumulator[category] = [];
-        }
-        accumulator[category].push(item);
-        return accumulator;
-      },
-      {},
-    );
-
-    return Object.entries(grouped);
-  }, [derivedGroceryList]);
-
-  const displayGroceryList = useMemo(() => {
-    if (!isPremiumMode) {
-      return derivedGroceryList;
-    }
-
-    return derivedGroceryList.map((item) => {
-      const lowerName = item.name.toLowerCase();
-      let prefix = "Premium ";
-
-      if (
-        lowerName.includes("beef") ||
-        lowerName.includes("chicken") ||
-        lowerName.includes("turkey") ||
-        lowerName.includes("pork") ||
-        lowerName.includes("eggs")
-      ) {
-        prefix = "Organic Pasture-Raised ";
-      } else if (
-        lowerName.includes("milk") ||
-        lowerName.includes("cheese") ||
-        lowerName.includes("butter")
-      ) {
-        prefix = "Organic Grass-Fed ";
-      } else if (
-        lowerName.includes("pasta") ||
-        lowerName.includes("rice") ||
-        lowerName.includes("bread")
-      ) {
-        prefix = "Artisanal ";
-      } else if (
-        lowerName.includes("broccoli") ||
-        lowerName.includes("spinach") ||
-        lowerName.includes("tomatoes") ||
-        lowerName.includes("apples") ||
-        lowerName.includes("berries")
-      ) {
-        prefix = "Local Organic ";
-      }
-
-      return {
-        ...item,
-        name: `${prefix}${item.name}`,
-        estimated_price: Number((item.estimated_price * 1.5).toFixed(2)),
-      };
-    });
-  }, [derivedGroceryList, isPremiumMode]);
-
-  const displayGroceriesByCategory = useMemo(() => {
-    const grouped = displayGroceryList.reduce<Record<string, GroceryListItem[]>>(
-      (accumulator, item) => {
-        const category = item.category || "Other";
-        if (!accumulator[category]) {
-          accumulator[category] = [];
-        }
-        accumulator[category].push(item);
-        return accumulator;
-      },
-      {},
-    );
-
-    return Object.entries(grouped);
-  }, [displayGroceryList]);
-
-  const skippedGroceriesByCategory = useMemo(() => {
-    const grouped = skippedGroceryList.reduce<Record<string, GroceryListItem[]>>(
-      (accumulator, item) => {
-        const category = item.category || "Other";
-        if (!accumulator[category]) {
-          accumulator[category] = [];
-        }
-        accumulator[category].push(item);
-        return accumulator;
-      },
-      {},
-    );
-
-    return Object.entries(grouped);
-  }, [skippedGroceryList]);
-
-  const shoppingListText = useMemo(() => {
-    let listText = displayGroceriesByCategory
-      .map(([category, items]) =>
-        `${category}\n${items
-          .map((item) => `- ${item.amount ? `${item.amount} ` : ""}${item.name} (${formatCurrency(item.estimated_price)})`)
-          .join("\n")}`,
-      )
-      .join("\n\n");
-
-    if (customItems.length > 0) {
-      listText += "\n\nEXTRAS & HOUSEHOLD:\n";
-      listText += customItems
-        .map((item) => `- [${item.isChecked ? "x" : " "}] ${item.name}`)
-        .join("\n");
-    }
-
-    return listText;
-  }, [customItems, displayGroceriesByCategory]);
-
-  const activeRecipe = activeRecipeMeal
-    ? recipeCache[activeRecipeMeal.name]
-    : undefined;
+  const {
+    activeRecipe,
+    activeRecipeMeal,
+    closeRecipeModal,
+    expandedIngredientsMeals,
+    handleGetDessertRecipe,
+    handleGetRecipe,
+    handleToggleIngredients,
+    recipeCache,
+    recipeError,
+    recipeLoadingMeal,
+    resetRecipeState,
+    setActiveRecipeMeal,
+  } = useSmartCartRecipe({
+    householdSize: Number(formState.householdSize) || 2,
+    userId: safeTrim(user?.id),
+  });
 
   const savedMealKeys = useMemo(
     () => new Set(weeklyMenu.map((meal) => `${meal.day}::${meal.name}`)),
@@ -807,14 +631,6 @@ export function SmartCartApp() {
     safeTrim(formState.budget).length > 0 &&
     Number.isFinite(parsedBudget) &&
     parsedBudget > 0;
-  const totalCost = useMemo(
-    () =>
-      displayGroceryList.reduce(
-        (sum, item) => sum + item.estimated_price,
-        0,
-      ),
-    [displayGroceryList],
-  );
   const targetBudget = Math.max(parsedBudget || 0, 1);
   const rawBudgetPercentage = (totalCost / targetBudget) * 100;
   const budgetPercentage = Math.min(rawBudgetPercentage, 100);
@@ -840,7 +656,6 @@ export function SmartCartApp() {
   async function submitPlan(applyUpgrades = false) {
     setValidationError(null);
     setRequestError(null);
-    setCopied(false);
 
     const budget = Number(formState.budget);
     const householdSize = Number(formState.householdSize);
@@ -898,13 +713,10 @@ export function SmartCartApp() {
       }
       setGeneratedPlan(data);
       persistGeneratedPlan(data);
-      setCheckedItems(new Set());
-      setRecipeCache({});
-      setActiveRecipeMeal(null);
-      setRecipeError(null);
+      resetGroceryState();
+      resetRecipeState();
       setHasAppliedUpgrades(applyUpgrades);
       setSavedDesserts([]);
-      setRestoredItems([]);
       setExpandedDetailCards(new Set());
     } catch (error) {
       setGeneratedPlan(null);
@@ -922,18 +734,6 @@ export function SmartCartApp() {
     await submitPlan(false);
   }
 
-  function toggleCheckedItem(itemKey: string) {
-    setCheckedItems((current) => {
-      const next = new Set(current);
-      if (next.has(itemKey)) {
-        next.delete(itemKey);
-      } else {
-        next.add(itemKey);
-      }
-      return next;
-    });
-  }
-
   function toggleQuickItem(item: string) {
     const isFullyStocked = fullyStocked.has(item);
 
@@ -948,95 +748,6 @@ export function SmartCartApp() {
     });
     setRunningLow(new Set());
     setRestock(new Set());
-  }
-
-  async function handleCopyShoppingList() {
-    try {
-      await navigator.clipboard.writeText(shoppingListText);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      setRequestError(
-        error instanceof Error ? error.message : "Failed to copy shopping list.",
-      );
-    }
-  }
-
-  function handleUpgradePlan() {
-    setIsPremiumMode((current) => !current);
-  }
-
-  async function fetchRecipeForMeal(meal: MealPlanItem) {
-    if (recipeCache[meal.name]) {
-      return recipeCache[meal.name];
-    }
-
-    setRecipeError(null);
-    setRecipeLoadingMeal(meal.name);
-
-    try {
-      const response = await fetch("/api/get-recipe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mealTitle: meal.name,
-          mealNotes: meal.notes,
-          servings: meal.servings,
-        }),
-      });
-
-      const data = (await response.json()) as RecipeResponse & { error?: string };
-
-      if (!response.ok) {
-        setRecipeError(`Error ${response.status}: ${data.error || "Request failed."}`);
-        return null;
-      }
-
-      const recipeData = {
-        title: data.title,
-        prep_time_minutes: data.prep_time_minutes,
-        ingredients: data.ingredients,
-        steps: data.steps,
-      };
-
-      setRecipeCache((current) => ({
-        ...current,
-        [meal.name]: recipeData,
-      }));
-
-      return recipeData;
-    } catch (error) {
-      setRecipeError(
-        error instanceof Error ? error.message : "Failed to fetch recipe.",
-      );
-      return null;
-    } finally {
-      setRecipeLoadingMeal(null);
-    }
-  }
-
-  async function handleGetRecipe(meal: MealPlanItem) {
-    setActiveRecipeMeal(meal);
-    await fetchRecipeForMeal(meal);
-  }
-
-  async function handleGetDessertRecipe(
-    dessert: GenerateListResponse["desserts"][number],
-    index: number,
-  ) {
-    const dessertMeal: MealPlanItem = {
-      user_id: safeTrim(user?.id),
-      day: `Sweet Treat ${index + 1}`,
-      name: dessert.title,
-      servings: Number(formState.householdSize) || 2,
-      notes: dessert.description,
-      ingredients: dessert.ingredients,
-      imageUrl: dessert.imageUrl,
-    };
-
-    await handleGetRecipe(dessertMeal);
   }
 
   async function handleReplaceDessert(
@@ -1399,23 +1110,16 @@ export function SmartCartApp() {
         : null,
     );
     persistGeneratedPlan(null);
-    setCheckedItems(new Set());
     setFullyStocked(new Set());
     setRunningLow(new Set());
     setRestock(new Set());
-    setCopied(false);
     setHasAppliedUpgrades(false);
-    setIsPremiumMode(false);
-    setRestoredItems([]);
-    setRecipeCache({});
-    setActiveRecipeMeal(null);
-    setRecipeError(null);
-    setRecipeLoadingMeal(null);
+    resetGroceryState();
+    resetRecipeState();
     setWeeklyMenu([]);
     setSavedDesserts([]);
     setReplacingMealKey(null);
     setReplacingDessertKey(null);
-    setExpandedIngredientsMeals(new Set());
     setExpandedDetailCards(new Set());
 
     clearStoredJson(
@@ -1834,30 +1538,6 @@ export function SmartCartApp() {
     }
   }
 
-  async function handleToggleIngredients(meal: MealPlanItem) {
-    const mealKey = `${meal.day}::${meal.name}`;
-
-    if (expandedIngredientsMeals.has(mealKey)) {
-      setExpandedIngredientsMeals((current) => {
-        const next = new Set(current);
-        next.delete(mealKey);
-        return next;
-      });
-      return;
-    }
-
-    const recipe = await fetchRecipeForMeal(meal);
-    if (!recipe) {
-      return;
-    }
-
-    setExpandedIngredientsMeals((current) => {
-      const next = new Set(current);
-      next.add(mealKey);
-      return next;
-    });
-  }
-
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
@@ -2005,46 +1685,16 @@ export function SmartCartApp() {
                 isGroceryOpen={isGroceryOpen}
                 isPremiumMode={isPremiumMode}
                 newCustomItem={newCustomItem}
-                onAddCustomItem={() => {
-                  if (safeTrim(newCustomItem)) {
-                    setCustomItems([
-                      ...customItems,
-                      {
-                        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                        name: safeTrim(newCustomItem),
-                        isChecked: false,
-                      },
-                    ]);
-                    setNewCustomItem("");
-                  }
-                }}
+                onAddCustomItem={handleAddCustomItem}
                 onChangeCustomItem={setNewCustomItem}
                 onCopyShoppingList={handleCopyShoppingList}
-                onRemoveCustomItem={(id) =>
-                  setCustomItems((current) =>
-                    current.filter((currentItem) => currentItem.id !== id),
-                  )
-                }
-                onRemoveRestoredItem={(name) =>
-                  setRestoredItems((current) =>
-                    current.filter((currentName) => currentName !== name),
-                  )
-                }
-                onRestoreSkippedItem={(name) =>
-                  setRestoredItems((current) =>
-                    current.includes(name) ? current : [...current, name],
-                  )
-                }
-                onSetCustomItemChecked={(id, isChecked) =>
-                  setCustomItems((current) =>
-                    current.map((currentItem) =>
-                      currentItem.id === id ? { ...currentItem, isChecked } : currentItem,
-                    ),
-                  )
-                }
+                onRemoveCustomItem={removeCustomItem}
+                onRemoveRestoredItem={removeRestoredItem}
+                onRestoreSkippedItem={restoreSkippedItem}
+                onSetCustomItemChecked={setCustomItemChecked}
                 onToggleCheckedItem={toggleCheckedItem}
-                onToggleGroceryOpen={() => setIsGroceryOpen(!isGroceryOpen)}
-                onTogglePremiumMode={() => setIsPremiumMode(!isPremiumMode)}
+                onToggleGroceryOpen={() => setGroceryOpen(!isGroceryOpen)}
+                onTogglePremiumMode={() => setPremiumMode(!isPremiumMode)}
                 parsedBudget={parsedBudget}
                 rawBudgetPercentage={rawBudgetPercentage}
                 restoredItems={restoredItems}
@@ -2093,10 +1743,7 @@ export function SmartCartApp() {
       <SmartCartRecipeModal
         activeRecipe={activeRecipe}
         activeRecipeMeal={activeRecipeMeal}
-        onClose={() => {
-          setActiveRecipeMeal(null);
-          setRecipeError(null);
-        }}
+        onClose={closeRecipeModal}
         recipeError={recipeError}
         recipeLoadingMeal={recipeLoadingMeal}
       />
