@@ -15,8 +15,9 @@ type MealPlanItem = {
 type GroceryListItem = {
   category: string;
   name: string;
-  amount?: string;
+  buy_amount?: string;
   estimated_price: number;
+  needed_amount?: string;
 };
 
 type CustomItem = {
@@ -80,10 +81,209 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
   return `${displayValue} ${baseParts.unit}`;
 }
 
+function estimatePackageAmount(itemName: string, neededAmount?: string) {
+  const normalizedName = normalizeIngredientName(itemName);
+  const normalizedAmount = safeTrim(neededAmount);
+  const amountParts = getAmountParts(normalizedAmount);
+
+  if (
+    amountParts &&
+    [
+      "lb",
+      "lbs",
+      "pound",
+      "pounds",
+      "oz",
+      "ounce",
+      "ounces",
+      "kg",
+      "g",
+    ].includes(amountParts.unit)
+  ) {
+    return normalizedAmount;
+  }
+
+  if (
+    normalizedAmount &&
+    !normalizedAmount.includes("+") &&
+    /^(?:\d+(?:\.\d+)?)\s+(?:head|heads|bunch|bunches|pack|packs|bag|bags|box|boxes|carton|cartons|can|cans|jar|jars|bottle|bottles)$/i.test(
+      normalizedAmount,
+    )
+  ) {
+    return normalizedAmount;
+  }
+
+  if (
+    normalizedName.includes("flour") ||
+    normalizedName.includes("sugar") ||
+    normalizedName.includes("rice") ||
+    normalizedName.includes("oats") ||
+    normalizedName.includes("quinoa")
+  ) {
+    return "1 bag";
+  }
+
+  if (normalizedName.includes("pasta")) {
+    return "1 box";
+  }
+
+  if (
+    normalizedName.includes("broth") ||
+    normalizedName.includes("stock") ||
+    normalizedName.includes("milk") ||
+    normalizedName.includes("cream")
+  ) {
+    return "1 carton";
+  }
+
+  if (
+    normalizedName.includes("oil") ||
+    normalizedName.includes("vinegar") ||
+    normalizedName.includes("dressing") ||
+    normalizedName.includes("sauce") ||
+    normalizedName.includes("syrup") ||
+    normalizedName.includes("honey")
+  ) {
+    return "1 bottle";
+  }
+
+  if (
+    normalizedName.includes("salt") ||
+    normalizedName.includes("pepper") ||
+    normalizedName.includes("paprika") ||
+    normalizedName.includes("cumin") ||
+    normalizedName.includes("seasoning") ||
+    normalizedName.includes("spice")
+  ) {
+    return "1 container";
+  }
+
+  if (
+    normalizedName.includes("beans") ||
+    normalizedName.includes("chickpeas") ||
+    normalizedName.includes("tomatoes") ||
+    normalizedName.includes("coconut milk")
+  ) {
+    return "1 can";
+  }
+
+  if (
+    normalizedName.includes("cheese") ||
+    normalizedName.includes("tortilla") ||
+    normalizedName.includes("bread")
+  ) {
+    return "1 pack";
+  }
+
+  if (normalizedName.includes("egg")) {
+    return "1 carton";
+  }
+
+  if (
+    normalizedName.includes("chicken") ||
+    normalizedName.includes("beef") ||
+    normalizedName.includes("pork") ||
+    normalizedName.includes("turkey") ||
+    normalizedName.includes("shrimp") ||
+    normalizedName.includes("salmon") ||
+    normalizedName.includes("fish")
+  ) {
+    return amountParts ? normalizedAmount : "1 pack";
+  }
+
+  if (
+    normalizedName.includes("broccoli") ||
+    normalizedName.includes("spinach") ||
+    normalizedName.includes("lettuce") ||
+    normalizedName.includes("kale") ||
+    normalizedName.includes("carrot") ||
+    normalizedName.includes("pepper") ||
+    normalizedName.includes("onion") ||
+    normalizedName.includes("potato") ||
+    normalizedName.includes("tomato") ||
+    normalizedName.includes("apple") ||
+    normalizedName.includes("avocado")
+  ) {
+    return normalizedAmount.includes("+") ? "1 standard produce bundle" : "1 bag";
+  }
+
+  return "1 standard package";
+}
+
+function estimatePackagePrice(itemName: string, buyAmount?: string) {
+  const normalizedName = normalizeIngredientName(itemName);
+  const amountParts = getAmountParts(safeTrim(buyAmount));
+
+  if (
+    amountParts &&
+    ["lb", "lbs", "pound", "pounds"].includes(amountParts.unit)
+  ) {
+    let pricePerUnit = 4;
+
+    if (
+      normalizedName.includes("shrimp") ||
+      normalizedName.includes("salmon") ||
+      normalizedName.includes("seafood")
+    ) {
+      pricePerUnit = 10;
+    } else if (
+      normalizedName.includes("beef") ||
+      normalizedName.includes("steak")
+    ) {
+      pricePerUnit = 8;
+    } else if (
+      normalizedName.includes("chicken") ||
+      normalizedName.includes("pork") ||
+      normalizedName.includes("turkey")
+    ) {
+      pricePerUnit = 5;
+    }
+
+    return Math.max(1, Number((amountParts.value * pricePerUnit).toFixed(2)));
+  }
+
+  let estimate = 3;
+
+  if (
+    normalizedName.includes("shrimp") ||
+    normalizedName.includes("salmon") ||
+    normalizedName.includes("seafood")
+  ) {
+    estimate = 10;
+  } else if (
+    normalizedName.includes("chicken") ||
+    normalizedName.includes("pork") ||
+    normalizedName.includes("beef") ||
+    normalizedName.includes("cheese")
+  ) {
+    estimate = 6;
+  } else if (
+    normalizedName.includes("oil") ||
+    normalizedName.includes("sauce") ||
+    normalizedName.includes("butter") ||
+    normalizedName.includes("milk") ||
+    normalizedName.includes("broth")
+  ) {
+    estimate = 4;
+  } else if (
+    normalizedName.includes("flour") ||
+    normalizedName.includes("rice") ||
+    normalizedName.includes("pasta") ||
+    normalizedName.includes("beans") ||
+    normalizedName.includes("potato") ||
+    normalizedName.includes("produce") ||
+    normalizedName.includes("carrot")
+  ) {
+    estimate = 2.5;
+  }
+
+  return Math.max(1, Number(estimate.toFixed(2)));
+}
+
 function aggregateIngredientItems(ingredients: IngredientItem[]): GroceryListItem[] {
   const grouped = new Map<
     string,
-    { name: string; amount?: string; estimated_price: number }
+    { buy_amount?: string; name: string; needed_amount?: string }
   >();
 
   ingredients.forEach((ingredient) => {
@@ -94,69 +294,34 @@ function aggregateIngredientItems(ingredients: IngredientItem[]): GroceryListIte
 
     const existing = grouped.get(normalizedName);
     const nextAmount = safeTrim(ingredient.amount);
-    const nextPrice = Math.max(1, Number(ingredient.price ?? 0));
 
     if (existing) {
       grouped.set(normalizedName, {
+        buy_amount: estimatePackageAmount(existing.name, mergeAmounts(existing.needed_amount, nextAmount)),
         name: existing.name,
-        amount: mergeAmounts(existing.amount, nextAmount),
-        estimated_price: Number((existing.estimated_price + nextPrice).toFixed(2)),
+        needed_amount: mergeAmounts(existing.needed_amount, nextAmount),
       });
       return;
     }
 
     grouped.set(normalizedName, {
+      buy_amount: estimatePackageAmount(ingredient.name, nextAmount),
       name: safeTrim(ingredient.name),
-      amount: nextAmount,
-      estimated_price: nextPrice,
+      needed_amount: nextAmount,
     });
   });
 
   return Array.from(grouped.values()).map((item) => ({
     category: "Meal Ingredients",
     name: item.name,
-    amount: item.amount,
-    estimated_price: item.estimated_price,
+    buy_amount: item.buy_amount,
+    estimated_price: estimatePackagePrice(item.name, item.buy_amount),
+    needed_amount: item.needed_amount,
   }));
 }
 
 function estimateRestockPrice(itemName: string) {
-  const normalized = safeTrim(itemName).toLowerCase();
-  let estimate = 3;
-
-  if (
-    normalized.includes("steak") ||
-    normalized.includes("salmon") ||
-    normalized.includes("shrimp") ||
-    normalized.includes("seafood")
-  ) {
-    estimate = 10;
-  } else if (
-    normalized.includes("chicken") ||
-    normalized.includes("pork") ||
-    normalized.includes("beef") ||
-    normalized.includes("cheese")
-  ) {
-    estimate = 6;
-  } else if (
-    normalized.includes("oil") ||
-    normalized.includes("sauce") ||
-    normalized.includes("butter") ||
-    normalized.includes("milk")
-  ) {
-    estimate = 4;
-  } else if (
-    normalized.includes("rice") ||
-    normalized.includes("pasta") ||
-    normalized.includes("beans") ||
-    normalized.includes("carrots") ||
-    normalized.includes("produce") ||
-    normalized.includes("potatoes")
-  ) {
-    estimate = 2;
-  }
-
-  return Math.max(1, estimate);
+  return estimatePackagePrice(itemName, estimatePackageAmount(itemName));
 }
 
 export function useSmartCartGrocery({
@@ -213,8 +378,9 @@ export function useSmartCartGrocery({
 
     const restockItems: GroceryListItem[] = Array.from(restock).map((restockItem) => ({
       category: "Restock",
+      buy_amount: estimatePackageAmount(restockItem),
       name: safeTrim(restockItem),
-      amount: "1",
+      needed_amount: "Restock pantry",
       estimated_price: Math.max(1, estimateRestockPrice(restockItem)),
     }));
 
@@ -307,7 +473,10 @@ export function useSmartCartGrocery({
     let listText = displayGroceriesByCategory
       .map(([category, items]) =>
         `${category}\n${items
-          .map((item) => `- ${item.amount ? `${item.amount} ` : ""}${item.name} (${formatCurrency(item.estimated_price)})`)
+          .map(
+            (item) =>
+              `- ${item.name}${item.needed_amount ? ` | Need: ${item.needed_amount}` : ""}${item.buy_amount ? ` | Buy: ${item.buy_amount}` : ""} (${formatCurrency(item.estimated_price)})`,
+          )
           .join("\n")}`,
       )
       .join("\n\n");

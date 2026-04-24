@@ -2,9 +2,10 @@
 
 type GroceryListItem = {
   category: string;
+  buy_amount?: string;
   name: string;
-  amount?: string;
   estimated_price: number;
+  needed_amount?: string;
 };
 
 type CustomItem = {
@@ -91,12 +92,12 @@ export function SmartCartGrocerySidebar({
         {isGroceryOpen && (
           <>
             <p className="mt-2 text-sm italic leading-6 text-gray-500">
-              Prices are AI-generated national averages for estimation. Actual costs may be
-              higher or lower depending on your location and local store.
+              Prices reflect estimated standard package costs, not exact recipe-use cost.
+              Actual totals may still vary by store and location.
             </p>
             <p className="mb-4 mt-2 text-xs italic text-gray-500">
-              *Note: Quantities reflect the exact amount needed for your selected meals. Buy
-              the standard package size available at your store.*
+              *Need shows what your selected meals use. Buy shows the likely package you
+              would grab at the store.*
             </p>
 
             <div className="mt-6 space-y-5">
@@ -115,7 +116,7 @@ export function SmartCartGrocerySidebar({
                           const bellPepperPattern = /bell pepper/i;
                           const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
                           const trimmedName = safeTrim(item.name);
-                          const isRestoredItem = restoredItems.includes(item.name);
+                          const isRestoredItem = restoredItems.includes(trimmedName.toLowerCase());
                           const displayName =
                             bellPepperPattern.test(trimmedName) &&
                             !bellPepperColorPattern.test(trimmedName)
@@ -125,7 +126,7 @@ export function SmartCartGrocerySidebar({
                           return (
                             <li
                               key={`${category}-${item.name}`}
-                              className="flex items-center justify-between gap-4"
+                              className="flex items-start justify-between gap-4"
                             >
                               <label className="flex items-start gap-3">
                                 <input
@@ -137,14 +138,11 @@ export function SmartCartGrocerySidebar({
                                 <span className="flex flex-col">
                                   <span
                                     className={`flex items-center gap-2 text-sm font-medium text-ink ${
-                                      checkedItems.has(`${category}-${item.name}`)
+                                    checkedItems.has(`${category}-${item.name}`)
                                         ? "line-through opacity-60"
                                         : ""
                                     }`}
                                   >
-                                    {item.amount && (
-                                      <span className="font-semibold text-ink">{item.amount}</span>
-                                    )}
                                     <span>{displayName}</span>
                                     {isRestock && (
                                       <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
@@ -161,10 +159,23 @@ export function SmartCartGrocerySidebar({
                                       </button>
                                     )}
                                   </span>
+                                  {(item.needed_amount || item.buy_amount) && (
+                                    <span className="mt-1 flex flex-col text-xs text-ink/55">
+                                      {item.needed_amount && (
+                                        <span>Need: {item.needed_amount}</span>
+                                      )}
+                                      {item.buy_amount && <span>Buy: {item.buy_amount}</span>}
+                                    </span>
+                                  )}
                                 </span>
                               </label>
-                              <span className="text-sm font-semibold text-pine">
-                                {formatCurrency(item.estimated_price)}
+                              <span className="flex shrink-0 flex-col items-end text-right">
+                                <span className="text-sm font-semibold text-pine">
+                                  {formatCurrency(item.estimated_price)}
+                                </span>
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink/35">
+                                  Pkg est.
+                                </span>
                               </span>
                             </li>
                           );
@@ -195,11 +206,18 @@ export function SmartCartGrocerySidebar({
                         {items.map((item) => (
                           <li
                             key={`skipped-${category}-${item.name}`}
-                            className="flex items-center justify-between gap-4 text-gray-400"
+                            className="flex items-start justify-between gap-4 text-gray-400"
                           >
-                            <span className="flex items-center gap-2 text-sm">
-                              {item.amount && <span className="font-medium">{item.amount}</span>}
-                              <span>{item.name}</span>
+                            <span className="flex flex-col text-sm">
+                              <span className="font-medium">{item.name}</span>
+                              {(item.needed_amount || item.buy_amount) && (
+                                <span className="mt-1 flex flex-col text-xs text-gray-400">
+                                  {item.needed_amount && (
+                                    <span>Need: {item.needed_amount}</span>
+                                  )}
+                                  {item.buy_amount && <span>Buy: {item.buy_amount}</span>}
+                                </span>
+                              )}
                             </span>
                             <button
                               className="text-xs font-semibold text-orange-500 transition hover:text-orange-600"
