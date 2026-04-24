@@ -42,8 +42,6 @@ type SmartCartMealSectionsProps = {
   onArchiveMeal: (meal: MealPlanItem) => void | Promise<void>;
   onGetDessertRecipe: (dessert: GeneratedDessert, index: number) => void | Promise<void>;
   onGetRecipe: (meal: MealPlanItem) => void | Promise<void>;
-  onRemoveFromWeeklyMenu: (meal: MealPlanItem) => void | Promise<void>;
-  onPermanentDelete: (meal: MealPlanItem) => void | Promise<void>;
   onReplaceDessert: (dessert: GeneratedDessert, index: number) => void | Promise<void>;
   onReplaceMeal: (meal: MealPlanItem, index: number) => void | Promise<void>;
   onSaveToWeeklyMenu: (meal: MealPlanItem) => void;
@@ -54,11 +52,10 @@ type SmartCartMealSectionsProps = {
   recipeLoadingMeal: string | null;
   replacingDessertKey: string | null;
   replacingMealKey: string | null;
-  savedDesserts: MealPlanItem[];
   savedDessertKeys: Set<string>;
   savedMealKeys: Set<string>;
   userId: string;
-  weeklyMenu: MealPlanItem[];
+  weeklyMenuCount: number;
 };
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
@@ -72,8 +69,6 @@ export function SmartCartMealSections({
   onArchiveMeal,
   onGetDessertRecipe,
   onGetRecipe,
-  onRemoveFromWeeklyMenu,
-  onPermanentDelete,
   onReplaceDessert,
   onReplaceMeal,
   onSaveToWeeklyMenu,
@@ -84,11 +79,10 @@ export function SmartCartMealSections({
   recipeLoadingMeal,
   replacingDessertKey,
   replacingMealKey,
-  savedDesserts,
   savedDessertKeys,
   savedMealKeys,
   userId,
-  weeklyMenu,
+  weeklyMenuCount,
 }: SmartCartMealSectionsProps) {
   return (
     <div className="lg:col-span-8 flex flex-col gap-6">
@@ -103,9 +97,13 @@ export function SmartCartMealSections({
         </div>
 
         <div className="mt-5 rounded-[1.5rem] border border-sky-200 bg-gradient-to-r from-sky-50 to-white px-4 py-4 text-sm text-sky-900 shadow-sm">
-          <span aria-hidden="true">{"🍽️ "}</span>
-          Build Your Menu: Pick up to 5 meals below and watch your grocery list build in
-          real-time!
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
+            Save-to-menu flow
+          </p>
+          <p className="mt-2 font-semibold">
+            Tap <strong>Save to Menu</strong> on the meals you want this week. Saved meals move to
+            your <strong>Cook</strong> page and drive your shopping list.
+          </p>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -147,19 +145,17 @@ export function SmartCartMealSections({
                       className={`inline-flex items-center justify-center rounded-full px-3 py-2.5 text-sm font-semibold transition ${
                         savedMealKeys.has(`${meal.day}::${meal.name}`)
                           ? "bg-orange-500 text-white"
-                          : weeklyMenu.length >= 5
+                          : weeklyMenuCount >= 5
                             ? "bg-stone-100 text-stone-400"
                             : "bg-orange-50 text-orange-700 hover:bg-orange-100"
                       }`}
-                      disabled={
-                        weeklyMenu.length >= 5 && !savedMealKeys.has(`${meal.day}::${meal.name}`)
-                      }
+                      disabled={weeklyMenuCount >= 5 && !savedMealKeys.has(`${meal.day}::${meal.name}`)}
                       onClick={() => onSaveToWeeklyMenu(meal)}
                       type="button"
                     >
                       {savedMealKeys.has(`${meal.day}::${meal.name}`)
                         ? "Saved"
-                        : weeklyMenu.length >= 5
+                        : weeklyMenuCount >= 5
                           ? "Menu Full"
                           : "Save to Menu"}
                     </button>
@@ -196,245 +192,6 @@ export function SmartCartMealSections({
           })}
         </div>
       </div>
-
-      <section className="mt-8 rounded-3xl border border-stone-200 bg-[#f8f4ec] p-5 shadow-xl">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine/65">
-              Weekly picks
-            </p>
-            <p className="font-display text-2xl text-ink">Your Weekly Menu</p>
-            <p className="mt-1 text-sm leading-6 text-ink/70">
-              Save the dinners you want to keep in rotation this week.
-            </p>
-          </div>
-          <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-pine">
-            {weeklyMenu.length} saved
-          </span>
-        </div>
-
-        {weeklyMenu.length > 0 ? (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {weeklyMenu.map((meal, index) => (
-              <article
-                key={`saved-${meal.day}-${meal.name}`}
-                className="rounded-3xl border border-stone-200 bg-white px-4 py-4 shadow-lg"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                  {index < 7 ? `DAY ${index + 1}` : "BONUS MEAL"}
-                </p>
-                <h3 className="mt-2 font-display text-xl text-ink">{safeTrim(meal.name)}</h3>
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <p className="text-sm leading-6 text-ink/70">Serves {meal.servings}</p>
-                </div>
-                {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`) ? (
-                  <p className="mt-3 text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
-                ) : null}
-                <button
-                  className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                  onClick={() => onToggleCardDetails(`saved-${meal.day}::${meal.name}`)}
-                  type="button"
-                >
-                  {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`)
-                    ? "Hide Details"
-                    : "Show Details"}
-                </button>
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={recipeLoadingMeal === meal.name}
-                    onClick={() => void onGetRecipe(meal)}
-                    type="button"
-                  >
-                    {recipeLoadingMeal === meal.name ? "Loading recipe..." : "Get Recipe"}
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={recipeLoadingMeal === meal.name}
-                    onClick={() => void onToggleIngredients(meal)}
-                    type="button"
-                  >
-                    {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
-                      ? "Hide Ingredients"
-                      : "View Ingredients"}
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                    onClick={() => void onArchiveMeal(meal)}
-                    type="button"
-                  >
-                    Stash in Vault
-                  </button>
-                  <button
-                    className="col-span-2 inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"
-                    onClick={() => void onRemoveFromWeeklyMenu(meal)}
-                    type="button"
-                  >
-                    Remove from Menu
-                  </button>
-                </div>
-                {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
-                ((meal.ingredients && meal.ingredients.length > 0) || recipeCache[meal.name]) ? (
-                  <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                      Ingredients
-                    </p>
-                    <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                      {(meal.ingredients && meal.ingredients.length > 0
-                        ? meal.ingredients
-                            .filter(
-                              (ingredient) =>
-                                ingredient &&
-                                typeof ingredient.name === "string" &&
-                                typeof ingredient.amount === "string",
-                            )
-                            .map(
-                              (ingredient) =>
-                                `${safeTrim(ingredient.amount)} ${safeTrim(ingredient.name)}`,
-                            )
-                        : (recipeCache[meal.name]?.ingredients ?? []).filter(
-                            (ingredient) => typeof ingredient === "string",
-                          )
-                      )
-                        .map((ingredient) => safeTrim(ingredient))
-                        .filter(Boolean)
-                        .map((ingredient) => (
-                          <li key={`${meal.name}-${ingredient}`} className="flex gap-2">
-                            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                            <span>{ingredient}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-[1.25rem] border border-dashed border-pine/20 bg-white px-4 py-5 text-sm text-ink/60">
-            Tap the heart on any meal card to build your weekly menu.
-          </div>
-        )}
-      </section>
-
-      {savedDesserts.length > 0 ? (
-        <section className="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="font-display text-2xl text-ink">Saved Desserts</p>
-              <p className="mt-1 text-sm leading-6 text-ink/70">
-                Keep your favorite sweet treats with this week&apos;s menu.
-              </p>
-            </div>
-            <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-berry">
-              {savedDesserts.length} saved
-            </span>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {savedDesserts.map((meal, index) => {
-              const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
-
-              return (
-                <article
-                  key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
-                  className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
-                >
-                  <div className="flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                        {formatCardEyebrow(safeTrim(meal.day))}
-                      </p>
-                      <h3 className="mt-2 font-display text-[1.45rem] leading-tight text-ink sm:text-2xl">
-                        {safeTrim(meal.name)}
-                      </h3>
-                    </div>
-                    <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-ink/55">
-                      Serves {meal.servings}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                    {expandedDetailCards.has(`saved-dessert-${mealKey}`) ? (
-                      <p className="text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
-                    ) : null}
-                    <button
-                      className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                      onClick={() => onToggleCardDetails(`saved-dessert-${mealKey}`)}
-                      type="button"
-                    >
-                      {expandedDetailCards.has(`saved-dessert-${mealKey}`)
-                        ? "Hide Details"
-                        : "Show Details"}
-                    </button>
-                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={recipeLoadingMeal === safeTrim(meal.name)}
-                        onClick={() => onGetRecipe(meal)}
-                        type="button"
-                      >
-                        {recipeLoadingMeal === safeTrim(meal.name)
-                          ? "Loading recipe..."
-                          : "Get Recipe"}
-                      </button>
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                        onClick={() => onToggleIngredients(meal)}
-                        type="button"
-                      >
-                        {expandedIngredientsMeals.has(mealKey)
-                          ? "Hide Ingredients"
-                          : "View Ingredients"}
-                      </button>
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                        onClick={() => void onArchiveMeal(meal)}
-                        type="button"
-                      >
-                        Stash in Vault
-                      </button>
-                      <button
-                        className="col-span-2 inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"
-                        onClick={() => void onPermanentDelete(meal)}
-                        type="button"
-                      >
-                        Remove entirely
-                      </button>
-                    </div>
-                    {expandedIngredientsMeals.has(mealKey) && (meal.ingredients ?? []).length > 0 ? (
-                      <div className="rounded-[1rem] bg-cream px-3 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                          Ingredients
-                        </p>
-                        <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                          {(meal.ingredients ?? [])
-                            .filter(
-                              (ingredient) =>
-                                ingredient &&
-                                typeof ingredient.name === "string" &&
-                                typeof ingredient.amount === "string",
-                            )
-                            .map((ingredient) => (
-                              <li
-                                key={`${safeTrim(meal.name)}-${safeTrim(ingredient.name)}-${safeTrim(ingredient.amount)}`}
-                                className="flex gap-2"
-                              >
-                                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                                <span>
-                                  {safeTrim(ingredient.amount)} {safeTrim(ingredient.name)}
-                                </span>
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
 
       {generatedPlan.desserts.length > 0 ? (
         <section className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
@@ -529,7 +286,7 @@ export function SmartCartMealSections({
                       onClick={() => onToggleDessertSave(dessert, index)}
                       type="button"
                     >
-                      {isDessertSaved ? "Remove" : "Save Dessert to Menu"}
+                      {isDessertSaved ? "Saved" : "Save Dessert"}
                     </button>
                     <button
                       className="col-span-2 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1"

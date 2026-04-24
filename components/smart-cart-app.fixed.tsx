@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { SmartCartContextForm } from "./smart-cart-context-form";
+import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
 import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
 import { SmartCartHeroHeader } from "./smart-cart-hero-header";
@@ -84,7 +85,7 @@ type ReplaceDessertResponse = {
 };
 
 type ToastTone = "success" | "error" | "info";
-type MobileTab = "plan" | "meals" | "shop" | "vault";
+type MobileTab = "plan" | "meals" | "cook" | "shop" | "vault";
 
 type FormState = {
   budget: string;
@@ -246,7 +247,7 @@ const featureDescriptions = {
   "Pantry aware":
     "Uses your existing ingredients first to reduce waste and lower your grocery bill.",
   "Fast setup":
-    "Skip the endless scrolling and get a personalized, 5-day dinner plan in seconds.",
+    "Skip the endless scrolling and get a personalized, 7-day dinner plan in seconds.",
 } as const;
 const pantryCategoryStyles: Record<string, string> = {
   "Proteins (Freezer & Fridge)": "border-rose-200 bg-rose-50",
@@ -286,6 +287,15 @@ const mobileTabs: Array<{
     accentClass: "text-berry/70",
     badgeClass: "bg-rose-50 text-berry",
     panelClass: "border-rose-100 bg-white",
+  },
+  {
+    id: "cook",
+    label: "Cook",
+    shortLabel: "Cook",
+    eyebrow: "Ready to cook",
+    accentClass: "text-pine/75",
+    badgeClass: "bg-amber-50 text-pine",
+    panelClass: "border-pine/15 bg-[#f8f4ec]",
   },
   {
     id: "shop",
@@ -334,6 +344,14 @@ function MobileTabIcon({
     return (
       <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
         <path d="M4.5 7h15l-1.5 8.5H7L4.5 7Zm0 0-.6-2.5H2.5M9 19a.75.75 0 1 1-1.5 0A.75.75 0 0 1 9 19Zm8 0a.75.75 0 1 1-1.5 0A.75.75 0 0 1 17 19Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  if (tab === "cook") {
+    return (
+      <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
+        <path d="M6 8h12M8 12h8M10 16h4M7 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
       </svg>
     );
   }
@@ -773,8 +791,8 @@ export function SmartCartApp() {
   const activeTabMeta = mobileTabs.find((tab) => tab.id === activeMobileTab) ?? mobileTabs[0];
   const hasMealSurfaceContent =
     Boolean(generatedPlan?.meals?.length) ||
-    weeklyMenu.length > 0 ||
-    savedDesserts.length > 0;
+    Boolean(generatedPlan?.desserts?.length);
+  const hasCookSurfaceContent = weeklyMenu.length > 0 || savedDesserts.length > 0;
   const hasVaultSurfaceContent = archivedMeals.length > 0 || Boolean(user);
 
   async function submitPlan(applyUpgrades = false) {
@@ -1075,8 +1093,8 @@ export function SmartCartApp() {
       return;
     }
 
-    if (data && data[0]) {
-      const hydratedArchivedMeal = rehydrateMealRecord(
+      if (data && data[0]) {
+        const hydratedArchivedMeal = rehydrateMealRecord(
         ((data[0] as { recipe_data?: unknown }).recipe_data ??
           data[0]) as Partial<MealPlanItem> | GenerateListResponse["desserts"][number] | null,
         {
@@ -1087,19 +1105,32 @@ export function SmartCartApp() {
         },
       );
 
-      if (hydratedArchivedMeal) {
-        setArchivedMeals((current) =>
-          current.some((archivedMeal) => mealMatcher(archivedMeal))
-            ? current
-            : [...current, hydratedArchivedMeal],
-        );
-      }
+        if (hydratedArchivedMeal) {
+          setArchivedMeals((current) =>
+            current.some((archivedMeal) => mealMatcher(archivedMeal))
+              ? current
+              : [...current, hydratedArchivedMeal],
+          );
+        }
 
-      setWeeklyMenu((current) => current.filter((savedMeal) => !mealMatcher(savedMeal)));
-      setSavedDesserts((current) =>
-        current.filter((savedDessert) => !mealMatcher(savedDessert)),
-      );
-      showToast("Meal stashed in your Recipe Vault.", "success");
+        setGeneratedPlan((current) => {
+          if (!current) {
+            return current;
+          }
+
+          const nextPlan = {
+            ...current,
+            meals: current.meals.filter((generatedMeal) => !mealMatcher(generatedMeal)),
+          };
+
+          persistGeneratedPlan(nextPlan);
+          return nextPlan;
+        });
+        setWeeklyMenu((current) => current.filter((savedMeal) => !mealMatcher(savedMeal)));
+        setSavedDesserts((current) =>
+          current.filter((savedDessert) => !mealMatcher(savedDessert)),
+        );
+        showToast("Meal stashed in your Recipe Vault.", "success");
     }
   }
 
@@ -1728,8 +1759,26 @@ export function SmartCartApp() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-28 pt-4 md:pb-12 md:pt-8">
-      <SmartCartFeedback
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-48 pt-4 md:pb-12 md:pt-8">
+        {isLoading ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-6">
+            <div className="w-full max-w-md rounded-[2rem] border border-stone-200 bg-white px-6 py-7 text-center shadow-2xl">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                <svg aria-hidden="true" className="h-7 w-7 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <path d="M12 3v3m0 12v3m9-9h-3M6 12H3m15.364 6.364-2.121-2.121M8.757 8.757 6.636 6.636m11.728 0-2.121 2.121M8.757 15.243l-2.121 2.121" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                </svg>
+              </div>
+              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.28em] text-orange-500">
+                SmartCart is cooking
+              </p>
+              <p className="mt-2 font-display text-3xl text-ink">Building your week</p>
+              <p className="mt-3 text-sm leading-7 text-ink/70">
+                We are balancing pantry items, variety, prep time, and budget so your meals are worth the wait.
+              </p>
+            </div>
+          </div>
+        ) : null}
+        <SmartCartFeedback
         confirmBody="This will clear your form and active weekly menu, but your Recipe Vault will remain safe."
         confirmCancelLabel="Keep My Work"
         confirmConfirmLabel="Reset Workspace"
@@ -1916,8 +1965,8 @@ export function SmartCartApp() {
                 </div>
                 <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-berry">
                   {hasMealSurfaceContent ? "Active" : "Waiting"}
-              </span>
-            </div>
+                </span>
+              </div>
             {generatedPlan ? (
               <SmartCartMealSections
                 expandedDetailCards={expandedDetailCards}
@@ -1928,8 +1977,6 @@ export function SmartCartApp() {
                 onArchiveMeal={handleArchiveMeal}
                 onGetDessertRecipe={handleGetDessertRecipe}
                 onGetRecipe={handleGetRecipe}
-                onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
-                onPermanentDelete={handlePermanentDelete}
                 onReplaceDessert={handleReplaceDessert}
                 onReplaceMeal={handleReplaceMeal}
                 onSaveToWeeklyMenu={handleSaveToWeeklyMenu}
@@ -1940,11 +1987,10 @@ export function SmartCartApp() {
                 recipeLoadingMeal={recipeLoadingMeal}
                 replacingDessertKey={replacingDessertKey}
                 replacingMealKey={replacingMealKey}
-                savedDesserts={savedDesserts}
                 savedDessertKeys={savedDessertKeys}
                 savedMealKeys={savedMealKeys}
                 userId={safeTrim(user?.id)}
-                weeklyMenu={weeklyMenu}
+                weeklyMenuCount={weeklyMenu.length}
               />
             ) : (
               <div className="rounded-[1.5rem] border border-dashed border-rose-200 bg-rose-50 px-4 py-10 text-center text-ink/60">
@@ -1954,16 +2000,56 @@ export function SmartCartApp() {
                 </p>
               </div>
             )}
-          </section>
+            </section>
 
             <section
               className={`overflow-hidden rounded-[2rem] border px-4 py-5 shadow-xl ring-1 ring-white/60 ${
-                activeMobileTab === "shop" ? `block ${mobileTabs[2].panelClass}` : "hidden"
+                activeMobileTab === "cook" ? `block ${mobileTabs[2].panelClass}` : "hidden"
+              }`}
+            >
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border border-pine/15 bg-white/75 px-4 py-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[2].badgeClass}`}>
+                    <MobileTabIcon tab="cook" className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine/70">
+                      Cook
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-ink/65">
+                      Your saved weekly menu and ready-to-cook desserts live here.
+                    </p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-pine shadow-sm">
+                  {hasCookSurfaceContent ? "Ready" : "Empty"}
+                </span>
+              </div>
+              <SmartCartCookSections
+                expandedDetailCards={expandedDetailCards}
+                expandedIngredientsMeals={expandedIngredientsMeals}
+                formatCardEyebrow={formatCardEyebrow}
+                onArchiveMeal={handleArchiveMeal}
+                onGetRecipe={handleGetRecipe}
+                onPermanentDelete={handlePermanentDelete}
+                onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
+                onToggleCardDetails={handleToggleCardDetails}
+                onToggleIngredients={handleToggleIngredients}
+                recipeCache={recipeCache}
+                recipeLoadingMeal={recipeLoadingMeal}
+                savedDesserts={savedDesserts}
+                weeklyMenu={weeklyMenu}
+              />
+            </section>
+
+            <section
+              className={`overflow-hidden rounded-[2rem] border px-4 py-5 shadow-xl ring-1 ring-white/60 ${
+                activeMobileTab === "shop" ? `block ${mobileTabs[3].panelClass}` : "hidden"
               }`}
             >
               <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border border-emerald-100 bg-white/70 px-4 py-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[2].badgeClass}`}>
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[3].badgeClass}`}>
                     <MobileTabIcon tab="shop" className="h-5 w-5" />
                   </div>
                   <div>
@@ -2021,12 +2107,12 @@ export function SmartCartApp() {
 
             <section
               className={`overflow-hidden rounded-[2rem] border px-4 py-5 shadow-xl ring-1 ring-white/60 ${
-                activeMobileTab === "vault" ? `block ${mobileTabs[3].panelClass}` : "hidden"
+                activeMobileTab === "vault" ? `block ${mobileTabs[4].panelClass}` : "hidden"
               }`}
             >
               <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border border-amber-100 bg-white/70 px-4 py-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[3].badgeClass}`}>
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[4].badgeClass}`}>
                     <MobileTabIcon tab="vault" className="h-5 w-5" />
                   </div>
                   <div>
@@ -2170,8 +2256,6 @@ export function SmartCartApp() {
                   onArchiveMeal={handleArchiveMeal}
                   onGetDessertRecipe={handleGetDessertRecipe}
                   onGetRecipe={handleGetRecipe}
-                  onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
-                  onPermanentDelete={handlePermanentDelete}
                   onReplaceDessert={handleReplaceDessert}
                   onReplaceMeal={handleReplaceMeal}
                   onSaveToWeeklyMenu={handleSaveToWeeklyMenu}
@@ -2182,11 +2266,10 @@ export function SmartCartApp() {
                   recipeLoadingMeal={recipeLoadingMeal}
                   replacingDessertKey={replacingDessertKey}
                   replacingMealKey={replacingMealKey}
-                  savedDesserts={savedDesserts}
                   savedDessertKeys={savedDessertKeys}
                   savedMealKeys={savedMealKeys}
                   userId={safeTrim(user?.id)}
-                  weeklyMenu={weeklyMenu}
+                  weeklyMenuCount={weeklyMenu.length}
                 />
                 <SmartCartGrocerySidebar
                   budgetPercentage={budgetPercentage}
@@ -2226,6 +2309,23 @@ export function SmartCartApp() {
                 </p>
               </div>
             )}
+            <div className="mt-8">
+              <SmartCartCookSections
+                expandedDetailCards={expandedDetailCards}
+                expandedIngredientsMeals={expandedIngredientsMeals}
+                formatCardEyebrow={formatCardEyebrow}
+                onArchiveMeal={handleArchiveMeal}
+                onGetRecipe={handleGetRecipe}
+                onPermanentDelete={handlePermanentDelete}
+                onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
+                onToggleCardDetails={handleToggleCardDetails}
+                onToggleIngredients={handleToggleIngredients}
+                recipeCache={recipeCache}
+                recipeLoadingMeal={recipeLoadingMeal}
+                savedDesserts={savedDesserts}
+                weeklyMenu={weeklyMenu}
+              />
+            </div>
             <SmartCartLibrarySections
               archivedMeals={archivedMeals}
               cloudSyncMessage={cloudSyncMessage}
@@ -2278,11 +2378,11 @@ export function SmartCartApp() {
             <>
               <button
                 className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={!generatedPlan || isSaving || !Boolean(user)}
-                onClick={() => void saveSessionToCloud()}
+                disabled={!generatedPlan}
+                onClick={() => setActiveMobileTab("cook")}
                 type="button"
               >
-                {isSaving ? "Saving..." : "Save Week"}
+                Go to Cook
               </button>
               <button
                 className="rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
@@ -2290,6 +2390,25 @@ export function SmartCartApp() {
                 type="button"
               >
                 Open Shop
+              </button>
+            </>
+          ) : null}
+          {activeMobileTab === "cook" ? (
+            <>
+              <button
+                className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSaving || !Boolean(user)}
+                onClick={() => void saveSessionToCloud()}
+                type="button"
+              >
+                {isSaving ? "Saving..." : "Save Week"}
+              </button>
+              <button
+                className="rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                onClick={() => setActiveMobileTab("vault")}
+                type="button"
+              >
+                Vault
               </button>
             </>
           ) : null}
@@ -2305,10 +2424,10 @@ export function SmartCartApp() {
               </button>
               <button
                 className="rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                onClick={() => setActiveMobileTab("meals")}
+                onClick={() => setActiveMobileTab("cook")}
                 type="button"
               >
-                Meals
+                Cook
               </button>
             </>
           ) : null}
@@ -2337,7 +2456,7 @@ export function SmartCartApp() {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 md:hidden">
-        <div className="mx-auto grid max-w-2xl grid-cols-4 gap-2 rounded-[2rem] border border-stone-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div className="mx-auto grid max-w-2xl grid-cols-5 gap-2 rounded-[2rem] border border-stone-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
           {mobileTabs.map((tab) => {
             const isActive = activeMobileTab === tab.id;
             return (

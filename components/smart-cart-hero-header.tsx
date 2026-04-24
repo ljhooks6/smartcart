@@ -67,31 +67,45 @@ export function SmartCartHeroHeader({
               </span>
             </button>
             {isAccountMenuOpen ? (
-              <div className="absolute right-0 top-[calc(100%+0.75rem)] z-20 w-full rounded-[1.5rem] border border-stone-200 bg-white p-4 shadow-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pine text-sm font-semibold text-white">
-                    {initial}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-pine/55">
-                      Signed in
-                    </p>
-                    <p className="truncate text-sm font-medium text-ink">{safeTrim(userEmail)}</p>
-                  </div>
-                </div>
-                <div className="mt-4 rounded-2xl bg-cream px-4 py-3 text-sm leading-6 text-ink/70">
-                  Your pantry, weekly plan, and vault stay synced here.
-                </div>
-                <button
-                  className="mt-4 w-full rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                  onClick={() => {
-                    setIsAccountMenuOpen(false);
-                    onSignOut();
-                  }}
-                  type="button"
+              <div className="fixed inset-0 z-50 bg-ink/25 p-4" onClick={() => setIsAccountMenuOpen(false)}>
+                <div
+                  className="ml-auto w-full max-w-sm rounded-[1.75rem] border border-stone-200 bg-white p-4 shadow-2xl"
+                  onClick={(event) => event.stopPropagation()}
                 >
-                  Sign Out
-                </button>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pine text-sm font-semibold text-white">
+                        {initial}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-pine/55">
+                          Signed in
+                        </p>
+                        <p className="truncate text-sm font-medium text-ink">{safeTrim(userEmail)}</p>
+                      </div>
+                    </div>
+                    <button
+                      className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/65 transition hover:bg-stone-100"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                      type="button"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="mt-4 rounded-2xl bg-cream px-4 py-3 text-sm leading-6 text-ink/70">
+                    Your pantry, weekly plan, and vault stay synced here.
+                  </div>
+                  <button
+                    className="mt-4 w-full rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                    onClick={() => {
+                      setIsAccountMenuOpen(false);
+                      onSignOut();
+                    }}
+                    type="button"
+                  >
+                    Sign Out
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>

@@ -300,10 +300,9 @@ export function SmartCartContextForm({
         </div>
 
         {isEquipmentSheetOpen ? (
-          <div className="fixed inset-0 z-40 flex items-end bg-ink/35 md:hidden">
-            <div className="w-full rounded-t-[2rem] border border-stone-200 bg-white px-5 pb-8 pt-5 shadow-2xl">
-              <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-stone-200" />
-              <div className="flex items-start justify-between gap-4">
+          <div className="fixed inset-0 z-40 bg-ink/35 p-4 md:hidden">
+            <div className="mx-auto mt-4 flex max-h-[82vh] w-full flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
+              <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 pb-4 pt-5">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-pine/55">
                     Equipment
@@ -315,13 +314,14 @@ export function SmartCartContextForm({
                   onClick={onToggleEquipmentSheetOpen}
                   type="button"
                 >
-                  Done
+                  Close
                 </button>
               </div>
-              <p className="mt-2 text-sm leading-6 text-ink/65">
-                Select the tools you actually want meals to use this week.
-              </p>
-              <div className="mt-5 flex max-h-[60vh] flex-wrap gap-2 overflow-y-auto pr-1">
+              <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
+                <p className="text-sm leading-6 text-ink/65">
+                  Select the tools you actually want meals to use this week.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2 pr-1">
                 {equipmentOptions.map((equipment) => {
                   const isSelected = formState.availableEquipment.includes(equipment);
 
@@ -344,6 +344,16 @@ export function SmartCartContextForm({
                     </label>
                   );
                 })}
+                </div>
+              </div>
+              <div className="border-t border-stone-200 px-5 py-4">
+                <button
+                  className="w-full rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90"
+                  onClick={onToggleEquipmentSheetOpen}
+                  type="button"
+                >
+                  Finish Equipment Setup
+                </button>
               </div>
             </div>
           </div>
@@ -462,10 +472,9 @@ export function SmartCartContextForm({
       </form>
 
       {isPantrySelectionOpen ? (
-        <div className="fixed inset-0 z-40 flex items-end bg-ink/35 md:hidden">
-          <div className="w-full rounded-t-[2rem] border border-stone-200 bg-white px-5 pb-8 pt-5 shadow-2xl">
-            <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-stone-200" />
-            <div className="flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-40 bg-ink/35 p-4 md:hidden">
+          <div className="mx-auto mt-4 flex max-h-[82vh] w-full flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 pb-4 pt-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/55">
                   Pantry
@@ -477,18 +486,19 @@ export function SmartCartContextForm({
                 onClick={onTogglePantrySelectionOpen}
                 type="button"
               >
-                Done
+                Close
               </button>
             </div>
-            <div className="mt-4 space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
-              <p>
-                <strong>Clicked:</strong> you have enough and we skip buying it.
-              </p>
-              <p>
-                <strong>Unclicked:</strong> we add it to your shopping list.
-              </p>
-            </div>
-            <div className="mt-4 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+            <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
+              <div className="space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+                <p>
+                  <strong>Clicked:</strong> you have enough and we skip buying it.
+                </p>
+                <p>
+                  <strong>Unclicked:</strong> we add it to your shopping list.
+                </p>
+              </div>
+              <div className="mt-4 space-y-3 pr-1">
               {Object.entries(pantryQuickSelectOptions).map(([category, items]) => (
                 <div
                   key={`mobile-${category}`}
@@ -520,6 +530,16 @@ export function SmartCartContextForm({
                   </div>
                 </div>
               ))}
+              </div>
+            </div>
+            <div className="border-t border-stone-200 px-5 py-4">
+              <button
+                className="w-full rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"
+                onClick={onTogglePantrySelectionOpen}
+                type="button"
+              >
+                Finish Pantry Selection
+              </button>
             </div>
           </div>
         </div>
