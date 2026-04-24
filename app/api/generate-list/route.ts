@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
+  buildAdventureLevelGuidance,
   buildMustHaveGuidance,
   normalizeDietaryPreferences,
 } from "@/lib/meal-request-normalization";
@@ -134,6 +135,36 @@ function findBlockedContentMatches(
   });
 }
 
+function findRepeatedSignatureTitleWords(meals: Array<z.infer<typeof mealSchema>>) {
+  const trackedWords = [
+    "cumin",
+    "paprika",
+    "garlic",
+    "cajun",
+    "chipotle",
+    "jerk",
+    "curry",
+    "teriyaki",
+    "bbq",
+    "lemon pepper",
+  ];
+
+  const counts = new Map<string, number>();
+
+  meals.forEach((meal) => {
+    const loweredTitle = meal.name.toLowerCase();
+    trackedWords.forEach((word) => {
+      if (loweredTitle.includes(word)) {
+        counts.set(word, (counts.get(word) ?? 0) + 1);
+      }
+    });
+  });
+
+  return Array.from(counts.entries())
+    .filter(([, count]) => count > 1)
+    .map(([word]) => word);
+}
+
 async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
   if (!process.env.UNSPLASH_ACCESS_KEY) {
     return undefined;
@@ -238,6 +269,7 @@ export async function POST(request: Request) {
 
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
+  const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
 
   const systemPrompt = `
 You are an expert, budget-conscious logistical meal planner.
@@ -280,6 +312,7 @@ Rules:
   - Keep it simple / Stick to basics: At least 5 of the 8 meals must be familiar weeknight staples. Simple meals like burgers and fries, chicken wraps, spaghetti and meatballs, tacos, baked pasta, meatloaf, or sheet-pan chicken are absolutely allowed and encouraged when they fit the rules.
   - Mix it up: Build a clear split with about half familiar comfort meals and half more varied cuisine or format choices.
   - Try something new: Keep only 1 or 2 familiar anchor meals at most. The rest should clearly explore different cuisines, proteins, or formats.
+- ${adventureGuidance.generationBlock}
 - Budget Tightness enforcement: if budgetTightness is false, you MUST NOT force heavy ingredient overlap. Prioritize culinary variety, distinct flavor profiles, and different lead ingredients across the week. Only force strong cross-utilization and ingredient overlap if budgetTightness is true.
 - If budgetTightness is false, you MUST utilize between 50% and 65% of the user's total budget. Do not go below 50% of the budget. You must select premium, high-quality ingredients to hit this minimum threshold. Do not exceed 65% of the total budget.
 - CRITICAL: When budgetTightness is false, you MUST perform a mathematical check before responding. The total sum of all meal ingredient prices must fall between 50% and 65% of the user's total budget. If your total is below 50%, you must upgrade to premium ingredients or upscale the recipes until you hit that 50% minimum threshold.
@@ -348,6 +381,7 @@ Available Kitchen Equipment: ${selectedEquipment}
 Protein Variety Reminder: Even if the pantry only includes chicken, you must still diversify across at least 3 to 4 different main proteins and cap chicken at 2 meals.
 ${dietaryPreferences.promptBlock}
 ${mustHaveGuidance.promptBlock}
+${adventureGuidance.generationBlock}
 
 ${apply_upgrades
     ? "The user has chosen to upgrade. Rewrite this plan using premium, high-quality ingredients (for example fresh herbs, better proteins, organic ingredients) to get as close to the max budget as possible."
@@ -379,11 +413,21 @@ ${apply_upgrades
       parsed.meals,
       dietaryPreferences.blockedIngredients,
     );
+    const repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
 
     if (blockedMatches.length > 0) {
       return NextResponse.json(
         {
           error: `Generated meals violated dietary restrictions by including blocked terms: ${Array.from(new Set(blockedMatches)).join(", ")}`,
+        },
+        { status: 500 },
+      );
+    }
+
+    if (repeatedSignatureWords.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Generated meals repeated signature flavor words in titles: ${repeatedSignatureWords.join(", ")}`,
         },
         { status: 500 },
       );

@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
+  buildAdventureLevelGuidance,
   buildMustHaveGuidance,
   normalizeDietaryPreferences,
+  parseMealNameList,
 } from "@/lib/meal-request-normalization";
 
 type ReplaceMealRequest = {
@@ -18,6 +20,7 @@ type ReplaceMealRequest = {
   mustHaveIngredient?: string;
   existingMeals?: string;
   currentMealsContext?: string;
+  recentRejectedMeals?: string[];
   availableEquipment?: string[];
 };
 
@@ -55,6 +58,7 @@ export async function POST(request: Request) {
     mustHaveIngredient,
     existingMeals,
     currentMealsContext,
+    recentRejectedMeals,
     availableEquipment,
   } = (body as Partial<ReplaceMealRequest>) ?? {};
 
@@ -88,6 +92,17 @@ export async function POST(request: Request) {
 
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
+  const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
+  const blockedTitles = Array.from(
+    new Set([
+      ...parseMealNameList(existingMeals),
+      ...parseMealNameList(currentMealsContext),
+      ...((Array.isArray(recentRejectedMeals) ? recentRejectedMeals : []).map((meal) =>
+        meal.trim().toLowerCase(),
+      )),
+      rejectedMealTitle.trim().toLowerCase(),
+    ]),
+  ).filter(Boolean);
 
   const systemPrompt = `
 You are an expert budget-conscious meal planner helping replace a single rejected dinner.
@@ -97,6 +112,7 @@ Rules:
 - The replacement must feel clearly different from the rejected meal title in flavor profile, format, and primary ingredients.
 - CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals?.trim() || "None provided"}.
 - CURRENT MENU CONTEXT: The user already has these meals: ${(currentMealsContext ?? existingMeals)?.trim() || "None provided"}. STRICT RULE: Provide a completely different main protein and flavor profile from the majority of the current menu.
+- RECENTLY REJECTED OR BLOCKED TITLES: ${blockedTitles.join(", ") || "None provided"}.
 - CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.
 - Respect the user's budget, diet, household size, pantry items, and prep-time preference.
 - DIETARY SAFETY: Treat blocked ingredients and blocked categories as hard bans. Never include them in the replacement title, description, or ingredients.
@@ -105,6 +121,9 @@ Rules:
   - Stick to basics: choose a familiar meal style such as burgers and fries, wraps, tacos, pasta, baked chicken, or other approachable weeknight staples.
   - Mix it up: choose something distinct but still approachable.
   - Try new cuisines: choose a clearly different cuisine or flavor lane from the rejected meal and the current menu.
+- ${adventureGuidance.replacementBlock}
+- CRITICAL REPLACEMENT DISTINCTNESS: the replacement must differ from the rejected meal in at least TWO of these dimensions: main protein, cuisine lane, cooking format, or starch/side pairing.
+- CRITICAL REPLACEMENT SAFETY: never return the rejected meal again, never return a tiny rename of the rejected meal, and never return a title that is already present in the current menu context.
 - Use pantry items where reasonable.
 - Keep the replacement practical for a weeknight home cook.
 - Return valid JSON only.
@@ -131,6 +150,7 @@ Must-Have Ingredient: ${mustHaveIngredient?.trim() || "None provided"}
 Available Kitchen Equipment: ${selectedEquipment}
 ${dietaryPreferences.promptBlock}
 ${mustHaveGuidance.promptBlock}
+${adventureGuidance.replacementBlock}
 
 The new meal must be distinctly different from "${rejectedMealTitle}".
 `;
@@ -164,11 +184,22 @@ The new meal must be distinctly different from "${rejectedMealTitle}".
     const blockedMatches = dietaryPreferences.blockedIngredients.filter((blocked) =>
       replacementHaystacks.some((value) => value.includes(blocked)),
     );
+    const normalizedReplacementTitle = parsed.title.trim().toLowerCase();
+    const titleCollision = blockedTitles.some((title) => title === normalizedReplacementTitle);
 
     if (blockedMatches.length > 0) {
       return NextResponse.json(
         {
           error: `Replacement meal violated dietary restrictions by including blocked terms: ${Array.from(new Set(blockedMatches)).join(", ")}`,
+        },
+        { status: 500 },
+      );
+    }
+
+    if (titleCollision) {
+      return NextResponse.json(
+        {
+          error: `Replacement meal repeated a rejected or existing title: ${parsed.title}`,
         },
         { status: 500 },
       );

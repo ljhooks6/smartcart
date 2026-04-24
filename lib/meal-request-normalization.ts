@@ -60,6 +60,57 @@ export function buildMustHaveGuidance(input?: string) {
   };
 }
 
+export function buildAdventureLevelGuidance(adventureLevel?: string) {
+  const normalized = safeTrim(adventureLevel).toLowerCase();
+
+  if (normalized.includes("stick") || normalized.includes("simple") || normalized.includes("basic")) {
+    return {
+      generationBlock:
+        "Adventure guidance: keep the week grounded in familiar, realistic dinners. Prioritize classics like burgers and fries, chicken wraps, spaghetti and meatballs, tacos, baked pasta, sheet-pan dinners, and other straightforward home meals. Avoid making the whole week feel exotic or overly spiced.",
+      replacementBlock:
+        "Replacement guidance: choose a clearly different but still familiar weeknight staple. Burgers, wraps, simple pasta dishes, tacos, baked chicken plates, and homestyle skillet meals are all valid replacements.",
+    };
+  }
+
+  if (normalized.includes("mix")) {
+    return {
+      generationBlock:
+        "Adventure guidance: build a balanced week. Include at least 3 familiar comfort meals, at least 3 approachable global or fusion meals, and let the final 2 meals add variety without getting too niche.",
+      replacementBlock:
+        "Replacement guidance: choose something distinct from the rejected meal, but keep it approachable. Aim for a different cuisine lane, protein, and format without becoming too obscure.",
+    };
+  }
+
+  if (normalized.includes("try")) {
+    return {
+      generationBlock:
+        "Adventure guidance: push for variety. Keep only 1 or 2 familiar anchor meals, then use the rest of the week for clearly different cuisines, proteins, and formats. Do not let the menu drift back to repetitive defaults.",
+      replacementBlock:
+        "Replacement guidance: choose a replacement that clearly changes cuisine, protein, and format from the rejected meal and from the majority of the current menu.",
+    };
+  }
+
+  return {
+    generationBlock:
+      "Adventure guidance: vary the week intentionally and avoid repetitive defaults.",
+    replacementBlock:
+      "Replacement guidance: choose a meal that clearly changes the protein, format, or flavor lane from the rejected meal.",
+  };
+}
+
+export function parseMealNameList(input?: string) {
+  const normalized = safeTrim(input);
+  if (!normalized) {
+    return [];
+  }
+
+  return uniqueList(
+    normalized
+      .split(/,|;|\n/)
+      .map((item) => item.replace(/^[-*]\s*/, "")),
+  );
+}
+
 export function normalizeDietaryPreferences(dietInput?: string) {
   const normalizedInput = safeTrim(dietInput);
   const lower = normalizedInput.toLowerCase();
@@ -198,4 +249,3 @@ export function normalizeDietaryPreferences(dietInput?: string) {
     softRules,
   };
 }
-

@@ -396,6 +396,7 @@ export function SmartCartApp() {
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
   const [replacingDessertKey, setReplacingDessertKey] = useState<string | null>(null);
+  const [recentRejectedMeals, setRecentRejectedMeals] = useState<string[]>([]);
   const [expandedDetailCards, setExpandedDetailCards] = useState<Set<string>>(
     new Set(),
   );
@@ -1135,6 +1136,7 @@ export function SmartCartApp() {
     setSavedDesserts([]);
     setReplacingMealKey(null);
     setReplacingDessertKey(null);
+    setRecentRejectedMeals([]);
     setExpandedDetailCards(new Set());
 
     clearStoredJson(
@@ -1470,7 +1472,13 @@ export function SmartCartApp() {
     const mealKey = `${meal.day}::${meal.name}`;
     const budget = Number(formState.budget);
     const householdSize = Number(formState.householdSize);
-    const currentMealsContext = weeklyMenu.map((savedMeal) => savedMeal.name).join(", ");
+    const currentMealsContext = Array.from(
+      new Set(
+        [...(generatedPlan.meals ?? []), ...weeklyMenu]
+          .map((menuMeal) => safeTrim(menuMeal.name))
+          .filter((name) => name && name !== safeTrim(meal.name)),
+      ),
+    ).join(", ");
 
     setReplacingMealKey(mealKey);
     setRequestError(null);
@@ -1493,6 +1501,7 @@ export function SmartCartApp() {
           availableEquipment: formState.availableEquipment,
           existingMeals: currentMealsContext || existingMealTitles,
           currentMealsContext,
+          recentRejectedMeals,
         }),
       });
 
@@ -1534,6 +1543,10 @@ export function SmartCartApp() {
         persistGeneratedPlan(nextPlan);
         return nextPlan;
       });
+
+      setRecentRejectedMeals((current) =>
+        Array.from(new Set([...current, safeTrim(meal.name)])).slice(-12),
+      );
 
       setWeeklyMenu((current) =>
         current.map((savedMeal) =>
