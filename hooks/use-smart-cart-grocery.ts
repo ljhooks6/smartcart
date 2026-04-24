@@ -37,6 +37,89 @@ type UseSmartCartGroceryArgs = {
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
+function normalizeIngredientName(itemName: string) {
+  return safeTrim(itemName).toLowerCase();
+}
+
+function getAmountParts(amount: string) {
+  const normalizedAmount = safeTrim(amount).toLowerCase();
+  const match = normalizedAmount.match(/^(\d+(?:\.\d+)?)\s*(.+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    value: Number(match[1]),
+    unit: safeTrim(match[2]),
+  };
+}
+
+function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
+  if (!baseAmount) {
+    return safeTrim(nextAmount);
+  }
+
+  const normalizedBase = safeTrim(baseAmount);
+  const normalizedNext = safeTrim(nextAmount);
+  const baseParts = getAmountParts(normalizedBase);
+  const nextParts = getAmountParts(normalizedNext);
+
+  if (!baseParts || !nextParts) {
+    return normalizedBase === normalizedNext
+      ? normalizedBase
+      : `${normalizedBase} + ${normalizedNext}`;
+  }
+
+  if (baseParts.unit !== nextParts.unit) {
+    return `${normalizedBase} + ${normalizedNext}`;
+  }
+
+  const totalValue = baseParts.value + nextParts.value;
+  const displayValue = Number.isInteger(totalValue) ? totalValue : totalValue.toFixed(2);
+  return `${displayValue} ${baseParts.unit}`;
+}
+
+function aggregateIngredientItems(ingredients: IngredientItem[]): GroceryListItem[] {
+  const grouped = new Map<
+    string,
+    { name: string; amount?: string; estimated_price: number }
+  >();
+
+  ingredients.forEach((ingredient) => {
+    const normalizedName = normalizeIngredientName(ingredient.name);
+    if (!normalizedName) {
+      return;
+    }
+
+    const existing = grouped.get(normalizedName);
+    const nextAmount = safeTrim(ingredient.amount);
+    const nextPrice = Math.max(1, Number(ingredient.price ?? 0));
+
+    if (existing) {
+      grouped.set(normalizedName, {
+        name: existing.name,
+        amount: mergeAmounts(existing.amount, nextAmount),
+        estimated_price: Number((existing.estimated_price + nextPrice).toFixed(2)),
+      });
+      return;
+    }
+
+    grouped.set(normalizedName, {
+      name: safeTrim(ingredient.name),
+      amount: nextAmount,
+      estimated_price: nextPrice,
+    });
+  });
+
+  return Array.from(grouped.values()).map((item) => ({
+    category: "Meal Ingredients",
+    name: item.name,
+    amount: item.amount,
+    estimated_price: item.estimated_price,
+  }));
+}
+
 function estimateRestockPrice(itemName: string) {
   const normalized = safeTrim(itemName).toLowerCase();
   let estimate = 3;
@@ -106,8 +189,8 @@ export function useSmartCartGrocery({
 
     allMeals.forEach((meal) => {
       (meal.ingredients ?? []).forEach((ingredient) => {
-        const ingName = safeTrim(ingredient.name).toLowerCase();
-        const isForced = restoredItems.includes(ingredient.name);
+        const ingName = normalizeIngredientName(ingredient.name);
+        const isForced = restoredItems.includes(ingName);
 
         const isOwned = validPantry.some((pantryItem) => {
           const singularPantryItem = pantryItem.endsWith("s")
@@ -125,19 +208,8 @@ export function useSmartCartGrocery({
       });
     });
 
-    const directGroceryList: GroceryListItem[] = rawGroceryList.map((ingredient) => ({
-      category: "Meal Ingredients",
-      name: safeTrim(ingredient.name),
-      amount: safeTrim(ingredient.amount),
-      estimated_price: Math.max(1, Number(ingredient.price ?? 0)),
-    }));
-
-    const directSkippedList: GroceryListItem[] = rawSkippedList.map((ingredient) => ({
-      category: "Meal Ingredients",
-      name: safeTrim(ingredient.name),
-      amount: safeTrim(ingredient.amount),
-      estimated_price: Math.max(1, Number(ingredient.price ?? 0)),
-    }));
+    const directGroceryList = aggregateIngredientItems(rawGroceryList);
+    const directSkippedList = aggregateIngredientItems(rawSkippedList);
 
     const restockItems: GroceryListItem[] = Array.from(restock).map((restockItem) => ({
       category: "Restock",
@@ -329,9 +401,12 @@ export function useSmartCartGrocery({
       setCustomItems((current) => current.filter((item) => item.id !== id)),
     removeRestoredItem: (name: string) =>
       setRestoredItems((current) =>
-        current.filter((currentName) => currentName !== name),
+        current.filter((currentName) => currentName !== normalizeIngredientName(name)),
       ),
     restoreSkippedItem: (name: string) =>
-      setRestoredItems((current) => (current.includes(name) ? current : [...current, name])),
+      setRestoredItems((current) => {
+        const normalizedName = normalizeIngredientName(name);
+        return current.includes(normalizedName) ? current : [...current, normalizedName];
+      }),
   };
 }

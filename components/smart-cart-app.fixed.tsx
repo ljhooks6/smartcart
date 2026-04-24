@@ -1688,8 +1688,10 @@ export function SmartCartApp() {
                 generatedPlan={generatedPlan}
                 getMealEstimatedPrice={getMealEstimatedPrice}
                 householdSize={Number(formState.householdSize) || 2}
+                onArchiveMeal={handleArchiveMeal}
                 onGetDessertRecipe={handleGetDessertRecipe}
                 onGetRecipe={handleGetRecipe}
+                onPermanentDelete={handlePermanentDelete}
                 onReplaceDessert={handleReplaceDessert}
                 onReplaceMeal={handleReplaceMeal}
                 onSaveToWeeklyMenu={handleSaveToWeeklyMenu}
@@ -1700,6 +1702,7 @@ export function SmartCartApp() {
                 recipeLoadingMeal={recipeLoadingMeal}
                 replacingDessertKey={replacingDessertKey}
                 replacingMealKey={replacingMealKey}
+                savedDesserts={savedDesserts}
                 savedDessertKeys={savedDessertKeys}
                 savedMealKeys={savedMealKeys}
                 totalCost={totalCost}
