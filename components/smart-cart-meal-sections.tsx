@@ -176,6 +176,13 @@ export function SmartCartMealSections({
                           : "Save to Menu"}
                     </button>
                     <button
+                      className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                      onClick={() => void onArchiveMeal(meal)}
+                      type="button"
+                    >
+                      Stash in Vault
+                    </button>
+                    <button
                       className="inline-flex items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={replacingMealKey === `${meal.day}::${meal.name}`}
                       onClick={() => void onReplaceMeal(meal, index)}

@@ -2,6 +2,11 @@ import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  buildMustHaveGuidance,
+  normalizeDietaryPreferences,
+} from "@/lib/meal-request-normalization";
+
 type ReplaceMealRequest = {
   budget: number;
   diet: string;
@@ -81,6 +86,9 @@ export async function POST(request: Request) {
     );
   }
 
+  const dietaryPreferences = normalizeDietaryPreferences(diet);
+  const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
+
   const systemPrompt = `
 You are an expert budget-conscious meal planner helping replace a single rejected dinner.
 
@@ -91,6 +99,12 @@ Rules:
 - CURRENT MENU CONTEXT: The user already has these meals: ${(currentMealsContext ?? existingMeals)?.trim() || "None provided"}. STRICT RULE: Provide a completely different main protein and flavor profile from the majority of the current menu.
 - CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.
 - Respect the user's budget, diet, household size, pantry items, and prep-time preference.
+- DIETARY SAFETY: Treat blocked ingredients and blocked categories as hard bans. Never include them in the replacement title, description, or ingredients.
+- ${mustHaveGuidance.promptBlock}
+- Adventure Level enforcement:
+  - Stick to basics: choose a familiar meal style such as burgers and fries, wraps, tacos, pasta, baked chicken, or other approachable weeknight staples.
+  - Mix it up: choose something distinct but still approachable.
+  - Try new cuisines: choose a clearly different cuisine or flavor lane from the rejected meal and the current menu.
 - Use pantry items where reasonable.
 - Keep the replacement practical for a weeknight home cook.
 - Return valid JSON only.
@@ -115,6 +129,8 @@ Prep Time Preference: ${prepTime || "No preference provided"}
 Adventure Level: ${adventureLevel || "No preference provided"}
 Must-Have Ingredient: ${mustHaveIngredient?.trim() || "None provided"}
 Available Kitchen Equipment: ${selectedEquipment}
+${dietaryPreferences.promptBlock}
+${mustHaveGuidance.promptBlock}
 
 The new meal must be distinctly different from "${rejectedMealTitle}".
 `;
@@ -140,6 +156,24 @@ The new meal must be distinctly different from "${rejectedMealTitle}".
     }
 
     const parsed = replaceMealResponseSchema.parse(JSON.parse(content));
+    const replacementHaystacks = [
+      parsed.title.toLowerCase(),
+      parsed.description.toLowerCase(),
+      ...parsed.ingredients.map((ingredient) => ingredient.toLowerCase()),
+    ];
+    const blockedMatches = dietaryPreferences.blockedIngredients.filter((blocked) =>
+      replacementHaystacks.some((value) => value.includes(blocked)),
+    );
+
+    if (blockedMatches.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Replacement meal violated dietary restrictions by including blocked terms: ${Array.from(new Set(blockedMatches)).join(", ")}`,
+        },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json(parsed);
   } catch (error) {
     if (error instanceof z.ZodError) {
