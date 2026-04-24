@@ -72,10 +72,13 @@ export function SmartCartLibrarySections({
   return (
     <section className="mt-6 flex flex-col gap-6">
       {userSignedIn ? (
-        <div className="mt-6 rounded-[1.25rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+        <div className="mt-6 rounded-[1.75rem] border border-stone-200 bg-gradient-to-r from-white to-cream px-5 py-5 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-ink">Save your current week</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-800/70">
+                Cloud sync
+              </p>
+              <p className="mt-1 text-sm font-semibold text-ink">Save your current week</p>
               <p className="text-sm leading-6 text-ink/65">
                 Sync your dinners, sweet treats, pantry, and vault before you leave.
               </p>
@@ -95,13 +98,17 @@ export function SmartCartLibrarySections({
         </div>
       ) : null}
 
-      <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-        <strong>HOW TO USE THE VAULT:</strong> Click <strong>[Stash in Vault]</strong> on
-        any active meal above to save its recipe here for future weeks. This removes it from
-        your current grocery budget.
+      <div className="mt-6 rounded-[1.5rem] border border-amber-200 bg-gradient-to-r from-amber-50 to-white px-4 py-4 text-sm leading-6 text-amber-900">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800">
+          Vault flow
+        </p>
+        <p className="mt-2">
+          Tap <strong>Stash in Vault</strong> on any active meal to keep it for a future week
+          without leaving it in your current grocery plan.
+        </p>
       </div>
       <button
-        className="mt-6 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+        className="mt-6 inline-flex items-center justify-center rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
         onClick={onToggleVaultOpen}
         type="button"
       >

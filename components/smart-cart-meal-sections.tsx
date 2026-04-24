@@ -95,11 +95,14 @@ export function SmartCartMealSections({
       <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+              Meals
+            </p>
             <p className="font-display text-3xl text-ink">Your 7 dinner picks</p>
           </div>
         </div>
 
-        <div className="mt-5 rounded-[1.5rem] border border-sky-200 bg-sky-50 px-4 py-4 text-sm font-semibold text-sky-900 shadow-sm">
+        <div className="mt-5 rounded-[1.5rem] border border-sky-200 bg-gradient-to-r from-sky-50 to-white px-4 py-4 text-sm text-sky-900 shadow-sm">
           <span aria-hidden="true">{"🍽️ "}</span>
           Build Your Menu: Pick up to 5 meals below and watch your grocery list build in
           real-time!
@@ -195,6 +198,9 @@ export function SmartCartMealSections({
       <section className="mt-8 rounded-3xl border border-stone-200 bg-[#f8f4ec] p-5 shadow-xl">
         <div className="flex items-center justify-between gap-4">
           <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine/65">
+              Weekly picks
+            </p>
             <p className="font-display text-2xl text-ink">Your Weekly Menu</p>
             <p className="mt-1 text-sm leading-6 text-ink/70">
               Save the dinners you want to keep in rotation this week.

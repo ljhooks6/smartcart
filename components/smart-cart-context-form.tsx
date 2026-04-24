@@ -80,8 +80,11 @@ export function SmartCartContextForm({
 }: SmartCartContextFormProps) {
   return (
     <div className="rounded-[2.25rem] border border-stone-200 bg-[#fcfaf6]/95 p-6 shadow-xl backdrop-blur xl:p-8">
-      <div className="mb-6">
-        <p className="font-display text-3xl text-ink">The Smart Context Form</p>
+      <div className="mb-6 rounded-[1.75rem] border border-stone-200/80 bg-white/75 px-5 py-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+          Planner
+        </p>
+        <p className="mt-2 font-display text-3xl text-ink">Set up your week</p>
         <p className="mt-2 text-sm leading-6 text-ink/70">
           Give the planner enough context to keep meals affordable and realistic.
         </p>

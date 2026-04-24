@@ -1700,20 +1700,20 @@ export function SmartCartApp() {
         </div>
 
         <div className="grid gap-8 md:hidden">
-          <section
-            className={`rounded-[2rem] border px-4 py-5 shadow-xl ${
-              activeMobileTab === "plan"
-                ? "block border-stone-200 bg-[#fcfaf6]"
-                : "hidden"
-            }`}
-          >
-            <div className="mb-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                Planner
-              </p>
-              <p className="mt-1 text-sm leading-6 text-ink/65">
-                Set your week up once, then jump over to meals when you are ready.
-              </p>
+            <section
+              className={`overflow-hidden rounded-[2rem] border px-4 py-5 shadow-xl ring-1 ring-white/60 ${
+                activeMobileTab === "plan"
+                  ? "block border-stone-200 bg-[#fcfaf6]"
+                  : "hidden"
+              }`}
+            >
+              <div className="mb-4 rounded-[1.5rem] border border-stone-200/80 bg-white/70 px-4 py-4 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                  Planner
+                </p>
+                <p className="mt-1 text-sm leading-6 text-ink/65">
+                  Set your week up once, then jump over to meals when you are ready.
+                </p>
             </div>
             <SmartCartContextForm
               adventureLevelOptions={adventureLevelOptions}
@@ -1802,17 +1802,17 @@ export function SmartCartApp() {
             />
           </section>
 
-          <section
-            className={`rounded-[2rem] border px-4 py-5 shadow-xl ${
-              activeMobileTab === "meals"
-                ? "block border-rose-100 bg-white"
-                : "hidden"
-            }`}
-          >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                  Meals
+            <section
+              className={`overflow-hidden rounded-[2rem] border px-4 py-5 shadow-xl ring-1 ring-white/60 ${
+                activeMobileTab === "meals"
+                  ? "block border-rose-100 bg-white"
+                  : "hidden"
+              }`}
+            >
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border border-rose-100 bg-rose-50/60 px-4 py-4 shadow-sm">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                    Meals
                 </p>
                 <p className="mt-1 text-sm leading-6 text-ink/65">
                   Your generated dinners, weekly menu, and sweet treats live here.
@@ -1860,17 +1860,17 @@ export function SmartCartApp() {
             )}
           </section>
 
-          <section
-            className={`rounded-[2rem] border px-4 py-5 shadow-xl ${
-              activeMobileTab === "shop"
-                ? "block border-emerald-100 bg-[#f4fbf7]"
-                : "hidden"
-            }`}
-          >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">
-                  Shop
+            <section
+              className={`overflow-hidden rounded-[2rem] border px-4 py-5 shadow-xl ring-1 ring-white/60 ${
+                activeMobileTab === "shop"
+                  ? "block border-emerald-100 bg-[#f4fbf7]"
+                  : "hidden"
+              }`}
+            >
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border border-emerald-100 bg-white/70 px-4 py-4 shadow-sm">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">
+                    Shop
                 </p>
                 <p className="mt-1 text-sm leading-6 text-ink/65">
                   Grocery list, budget progress, and pantry checks all in one place.
@@ -1920,17 +1920,17 @@ export function SmartCartApp() {
             )}
           </section>
 
-          <section
-            className={`rounded-[2rem] border px-4 py-5 shadow-xl ${
-              activeMobileTab === "vault"
-                ? "block border-amber-100 bg-[#f7f1e7]"
-                : "hidden"
-            }`}
-          >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-800">
-                  Vault
+            <section
+              className={`overflow-hidden rounded-[2rem] border px-4 py-5 shadow-xl ring-1 ring-white/60 ${
+                activeMobileTab === "vault"
+                  ? "block border-amber-100 bg-[#f7f1e7]"
+                  : "hidden"
+              }`}
+            >
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border border-amber-100 bg-white/70 px-4 py-4 shadow-sm">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-800">
+                    Vault
                 </p>
                 <p className="mt-1 text-sm leading-6 text-ink/65">
                   Your saved library, cloud sync, and future-facing features stay together here.
@@ -2147,22 +2147,27 @@ export function SmartCartApp() {
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-200 bg-white/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-2xl grid-cols-4 gap-2">
+      <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 md:hidden">
+        <div className="mx-auto grid max-w-2xl grid-cols-4 gap-2 rounded-[2rem] border border-stone-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
           {mobileTabs.map((tab) => {
             const isActive = activeMobileTab === tab.id;
             return (
               <button
                 key={tab.id}
-                className={`rounded-2xl px-3 py-3 text-center text-xs font-semibold uppercase tracking-[0.2em] transition ${
+                className={`rounded-[1.25rem] px-3 py-3 text-center text-[0.7rem] font-semibold uppercase tracking-[0.18em] transition ${
                   isActive
                     ? "bg-pine text-white shadow-md"
-                    : "bg-stone-100 text-ink/60 hover:bg-stone-200"
+                    : "bg-transparent text-ink/55 hover:bg-stone-100"
                 }`}
                 onClick={() => setActiveMobileTab(tab.id)}
                 type="button"
               >
-                {tab.shortLabel}
+                <span className="block">{tab.shortLabel}</span>
+                <span
+                  className={`mx-auto mt-1 block h-1.5 w-8 rounded-full ${
+                    isActive ? "bg-white/80" : "bg-stone-200"
+                  }`}
+                />
               </button>
             );
           })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
 
 type SmartCartHeroHeaderProps = {
   activeFeature: string | null;
@@ -31,40 +31,74 @@ export function SmartCartHeroHeader({
 }: SmartCartHeroHeaderProps) {
   const isSignedIn = Boolean(safeTrim(userEmail));
   const initial = safeTrim(userEmail[0] ?? "U").toUpperCase();
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   return (
     <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
-      <div className="flex w-full items-start justify-between gap-4">
+      <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
           SmartCart
           <span className="h-2.5 w-2.5 rounded-full bg-sage" />
         </div>
 
         {isSignedIn ? (
-          <div className="ml-auto flex w-full max-w-sm items-center justify-between gap-3 rounded-full border border-pine/10 bg-white/90 px-3 py-2 shadow-sm">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pine text-sm font-semibold text-white">
-                {initial}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-pine/55">
-                  Signed in
-                </p>
-                <p className="truncate text-sm font-medium text-ink">{safeTrim(userEmail)}</p>
-              </div>
-            </div>
+          <div className="relative ml-auto w-full max-w-sm">
             <button
-              className="shrink-0 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-stone-100"
-              onClick={onSignOut}
+              aria-expanded={isAccountMenuOpen}
+              className="flex w-full items-center justify-between gap-3 rounded-full border border-pine/10 bg-white/90 px-3 py-2 text-left shadow-sm transition hover:border-pine/20 hover:bg-white"
+              onClick={() => setIsAccountMenuOpen((current) => !current)}
               type="button"
             >
-              Sign Out
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pine text-sm font-semibold text-white">
+                  {initial}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-pine/55">
+                    Account
+                  </p>
+                  <p className="truncate text-sm font-medium text-ink">{safeTrim(userEmail)}</p>
+                </div>
+              </div>
+              <span
+                className={`text-sm text-ink/45 transition ${isAccountMenuOpen ? "rotate-180" : ""}`}
+              >
+                ▾
+              </span>
             </button>
+            {isAccountMenuOpen ? (
+              <div className="absolute right-0 top-[calc(100%+0.75rem)] z-20 w-full rounded-[1.5rem] border border-stone-200 bg-white p-4 shadow-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pine text-sm font-semibold text-white">
+                    {initial}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-pine/55">
+                      Signed in
+                    </p>
+                    <p className="truncate text-sm font-medium text-ink">{safeTrim(userEmail)}</p>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-2xl bg-cream px-4 py-3 text-sm leading-6 text-ink/70">
+                  Your pantry, weekly plan, and vault stay synced here.
+                </div>
+                <button
+                  className="mt-4 w-full rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                  onClick={() => {
+                    setIsAccountMenuOpen(false);
+                    onSignOut();
+                  }}
+                  type="button"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : (
-          <div className="ml-auto flex items-center gap-3 rounded-full border border-orange-200 bg-orange-50/90 px-4 py-2 text-sm text-ink/75 shadow-sm">
+          <div className="ml-auto flex items-center gap-3 self-start rounded-full border border-orange-200 bg-orange-50/90 px-4 py-2 text-sm text-ink/75 shadow-sm">
             <span className="inline-flex h-2.5 w-2.5 rounded-full bg-orange-400" />
-            <span className="font-medium">Sync your pantry, meals, and vault across devices</span>
+            <span className="font-medium">Sync across devices</span>
           </div>
         )}
       </div>
@@ -125,7 +159,10 @@ export function SmartCartHeroHeader({
             onClick={() => onFeatureToggle(feature)}
             type="button"
           >
-            <p className="font-display text-3xl text-pine">{feature}</p>
+            <p className="font-display text-2xl text-pine sm:text-3xl">{feature}</p>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">
+              Tap to preview
+            </p>
           </button>
         ))}
       </div>
