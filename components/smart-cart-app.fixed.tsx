@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { SmartCartContextForm } from "./smart-cart-context-form";
+import { SmartCartFeedback } from "./smart-cart-feedback";
 import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
 import { SmartCartHeroHeader } from "./smart-cart-hero-header";
 import { SmartCartLibrarySections } from "./smart-cart-library-sections";
@@ -81,6 +82,8 @@ type ReplaceDessertResponse = {
   ingredients: IngredientItem[];
   imageUrl?: string;
 };
+
+type ToastTone = "success" | "error" | "info";
 
 type FormState = {
   budget: string;
@@ -384,6 +387,9 @@ export function SmartCartApp() {
   const [waitlistStatus, setWaitlistStatus] = useState<
     "idle" | "submitting" | "success"
   >("idle");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastTone, setToastTone] = useState<ToastTone>("info");
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
   const [savedDesserts, setSavedDesserts] = useState<MealPlanItem[]>([]);
   const [archivedMeals, setArchivedMeals] = useState<MealPlanItem[]>([]);
@@ -395,6 +401,11 @@ export function SmartCartApp() {
   );
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
+
+  const showToast = useCallback((message: string, tone: ToastTone = "info") => {
+    setToastMessage(message);
+    setToastTone(tone);
+  }, []);
 
   const persistGeneratedPlan = useCallback((plan: GenerateListResponse | null) => {
     if (!plan) {
@@ -419,6 +430,18 @@ export function SmartCartApp() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 2600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [toastMessage]);
 
   useEffect(() => {
     try {
@@ -886,7 +909,7 @@ export function SmartCartApp() {
   async function handleArchiveMeal(meal: MealPlanItem) {
     const userId = user?.id || "";
     if (!userId) {
-      alert("Please sign in before using the Recipe Vault.");
+      showToast("Please sign in before using the Recipe Vault.", "info");
       return;
     }
 
@@ -918,7 +941,7 @@ export function SmartCartApp() {
 
     if (error) {
       console.error("Vault Save Error:", error);
-      alert("Failed to save to cloud. Check console.");
+      showToast("Failed to save to cloud. Check console.", "error");
       return;
     }
 
@@ -946,7 +969,7 @@ export function SmartCartApp() {
       setSavedDesserts((current) =>
         current.filter((savedDessert) => !mealMatcher(savedDessert)),
       );
-      alert("Meal Stashed!");
+      showToast("Meal stashed in your Recipe Vault.", "success");
     }
   }
 
@@ -1087,15 +1110,7 @@ export function SmartCartApp() {
     });
   }
 
-  function handleClearForm() {
-    const shouldClear = window.confirm(
-      "Are you sure? This will clear your form and active weekly menu, but your Recipe Vault will remain safe.",
-    );
-
-    if (!shouldClear) {
-      return;
-    }
-
+  function performClearForm() {
     setFormState(clearedFormState);
     setValidationError(null);
     setRequestError(null);
@@ -1128,6 +1143,11 @@ export function SmartCartApp() {
       SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
       SMART_CART_GENERATED_PLAN_STORAGE_KEY,
     );
+    showToast("Workspace reset. Your Recipe Vault is still safe.", "success");
+  }
+
+  function handleClearForm() {
+    setIsClearConfirmOpen(true);
   }
 
   function handleFeatureToggle(feature: keyof typeof featureDescriptions) {
@@ -1540,6 +1560,20 @@ export function SmartCartApp() {
 
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
+      <SmartCartFeedback
+        confirmBody="This will clear your form and active weekly menu, but your Recipe Vault will remain safe."
+        confirmCancelLabel="Keep My Work"
+        confirmConfirmLabel="Reset Workspace"
+        confirmOpen={isClearConfirmOpen}
+        confirmTitle="Reset Workspace?"
+        onCancelConfirm={() => setIsClearConfirmOpen(false)}
+        onConfirm={() => {
+          setIsClearConfirmOpen(false);
+          performClearForm();
+        }}
+        toastMessage={toastMessage}
+        toastTone={toastTone}
+      />
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
         <SmartCartHeroHeader
           activeFeature={activeFeature}
