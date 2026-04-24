@@ -270,6 +270,13 @@ export function SmartCartMealSections({
                       ? "Hide Ingredients"
                       : "View Ingredients"}
                   </button>
+                  <button
+                    className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                    onClick={() => void onPermanentDelete(meal)}
+                    type="button"
+                  >
+                    Remove from Menu
+                  </button>
                 </div>
                 {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
                 ((meal.ingredients && meal.ingredients.length > 0) || recipeCache[meal.name]) ? (

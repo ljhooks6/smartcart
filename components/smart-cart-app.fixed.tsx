@@ -1111,7 +1111,9 @@ export function SmartCartApp() {
     });
   }
 
-  function performClearForm() {
+  async function performClearForm() {
+    const userId = user?.id || "";
+
     setFormState(clearedFormState);
     setValidationError(null);
     setRequestError(null);
@@ -1145,6 +1147,18 @@ export function SmartCartApp() {
       SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
       SMART_CART_GENERATED_PLAN_STORAGE_KEY,
     );
+
+    if (userId) {
+      try {
+        await Promise.all([
+          replaceActiveWeeklyMenuRows(userId, []),
+          replacePantryInventory(userId, []),
+        ]);
+      } catch (error) {
+        console.error("Failed to clear cloud session state:", error);
+      }
+    }
+
     showToast("Workspace reset. Your Recipe Vault is still safe.", "success");
   }
 
@@ -1582,7 +1596,7 @@ export function SmartCartApp() {
         onCancelConfirm={() => setIsClearConfirmOpen(false)}
         onConfirm={() => {
           setIsClearConfirmOpen(false);
-          performClearForm();
+          void performClearForm();
         }}
         toastMessage={toastMessage}
         toastTone={toastTone}

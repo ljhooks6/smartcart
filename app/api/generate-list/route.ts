@@ -137,24 +137,24 @@ function findBlockedContentMatches(
 }
 
 function findRepeatedSignatureTitleWords(meals: Array<z.infer<typeof mealSchema>>) {
-  const trackedWords = [
-    "cumin",
-    "paprika",
-    "garlic",
-    "cajun",
-    "chipotle",
-    "jerk",
-    "curry",
-    "teriyaki",
-    "bbq",
-    "lemon pepper",
-  ];
+  const trackedWords = {
+    cumin: 3,
+    paprika: 3,
+    garlic: 3,
+    cajun: 2,
+    chipotle: 2,
+    jerk: 2,
+    curry: 2,
+    teriyaki: 2,
+    bbq: 2,
+    "lemon pepper": 2,
+  } as const;
 
   const counts = new Map<string, number>();
 
   meals.forEach((meal) => {
     const loweredTitle = meal.name.toLowerCase();
-    trackedWords.forEach((word) => {
+    Object.keys(trackedWords).forEach((word) => {
       if (loweredTitle.includes(word)) {
         counts.set(word, (counts.get(word) ?? 0) + 1);
       }
@@ -162,7 +162,7 @@ function findRepeatedSignatureTitleWords(meals: Array<z.infer<typeof mealSchema>
   });
 
   return Array.from(counts.entries())
-    .filter(([, count]) => count > 1)
+    .filter(([word, count]) => count >= trackedWords[word as keyof typeof trackedWords])
     .map(([word]) => word);
 }
 
@@ -291,31 +291,55 @@ export async function POST(request: Request) {
   });
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      temperature: 0.4,
-      messages: [
-        { role: "system", content: systemPrompt.trim() },
-        { role: "user", content: userPrompt.trim() },
-      ],
-    });
+    async function requestMealPlan(retryInstruction?: string) {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: systemPrompt.trim() },
+          { role: "user", content: userPrompt.trim() },
+          ...(retryInstruction
+            ? [{ role: "user" as const, content: retryInstruction }]
+            : []),
+        ],
+      });
 
-    const content = response.choices[0]?.message?.content;
+      const content = response.choices[0]?.message?.content;
 
-    if (!content) {
-      return NextResponse.json(
-        { error: "OpenAI returned an empty response." },
-        { status: 500 },
+      if (!content) {
+        throw new Error("OpenAI returned an empty response.");
+      }
+
+      return JSON.parse(content) as z.infer<typeof aiGenerateListResponseSchema>;
+    }
+
+    let rawPlan = await requestMealPlan();
+
+    if (!Array.isArray(rawPlan.meals) || rawPlan.meals.length !== 8) {
+      rawPlan = await requestMealPlan(
+        "CRITICAL RETRY: Your last response did not return exactly 8 meals. Return valid JSON with exactly 8 meal objects and the required shape.",
       );
     }
 
-    const parsed = aiGenerateListResponseSchema.parse(JSON.parse(content));
-    const blockedMatches = findBlockedContentMatches(
+    let parsed = aiGenerateListResponseSchema.parse(rawPlan);
+    let blockedMatches = findBlockedContentMatches(
       parsed.meals,
       dietaryPreferences.blockedIngredients,
     );
-    const repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
+    let repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
+
+    if (blockedMatches.length > 0 || repeatedSignatureWords.length > 0) {
+      rawPlan = await requestMealPlan(
+        `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Return exactly 8 meals.`,
+      );
+      parsed = aiGenerateListResponseSchema.parse(rawPlan);
+      blockedMatches = findBlockedContentMatches(
+        parsed.meals,
+        dietaryPreferences.blockedIngredients,
+      );
+      repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
+    }
 
     if (blockedMatches.length > 0) {
       return NextResponse.json(
@@ -329,7 +353,7 @@ export async function POST(request: Request) {
     if (repeatedSignatureWords.length > 0) {
       return NextResponse.json(
         {
-          error: `Generated meals repeated signature flavor words in titles: ${repeatedSignatureWords.join(", ")}`,
+          error: `Generated meals still repeated signature flavor words in titles after retry: ${repeatedSignatureWords.join(", ")}`,
         },
         { status: 500 },
       );
