@@ -393,6 +393,7 @@ export function SmartCartApp() {
   const [runningLow, setRunningLow] = useState<Set<string>>(new Set());
   const [restock, setRestock] = useState<Set<string>>(new Set());
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
+  const [isEquipmentSheetOpen, setIsEquipmentSheetOpen] = useState(false);
   const [isPantryOpen, setIsPantryOpen] = useState(false);
   const [isPantrySelectionOpen, setIsPantrySelectionOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
@@ -1721,8 +1722,9 @@ export function SmartCartApp() {
               equipmentOptions={equipmentOptions}
               featureError={validationError || requestError}
               formState={formState}
-              fullyStocked={fullyStocked}
-              isBudgetValid={isBudgetValid}
+                fullyStocked={fullyStocked}
+                isEquipmentSheetOpen={isEquipmentSheetOpen}
+                isBudgetValid={isBudgetValid}
               isLoading={isLoading}
               isPantryOpen={isPantryOpen}
               isPantrySelectionOpen={isPantrySelectionOpen}
@@ -1785,13 +1787,16 @@ export function SmartCartApp() {
                     : [...current.availableEquipment, equipment],
                 }))
               }
-              onToggleFeatureLevel={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  adventureLevel: value,
-                }))
-              }
-              onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
+                onToggleFeatureLevel={(value) =>
+                  setFormState((current) => ({
+                    ...current,
+                    adventureLevel: value,
+                  }))
+                }
+                onToggleEquipmentSheetOpen={() =>
+                  setIsEquipmentSheetOpen((current) => !current)
+                }
+                onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
               onTogglePantrySelectionOpen={() =>
                 setIsPantrySelectionOpen((current) => !current)
               }
@@ -1974,6 +1979,7 @@ export function SmartCartApp() {
             featureError={validationError || requestError}
             formState={formState}
             fullyStocked={fullyStocked}
+            isEquipmentSheetOpen={isEquipmentSheetOpen}
             isBudgetValid={isBudgetValid}
             isLoading={isLoading}
             isPantryOpen={isPantryOpen}
@@ -2042,6 +2048,9 @@ export function SmartCartApp() {
                 ...current,
                 adventureLevel: value,
               }))
+            }
+            onToggleEquipmentSheetOpen={() =>
+              setIsEquipmentSheetOpen((current) => !current)
             }
             onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
             onTogglePantrySelectionOpen={() =>
@@ -2144,6 +2153,89 @@ export function SmartCartApp() {
               waitlistStatus={waitlistStatus}
             />
           </section>
+        </div>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-[5.75rem] z-40 px-3 md:hidden">
+        <div className="mx-auto flex max-w-2xl items-center gap-3 rounded-[1.75rem] border border-stone-200 bg-white/95 p-2 shadow-lg backdrop-blur">
+          {activeMobileTab === "plan" ? (
+            <>
+              <button
+                className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isLoading || !isBudgetValid}
+                form="smart-cart-context-form"
+                type="submit"
+              >
+                {isLoading ? "Generating..." : "Generate"}
+              </button>
+              <button
+                className="rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                onClick={handleClearForm}
+                type="button"
+              >
+                Clear
+              </button>
+            </>
+          ) : null}
+          {activeMobileTab === "meals" ? (
+            <>
+              <button
+                className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!generatedPlan || isSaving || !Boolean(user)}
+                onClick={() => void saveSessionToCloud()}
+                type="button"
+              >
+                {isSaving ? "Saving..." : "Save Week"}
+              </button>
+              <button
+                className="rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                onClick={() => setActiveMobileTab("shop")}
+                type="button"
+              >
+                Open Shop
+              </button>
+            </>
+          ) : null}
+          {activeMobileTab === "shop" ? (
+            <>
+              <button
+                className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!generatedPlan}
+                onClick={handleCopyShoppingList}
+                type="button"
+              >
+                {copied ? "Copied" : "Copy List"}
+              </button>
+              <button
+                className="rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                onClick={() => setActiveMobileTab("meals")}
+                type="button"
+              >
+                Meals
+              </button>
+            </>
+          ) : null}
+          {activeMobileTab === "vault" ? (
+            <>
+              <button
+                className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90"
+                onClick={() => setIsVaultOpen((current) => !current)}
+                type="button"
+              >
+                {isVaultOpen ? "Close Vault" : "Open Vault"}
+              </button>
+              {Boolean(user) ? (
+                <button
+                  className="rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isSaving}
+                  onClick={() => void saveSessionToCloud()}
+                  type="button"
+                >
+                  {isSaving ? "Saving..." : "Save"}
+                </button>
+              ) : null}
+            </>
+          ) : null}
         </div>
       </div>
 

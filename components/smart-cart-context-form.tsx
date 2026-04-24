@@ -22,6 +22,7 @@ type SmartCartContextFormProps = {
   featureError: string | null;
   formState: SmartCartFormState;
   fullyStocked: Set<string>;
+  isEquipmentSheetOpen: boolean;
   isBudgetValid: boolean;
   isLoading: boolean;
   isPantryOpen: boolean;
@@ -39,6 +40,7 @@ type SmartCartContextFormProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   onToggleEquipment: (equipment: string) => void;
   onToggleFeatureLevel: (value: string) => void;
+  onToggleEquipmentSheetOpen: () => void;
   onTogglePantryOpen: () => void;
   onTogglePantrySelectionOpen: () => void;
   onToggleQuickItem: (item: string) => void;
@@ -54,6 +56,7 @@ export function SmartCartContextForm({
   featureError,
   formState,
   fullyStocked,
+  isEquipmentSheetOpen,
   isBudgetValid,
   isLoading,
   isPantryOpen,
@@ -71,6 +74,7 @@ export function SmartCartContextForm({
   onSubmit,
   onToggleEquipment,
   onToggleFeatureLevel,
+  onToggleEquipmentSheetOpen,
   onTogglePantryOpen,
   onTogglePantrySelectionOpen,
   onToggleQuickItem,
@@ -90,7 +94,7 @@ export function SmartCartContextForm({
         </p>
       </div>
 
-      <form className="space-y-5" onSubmit={onSubmit}>
+      <form className="space-y-5" id="smart-cart-context-form" onSubmit={onSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-2">
             <span className="text-sm font-semibold text-ink">Weekly Budget</span>
@@ -174,7 +178,24 @@ export function SmartCartContextForm({
               Recipes will only use the hardware you select here.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <button
+            className="flex w-full items-center justify-between rounded-[1.5rem] border border-stone-200 bg-white px-5 py-4 text-left shadow-sm transition hover:bg-stone-50 md:hidden"
+            onClick={onToggleEquipmentSheetOpen}
+            type="button"
+          >
+            <div>
+              <p className="text-sm font-semibold text-ink">Choose your equipment</p>
+              <p className="mt-1 text-sm leading-6 text-ink/65">
+                {formState.availableEquipment.length > 0
+                  ? `${formState.availableEquipment.length} selected`
+                  : "Tap to select your kitchen setup"}
+              </p>
+            </div>
+            <span className="text-xs uppercase tracking-[0.2em] text-ink/55">
+                {isEquipmentSheetOpen ? "Close" : "Open"}
+            </span>
+          </button>
+          <div className="hidden flex-wrap gap-2 md:flex">
             {equipmentOptions.map((equipment) => {
               const isSelected = formState.availableEquipment.includes(equipment);
 
@@ -217,7 +238,7 @@ export function SmartCartContextForm({
             </span>
           </button>
           {isPantrySelectionOpen ? (
-            <div className="border-t border-stone-200 px-6 pb-5 pt-4">
+            <div className="hidden border-t border-stone-200 px-6 pb-5 pt-4 md:block">
               <div className="mb-4 space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
                 <p>
                   <strong>
@@ -277,6 +298,56 @@ export function SmartCartContextForm({
             </div>
           ) : null}
         </div>
+
+        {isEquipmentSheetOpen ? (
+          <div className="fixed inset-0 z-40 flex items-end bg-ink/35 md:hidden">
+            <div className="w-full rounded-t-[2rem] border border-stone-200 bg-white px-5 pb-8 pt-5 shadow-2xl">
+              <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-stone-200" />
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-pine/55">
+                    Equipment
+                  </p>
+                  <p className="mt-1 font-display text-2xl text-ink">Kitchen setup</p>
+                </div>
+                <button
+                  className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink"
+                  onClick={onToggleEquipmentSheetOpen}
+                  type="button"
+                >
+                  Done
+                </button>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-ink/65">
+                Select the tools you actually want meals to use this week.
+              </p>
+              <div className="mt-5 flex max-h-[60vh] flex-wrap gap-2 overflow-y-auto pr-1">
+                {equipmentOptions.map((equipment) => {
+                  const isSelected = formState.availableEquipment.includes(equipment);
+
+                  return (
+                    <label
+                      key={`mobile-${equipment}`}
+                      className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-3 text-sm font-medium transition ${
+                        isSelected
+                          ? "border-pine bg-pine text-white"
+                          : "border-ink/10 bg-white text-ink hover:border-orange-300 hover:bg-orange-50"
+                      }`}
+                    >
+                      <input
+                        checked={isSelected}
+                        className="sr-only"
+                        onChange={() => onToggleEquipment(equipment)}
+                        type="checkbox"
+                      />
+                      <span>{equipment}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <label className="space-y-2">
           <span className="text-sm font-semibold text-ink">
@@ -372,7 +443,7 @@ export function SmartCartContextForm({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between gap-4">
+        <div className="hidden items-center justify-between gap-4 md:flex">
           <button
             className="flex-1 rounded-full bg-orange-500 px-6 py-4 font-display text-lg text-white transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isLoading || !isBudgetValid}
@@ -389,6 +460,70 @@ export function SmartCartContextForm({
           </button>
         </div>
       </form>
+
+      {isPantrySelectionOpen ? (
+        <div className="fixed inset-0 z-40 flex items-end bg-ink/35 md:hidden">
+          <div className="w-full rounded-t-[2rem] border border-stone-200 bg-white px-5 pb-8 pt-5 shadow-2xl">
+            <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-stone-200" />
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/55">
+                  Pantry
+                </p>
+                <p className="mt-1 font-display text-2xl text-ink">Quick-select staples</p>
+              </div>
+              <button
+                className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink"
+                onClick={onTogglePantrySelectionOpen}
+                type="button"
+              >
+                Done
+              </button>
+            </div>
+            <div className="mt-4 space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
+              <p>
+                <strong>Clicked:</strong> you have enough and we skip buying it.
+              </p>
+              <p>
+                <strong>Unclicked:</strong> we add it to your shopping list.
+              </p>
+            </div>
+            <div className="mt-4 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+              {Object.entries(pantryQuickSelectOptions).map(([category, items]) => (
+                <div
+                  key={`mobile-${category}`}
+                  className={`rounded-3xl border p-4 ${
+                    pantryCategoryStyles[category] ?? "border-stone-200 bg-white"
+                  }`}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
+                    {category}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {items.map((item) => {
+                      const isFullyStocked = fullyStocked.has(item);
+                      const stateClass = isFullyStocked
+                        ? "border-green-800 bg-green-700 text-white"
+                        : "border-gray-300 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
+
+                      return (
+                        <button
+                          key={`mobile-${item}`}
+                          className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${stateClass}`}
+                          onClick={() => onToggleQuickItem(item)}
+                          type="button"
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

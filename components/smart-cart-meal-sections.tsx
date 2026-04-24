@@ -117,32 +117,34 @@ export function SmartCartMealSections({
                 key={`${meal.day}-${meal.name}-${index}`}
                 className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
               >
-                <div className="flex items-start justify-between gap-3 p-5 pb-0">
+                <div className="flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
                       {mealEyebrow}
                     </p>
-                    <h2 className="mt-2 font-display text-2xl text-ink">
+                    <h2 className="mt-2 font-display text-[1.45rem] leading-tight text-ink sm:text-2xl">
                       {safeTrim(meal.name)}
                     </h2>
                   </div>
-                  <span className="text-sm font-semibold text-ink/65">Serves {meal.servings}</span>
+                  <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-ink/55">
+                    Serves {meal.servings}
+                  </span>
                 </div>
 
-                <div className="space-y-4 p-5">
+                <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
                   {expandedDetailCards.has(mealCardKey) ? (
                     <p className="text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
                   ) : null}
                   <button
-                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink transition hover:bg-stone-200"
                     onClick={() => onToggleCardDetails(mealCardKey)}
                     type="button"
                   >
                     {expandedDetailCards.has(mealCardKey) ? "Hide Details" : "Show Details"}
                   </button>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                     <button
-                      className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
+                      className={`inline-flex items-center justify-center rounded-full px-3 py-2.5 text-sm font-semibold transition ${
                         savedMealKeys.has(`${meal.day}::${meal.name}`)
                           ? "bg-orange-500 text-white"
                           : weeklyMenu.length >= 5
@@ -162,14 +164,14 @@ export function SmartCartMealSections({
                           : "Save to Menu"}
                     </button>
                     <button
-                      className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                      className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2.5 text-sm font-semibold text-ink transition hover:bg-stone-200"
                       onClick={() => void onArchiveMeal(meal)}
                       type="button"
                     >
                       Stash in Vault
                     </button>
                     <button
-                      className="inline-flex items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center justify-center rounded-full border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={replacingMealKey === `${meal.day}::${meal.name}`}
                       onClick={() => void onReplaceMeal(meal, index)}
                       type="button"
@@ -177,7 +179,7 @@ export function SmartCartMealSections({
                       {replacingMealKey === `${meal.day}::${meal.name}` ? "Replacing..." : "Replace"}
                     </button>
                     <button
-                      className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="col-span-2 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1"
                       disabled={
                         recipeLoadingMeal === meal.name ||
                         replacingMealKey === `${meal.day}::${meal.name}`
@@ -237,7 +239,7 @@ export function SmartCartMealSections({
                     ? "Hide Details"
                     : "Show Details"}
                 </button>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   <button
                     className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={recipeLoadingMeal === meal.name}
@@ -264,7 +266,7 @@ export function SmartCartMealSections({
                     Stash in Vault
                   </button>
                   <button
-                    className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                    className="col-span-2 inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"
                     onClick={() => void onRemoveFromWeeklyMenu(meal)}
                     type="button"
                   >
@@ -337,21 +339,21 @@ export function SmartCartMealSections({
                   key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
                   className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
                 >
-                  <div className="flex items-start justify-between gap-3 p-5 pb-0">
+                  <div className="flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
                         {formatCardEyebrow(safeTrim(meal.day))}
                       </p>
-                      <h3 className="mt-2 font-display text-2xl text-ink">
+                      <h3 className="mt-2 font-display text-[1.45rem] leading-tight text-ink sm:text-2xl">
                         {safeTrim(meal.name)}
                       </h3>
                     </div>
-                    <span className="text-sm font-semibold text-ink/65">
+                    <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-ink/55">
                       Serves {meal.servings}
                     </span>
                   </div>
 
-                  <div className="space-y-4 p-5">
+                  <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
                     {expandedDetailCards.has(`saved-dessert-${mealKey}`) ? (
                       <p className="text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
                     ) : null}
@@ -364,7 +366,7 @@ export function SmartCartMealSections({
                         ? "Hide Details"
                         : "Show Details"}
                     </button>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                       <button
                         className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={recipeLoadingMeal === safeTrim(meal.name)}
@@ -392,7 +394,7 @@ export function SmartCartMealSections({
                         Stash in Vault
                       </button>
                       <button
-                        className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
+                        className="col-span-2 inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"
                         onClick={() => void onPermanentDelete(meal)}
                         type="button"
                       >
@@ -517,7 +519,7 @@ export function SmartCartMealSections({
                       </ul>
                     </div>
                   ) : null}
-                  <div className="mt-4 flex flex-wrap gap-3">
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                     <button
                       className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
                         isDessertSaved
@@ -530,7 +532,7 @@ export function SmartCartMealSections({
                       {isDessertSaved ? "Remove" : "Save Dessert to Menu"}
                     </button>
                     <button
-                      className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="col-span-2 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1"
                       disabled={recipeLoadingMeal === dessert.title || isReplacingThisDessert}
                       onClick={() => void onGetDessertRecipe(dessert, index)}
                       type="button"
