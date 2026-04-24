@@ -3,7 +3,9 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { SmartCartContextForm } from "./smart-cart-context-form";
+import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
 import { SmartCartHeroHeader } from "./smart-cart-hero-header";
+import { SmartCartLibrarySections } from "./smart-cart-library-sections";
 import { SmartCartMealSections } from "./smart-cart-meal-sections";
 import {
   clearStoredJson,
@@ -1989,316 +1991,65 @@ export function SmartCartApp() {
                 userId={safeTrim(user?.id)}
                 weeklyMenu={weeklyMenu}
               />
-              <div className="lg:col-span-4 sticky top-4">
-                <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl">
-                <button
-                  className="w-full rounded-lg bg-gray-100 p-4 text-left font-display text-2xl font-bold text-ink"
-                  onClick={() => setIsGroceryOpen(!isGroceryOpen)}
-                  type="button"
-                >
-                  <span className="flex items-center justify-between gap-3">
-                    <span>
-                      <span aria-hidden="true">{"🛒 "}</span>
-                      Grocery List
-                    </span>
-                    <span>{isGroceryOpen ? "▲" : "▼"}</span>
-                  </span>
-                </button>
-
-                {isGroceryOpen && (
-                  <>
-                <p className="mt-2 text-sm italic leading-6 text-gray-500">
-                  Prices are AI-generated national averages for estimation. Actual costs may be
-                  higher or lower depending on your location and local store.
-                </p>
-                <p className="mb-4 mt-2 text-xs italic text-gray-500">
-                  *Note: Quantities reflect the exact amount needed for your selected meals. Buy
-                  the standard package size available at your store.*
-                </p>
-
-                <div className="mt-6 space-y-5">
-                  <section className="rounded-3xl border border-stone-200 bg-white p-4 shadow-lg">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-display text-xl text-pine">Meal Ingredients</p>
-                    </div>
-
-                    <div className="mt-4 space-y-5">
-                        {displayGroceriesByCategory.map(([category, items]) => (
-                          <section key={category}>
-                            <p className="font-display text-lg text-pine">{category}</p>
-                            <ul className="mt-4 space-y-3">
-                              {items.map((item) => {
-                                const isRestock = item.name.includes("(Includes Restock)");
-                                const bellPepperPattern = /bell pepper/i;
-                                const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
-                                const trimmedName = safeTrim(item.name);
-                                const isRestoredItem = restoredItems.includes(item.name);
-                                const displayName =
-                                  bellPepperPattern.test(trimmedName) &&
-                                  !bellPepperColorPattern.test(trimmedName)
-                                    ? `${trimmedName} (Any color)`
-                                    : trimmedName;
-
-                                return (
-                                  <li
-                                    key={`${category}-${item.name}`}
-                                    className="flex items-center justify-between gap-4"
-                                  >
-                                    <label className="flex items-start gap-3">
-                                      <input
-                                        checked={checkedItems.has(`${category}-${item.name}`)}
-                                        className="mt-0.5 h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                                        onChange={() =>
-                                          toggleCheckedItem(`${category}-${item.name}`)
-                                        }
-                                        type="checkbox"
-                                      />
-                                      <span className="flex flex-col">
-                                        <span
-                                          className={`flex items-center gap-2 text-sm font-medium text-ink ${
-                                            checkedItems.has(`${category}-${item.name}`)
-                                              ? "line-through opacity-60"
-                                              : ""
-                                          }`}
-                                        >
-                                          {item.amount && (
-                                            <span className="font-semibold text-ink">
-                                              {item.amount}
-                                            </span>
-                                          )}
-                                          <span>{displayName}</span>
-                                          {isRestock && (
-                                            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
-                                              Restock
-                                            </span>
-                                          )}
-                                          {isRestoredItem && (
-                                            <button
-                                              className="text-xs font-semibold text-red-400 transition hover:text-red-500"
-                                              onClick={() =>
-                                                setRestoredItems((current) =>
-                                                  current.filter((name) => name !== item.name),
-                                                )
-                                              }
-                                              type="button"
-                                            >
-                                              - Remove
-                                            </button>
-                                          )}
-                                        </span>
-                                      </span>
-                                    </label>
-                                    <span className="text-sm font-semibold text-pine">
-                                      {formatCurrency(item.estimated_price)}
-                                    </span>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </section>
-                        ))}
-                    </div>
-                  </section>
-                </div>
-
-                {skippedGroceriesByCategory.length > 0 && (
-                  <div className="mt-6 border-t border-stone-200 pt-6">
-                    <h4 className="mb-2 mt-6 text-sm font-bold uppercase text-gray-500">
-                      Skipped (In Your Pantry)
-                    </h4>
-                    <div className="my-3 border-l-4 border-blue-500 bg-blue-50 p-3 text-xs text-blue-900">
-                      <strong>
-                        <span aria-hidden="true">{"⚠️ "}</span>
-                        Double-Check Your Kitchen!
-                      </strong>{" "}
-                      We skipped buying these items
-                      because you marked them as owned. The amounts listed below are exactly what
-                      you need to cook your selected meals. If your current stash is smaller than
-                      the amount shown, click <strong>[+ Add Back]</strong> so you don&apos;t run
-                      out!
-                    </div>
-                    <div className="space-y-4">
-                      {skippedGroceriesByCategory.map(([category, items]) => (
-                        <section key={`skipped-${category}`}>
-                          <p className="text-sm font-semibold text-gray-400">{category}</p>
-                          <ul className="mt-3 space-y-3">
-                            {items.map((item) => (
-                              <li
-                                key={`skipped-${category}-${item.name}`}
-                                className="flex items-center justify-between gap-4 text-gray-400"
-                              >
-                                <span className="flex items-center gap-2 text-sm">
-                                  {item.amount && <span className="font-medium">{item.amount}</span>}
-                                  <span>{item.name}</span>
-                                </span>
-                                <button
-                                  className="text-xs font-semibold text-orange-500 transition hover:text-orange-600"
-                                  onClick={() =>
-                                    setRestoredItems((current) =>
-                                      current.includes(item.name)
-                                        ? current
-                                        : [...current, item.name],
-                                    )
-                                  }
-                                  type="button"
-                                >
-                                  + Add Back
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </section>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-8 border-t border-stone-200 pt-6">
-                  <h4 className="mb-2 mt-8 text-sm font-bold uppercase text-gray-500">
-                    Extras & Household (Not in Budget)
-                  </h4>
-                  {customItems.length > 0 ? (
-                    <ul className="space-y-2">
-                      {customItems.map((item) => (
-                        <li
-                          key={`custom-${item.id}`}
-                          className="flex items-center justify-between gap-4 text-sm text-ink/75"
-                        >
-                          <label className="flex items-center gap-3">
-                            <input
-                              checked={item.isChecked}
-                              className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                              onChange={() =>
-                                setCustomItems((current) =>
-                                  current.map((currentItem) =>
-                                    currentItem.id === item.id
-                                      ? {
-                                          ...currentItem,
-                                          isChecked: !currentItem.isChecked,
-                                        }
-                                      : currentItem,
-                                  ),
-                                )
-                              }
-                              type="checkbox"
-                            />
-                            <span
-                              className={
-                                item.isChecked ? "line-through opacity-60" : ""
-                              }
-                            >
-                              {item.name}
-                            </span>
-                          </label>
-                          <button
-                            className="text-xs font-semibold text-red-400 transition hover:text-red-500"
-                            onClick={() =>
-                              setCustomItems((current) =>
-                                current.filter((currentItem) => currentItem.id !== item.id),
-                              )
-                            }
-                            type="button"
-                          >
-                            - Remove
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-gray-400">
-                      Add snacks, paper towels, or any other extras you want to remember.
-                    </p>
-                  )}
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      type="text"
-                      value={newCustomItem}
-                      onChange={(e) => setNewCustomItem(e.target.value)}
-                      placeholder="Add snacks, paper towels..."
-                      className="flex-1 rounded border px-2 py-1 text-sm"
-                    />
-                    <button
-                      onClick={() => {
-                        if (safeTrim(newCustomItem)) {
-                          setCustomItems([
-                            ...customItems,
-                            {
-                              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                              name: safeTrim(newCustomItem),
-                              isChecked: false,
-                            },
-                          ]);
-                          setNewCustomItem("");
-                        }
-                      }}
-                      className="rounded bg-gray-200 px-3 py-1 text-sm font-medium"
-                      type="button"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
-                        Budget Progress
-                      </p>
-                      <p className="mt-1 text-base font-bold text-ink">
-                        {formatCurrency(totalCost)} / {formatCurrency(parsedBudget)}
-                      </p>
-                    </div>
-                    <span className={`text-sm font-semibold ${budgetStatusTextClass}`}>
-                      {budgetStatusLabel}
-                    </span>
-                  </div>
-                  <div className="mt-4 w-full h-4 overflow-hidden rounded-full bg-gray-200">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${budgetProgressBarClass}`}
-                      style={{ width: `${budgetPercentage}%` }}
-                    />
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs font-medium text-ink/60">
-                    <span>{Math.round(rawBudgetPercentage)}% of budget used</span>
-                    <span className={budgetStatusTextClass}>{budgetStatusLabel}</span>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center gap-4">
-                  <button
-                    onClick={() => setIsPremiumMode(!isPremiumMode)}
-                    className="mb-2 w-full rounded-md bg-orange-100 px-4 py-3 font-bold text-orange-700"
-                    type="button"
-                  >
-                    {isPremiumMode ? (
-                      <>
-                        <span aria-hidden="true">{"↩ "}</span>
-                        Revert to Standard
-                      </>
-                    ) : (
-                      <>
-                        <span aria-hidden="true">{"✨ "}</span>
-                        Upgrade to Premium Ingredients
-                      </>
-                    )}
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"
-                    onClick={handleCopyShoppingList}
-                    type="button"
-                  >
-                    Copy Shopping List
-                  </button>
-                  {copied && (
-                    <span className="text-sm font-semibold text-pine">Copied!</span>
-                  )}
-                </div>
-
-                  </>
-                )}
-                </aside>
-              </div>
+              <SmartCartGrocerySidebar
+                budgetPercentage={budgetPercentage}
+                budgetProgressBarClass={budgetProgressBarClass}
+                budgetStatusLabel={budgetStatusLabel}
+                budgetStatusTextClass={budgetStatusTextClass}
+                checkedItems={checkedItems}
+                copied={copied}
+                customItems={customItems}
+                displayGroceriesByCategory={displayGroceriesByCategory}
+                formatCurrency={formatCurrency}
+                isGroceryOpen={isGroceryOpen}
+                isPremiumMode={isPremiumMode}
+                newCustomItem={newCustomItem}
+                onAddCustomItem={() => {
+                  if (safeTrim(newCustomItem)) {
+                    setCustomItems([
+                      ...customItems,
+                      {
+                        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                        name: safeTrim(newCustomItem),
+                        isChecked: false,
+                      },
+                    ]);
+                    setNewCustomItem("");
+                  }
+                }}
+                onChangeCustomItem={setNewCustomItem}
+                onCopyShoppingList={handleCopyShoppingList}
+                onRemoveCustomItem={(id) =>
+                  setCustomItems((current) =>
+                    current.filter((currentItem) => currentItem.id !== id),
+                  )
+                }
+                onRemoveRestoredItem={(name) =>
+                  setRestoredItems((current) =>
+                    current.filter((currentName) => currentName !== name),
+                  )
+                }
+                onRestoreSkippedItem={(name) =>
+                  setRestoredItems((current) =>
+                    current.includes(name) ? current : [...current, name],
+                  )
+                }
+                onSetCustomItemChecked={(id, isChecked) =>
+                  setCustomItems((current) =>
+                    current.map((currentItem) =>
+                      currentItem.id === id ? { ...currentItem, isChecked } : currentItem,
+                    ),
+                  )
+                }
+                onToggleCheckedItem={toggleCheckedItem}
+                onToggleGroceryOpen={() => setIsGroceryOpen(!isGroceryOpen)}
+                onTogglePremiumMode={() => setIsPremiumMode(!isPremiumMode)}
+                parsedBudget={parsedBudget}
+                rawBudgetPercentage={rawBudgetPercentage}
+                restoredItems={restoredItems}
+                skippedGroceriesByCategory={skippedGroceriesByCategory}
+                totalCost={totalCost}
+              />
             </div>
           ) : (
             <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
@@ -2308,345 +2059,33 @@ export function SmartCartApp() {
               </p>
             </div>
           )}
-
-          <section className="mt-6 flex flex-col gap-6">
-                  {savedDesserts.length > 0 ? (
-                    <div className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="font-display text-2xl text-ink">Saved Desserts</p>
-                          <p className="mt-1 text-sm leading-6 text-ink/70">
-                            Keep your favorite sweet treats in this week&apos;s plan.
-                          </p>
-                        </div>
-                        <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-berry">
-                          {savedDesserts.length} saved
-                        </span>
-                      </div>
-                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                        {savedDesserts.map((meal, index) => {
-                          const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
-                          const mealEstimatedPrice = getMealEstimatedPrice(meal);
-
-                          return (
-                            <article
-                              key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
-                              className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
-                            >
-                              <div className="flex items-start justify-between gap-3 p-5 pb-0">
-                                <div>
-                                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                                    {formatCardEyebrow(safeTrim(meal.day))}
-                                  </p>
-                                  <h3 className="mt-2 font-display text-2xl text-ink">
-                                    {safeTrim(meal.name)}
-                                  </h3>
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                  <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                                    {formatCurrency(mealEstimatedPrice)}
-                                  </span>
-                                  <span className="text-sm font-semibold text-ink/65">
-                                    Serves {meal.servings}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="space-y-4 p-5">
-                                {expandedDetailCards.has(`saved-dessert-${mealKey}`) && (
-                                  <p className="text-sm leading-7 text-ink/75">
-                                    {safeTrim(meal.notes)}
-                                  </p>
-                                )}
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                                  onClick={() =>
-                                    handleToggleCardDetails(`saved-dessert-${mealKey}`)
-                                  }
-                                  type="button"
-                                >
-                                  {expandedDetailCards.has(`saved-dessert-${mealKey}`)
-                                    ? "Hide Details"
-                                    : "Show Details"}
-                                </button>
-                                <div className="flex flex-wrap gap-3">
-                                  <button
-                                    className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                    disabled={recipeLoadingMeal === safeTrim(meal.name)}
-                                    onClick={() => handleGetRecipe(meal)}
-                                    type="button"
-                                  >
-                                    {recipeLoadingMeal === safeTrim(meal.name)
-                                      ? "Loading recipe..."
-                                      : "Get Recipe"}
-                                  </button>
-                                  <button
-                                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                                    onClick={() => handleToggleIngredients(meal)}
-                                    type="button"
-                                  >
-                                    {expandedIngredientsMeals.has(mealKey)
-                                      ? "Hide Ingredients"
-                                      : "View Ingredients"}
-                                  </button>
-                                  <button
-                                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                                    onClick={() => void handleArchiveMeal(meal)}
-                                    type="button"
-                                  >
-                                    <span aria-hidden="true">{"🗄️ "}</span>
-                                    Stash in Vault
-                                  </button>
-                                  <button
-                                    className="inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                                    onClick={() => void handlePermanentDelete(meal)}
-                                    type="button"
-                                  >
-                                    Remove entirely
-                                  </button>
-                                </div>
-                                {expandedIngredientsMeals.has(mealKey) &&
-                                  (meal.ingredients ?? []).length > 0 && (
-                                    <div className="rounded-[1rem] bg-cream px-3 py-3">
-                                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                                        Ingredients
-                                      </p>
-                                      <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                                        {(meal.ingredients ?? [])
-                                          .filter(
-                                            (ingredient) =>
-                                              ingredient &&
-                                              typeof ingredient.name === "string" &&
-                                              typeof ingredient.amount === "string",
-                                          )
-                                          .map((ingredient) => (
-                                            <li
-                                              key={`${safeTrim(meal.name)}-${safeTrim(ingredient.name)}-${safeTrim(ingredient.amount)}`}
-                                              className="flex gap-2"
-                                            >
-                                              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                                              <span>
-                                                {safeTrim(ingredient.amount)} {safeTrim(ingredient.name)}
-                                              </span>
-                                            </li>
-                                          ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {user ? (
-                    <div className="mt-6 rounded-[1.25rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-ink">Save your current week</p>
-                          <p className="text-sm leading-6 text-ink/65">
-                            Sync your dinners, sweet treats, pantry, and vault before you leave.
-                          </p>
-                        </div>
-                        <button
-                          className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                          disabled={isSaving}
-                          onClick={saveSessionToCloud}
-                          type="button"
-                        >
-                          {isSaving ? "Saving..." : "💾 Save"}
-                        </button>
-                      </div>
-                      {cloudSyncMessage ? (
-                        <p className="mt-3 text-sm font-medium text-ink/70">
-                          {cloudSyncMessage}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  <div className="mt-6 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-                    <strong>💡 HOW TO USE THE VAULT:</strong> Click
-                    {" "}
-                    <strong>[🗄️ Stash in Vault]</strong>
-                    {" "}
-                    on any active meal above to save its recipe here for future weeks. This
-                    removes it from your current grocery budget.
-                  </div>
-                  <button
-                    className="mt-6 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                    onClick={() => setIsVaultOpen(!isVaultOpen)}
-                    type="button"
-                  >
-                    <span aria-hidden="true">{"🗄️ "}</span>
-                    {isVaultOpen
-                      ? "Close Recipe Vault"
-                      : `Open Recipe Vault (${archivedMeals.length})`}
-                  </button>
-                  {isVaultOpen ? (
-                    <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
-                      {archivedMeals.length > 0 ? (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {archivedMeals.map((meal) => (
-                            <article
-                              key={`vault-${meal.dbId ?? `${meal.day}-${meal.name}`}`}
-                              className="rounded-3xl border border-stone-200 bg-[#fffdf9] px-4 py-4 shadow-lg"
-                            >
-                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                                {formatCardEyebrow(meal.day)}
-                              </p>
-                              <h3 className="mt-2 font-display text-xl text-ink">
-                                {safeTrim(meal.name)}
-                              </h3>
-                              <p className="mt-2 text-sm leading-6 text-ink/70">
-                                Serves {meal.servings}
-                              </p>
-                              {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`) && (
-                                <p className="mt-3 text-sm leading-7 text-ink/75">
-                                  {safeTrim(meal.notes)}
-                                </p>
-                              )}
-                              <button
-                                className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                                onClick={() =>
-                                  handleToggleCardDetails(`vault-${meal.day}::${meal.name}`)
-                                }
-                                type="button"
-                              >
-                                {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)
-                                  ? "Hide Details"
-                                  : "Show Details"}
-                              </button>
-                              <div className="mt-4 flex flex-wrap gap-2">
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                  disabled={recipeLoadingMeal === meal.name}
-                                  onClick={() => handleGetRecipe(meal)}
-                                  type="button"
-                                >
-                                  {recipeLoadingMeal === meal.name
-                                    ? "Loading recipe..."
-                                    : "Get Recipe"}
-                                </button>
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                  disabled={recipeLoadingMeal === meal.name}
-                                  onClick={() => handleToggleIngredients(meal)}
-                                  type="button"
-                                >
-                                  {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
-                                    ? "Hide Ingredients"
-                                    : "View Ingredients"}
-                                </button>
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full bg-pine px-3 py-2 text-sm font-semibold text-white transition hover:bg-pine/90"
-                                  onClick={() => handleRestoreMeal(meal)}
-                                  type="button"
-                                >
-                                  <span aria-hidden="true">{"➕ "}</span>
-                                  Add to This Week
-                                </button>
-                                <button
-                                  className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                                  onClick={() => void handlePermanentDelete(meal)}
-                                  type="button"
-                                >
-                                  <span aria-hidden="true">{"🗑️ "}</span>
-                                  Permanent Delete
-                                </button>
-                              </div>
-                              {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
-                                ((meal.ingredients && meal.ingredients.length > 0) ||
-                                  recipeCache[meal.name]) && (
-                                  <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                                      Ingredients
-                                    </p>
-                                    <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                                      {(meal.ingredients && meal.ingredients.length > 0
-                                        ? meal.ingredients
-                                            .filter(
-                                              (ingredient) =>
-                                                ingredient &&
-                                                typeof ingredient.name === "string" &&
-                                                typeof ingredient.amount === "string",
-                                            )
-                                            .map(
-                                              (ingredient) =>
-                                                `${safeTrim(ingredient.amount)} ${safeTrim(ingredient.name)}`,
-                                            )
-                                        : (recipeCache[meal.name]?.ingredients ?? []).filter(
-                                            (ingredient) => typeof ingredient === "string",
-                                          )
-                                      )
-                                        .map((ingredient) => safeTrim(ingredient))
-                                        .filter(Boolean)
-                                        .map((ingredient) => (
-                                        <li
-                                          key={`${meal.name}-${ingredient}`}
-                                          className="flex gap-2"
-                                        >
-                                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                                          <span>{ingredient}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                            </article>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-ink/60">
-                          No archived recipes yet. Removed meals will land here for future weeks.
-                        </p>
-                      )}
-                    </div>
-                  ) : null}
-                </section>
-          <section className="mt-6 rounded-[2.25rem] border border-stone-200 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-8">
-            <div className="mx-auto max-w-3xl text-center">
-              <p className="font-display text-3xl text-ink">
-                The Ultimate Grocery Map is Coming
-              </p>
-              <p className="mt-3 text-sm leading-7 text-ink/70 sm:text-base">
-                We are building an advanced routing engine to scan local store shelves and find
-                the absolute cheapest places to buy your AI meal plan. Join the waitlist for early
-                access!
-              </p>
-
-              {waitlistStatus === "success" ? (
-                <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">
-                  Thanks for joining! You are now a part of something fantastic! Phase 2 coming
-                  soon!
-                </div>
-              ) : (
-                <form
-                  className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center"
-                  onSubmit={handleWaitlistSubmit}
-                >
-                  <input
-                    className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200 sm:max-w-md"
-                    name="email"
-                    onChange={(event) => setWaitlistEmail(event.target.value)}
-                    placeholder="Enter your email address*"
-                    required
-                    type="email"
-                    value={waitlistEmail}
-                  />
-                  <button
-                    className="rounded-full bg-orange-500 px-5 py-3 font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={waitlistStatus === "submitting"}
-                    type="submit"
-                  >
-                    {waitlistStatus === "submitting" ? "Joining..." : "Join Waitlist"}
-                  </button>
-                </form>
-              )}
-            </div>
-          </section>
+          <SmartCartLibrarySections
+            archivedMeals={archivedMeals}
+            cloudSyncMessage={cloudSyncMessage}
+            expandedDetailCards={expandedDetailCards}
+            expandedIngredientsMeals={expandedIngredientsMeals}
+            formatCardEyebrow={formatCardEyebrow}
+            formatCurrency={formatCurrency}
+            getMealEstimatedPrice={getMealEstimatedPrice}
+            isSaving={isSaving}
+            isVaultOpen={isVaultOpen}
+            onArchiveMeal={handleArchiveMeal}
+            onGetRecipe={handleGetRecipe}
+            onPermanentDelete={handlePermanentDelete}
+            onRestoreMeal={handleRestoreMeal}
+            onSaveSession={saveSessionToCloud}
+            onToggleCardDetails={handleToggleCardDetails}
+            onToggleIngredients={handleToggleIngredients}
+            onToggleVaultOpen={() => setIsVaultOpen(!isVaultOpen)}
+            onWaitlistEmailChange={setWaitlistEmail}
+            onWaitlistSubmit={handleWaitlistSubmit}
+            recipeCache={recipeCache}
+            recipeLoadingMeal={recipeLoadingMeal}
+            savedDesserts={savedDesserts}
+            userSignedIn={Boolean(user)}
+            waitlistEmail={waitlistEmail}
+            waitlistStatus={waitlistStatus}
+          />
         </section>
       </div>
 
@@ -2737,6 +2176,7 @@ export function SmartCartApp() {
     </main>
   );
 }
+
 
 
 
