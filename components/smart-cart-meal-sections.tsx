@@ -42,6 +42,7 @@ type SmartCartMealSectionsProps = {
   onArchiveMeal: (meal: MealPlanItem) => void | Promise<void>;
   onGetDessertRecipe: (dessert: GeneratedDessert, index: number) => void | Promise<void>;
   onGetRecipe: (meal: MealPlanItem) => void | Promise<void>;
+  onRemoveFromWeeklyMenu: (meal: MealPlanItem) => void | Promise<void>;
   onPermanentDelete: (meal: MealPlanItem) => void | Promise<void>;
   onReplaceDessert: (dessert: GeneratedDessert, index: number) => void | Promise<void>;
   onReplaceMeal: (meal: MealPlanItem, index: number) => void | Promise<void>;
@@ -71,6 +72,7 @@ export function SmartCartMealSections({
   onArchiveMeal,
   onGetDessertRecipe,
   onGetRecipe,
+  onRemoveFromWeeklyMenu,
   onPermanentDelete,
   onReplaceDessert,
   onReplaceMeal,
@@ -257,7 +259,7 @@ export function SmartCartMealSections({
                   </button>
                   <button
                     className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                    onClick={() => void onPermanentDelete(meal)}
+                    onClick={() => void onRemoveFromWeeklyMenu(meal)}
                     type="button"
                   >
                     Remove from Menu

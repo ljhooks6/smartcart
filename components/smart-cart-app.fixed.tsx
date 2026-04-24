@@ -914,6 +914,33 @@ export function SmartCartApp() {
     );
   }
 
+  function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
+    const mealKey = `${meal.day}::${meal.name}`;
+
+    setWeeklyMenu((current) =>
+      current.filter((savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey),
+    );
+
+    setGeneratedPlan((current) => {
+      if (!current) {
+        return current;
+      }
+
+      if (current.meals.some((generatedMeal) => `${generatedMeal.day}::${generatedMeal.name}` === mealKey)) {
+        return current;
+      }
+
+      const nextMeals = [...current.meals, meal].slice(0, 7);
+      const nextPlan = {
+        ...current,
+        meals: nextMeals,
+      };
+
+      persistGeneratedPlan(nextPlan);
+      return nextPlan;
+    });
+  }
+
   async function handleArchiveMeal(meal: MealPlanItem) {
     const userId = user?.id || "";
     if (!userId) {
@@ -1024,8 +1051,20 @@ export function SmartCartApp() {
         ? candidate.dbId === meal.dbId
         : candidate.name === meal.name;
 
+    const isVaultMeal = archivedMeals.some((archivedMeal) => mealMatcher(archivedMeal));
+
     try {
-      if (meal.dbId) {
+      if (isVaultMeal && meal.dbId) {
+        const { error } = await supabase
+          .from("archived_meals")
+          .delete()
+          .eq("id", meal.dbId)
+          .eq("user_id", userId);
+
+        if (error) {
+          throw error;
+        }
+      } else if (meal.dbId) {
         const { error } = await supabase
           .from("weekly_menus")
           .delete()
@@ -1724,6 +1763,7 @@ export function SmartCartApp() {
                 onArchiveMeal={handleArchiveMeal}
                 onGetDessertRecipe={handleGetDessertRecipe}
                 onGetRecipe={handleGetRecipe}
+                onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
                 onPermanentDelete={handlePermanentDelete}
                 onReplaceDessert={handleReplaceDessert}
                 onReplaceMeal={handleReplaceMeal}

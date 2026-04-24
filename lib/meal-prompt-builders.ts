@@ -150,6 +150,9 @@ export function buildGenerateListPrompts({
       : "- If includeDessert is false, return an empty \"desserts\" array.",
     "- Every dessert option must include its own localized \"ingredients\" array using the exact same ingredient format as meals.",
     "- Generate only sweet, sugary desserts. Do not suggest savory items, biscuits, or bread-based side dishes like cheddar biscuits or spinach biscuits.",
+    "- DESSERT VARIETY RULE: If you return two desserts, they must feel clearly different in category and flavor base. Do not return two versions of the same dessert family.",
+    "- Use different dessert lanes such as cookies, bars, cobbler, pudding, cheesecake, pie, crisp, icebox dessert, or cake. Avoid repetitive chocolate-only or cinnamon-only duplication unless the pantry forces it.",
+    "- Avoid repeating the same signature dessert word or dominant flavor in both dessert titles.",
   ];
 
   const adventureRules = [

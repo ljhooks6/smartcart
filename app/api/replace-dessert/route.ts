@@ -112,6 +112,8 @@ Rules:
 - It must feel different from the rejected dessert title.
 - Keep it practical, appealing, and budget-conscious.
 - Prefer pantry-friendly desserts when possible.
+- The replacement should change dessert category or flavor lane when possible. For example, if the rejected dessert sounds like a cookie, brownie, or bar, try a pie, cobbler, pudding, crisp, cheesecake, or cake instead.
+- Avoid repeating the same dominant flavor word from the rejected dessert title unless the pantry strongly forces it.
 - Include a localized "ingredients" array using this exact shape for each item: { "name": "string", "amount": "string", "price": number }.
 - Return valid JSON only.
 - Use this exact JSON shape:
