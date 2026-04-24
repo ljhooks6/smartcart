@@ -84,6 +84,7 @@ type ReplaceDessertResponse = {
 };
 
 type ToastTone = "success" | "error" | "info";
+type MobileTab = "plan" | "meals" | "shop" | "vault";
 
 type FormState = {
   budget: string;
@@ -259,6 +260,13 @@ const pantryCategoryStyles: Record<string, string> = {
   FRUITS: "border-lime-200 bg-lime-50",
 };
 
+const mobileTabs: Array<{ id: MobileTab; label: string; shortLabel: string }> = [
+  { id: "plan", label: "Plan", shortLabel: "Plan" },
+  { id: "meals", label: "Meals", shortLabel: "Meals" },
+  { id: "shop", label: "Shop", shortLabel: "Shop" },
+  { id: "vault", label: "Vault", shortLabel: "Vault" },
+];
+
 const safeTrim = (val: any) => (typeof val === "string" ? val.trim() : "");
 
 function formatCurrency(value: number) {
@@ -406,6 +414,7 @@ export function SmartCartApp() {
   );
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("plan");
 
   const showToast = useCallback((message: string, tone: ToastTone = "info") => {
     setToastMessage(message);
@@ -682,6 +691,12 @@ export function SmartCartApp() {
       : rawBudgetPercentage >= 80
         ? "text-yellow-600"
         : "text-green-600";
+  const activeTabMeta = mobileTabs.find((tab) => tab.id === activeMobileTab) ?? mobileTabs[0];
+  const hasMealSurfaceContent =
+    Boolean(generatedPlan?.meals?.length) ||
+    weeklyMenu.length > 0 ||
+    savedDesserts.length > 0;
+  const hasVaultSurfaceContent = archivedMeals.length > 0 || Boolean(user);
 
   async function submitPlan(applyUpgrades = false) {
     setValidationError(null);
@@ -762,6 +777,7 @@ export function SmartCartApp() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setActiveMobileTab("meals");
     await submitPlan(false);
   }
 
@@ -1633,7 +1649,7 @@ export function SmartCartApp() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-28 pt-4 md:pb-12 md:pt-8">
       <SmartCartFeedback
         confirmBody="This will clear your form and active weekly menu, but your Recipe Vault will remain safe."
         confirmCancelLabel="Keep My Work"
@@ -1648,112 +1664,165 @@ export function SmartCartApp() {
         toastMessage={toastMessage}
         toastTone={toastTone}
       />
+      <div className="sticky top-0 z-40 w-full max-w-7xl md:hidden">
+        <div className="rounded-[1.75rem] border border-stone-200/80 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                SmartCart
+              </p>
+              <p className="font-display text-2xl text-ink">{activeTabMeta.label}</p>
+            </div>
+            <div className="text-right text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+              {user ? "Signed In" : "Guest"}
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
-        <SmartCartHeroHeader
-          activeFeature={activeFeature}
-          authMessage={authMessage}
-          email={email}
-          featureDescriptions={featureDescriptions}
-          isAuthLoading={isAuthLoading}
-          onEmailChange={setEmail}
-          onFeatureToggle={(feature) =>
-            handleFeatureToggle(feature as keyof typeof featureDescriptions)
-          }
-          onLoginSubmit={handleLogin}
-          onSignOut={() => {
-            void supabase.auth.signOut();
-          }}
-          userEmail={safeTrim(user?.email)}
-        />
+        <div className={activeMobileTab === "plan" ? "block md:block" : "hidden md:block"}>
+          <SmartCartHeroHeader
+            activeFeature={activeFeature}
+            authMessage={authMessage}
+            email={email}
+            featureDescriptions={featureDescriptions}
+            isAuthLoading={isAuthLoading}
+            onEmailChange={setEmail}
+            onFeatureToggle={(feature) =>
+              handleFeatureToggle(feature as keyof typeof featureDescriptions)
+            }
+            onLoginSubmit={handleLogin}
+            onSignOut={() => {
+              void supabase.auth.signOut();
+            }}
+            userEmail={safeTrim(user?.email)}
+          />
+        </div>
 
-        <SmartCartContextForm
-          adventureLevelOptions={adventureLevelOptions}
-          combinedPantryItems={combinedPantryItems}
-          equipmentOptions={equipmentOptions}
-          featureError={validationError || requestError}
-          formState={formState}
-          fullyStocked={fullyStocked}
-          isBudgetValid={isBudgetValid}
-          isLoading={isLoading}
-          isPantryOpen={isPantryOpen}
-          isPantrySelectionOpen={isPantrySelectionOpen}
-          onBudgetChange={(value) =>
-            setFormState((current) => ({
-              ...current,
-              budget: value,
-            }))
-          }
-          onClearForm={handleClearForm}
-          onDietChange={(value) =>
-            setFormState((current) => ({
-              ...current,
-              diet: value,
-            }))
-          }
-          onHouseholdSizeChange={(value) =>
-            setFormState((current) => ({
-              ...current,
-              householdSize: value,
-            }))
-          }
-          onIncludeDessertChange={(checked) =>
-            setFormState((current) => ({
-              ...current,
-              includeDessert: checked,
-            }))
-          }
-          onMustHaveIngredientChange={(value) =>
-            setFormState((current) => ({
-              ...current,
-              mustHaveIngredient: value,
-            }))
-          }
-          onAvoidIngredientsChange={(value) =>
-            setFormState((current) => ({
-              ...current,
-              avoidIngredients: value,
-            }))
-          }
-          onPantryItemsChange={(value) =>
-            setFormState((current) => ({
-              ...current,
-              pantryItems: value,
-            }))
-          }
-          onPrepTimeChange={(value) =>
-            setFormState((current) => ({
-              ...current,
-              prepTime: value,
-            }))
-          }
-          onRemovePantryItem={handleRemovePantryItem}
-          onSubmit={handleSubmit}
-          onToggleEquipment={(equipment) =>
-            setFormState((current) => ({
-              ...current,
-              availableEquipment: current.availableEquipment.includes(equipment)
-                ? current.availableEquipment.filter((item) => item !== equipment)
-                : [...current.availableEquipment, equipment],
-            }))
-          }
-          onToggleFeatureLevel={(value) =>
-            setFormState((current) => ({
-              ...current,
-              adventureLevel: value,
-            }))
-          }
-          onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
-          onTogglePantrySelectionOpen={() =>
-            setIsPantrySelectionOpen((current) => !current)
-          }
-          onToggleQuickItem={toggleQuickItem}
-          pantryCategoryStyles={pantryCategoryStyles}
-          pantryQuickSelectOptions={pantryQuickSelectOptions}
-          prepTimeOptions={prepTimeOptions}
-        />
-        <section className="mt-10 pb-16">
-          {generatedPlan ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid gap-8 md:hidden">
+          <section
+            className={`rounded-[2rem] border px-4 py-5 shadow-xl ${
+              activeMobileTab === "plan"
+                ? "block border-stone-200 bg-[#fcfaf6]"
+                : "hidden"
+            }`}
+          >
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                Planner
+              </p>
+              <p className="mt-1 text-sm leading-6 text-ink/65">
+                Set your week up once, then jump over to meals when you are ready.
+              </p>
+            </div>
+            <SmartCartContextForm
+              adventureLevelOptions={adventureLevelOptions}
+              combinedPantryItems={combinedPantryItems}
+              equipmentOptions={equipmentOptions}
+              featureError={validationError || requestError}
+              formState={formState}
+              fullyStocked={fullyStocked}
+              isBudgetValid={isBudgetValid}
+              isLoading={isLoading}
+              isPantryOpen={isPantryOpen}
+              isPantrySelectionOpen={isPantrySelectionOpen}
+              onBudgetChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  budget: value,
+                }))
+              }
+              onClearForm={handleClearForm}
+              onDietChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  diet: value,
+                }))
+              }
+              onHouseholdSizeChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  householdSize: value,
+                }))
+              }
+              onIncludeDessertChange={(checked) =>
+                setFormState((current) => ({
+                  ...current,
+                  includeDessert: checked,
+                }))
+              }
+              onMustHaveIngredientChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  mustHaveIngredient: value,
+                }))
+              }
+              onAvoidIngredientsChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  avoidIngredients: value,
+                }))
+              }
+              onPantryItemsChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  pantryItems: value,
+                }))
+              }
+              onPrepTimeChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  prepTime: value,
+                }))
+              }
+              onRemovePantryItem={handleRemovePantryItem}
+              onSubmit={handleSubmit}
+              onToggleEquipment={(equipment) =>
+                setFormState((current) => ({
+                  ...current,
+                  availableEquipment: current.availableEquipment.includes(equipment)
+                    ? current.availableEquipment.filter((item) => item !== equipment)
+                    : [...current.availableEquipment, equipment],
+                }))
+              }
+              onToggleFeatureLevel={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  adventureLevel: value,
+                }))
+              }
+              onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
+              onTogglePantrySelectionOpen={() =>
+                setIsPantrySelectionOpen((current) => !current)
+              }
+              onToggleQuickItem={toggleQuickItem}
+              pantryCategoryStyles={pantryCategoryStyles}
+              pantryQuickSelectOptions={pantryQuickSelectOptions}
+              prepTimeOptions={prepTimeOptions}
+            />
+          </section>
+
+          <section
+            className={`rounded-[2rem] border px-4 py-5 shadow-xl ${
+              activeMobileTab === "meals"
+                ? "block border-rose-100 bg-white"
+                : "hidden"
+            }`}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
+                  Meals
+                </p>
+                <p className="mt-1 text-sm leading-6 text-ink/65">
+                  Your generated dinners, weekly menu, and sweet treats live here.
+                </p>
+              </div>
+              <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-berry">
+                {hasMealSurfaceContent ? "Active" : "Waiting"}
+              </span>
+            </div>
+            {generatedPlan ? (
               <SmartCartMealSections
                 expandedDetailCards={expandedDetailCards}
                 expandedIngredientsMeals={expandedIngredientsMeals}
@@ -1781,6 +1850,37 @@ export function SmartCartApp() {
                 userId={safeTrim(user?.id)}
                 weeklyMenu={weeklyMenu}
               />
+            ) : (
+              <div className="rounded-[1.5rem] border border-dashed border-rose-200 bg-rose-50 px-4 py-10 text-center text-ink/60">
+                <p className="font-display text-2xl text-ink">Meals will land here</p>
+                <p className="mt-3 text-sm leading-7">
+                  Build your plan first, then flip back here to review dinners and desserts.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section
+            className={`rounded-[2rem] border px-4 py-5 shadow-xl ${
+              activeMobileTab === "shop"
+                ? "block border-emerald-100 bg-[#f4fbf7]"
+                : "hidden"
+            }`}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">
+                  Shop
+                </p>
+                <p className="mt-1 text-sm leading-6 text-ink/65">
+                  Grocery list, budget progress, and pantry checks all in one place.
+                </p>
+              </div>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 shadow-sm">
+                {generatedPlan ? "Ready" : "Empty"}
+              </span>
+            </div>
+            {generatedPlan ? (
               <SmartCartGrocerySidebar
                 budgetPercentage={budgetPercentage}
                 budgetProgressBarClass={budgetProgressBarClass}
@@ -1810,40 +1910,264 @@ export function SmartCartApp() {
                 skippedGroceriesByCategory={skippedGroceriesByCategory}
                 totalCost={totalCost}
               />
+            ) : (
+              <div className="rounded-[1.5rem] border border-dashed border-emerald-200 bg-white px-4 py-10 text-center text-ink/60">
+                <p className="font-display text-2xl text-ink">Your grocery list will appear here</p>
+                <p className="mt-3 text-sm leading-7">
+                  Generate a menu first and SmartCart will organize what you need to buy.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section
+            className={`rounded-[2rem] border px-4 py-5 shadow-xl ${
+              activeMobileTab === "vault"
+                ? "block border-amber-100 bg-[#f7f1e7]"
+                : "hidden"
+            }`}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-800">
+                  Vault
+                </p>
+                <p className="mt-1 text-sm leading-6 text-ink/65">
+                  Your saved library, cloud sync, and future-facing features stay together here.
+                </p>
+              </div>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-800 shadow-sm">
+                {hasVaultSurfaceContent ? "Live" : "Start Saving"}
+              </span>
             </div>
-          ) : (
-            <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
-              <p className="font-display text-2xl text-ink">Your generated plan will appear here</p>
-              <p className="mt-3 text-sm leading-7">
-                Select your preferences and pantry items above to get started.
-              </p>
-            </div>
-          )}
-          <SmartCartLibrarySections
-            archivedMeals={archivedMeals}
-            cloudSyncMessage={cloudSyncMessage}
-            expandedDetailCards={expandedDetailCards}
-            expandedIngredientsMeals={expandedIngredientsMeals}
-            formatCardEyebrow={formatCardEyebrow}
-            isSaving={isSaving}
-            isVaultOpen={isVaultOpen}
-            onGetRecipe={handleGetRecipe}
-            onPermanentDelete={handlePermanentDelete}
-            onRestoreMeal={handleRestoreMeal}
-            onSaveSession={saveSessionToCloud}
-            onToggleCardDetails={handleToggleCardDetails}
-            onToggleIngredients={handleToggleIngredients}
-            onToggleVaultOpen={() => setIsVaultOpen(!isVaultOpen)}
-            onWaitlistEmailChange={setWaitlistEmail}
-            onWaitlistSubmit={handleWaitlistSubmit}
-            recipeCache={recipeCache}
-            recipeLoadingMeal={recipeLoadingMeal}
-            userSignedIn={Boolean(user)}
-            waitlistEmail={waitlistEmail}
-            waitlistStatus={waitlistStatus}
+            <SmartCartLibrarySections
+              archivedMeals={archivedMeals}
+              cloudSyncMessage={cloudSyncMessage}
+              expandedDetailCards={expandedDetailCards}
+              expandedIngredientsMeals={expandedIngredientsMeals}
+              formatCardEyebrow={formatCardEyebrow}
+              isSaving={isSaving}
+              isVaultOpen={isVaultOpen}
+              onGetRecipe={handleGetRecipe}
+              onPermanentDelete={handlePermanentDelete}
+              onRestoreMeal={handleRestoreMeal}
+              onSaveSession={saveSessionToCloud}
+              onToggleCardDetails={handleToggleCardDetails}
+              onToggleIngredients={handleToggleIngredients}
+              onToggleVaultOpen={() => setIsVaultOpen(!isVaultOpen)}
+              onWaitlistEmailChange={setWaitlistEmail}
+              onWaitlistSubmit={handleWaitlistSubmit}
+              recipeCache={recipeCache}
+              recipeLoadingMeal={recipeLoadingMeal}
+              userSignedIn={Boolean(user)}
+              waitlistEmail={waitlistEmail}
+              waitlistStatus={waitlistStatus}
+            />
+          </section>
+        </div>
+
+        <div className="hidden md:block">
+          <SmartCartContextForm
+            adventureLevelOptions={adventureLevelOptions}
+            combinedPantryItems={combinedPantryItems}
+            equipmentOptions={equipmentOptions}
+            featureError={validationError || requestError}
+            formState={formState}
+            fullyStocked={fullyStocked}
+            isBudgetValid={isBudgetValid}
+            isLoading={isLoading}
+            isPantryOpen={isPantryOpen}
+            isPantrySelectionOpen={isPantrySelectionOpen}
+            onBudgetChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                budget: value,
+              }))
+            }
+            onClearForm={handleClearForm}
+            onDietChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                diet: value,
+              }))
+            }
+            onHouseholdSizeChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                householdSize: value,
+              }))
+            }
+            onIncludeDessertChange={(checked) =>
+              setFormState((current) => ({
+                ...current,
+                includeDessert: checked,
+              }))
+            }
+            onMustHaveIngredientChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                mustHaveIngredient: value,
+              }))
+            }
+            onAvoidIngredientsChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                avoidIngredients: value,
+              }))
+            }
+            onPantryItemsChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                pantryItems: value,
+              }))
+            }
+            onPrepTimeChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                prepTime: value,
+              }))
+            }
+            onRemovePantryItem={handleRemovePantryItem}
+            onSubmit={handleSubmit}
+            onToggleEquipment={(equipment) =>
+              setFormState((current) => ({
+                ...current,
+                availableEquipment: current.availableEquipment.includes(equipment)
+                  ? current.availableEquipment.filter((item) => item !== equipment)
+                  : [...current.availableEquipment, equipment],
+              }))
+            }
+            onToggleFeatureLevel={(value) =>
+              setFormState((current) => ({
+                ...current,
+                adventureLevel: value,
+              }))
+            }
+            onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
+            onTogglePantrySelectionOpen={() =>
+              setIsPantrySelectionOpen((current) => !current)
+            }
+            onToggleQuickItem={toggleQuickItem}
+            pantryCategoryStyles={pantryCategoryStyles}
+            pantryQuickSelectOptions={pantryQuickSelectOptions}
+            prepTimeOptions={prepTimeOptions}
           />
-        </section>
+          <section className="mt-10 pb-16">
+            {generatedPlan ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <SmartCartMealSections
+                  expandedDetailCards={expandedDetailCards}
+                  expandedIngredientsMeals={expandedIngredientsMeals}
+                  formatCardEyebrow={formatCardEyebrow}
+                  generatedPlan={generatedPlan}
+                  householdSize={Number(formState.householdSize) || 2}
+                  onArchiveMeal={handleArchiveMeal}
+                  onGetDessertRecipe={handleGetDessertRecipe}
+                  onGetRecipe={handleGetRecipe}
+                  onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
+                  onPermanentDelete={handlePermanentDelete}
+                  onReplaceDessert={handleReplaceDessert}
+                  onReplaceMeal={handleReplaceMeal}
+                  onSaveToWeeklyMenu={handleSaveToWeeklyMenu}
+                  onToggleCardDetails={handleToggleCardDetails}
+                  onToggleDessertSave={handleToggleDessertSave}
+                  onToggleIngredients={handleToggleIngredients}
+                  recipeCache={recipeCache}
+                  recipeLoadingMeal={recipeLoadingMeal}
+                  replacingDessertKey={replacingDessertKey}
+                  replacingMealKey={replacingMealKey}
+                  savedDesserts={savedDesserts}
+                  savedDessertKeys={savedDessertKeys}
+                  savedMealKeys={savedMealKeys}
+                  userId={safeTrim(user?.id)}
+                  weeklyMenu={weeklyMenu}
+                />
+                <SmartCartGrocerySidebar
+                  budgetPercentage={budgetPercentage}
+                  budgetProgressBarClass={budgetProgressBarClass}
+                  budgetStatusLabel={budgetStatusLabel}
+                  budgetStatusTextClass={budgetStatusTextClass}
+                  checkedItems={checkedItems}
+                  copied={copied}
+                  customItems={customItems}
+                  displayGroceriesByCategory={displayGroceriesByCategory}
+                  formatCurrency={formatCurrency}
+                  isGroceryOpen={isGroceryOpen}
+                  isPremiumMode={isPremiumMode}
+                  newCustomItem={newCustomItem}
+                  onAddCustomItem={handleAddCustomItem}
+                  onChangeCustomItem={setNewCustomItem}
+                  onCopyShoppingList={handleCopyShoppingList}
+                  onRemoveCustomItem={removeCustomItem}
+                  onRemoveRestoredItem={removeRestoredItem}
+                  onRestoreSkippedItem={restoreSkippedItem}
+                  onSetCustomItemChecked={setCustomItemChecked}
+                  onToggleCheckedItem={toggleCheckedItem}
+                  onToggleGroceryOpen={() => setGroceryOpen(!isGroceryOpen)}
+                  onTogglePremiumMode={() => setPremiumMode(!isPremiumMode)}
+                  parsedBudget={parsedBudget}
+                  rawBudgetPercentage={rawBudgetPercentage}
+                  restoredItems={restoredItems}
+                  skippedGroceriesByCategory={skippedGroceriesByCategory}
+                  totalCost={totalCost}
+                />
+              </div>
+            ) : (
+              <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
+                <p className="font-display text-2xl text-ink">Your generated plan will appear here</p>
+                <p className="mt-3 text-sm leading-7">
+                  Select your preferences and pantry items above to get started.
+                </p>
+              </div>
+            )}
+            <SmartCartLibrarySections
+              archivedMeals={archivedMeals}
+              cloudSyncMessage={cloudSyncMessage}
+              expandedDetailCards={expandedDetailCards}
+              expandedIngredientsMeals={expandedIngredientsMeals}
+              formatCardEyebrow={formatCardEyebrow}
+              isSaving={isSaving}
+              isVaultOpen={isVaultOpen}
+              onGetRecipe={handleGetRecipe}
+              onPermanentDelete={handlePermanentDelete}
+              onRestoreMeal={handleRestoreMeal}
+              onSaveSession={saveSessionToCloud}
+              onToggleCardDetails={handleToggleCardDetails}
+              onToggleIngredients={handleToggleIngredients}
+              onToggleVaultOpen={() => setIsVaultOpen(!isVaultOpen)}
+              onWaitlistEmailChange={setWaitlistEmail}
+              onWaitlistSubmit={handleWaitlistSubmit}
+              recipeCache={recipeCache}
+              recipeLoadingMeal={recipeLoadingMeal}
+              userSignedIn={Boolean(user)}
+              waitlistEmail={waitlistEmail}
+              waitlistStatus={waitlistStatus}
+            />
+          </section>
+        </div>
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-200 bg-white/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-2xl grid-cols-4 gap-2">
+          {mobileTabs.map((tab) => {
+            const isActive = activeMobileTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                className={`rounded-2xl px-3 py-3 text-center text-xs font-semibold uppercase tracking-[0.2em] transition ${
+                  isActive
+                    ? "bg-pine text-white shadow-md"
+                    : "bg-stone-100 text-ink/60 hover:bg-stone-200"
+                }`}
+                onClick={() => setActiveMobileTab(tab.id)}
+                type="button"
+              >
+                {tab.shortLabel}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       <SmartCartRecipeModal
         activeRecipe={activeRecipe}
