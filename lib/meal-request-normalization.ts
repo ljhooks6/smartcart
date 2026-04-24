@@ -36,6 +36,38 @@ export function parseMustHaveIngredients(input?: string) {
   );
 }
 
+export function parseAvoidanceItems(input?: string) {
+  const normalized = safeTrim(input);
+  if (!normalized) {
+    return [];
+  }
+
+  return uniqueList(
+    normalized
+      .split(DIET_DELIMITERS)
+      .map((item) => item.replace(/^no\s+/i, ""))
+      .map((item) => item.replace(/^avoid\s+/i, ""))
+      .map((item) => item.replace(/^don't want\s+/i, ""))
+      .map((item) => item.replace(/^do not want\s+/i, "")),
+  );
+}
+
+export function buildAvoidanceGuidance(input?: string) {
+  const avoidedItems = parseAvoidanceItems(input);
+
+  if (avoidedItems.length === 0) {
+    return {
+      avoidedItems,
+      promptBlock: "No specific disliked ingredients, sauces, or meal styles were provided.",
+    };
+  }
+
+  return {
+    avoidedItems,
+    promptBlock: `Strictly avoid these ingredients, sauces, flavors, or meal styles unless the user explicitly asks for them later: ${avoidedItems.join(", ")}.`,
+  };
+}
+
 export function buildMustHaveGuidance(input?: string) {
   const mustHaveIngredients = parseMustHaveIngredients(input);
 
@@ -46,10 +78,10 @@ export function buildMustHaveGuidance(input?: string) {
     };
   }
 
-  let distributionRule = `Feature ${mustHaveIngredients[0]} prominently in at least 3 of the 8 dinner meals.`;
+  let distributionRule = `Feature ${mustHaveIngredients[0]} prominently in at least 3 of the 7 dinner meals.`;
 
   if (mustHaveIngredients.length === 2) {
-    distributionRule = `Use both must-have ingredients across at least 4 of the 8 meals total. Do not force both ingredients into the same meal unless it makes culinary sense.`;
+    distributionRule = `Use both must-have ingredients across at least 4 of the 7 meals total. Do not force both ingredients into the same meal unless it makes culinary sense.`;
   } else if (mustHaveIngredients.length >= 3) {
     distributionRule = `Distribute these must-have ingredients naturally across the week. Use at least 3 of them across the menu, but do not force every meal to contain a must-have ingredient.`;
   }

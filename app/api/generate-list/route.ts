@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
+  buildAvoidanceGuidance,
   buildAdventureLevelGuidance,
   buildMustHaveGuidance,
   normalizeDietaryPreferences,
@@ -18,12 +19,13 @@ type GenerateListRequest = {
   runningLow?: string[];
   restock?: string[];
   mustHaveIngredient?: string;
+  avoidIngredients?: string;
   includeDessert?: boolean;
   adventureLevel?: string;
-  budgetTightness?: boolean;
   apply_upgrades?: boolean;
   existingMeals?: string;
   availableEquipment?: string[];
+  prepTime?: string;
 };
 
 const ingredientSchema = z.object({
@@ -35,8 +37,8 @@ const ingredientSchema = z.object({
 const mealSchema = z.object({
   day: z.string().min(1),
   name: z.string().min(1),
-  servings: z.number().int().positive(),
-  notes: z.string().min(1),
+  servings: z.number().int().positive().optional(),
+  notes: z.string().min(1).optional(),
   ingredients: z.array(ingredientSchema).min(1),
   imageUrl: z.string().url().optional(),
 });
@@ -55,11 +57,11 @@ const dessertSchema = z.object({
 });
 
 const aiGenerateListResponseSchema = z.object({
-  meals: z.array(mealSchema).length(8),
+  meals: z.array(mealSchema).length(7),
   estimated_total_cost: z.number().nonnegative(),
   budget_summary: z.string().min(1),
   upgrade_available: z.boolean(),
-  desserts: z.union([z.array(dessertSchema).length(2), z.array(dessertSchema).length(0)]),
+  desserts: z.array(dessertSchema).max(2).default([]),
 });
 
 type GenerateListResponse = z.infer<typeof aiGenerateListResponseSchema> & {
@@ -126,7 +128,7 @@ function findBlockedContentMatches(
   return meals.flatMap((meal) => {
     const haystacks = [
       meal.name.toLowerCase(),
-      meal.notes.toLowerCase(),
+      meal.notes?.toLowerCase() ?? "",
       ...meal.ingredients.map((ingredient) => ingredient.name.toLowerCase()),
     ];
 
@@ -134,6 +136,23 @@ function findBlockedContentMatches(
       haystacks.some((value) => value.includes(blocked)),
     );
   });
+}
+
+function normalizeGeneratedMeals(
+  meals: Array<z.infer<typeof mealSchema>>,
+  householdSize: number,
+) {
+  return meals.map((meal, index) => ({
+    ...meal,
+    day: meal.day || `Day ${index + 1}`,
+    servings: meal.servings ?? householdSize,
+    notes:
+      meal.notes?.trim() ||
+      `A practical dinner built around ${meal.ingredients
+        .slice(0, 3)
+        .map((ingredient) => ingredient.name)
+        .join(", ")}.`,
+  }));
 }
 
 function findRepeatedSignatureTitleWords(meals: Array<z.infer<typeof mealSchema>>) {
@@ -232,12 +251,13 @@ export async function POST(request: Request) {
     runningLow,
     restock,
     mustHaveIngredient,
+    avoidIngredients,
     includeDessert,
     adventureLevel,
-    budgetTightness,
     apply_upgrades,
     existingMeals,
     availableEquipment,
+    prepTime,
   } =
     (body as Partial<GenerateListRequest>) ?? {};
 
@@ -271,13 +291,14 @@ export async function POST(request: Request) {
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
+  const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
 
   const { systemPrompt, userPrompt } = buildGenerateListPrompts({
     adventureGuidance: adventureGuidance.generationBlock,
     adventureLevel: adventureLevel?.trim() || "No preference provided",
     applyUpgrades: Boolean(apply_upgrades),
+    avoidancePromptBlock: avoidanceGuidance.promptBlock,
     budget,
-    budgetTightness,
     combinedPantryItems,
     dietaryPromptBlock: dietaryPreferences.promptBlock,
     existingMeals: existingMeals?.trim() || "None provided",
@@ -285,6 +306,7 @@ export async function POST(request: Request) {
     householdSize,
     includeDessert: Boolean(includeDessert),
     mustHavePromptBlock: mustHaveGuidance.promptBlock,
+    prepTime,
     restock: Array.isArray(restock) ? restock : [],
     runningLow: Array.isArray(runningLow) ? runningLow : [],
     selectedEquipment,
@@ -316,27 +338,35 @@ export async function POST(request: Request) {
 
     let rawPlan = await requestMealPlan();
 
-    if (!Array.isArray(rawPlan.meals) || rawPlan.meals.length !== 8) {
+    if (!Array.isArray(rawPlan.meals) || rawPlan.meals.length !== 7) {
       rawPlan = await requestMealPlan(
-        "CRITICAL RETRY: Your last response did not return exactly 8 meals. Return valid JSON with exactly 8 meal objects and the required shape.",
+        "CRITICAL RETRY: Your last response did not return exactly 7 dinner meals. Return valid JSON with exactly 7 meal objects and the required shape. Desserts are optional and may be 0, 1, or 2 items.",
       );
     }
 
     let parsed = aiGenerateListResponseSchema.parse(rawPlan);
+    parsed = {
+      ...parsed,
+      meals: normalizeGeneratedMeals(parsed.meals, householdSize),
+    };
     let blockedMatches = findBlockedContentMatches(
       parsed.meals,
-      dietaryPreferences.blockedIngredients,
+      [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
     );
     let repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
 
     if (blockedMatches.length > 0 || repeatedSignatureWords.length > 0) {
       rawPlan = await requestMealPlan(
-        `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Return exactly 8 meals.`,
+        `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
       );
       parsed = aiGenerateListResponseSchema.parse(rawPlan);
+      parsed = {
+        ...parsed,
+        meals: normalizeGeneratedMeals(parsed.meals, householdSize),
+      };
       blockedMatches = findBlockedContentMatches(
         parsed.meals,
-        dietaryPreferences.blockedIngredients,
+        [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
       );
       repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
     }
@@ -344,7 +374,7 @@ export async function POST(request: Request) {
     if (blockedMatches.length > 0) {
       return NextResponse.json(
         {
-          error: `Generated meals violated dietary restrictions by including blocked terms: ${Array.from(new Set(blockedMatches)).join(", ")}`,
+          error: `Generated meals violated dietary restrictions or explicit avoid rules by including blocked terms: ${Array.from(new Set(blockedMatches)).join(", ")}`,
         },
         { status: 500 },
       );

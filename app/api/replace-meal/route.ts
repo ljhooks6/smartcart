@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
+  buildAvoidanceGuidance,
   buildAdventureLevelGuidance,
   buildMustHaveGuidance,
   normalizeDietaryPreferences,
@@ -19,6 +20,7 @@ type ReplaceMealRequest = {
   prepTime?: string;
   adventureLevel?: string;
   mustHaveIngredient?: string;
+  avoidIngredients?: string;
   existingMeals?: string;
   currentMealsContext?: string;
   recentRejectedMeals?: string[];
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
     prepTime,
     adventureLevel,
     mustHaveIngredient,
+    avoidIngredients,
     existingMeals,
     currentMealsContext,
     recentRejectedMeals,
@@ -94,6 +97,7 @@ export async function POST(request: Request) {
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
+  const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
   const blockedTitles = Array.from(
     new Set([
       ...parseMealNameList(existingMeals),
@@ -108,6 +112,7 @@ export async function POST(request: Request) {
   const { systemPrompt, userPrompt } = buildReplaceMealPrompts({
     adventureGuidance: adventureGuidance.replacementBlock,
     adventureLevel: adventureLevel || "No preference provided",
+    avoidancePromptBlock: avoidanceGuidance.promptBlock,
     blockedTitles,
     budget,
     combinedPantryItems,
@@ -150,13 +155,16 @@ export async function POST(request: Request) {
     const blockedMatches = dietaryPreferences.blockedIngredients.filter((blocked) =>
       replacementHaystacks.some((value) => value.includes(blocked)),
     );
+    const avoidedMatches = avoidanceGuidance.avoidedItems.filter((blocked) =>
+      replacementHaystacks.some((value) => value.includes(blocked)),
+    );
     const normalizedReplacementTitle = parsed.title.trim().toLowerCase();
     const titleCollision = blockedTitles.some((title) => title === normalizedReplacementTitle);
 
-    if (blockedMatches.length > 0) {
+    if (blockedMatches.length > 0 || avoidedMatches.length > 0) {
       return NextResponse.json(
         {
-          error: `Replacement meal violated dietary restrictions by including blocked terms: ${Array.from(new Set(blockedMatches)).join(", ")}`,
+          error: `Replacement meal violated dietary restrictions or avoid rules by including blocked terms: ${Array.from(new Set([...blockedMatches, ...avoidedMatches])).join(", ")}`,
         },
         { status: 500 },
       );

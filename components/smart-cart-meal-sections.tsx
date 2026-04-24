@@ -37,9 +37,7 @@ type SmartCartMealSectionsProps = {
   expandedDetailCards: Set<string>;
   expandedIngredientsMeals: Set<string>;
   formatCardEyebrow: (day: string) => string;
-  formatCurrency: (value: number) => string;
   generatedPlan: GeneratedPlan;
-  getMealEstimatedPrice: (meal: MealPlanItem) => number;
   householdSize: number;
   onArchiveMeal: (meal: MealPlanItem) => void | Promise<void>;
   onGetDessertRecipe: (dessert: GeneratedDessert, index: number) => void | Promise<void>;
@@ -58,7 +56,6 @@ type SmartCartMealSectionsProps = {
   savedDesserts: MealPlanItem[];
   savedDessertKeys: Set<string>;
   savedMealKeys: Set<string>;
-  totalCost: number;
   userId: string;
   weeklyMenu: MealPlanItem[];
 };
@@ -69,9 +66,7 @@ export function SmartCartMealSections({
   expandedDetailCards,
   expandedIngredientsMeals,
   formatCardEyebrow,
-  formatCurrency,
   generatedPlan,
-  getMealEstimatedPrice,
   householdSize,
   onArchiveMeal,
   onGetDessertRecipe,
@@ -90,7 +85,6 @@ export function SmartCartMealSections({
   savedDesserts,
   savedDessertKeys,
   savedMealKeys,
-  totalCost,
   userId,
   weeklyMenu,
 }: SmartCartMealSectionsProps) {
@@ -99,11 +93,7 @@ export function SmartCartMealSections({
       <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="font-display text-3xl text-ink">Your 8 meal picks</p>
-          </div>
-          <div className="rounded-2xl bg-pine px-4 py-3 text-cream">
-            <p className="text-xs uppercase tracking-[0.2em] text-cream/75">Estimated total</p>
-            <p className="font-display text-2xl">{formatCurrency(totalCost)}</p>
+            <p className="font-display text-3xl text-ink">Your 7 dinner picks</p>
           </div>
         </div>
 
@@ -117,8 +107,6 @@ export function SmartCartMealSections({
           {generatedPlan.meals.map((meal, index) => {
             const mealCardKey = `generated-${meal.day}::${meal.name}`;
             const mealEyebrow = formatCardEyebrow(meal.day);
-            const mealEstimatedPrice = getMealEstimatedPrice(meal);
-
             return (
               <article
                 key={`${meal.day}-${meal.name}-${index}`}
@@ -133,14 +121,7 @@ export function SmartCartMealSections({
                       {safeTrim(meal.name)}
                     </h2>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                      {formatCurrency(mealEstimatedPrice)}
-                    </span>
-                    <span className="text-sm font-semibold text-ink/65">
-                      Serves {meal.servings}
-                    </span>
-                  </div>
+                  <span className="text-sm font-semibold text-ink/65">Serves {meal.servings}</span>
                 </div>
 
                 <div className="space-y-4 p-5">
@@ -235,9 +216,6 @@ export function SmartCartMealSections({
                 <h3 className="mt-2 font-display text-xl text-ink">{safeTrim(meal.name)}</h3>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className="text-sm leading-6 text-ink/70">Serves {meal.servings}</p>
-                  <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                    {formatCurrency(getMealEstimatedPrice(meal))}
-                  </span>
                 </div>
                 {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`) ? (
                   <p className="mt-3 text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
@@ -269,6 +247,13 @@ export function SmartCartMealSections({
                     {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
                       ? "Hide Ingredients"
                       : "View Ingredients"}
+                  </button>
+                  <button
+                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-stone-200"
+                    onClick={() => void onArchiveMeal(meal)}
+                    type="button"
+                  >
+                    Stash in Vault
                   </button>
                   <button
                     className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
@@ -338,7 +323,6 @@ export function SmartCartMealSections({
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {savedDesserts.map((meal, index) => {
               const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
-              const mealEstimatedPrice = getMealEstimatedPrice(meal);
 
               return (
                 <article
@@ -354,14 +338,9 @@ export function SmartCartMealSections({
                         {safeTrim(meal.name)}
                       </h3>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                        {formatCurrency(mealEstimatedPrice)}
-                      </span>
-                      <span className="text-sm font-semibold text-ink/65">
-                        Serves {meal.servings}
-                      </span>
-                    </div>
+                    <span className="text-sm font-semibold text-ink/65">
+                      Serves {meal.servings}
+                    </span>
                   </div>
 
                   <div className="space-y-4 p-5">
@@ -457,12 +436,6 @@ export function SmartCartMealSections({
               const isDessertSaved = savedDessertKeys.has(dessert.title);
               const isReplacingThisDessert = replacingDessertKey === `${dessert.title}-${index}`;
               const dessertCardKey = `dessert-${dessert.title}-${index}`;
-              const dessertEstimatedPrice = (dessert.ingredients ?? []).reduce(
-                (sum, ingredient) =>
-                  sum + (typeof ingredient?.price === "number" ? ingredient.price : 0),
-                0,
-              );
-
               return (
                 <article
                   key={dessertCardKey}
@@ -477,9 +450,6 @@ export function SmartCartMealSections({
                         {safeTrim(dessert.title)}
                       </h3>
                     </div>
-                    <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-ink/80">
-                      {formatCurrency(dessertEstimatedPrice)}
-                    </span>
                   </div>
                   {expandedDetailCards.has(dessertCardKey) ? (
                     <p className="mt-3 text-sm leading-7 text-ink/80">

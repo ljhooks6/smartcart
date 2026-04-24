@@ -8,10 +8,10 @@ type SmartCartFormState = {
   householdSize: string;
   pantryItems: string;
   mustHaveIngredient: string;
+  avoidIngredients: string;
   includeDessert: boolean;
   prepTime: string;
   adventureLevel: string;
-  isBudgetTight: boolean;
   availableEquipment: string[];
 };
 
@@ -32,11 +32,11 @@ type SmartCartContextFormProps = {
   onHouseholdSizeChange: (value: string) => void;
   onIncludeDessertChange: (checked: boolean) => void;
   onMustHaveIngredientChange: (value: string) => void;
+  onAvoidIngredientsChange: (value: string) => void;
   onPantryItemsChange: (value: string) => void;
   onPrepTimeChange: (value: string) => void;
   onRemovePantryItem: (item: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
-  onToggleBudgetTight: () => void;
   onToggleEquipment: (equipment: string) => void;
   onToggleFeatureLevel: (value: string) => void;
   onTogglePantryOpen: () => void;
@@ -64,11 +64,11 @@ export function SmartCartContextForm({
   onHouseholdSizeChange,
   onIncludeDessertChange,
   onMustHaveIngredientChange,
+  onAvoidIngredientsChange,
   onPantryItemsChange,
   onPrepTimeChange,
   onRemovePantryItem,
   onSubmit,
-  onToggleBudgetTight,
   onToggleEquipment,
   onToggleFeatureLevel,
   onTogglePantryOpen,
@@ -288,6 +288,19 @@ export function SmartCartContextForm({
           />
         </label>
 
+        <label className="space-y-2">
+          <span className="text-sm font-semibold text-ink">
+            Do Not Include (Optional)
+          </span>
+          <input
+            className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+            onChange={(event) => onAvoidIngredientsChange(event.target.value)}
+            placeholder="e.g., honey mustard, stir fry, mushrooms"
+            type="text"
+            value={formState.avoidIngredients}
+          />
+        </label>
+
         <div className="rounded-[1.75rem] border border-pine/10 bg-pine text-cream">
           <button
             className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
@@ -337,32 +350,6 @@ export function SmartCartContextForm({
             value={formState.pantryItems}
           />
         </label>
-
-        <div className="flex items-center justify-between rounded-[1.75rem] border border-pine/10 bg-cream px-4 py-4">
-          <div className="pr-4">
-            <p className="text-sm font-semibold text-ink">Budget Tightness / Stretch</p>
-            <p className="mt-1 text-sm leading-6 text-ink/65">
-              Keep ingredient overlap high so the cart stays lean and flexible.
-            </p>
-          </div>
-          <button
-            aria-label="Toggle strict stretch mode"
-            className={`relative inline-flex h-10 w-20 items-center rounded-full transition ${
-              formState.isBudgetTight ? "bg-pine" : "bg-ink/20"
-            }`}
-            onClick={onToggleBudgetTight}
-            type="button"
-          >
-            <span
-              className={`inline-block h-8 w-8 rounded-full bg-white shadow-md transition ${
-                formState.isBudgetTight ? "translate-x-11" : "translate-x-1"
-              }`}
-            />
-          </button>
-          <span className="min-w-10 text-right text-xs font-semibold uppercase tracking-[0.2em] text-ink/60">
-            {formState.isBudgetTight ? "ON" : "OFF"}
-          </span>
-        </div>
 
         <label className="flex items-center gap-3 rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
           <input

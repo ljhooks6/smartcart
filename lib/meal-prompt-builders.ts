@@ -2,8 +2,8 @@ type GeneratePromptArgs = {
   adventureGuidance: string;
   adventureLevel: string;
   applyUpgrades: boolean;
+  avoidancePromptBlock: string;
   budget: number;
-  budgetTightness?: boolean;
   combinedPantryItems: string;
   dietaryPromptBlock: string;
   existingMeals: string;
@@ -11,6 +11,7 @@ type GeneratePromptArgs = {
   householdSize: number;
   includeDessert: boolean;
   mustHavePromptBlock: string;
+  prepTime?: string;
   restock: string[];
   runningLow: string[];
   selectedEquipment: string;
@@ -27,6 +28,7 @@ type ReplacePromptArgs = {
   existingMeals: string;
   householdSize: number;
   mustHavePromptBlock: string;
+  avoidancePromptBlock: string;
   prepTime?: string;
   rejectedMealTitle: string;
   selectedEquipment: string;
@@ -85,8 +87,8 @@ export function buildGenerateListPrompts({
   adventureGuidance,
   adventureLevel,
   applyUpgrades,
+  avoidancePromptBlock,
   budget,
-  budgetTightness,
   combinedPantryItems,
   dietaryPromptBlock,
   existingMeals,
@@ -94,20 +96,22 @@ export function buildGenerateListPrompts({
   householdSize,
   includeDessert,
   mustHavePromptBlock,
+  prepTime,
   restock,
   runningLow,
   selectedEquipment,
 }: GeneratePromptArgs) {
   const introSection = [
     "You are an expert, budget-conscious logistical meal planner.",
-    "Create 8 meal suggestions that strictly adhere to the user's budget, diet, household size, and pantry items.",
+    "Create 7 dinner meal suggestions that strictly adhere to the user's budget, diet, household size, and pantry items.",
   ];
 
   const corePlanningRules = [
     "- Always generate a lean, frugal list first unless the user explicitly asks to apply upgrades.",
-    "- Return exactly 8 meals.",
+    "- Return exactly 7 dinner meals.",
     "- Respect the budget strictly.",
     "- Respect the diet exactly.",
+    `- Respect the user's prep-time preference: ${prepTime || "No preference provided"}.`,
     "- This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.",
     "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes (for example \"Baked Chicken\"). You must suggest fully composed plates (for example \"Baked Chicken with Roasted Potatoes and Green Beans\" or a complete one-pan dish like \"Beef and Broccoli Stir-Fry over Rice\"). If you suggest a protein, you MUST include a complementary side dish in the meal title.",
     `- CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals || "None provided"}.`,
@@ -115,7 +119,7 @@ export function buildGenerateListPrompts({
   ];
 
   const varietyRules = [
-    "- CRITICAL RULE: BALANCED PROTEIN VARIETY. You are generating 8 meals. Limit any single main protein (for example chicken) to a MAXIMUM of 2 meals. You MUST use at least 3 to 4 different main proteins. Do not let the user's pantry limit this rule.",
+    "- CRITICAL RULE: BALANCED PROTEIN VARIETY. You are generating 7 meals. Limit any single main protein (for example chicken) to a MAXIMUM of 2 meals. You MUST use at least 3 to 4 different main proteins. Do not let the user's pantry limit this rule.",
     "- CRITICAL RULE: Pantry items are helpful context, not a restriction. You are allowed to introduce additional proteins that are not already in the pantry and place them in the meal ingredients so the menu stays varied.",
     "- CRITICAL RULE: Stop defaulting to cheap LLM tropes like Chickpea Curry, Lentil Soup, or Bean Tacos unless the user explicitly marked those items as owned in their pantry. You must prioritize the actual proteins the user selected. Do not force legumes into the menu just to keep the budget low. Be creative with the ingredients provided.",
     "- CRITICAL RULE: FLAVOR MANDATE. Every recipe must explicitly include at least 3 herbs, spices, or aromatics.",
@@ -142,7 +146,7 @@ export function buildGenerateListPrompts({
   const writingAndDessertRules = [
     "- Write a rich, helpful 2-3 sentence description for every dinner meal and every dessert option. Do not use one-sentence descriptions.",
     includeDessert
-      ? "- If includeDessert is true, evaluate the remaining budget after planning the 8 meals. If there is room, generate exactly TWO dessert options for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 8 meals AND two dessert options, return an empty \"desserts\" array."
+      ? "- If includeDessert is true, evaluate the remaining budget after planning the 7 dinners. If there is room, generate up to TWO dessert options for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 7 dinners and dessert options, return an empty \"desserts\" array."
       : "- If includeDessert is false, return an empty \"desserts\" array.",
     "- Every dessert option must include its own localized \"ingredients\" array using the exact same ingredient format as meals.",
     "- Generate only sweet, sugary desserts. Do not suggest savory items, biscuits, or bread-based side dishes like cheddar biscuits or spinach biscuits.",
@@ -155,17 +159,15 @@ export function buildGenerateListPrompts({
     "- If Mix it up: Provide a balanced 50/50 split. Include some hearty homestyle comfort food alongside approachable global dishes.",
     "- If Try new cuisines: Focus entirely on diverse, authentic global flavors (for example Mediterranean, Asian, Indian, regional Mexican).",
     "- CRITICAL ADVENTURE LEVEL DISTRIBUTION:",
-    "  - Keep it simple / Stick to basics: At least 5 of the 8 meals must be familiar weeknight staples. Simple meals like burgers and fries, chicken wraps, spaghetti and meatballs, tacos, baked pasta, meatloaf, or sheet-pan chicken are absolutely allowed and encouraged when they fit the rules.",
+    "  - Keep it simple / Stick to basics: At least 4 of the 7 meals must be familiar weeknight staples. Simple meals like burgers and fries, chicken or turkey burgers and fries, chicken wraps, spaghetti and meatballs, tacos, baked pasta, meatloaf, or sheet-pan chicken are absolutely allowed and encouraged when they fit the rules.",
     "  - Mix it up: Build a clear split with about half familiar comfort meals and half more varied cuisine or format choices.",
     "  - Try something new: Keep only 1 or 2 familiar anchor meals at most. The rest should clearly explore different cuisines, proteins, or formats.",
     `- ${adventureGuidance}`,
   ];
 
   const budgetRules = [
-    "- Budget Tightness enforcement: if budgetTightness is false, you MUST NOT force heavy ingredient overlap. Prioritize culinary variety, distinct flavor profiles, and different lead ingredients across the week. Only force strong cross-utilization and ingredient overlap if budgetTightness is true.",
-    "- If budgetTightness is false, you MUST utilize between 50% and 65% of the user's total budget. Do not go below 50% of the budget. You must select premium, high-quality ingredients to hit this minimum threshold. Do not exceed 65% of the total budget.",
-    "- CRITICAL: When budgetTightness is false, you MUST perform a mathematical check before responding. The total sum of all meal ingredient prices must fall between 50% and 65% of the user's total budget. If your total is below 50%, you must upgrade to premium ingredients or upscale the recipes until you hit that 50% minimum threshold.",
-    "- Pay close attention to the budget. If the plan is far below the target budget, use higher-quality ingredient upgrades to better maximize the budget, such as fresh herbs instead of dried herbs or a better-quality protein.",
+    "- Keep the full plan budget-conscious without making every meal feel like the same cheap fallback.",
+    "- Prioritize practical grocery overlap where it helps, but do not sacrifice variety just to reuse the same ingredients repeatedly.",
     "- Include a final budget note that compares the estimated total cost against the target budget.",
     "- If the estimated total cost is less than 80% of the user's maximum budget, set \"upgrade_available\" to true. Otherwise set it to false.",
   ];
@@ -173,6 +175,7 @@ export function buildGenerateListPrompts({
   const safetyAndOutputRules = [
     "- DIETARY SAFETY: Treat blocked ingredients and blocked categories as hard bans. Never include them in any meal title, notes, or ingredients array.",
     `- ${mustHavePromptBlock}`,
+    `- ${avoidancePromptBlock}`,
     "- Return valid JSON only.",
     "- Use this exact JSON shape:",
     GENERATE_JSON_SHAPE,
@@ -203,11 +206,12 @@ export function buildGenerateListPrompts({
     `Restock Pantry Items: ${restock.length > 0 ? restock.join(", ") : "None provided"}`,
     `Include Dessert: ${includeDessert ? "Yes" : "No"}`,
     `Adventure Level: ${adventureLevel || "No preference provided"}`,
-    `Budget Tightness: ${typeof budgetTightness === "boolean" ? (budgetTightness ? "ON" : "OFF") : "Not provided"}`,
+    `Prep Time Preference: ${prepTime || "No preference provided"}`,
     `Available Kitchen Equipment: ${selectedEquipment}`,
     "Protein Variety Reminder: Even if the pantry only includes chicken, you must still diversify across at least 3 to 4 different main proteins and cap chicken at 2 meals.",
     dietaryPromptBlock,
     mustHavePromptBlock,
+    avoidancePromptBlock,
     adventureGuidance,
     "",
     applyUpgrades
@@ -225,6 +229,7 @@ export function buildReplaceMealPrompts({
   adventureGuidance,
   adventureLevel,
   blockedTitles,
+  avoidancePromptBlock,
   budget,
   combinedPantryItems,
   currentMealsContext,
@@ -250,8 +255,9 @@ export function buildReplaceMealPrompts({
       "- Respect the user's budget, diet, household size, pantry items, and prep-time preference.",
       "- DIETARY SAFETY: Treat blocked ingredients and blocked categories as hard bans. Never include them in the replacement title, description, or ingredients.",
       `- ${mustHavePromptBlock}`,
+      `- ${avoidancePromptBlock}`,
       "- Adventure Level enforcement:",
-      "  - Stick to basics: choose a familiar meal style such as burgers and fries, wraps, tacos, pasta, baked chicken, or other approachable weeknight staples.",
+      "  - Stick to basics: choose a familiar meal style such as burgers and fries, chicken or turkey burgers, wraps, tacos, pasta, baked chicken, or other approachable weeknight staples.",
       "  - Mix it up: choose something distinct but still approachable.",
       "  - Try new cuisines: choose a clearly different cuisine or flavor lane from the rejected meal and the current menu.",
       `- ${adventureGuidance}`,
@@ -278,6 +284,7 @@ export function buildReplaceMealPrompts({
     `Available Kitchen Equipment: ${selectedEquipment}`,
     dietaryPromptBlock,
     mustHavePromptBlock,
+    avoidancePromptBlock,
     adventureGuidance,
     "",
     `The new meal must be distinctly different from "${rejectedMealTitle}".`,
@@ -288,4 +295,3 @@ export function buildReplaceMealPrompts({
     userPrompt,
   };
 }
-

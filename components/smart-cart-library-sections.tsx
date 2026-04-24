@@ -26,11 +26,8 @@ type SmartCartLibrarySectionsProps = {
   expandedDetailCards: Set<string>;
   expandedIngredientsMeals: Set<string>;
   formatCardEyebrow: (day: string) => string;
-  formatCurrency: (value: number) => string;
-  getMealEstimatedPrice: (meal: MealPlanItem) => number;
   isSaving: boolean;
   isVaultOpen: boolean;
-  onArchiveMeal: (meal: MealPlanItem) => void | Promise<void>;
   onGetRecipe: (meal: MealPlanItem) => void | Promise<void>;
   onPermanentDelete: (meal: MealPlanItem) => void | Promise<void>;
   onRestoreMeal: (meal: MealPlanItem) => void | Promise<void>;
@@ -42,7 +39,6 @@ type SmartCartLibrarySectionsProps = {
   onWaitlistSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   recipeCache: Record<string, { ingredients: string[] }>;
   recipeLoadingMeal: string | null;
-  savedDesserts: MealPlanItem[];
   userSignedIn: boolean;
   waitlistEmail: string;
   waitlistStatus: WaitlistStatus;
@@ -56,11 +52,8 @@ export function SmartCartLibrarySections({
   expandedDetailCards,
   expandedIngredientsMeals,
   formatCardEyebrow,
-  formatCurrency,
-  getMealEstimatedPrice,
   isSaving,
   isVaultOpen,
-  onArchiveMeal,
   onGetRecipe,
   onPermanentDelete,
   onRestoreMeal,
@@ -72,7 +65,6 @@ export function SmartCartLibrarySections({
   onWaitlistSubmit,
   recipeCache,
   recipeLoadingMeal,
-  savedDesserts,
   userSignedIn,
   waitlistEmail,
   waitlistStatus,
@@ -234,6 +226,10 @@ export function SmartCartLibrarySections({
             <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">
               Thanks for joining! You are now a part of something fantastic! Phase 2 coming
               soon!
+            </div>
+          ) : waitlistStatus === "error" ? (
+            <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+              That sign-up did not go through. Try again in a moment.
             </div>
           ) : (
             <form

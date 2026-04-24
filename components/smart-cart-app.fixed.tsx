@@ -91,6 +91,7 @@ type FormState = {
   householdSize: string;
   pantryItems: string;
   mustHaveIngredient: string;
+  avoidIngredients: string;
   includeDessert: boolean;
   prepTime: string;
   adventureLevel: string;
@@ -104,6 +105,7 @@ const initialFormState: FormState = {
   householdSize: "2",
   pantryItems: "",
   mustHaveIngredient: "",
+  avoidIngredients: "",
   includeDessert: false,
   prepTime: "Under 30 mins",
   adventureLevel: "Mix it up",
@@ -117,6 +119,7 @@ const clearedFormState: FormState = {
   householdSize: "",
   pantryItems: "",
   mustHaveIngredient: "",
+  avoidIngredients: "",
   includeDessert: false,
   prepTime: "Under 30 mins",
   adventureLevel: "Stick to basics",
@@ -144,6 +147,7 @@ const pantryQuickSelectOptions = {
   "Proteins (Freezer & Fridge)": [
     "Chicken breast",
     "Chicken thighs",
+    "Ground chicken",
     "Ground beef",
     "Steak",
     "Pork chops",
@@ -385,7 +389,7 @@ export function SmartCartApp() {
   const [isPantrySelectionOpen, setIsPantrySelectionOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
-    "idle" | "submitting" | "success"
+    "idle" | "submitting" | "success" | "error"
   >("idle");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<ToastTone>("info");
@@ -467,6 +471,8 @@ export function SmartCartApp() {
         pantryItems: parsed.pantryItems ?? current.pantryItems,
         mustHaveIngredient:
           parsed.mustHaveIngredient ?? current.mustHaveIngredient,
+        avoidIngredients:
+          parsed.avoidIngredients ?? current.avoidIngredients,
         includeDessert: parsed.includeDessert ?? current.includeDessert,
         prepTime: parsed.prepTime ?? current.prepTime,
         adventureLevel: parsed.adventureLevel ?? current.adventureLevel,
@@ -716,9 +722,10 @@ export function SmartCartApp() {
           runningLow: Array.from(runningLow),
           restock: Array.from(restock),
           mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
+          avoidIngredients: safeTrim(formState.avoidIngredients),
           includeDessert: formState.includeDessert,
           adventureLevel: formState.adventureLevel,
-          budgetTightness: formState.isBudgetTight,
+          prepTime: formState.prepTime,
           availableEquipment: formState.availableEquipment,
           apply_upgrades: applyUpgrades,
           existingMeals: existingMealTitles,
@@ -1471,7 +1478,7 @@ export function SmartCartApp() {
       setWaitlistStatus("success");
       setWaitlistEmail("");
     } catch (error) {
-      setWaitlistStatus("idle");
+      setWaitlistStatus("error");
       setRequestError(
         error instanceof Error ? error.message : "Failed to join the waitlist.",
       );
@@ -1512,6 +1519,7 @@ export function SmartCartApp() {
           prepTime: formState.prepTime,
           adventureLevel: formState.adventureLevel,
           mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
+          avoidIngredients: safeTrim(formState.avoidIngredients),
           availableEquipment: formState.availableEquipment,
           existingMeals: currentMealsContext || existingMealTitles,
           currentMealsContext,
@@ -1661,6 +1669,12 @@ export function SmartCartApp() {
               mustHaveIngredient: value,
             }))
           }
+          onAvoidIngredientsChange={(value) =>
+            setFormState((current) => ({
+              ...current,
+              avoidIngredients: value,
+            }))
+          }
           onPantryItemsChange={(value) =>
             setFormState((current) => ({
               ...current,
@@ -1675,12 +1689,6 @@ export function SmartCartApp() {
           }
           onRemovePantryItem={handleRemovePantryItem}
           onSubmit={handleSubmit}
-          onToggleBudgetTight={() =>
-            setFormState((current) => ({
-              ...current,
-              isBudgetTight: !current.isBudgetTight,
-            }))
-          }
           onToggleEquipment={(equipment) =>
             setFormState((current) => ({
               ...current,
@@ -1711,9 +1719,7 @@ export function SmartCartApp() {
                 expandedDetailCards={expandedDetailCards}
                 expandedIngredientsMeals={expandedIngredientsMeals}
                 formatCardEyebrow={formatCardEyebrow}
-                formatCurrency={formatCurrency}
                 generatedPlan={generatedPlan}
-                getMealEstimatedPrice={getMealEstimatedPrice}
                 householdSize={Number(formState.householdSize) || 2}
                 onArchiveMeal={handleArchiveMeal}
                 onGetDessertRecipe={handleGetDessertRecipe}
@@ -1732,7 +1738,6 @@ export function SmartCartApp() {
                 savedDesserts={savedDesserts}
                 savedDessertKeys={savedDessertKeys}
                 savedMealKeys={savedMealKeys}
-                totalCost={totalCost}
                 userId={safeTrim(user?.id)}
                 weeklyMenu={weeklyMenu}
               />
@@ -1780,11 +1785,8 @@ export function SmartCartApp() {
             expandedDetailCards={expandedDetailCards}
             expandedIngredientsMeals={expandedIngredientsMeals}
             formatCardEyebrow={formatCardEyebrow}
-            formatCurrency={formatCurrency}
-            getMealEstimatedPrice={getMealEstimatedPrice}
             isSaving={isSaving}
             isVaultOpen={isVaultOpen}
-            onArchiveMeal={handleArchiveMeal}
             onGetRecipe={handleGetRecipe}
             onPermanentDelete={handlePermanentDelete}
             onRestoreMeal={handleRestoreMeal}
@@ -1796,7 +1798,6 @@ export function SmartCartApp() {
             onWaitlistSubmit={handleWaitlistSubmit}
             recipeCache={recipeCache}
             recipeLoadingMeal={recipeLoadingMeal}
-            savedDesserts={savedDesserts}
             userSignedIn={Boolean(user)}
             waitlistEmail={waitlistEmail}
             waitlistStatus={waitlistStatus}
