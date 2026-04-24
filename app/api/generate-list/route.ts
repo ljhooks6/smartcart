@@ -500,15 +500,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (missingSelectedEquipmentUsage.length > 0) {
-      return NextResponse.json(
-        {
-          error: `Generated meals did not meaningfully use selected special equipment after retry: ${missingSelectedEquipmentUsage.join(", ")}`,
-        },
-        { status: 500 },
-      );
-    }
-
     const deterministicRestockItems = (Array.isArray(restock) ? restock : [])
       .map((item) => item.trim())
       .filter(Boolean)
