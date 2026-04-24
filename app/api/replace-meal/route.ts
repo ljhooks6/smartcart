@@ -38,6 +38,62 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+function buildEquipmentSet(availableEquipment?: string[]) {
+  return new Set(
+    (Array.isArray(availableEquipment) ? availableEquipment : [])
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+}
+
+function findReplacementEquipmentViolations(
+  title: string,
+  description: string,
+  selectedEquipmentSet: Set<string>,
+) {
+  const haystack = `${title} ${description}`.toLowerCase();
+  const violations: string[] = [];
+
+  if (
+    !selectedEquipmentSet.has("Oven") &&
+    /\bbaked\b|\broasted\b|\bsheet[- ]pan\b|\bcasserole\b|\bgratin\b|\bbroiled\b/.test(
+      haystack,
+    )
+  ) {
+    violations.push("Oven");
+  }
+
+  if (
+    !selectedEquipmentSet.has("Grill") &&
+    /\bgrilled\b|\bon the grill\b|\bchar[- ]grilled\b/.test(haystack)
+  ) {
+    violations.push("Grill");
+  }
+
+  if (
+    !selectedEquipmentSet.has("Air Fryer") &&
+    /\bair fryer\b|\bair[- ]fried\b/.test(haystack)
+  ) {
+    violations.push("Air Fryer");
+  }
+
+  if (
+    !selectedEquipmentSet.has("Slow Cooker") &&
+    /\bslow cooker\b|\bcrockpot\b/.test(haystack)
+  ) {
+    violations.push("Slow Cooker");
+  }
+
+  if (
+    !selectedEquipmentSet.has("Blender") &&
+    /\bblender\b|\bblended\b|\bpur[eé]ed\b/.test(haystack)
+  ) {
+    violations.push("Blender");
+  }
+
+  return Array.from(new Set(violations));
+}
+
 export async function POST(request: Request) {
   let body: unknown;
 
@@ -70,6 +126,7 @@ export async function POST(request: Request) {
     Array.isArray(availableEquipment) && availableEquipment.length > 0
       ? availableEquipment.join(", ")
       : "Oven, Stovetop, Microwave";
+  const selectedEquipmentSet = buildEquipmentSet(availableEquipment);
 
   if (
     typeof budget !== "number" ||
@@ -158,6 +215,11 @@ export async function POST(request: Request) {
     const avoidedMatches = avoidanceGuidance.avoidedItems.filter((blocked) =>
       replacementHaystacks.some((value) => value.includes(blocked)),
     );
+    const equipmentViolations = findReplacementEquipmentViolations(
+      parsed.title,
+      parsed.description,
+      selectedEquipmentSet,
+    );
     const normalizedReplacementTitle = parsed.title.trim().toLowerCase();
     const titleCollision = blockedTitles.some((title) => title === normalizedReplacementTitle);
 
@@ -174,6 +236,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: `Replacement meal repeated a rejected or existing title: ${parsed.title}`,
+        },
+        { status: 500 },
+      );
+    }
+
+    if (equipmentViolations.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Replacement meal required unselected equipment: ${equipmentViolations.join(", ")}`,
         },
         { status: 500 },
       );

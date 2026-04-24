@@ -83,6 +83,37 @@ function joinPromptSections(sections: Array<string | string[]>) {
     .join("\n");
 }
 
+function buildEquipmentGuidance(selectedEquipment: string) {
+  const equipment = selectedEquipment.toLowerCase();
+  const guidance: string[] = [];
+
+  if (equipment.includes("air fryer")) {
+    guidance.push(
+      "- If Air Fryer is selected, strongly consider featuring at least 1 dinner that clearly uses the air fryer in the title or notes when it fits the user's adventure level and budget.",
+    );
+  }
+
+  if (equipment.includes("slow cooker")) {
+    guidance.push(
+      "- If Slow Cooker is selected, strongly consider featuring at least 1 dinner that clearly uses the slow cooker or crockpot in the title or notes when it fits the user's prep-time preference.",
+    );
+  }
+
+  if (equipment.includes("grill")) {
+    guidance.push(
+      "- If Grill is selected, you may include a grilled dinner and should use the grill for at least 1 meal when it fits the adventure level, season, and budget.",
+    );
+  }
+
+  if (equipment.includes("blender")) {
+    guidance.push(
+      "- If Blender is selected, you may use it for sauces, dressings, marinades, or blended soup bases. It is acceptable to feature at least 1 dinner with a blended component when it fits naturally.",
+    );
+  }
+
+  return guidance;
+}
+
 export function buildGenerateListPrompts({
   adventureGuidance,
   adventureLevel,
@@ -101,6 +132,8 @@ export function buildGenerateListPrompts({
   runningLow,
   selectedEquipment,
 }: GeneratePromptArgs) {
+  const equipmentGuidance = buildEquipmentGuidance(selectedEquipment);
+
   const introSection = [
     "You are an expert, budget-conscious logistical meal planner.",
     "Create 7 dinner meal suggestions that strictly adhere to the user's budget, diet, household size, and pantry items.",
@@ -116,6 +149,7 @@ export function buildGenerateListPrompts({
     "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes (for example \"Baked Chicken\"). You must suggest fully composed plates (for example \"Baked Chicken with Roasted Potatoes and Green Beans\" or a complete one-pan dish like \"Beef and Broccoli Stir-Fry over Rice\"). If you suggest a protein, you MUST include a complementary side dish in the meal title.",
     `- CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals || "None provided"}.`,
     `- CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.`,
+    ...equipmentGuidance,
   ];
 
   const varietyRules = [
@@ -198,7 +232,7 @@ export function buildGenerateListPrompts({
   ]);
 
   const userPromptSections = [
-    "Build 8 meal suggestions with localized ingredients using these inputs:",
+    "Build 7 dinner meal suggestions with localized ingredients using these inputs:",
     "",
     `Budget: ${budget}`,
     `Diet: ${dietaryPromptBlock.includes("User-entered diet text:") ? dietaryPromptBlock.split("\n")[0].replace("User-entered diet text: ", "") : "None provided"}`,

@@ -185,6 +185,92 @@ function findRepeatedSignatureTitleWords(meals: Array<z.infer<typeof mealSchema>
     .map(([word]) => word);
 }
 
+function buildEquipmentSet(availableEquipment?: string[]) {
+  return new Set(
+    (Array.isArray(availableEquipment) ? availableEquipment : [])
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+}
+
+function findEquipmentViolations(
+  meals: Array<z.infer<typeof mealSchema>>,
+  selectedEquipmentSet: Set<string>,
+) {
+  const violations: string[] = [];
+
+  meals.forEach((meal) => {
+    const haystack = `${meal.name} ${meal.notes ?? ""}`.toLowerCase();
+
+    if (!selectedEquipmentSet.has("Oven")) {
+      if (
+        /\bbaked\b|\broasted\b|\bsheet[- ]pan\b|\bcasserole\b|\bgratin\b|\bbroiled\b/.test(
+          haystack,
+        )
+      ) {
+        violations.push(`Oven required for "${meal.name}"`);
+      }
+    }
+
+    if (!selectedEquipmentSet.has("Grill")) {
+      if (/\bgrilled\b|\bon the grill\b|\bchar[- ]grilled\b/.test(haystack)) {
+        violations.push(`Grill required for "${meal.name}"`);
+      }
+    }
+
+    if (!selectedEquipmentSet.has("Air Fryer")) {
+      if (/\bair fryer\b|\bair[- ]fried\b/.test(haystack)) {
+        violations.push(`Air Fryer required for "${meal.name}"`);
+      }
+    }
+
+    if (!selectedEquipmentSet.has("Slow Cooker")) {
+      if (/\bslow cooker\b|\bcrockpot\b/.test(haystack)) {
+        violations.push(`Slow Cooker required for "${meal.name}"`);
+      }
+    }
+
+    if (!selectedEquipmentSet.has("Blender")) {
+      if (/\bblender\b|\bblended\b|\bpur[eé]ed\b/.test(haystack)) {
+        violations.push(`Blender required for "${meal.name}"`);
+      }
+    }
+  });
+
+  return Array.from(new Set(violations));
+}
+
+function findMissingSelectedEquipmentUsage(
+  meals: Array<z.infer<typeof mealSchema>>,
+  selectedEquipmentSet: Set<string>,
+) {
+  const haystacks = meals.map((meal) => `${meal.name} ${meal.notes ?? ""}`.toLowerCase());
+  const missing: string[] = [];
+
+  if (
+    selectedEquipmentSet.has("Air Fryer") &&
+    !haystacks.some((value) => /\bair fryer\b|\bair[- ]fried\b/.test(value))
+  ) {
+    missing.push("Air Fryer");
+  }
+
+  if (
+    selectedEquipmentSet.has("Slow Cooker") &&
+    !haystacks.some((value) => /\bslow cooker\b|\bcrockpot\b/.test(value))
+  ) {
+    missing.push("Slow Cooker");
+  }
+
+  if (
+    selectedEquipmentSet.has("Grill") &&
+    !haystacks.some((value) => /\bgrilled\b|\bon the grill\b|\bchar[- ]grilled\b/.test(value))
+  ) {
+    missing.push("Grill");
+  }
+
+  return missing;
+}
+
 async function fetchUnsplashImage(query: string, queryIsEncoded = false) {
   if (!process.env.UNSPLASH_ACCESS_KEY) {
     return undefined;
@@ -265,6 +351,7 @@ export async function POST(request: Request) {
     Array.isArray(availableEquipment) && availableEquipment.length > 0
       ? availableEquipment.join(", ")
       : "Oven, Stovetop, Microwave";
+  const selectedEquipmentSet = buildEquipmentSet(availableEquipment);
 
   if (
     typeof budget !== "number" ||
@@ -354,10 +441,20 @@ export async function POST(request: Request) {
       [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
     );
     let repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
+    let equipmentViolations = findEquipmentViolations(parsed.meals, selectedEquipmentSet);
+    let missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
+      parsed.meals,
+      selectedEquipmentSet,
+    );
 
-    if (blockedMatches.length > 0 || repeatedSignatureWords.length > 0) {
+    if (
+      blockedMatches.length > 0 ||
+      repeatedSignatureWords.length > 0 ||
+      equipmentViolations.length > 0 ||
+      missingSelectedEquipmentUsage.length > 0
+    ) {
       rawPlan = await requestMealPlan(
-        `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
+        `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. Selected special equipment not used: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
       );
       parsed = aiGenerateListResponseSchema.parse(rawPlan);
       parsed = {
@@ -369,6 +466,11 @@ export async function POST(request: Request) {
         [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
       );
       repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
+      equipmentViolations = findEquipmentViolations(parsed.meals, selectedEquipmentSet);
+      missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
+        parsed.meals,
+        selectedEquipmentSet,
+      );
     }
 
     if (blockedMatches.length > 0) {
@@ -384,6 +486,24 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: `Generated meals still repeated signature flavor words in titles after retry: ${repeatedSignatureWords.join(", ")}`,
+        },
+        { status: 500 },
+      );
+    }
+
+    if (equipmentViolations.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Generated meals required unselected equipment after retry: ${equipmentViolations.join(", ")}`,
+        },
+        { status: 500 },
+      );
+    }
+
+    if (missingSelectedEquipmentUsage.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Generated meals did not meaningfully use selected special equipment after retry: ${missingSelectedEquipmentUsage.join(", ")}`,
         },
         { status: 500 },
       );
