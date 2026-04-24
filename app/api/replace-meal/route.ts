@@ -8,6 +8,7 @@ import {
   normalizeDietaryPreferences,
   parseMealNameList,
 } from "@/lib/meal-request-normalization";
+import { buildReplaceMealPrompts } from "@/lib/meal-prompt-builders";
 
 type ReplaceMealRequest = {
   budget: number;
@@ -104,56 +105,21 @@ export async function POST(request: Request) {
     ]),
   ).filter(Boolean);
 
-  const systemPrompt = `
-You are an expert budget-conscious meal planner helping replace a single rejected dinner.
-
-Rules:
-- Generate exactly ONE replacement meal.
-- The replacement must feel clearly different from the rejected meal title in flavor profile, format, and primary ingredients.
-- CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals?.trim() || "None provided"}.
-- CURRENT MENU CONTEXT: The user already has these meals: ${(currentMealsContext ?? existingMeals)?.trim() || "None provided"}. STRICT RULE: Provide a completely different main protein and flavor profile from the majority of the current menu.
-- RECENTLY REJECTED OR BLOCKED TITLES: ${blockedTitles.join(", ") || "None provided"}.
-- CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.
-- Respect the user's budget, diet, household size, pantry items, and prep-time preference.
-- DIETARY SAFETY: Treat blocked ingredients and blocked categories as hard bans. Never include them in the replacement title, description, or ingredients.
-- ${mustHaveGuidance.promptBlock}
-- Adventure Level enforcement:
-  - Stick to basics: choose a familiar meal style such as burgers and fries, wraps, tacos, pasta, baked chicken, or other approachable weeknight staples.
-  - Mix it up: choose something distinct but still approachable.
-  - Try new cuisines: choose a clearly different cuisine or flavor lane from the rejected meal and the current menu.
-- ${adventureGuidance.replacementBlock}
-- CRITICAL REPLACEMENT DISTINCTNESS: the replacement must differ from the rejected meal in at least TWO of these dimensions: main protein, cuisine lane, cooking format, or starch/side pairing.
-- CRITICAL REPLACEMENT SAFETY: never return the rejected meal again, never return a tiny rename of the rejected meal, and never return a title that is already present in the current menu context.
-- Use pantry items where reasonable.
-- Keep the replacement practical for a weeknight home cook.
-- Return valid JSON only.
-- Use this exact JSON shape:
-{
-  "title": "string",
-  "description": "string",
-  "prepTime": number,
-  "ingredients": ["string"]
-}
-`;
-
-  const userPrompt = `
-Generate one replacement meal with these constraints:
-
-Budget: ${budget}
-Diet: ${diet}
-Household Size: ${householdSize}
-Pantry Items: ${combinedPantryItems || "None provided"}
-Rejected Meal Title: ${rejectedMealTitle}
-Prep Time Preference: ${prepTime || "No preference provided"}
-Adventure Level: ${adventureLevel || "No preference provided"}
-Must-Have Ingredient: ${mustHaveIngredient?.trim() || "None provided"}
-Available Kitchen Equipment: ${selectedEquipment}
-${dietaryPreferences.promptBlock}
-${mustHaveGuidance.promptBlock}
-${adventureGuidance.replacementBlock}
-
-The new meal must be distinctly different from "${rejectedMealTitle}".
-`;
+  const { systemPrompt, userPrompt } = buildReplaceMealPrompts({
+    adventureGuidance: adventureGuidance.replacementBlock,
+    adventureLevel: adventureLevel || "No preference provided",
+    blockedTitles,
+    budget,
+    combinedPantryItems,
+    currentMealsContext: (currentMealsContext ?? existingMeals)?.trim() || "None provided",
+    dietaryPromptBlock: dietaryPreferences.promptBlock,
+    existingMeals: existingMeals?.trim() || "None provided",
+    householdSize,
+    mustHavePromptBlock: mustHaveGuidance.promptBlock,
+    prepTime,
+    rejectedMealTitle,
+    selectedEquipment,
+  });
 
   try {
     const response = await openai.chat.completions.create({
