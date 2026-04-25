@@ -170,26 +170,26 @@ export function SmartCartHeroHeader({
             type="button"
           >
             <div
-              className={`relative min-h-[10.5rem] rounded-3xl transition-transform duration-500 [transform-style:preserve-3d] ${
+              className={`relative min-h-[7.75rem] rounded-3xl transition-transform duration-500 [transform-style:preserve-3d] ${
                 activeFeature === feature ? "[transform:rotateY(180deg)]" : ""
               }`}
             >
               <div className="absolute inset-0 rounded-3xl border border-pine/10 bg-cream p-4 text-left shadow-sm [backface-visibility:hidden] transition group-hover:border-orange-300 group-hover:bg-orange-50">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-display text-2xl text-pine sm:text-3xl">{feature}</p>
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-orange-200/80 bg-white/85 shadow-sm transition group-hover:-translate-y-0.5 group-hover:border-orange-300">
+                  <p className="font-display text-xl text-pine sm:text-2xl">{feature}</p>
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-orange-200/80 bg-white/85 shadow-sm transition group-hover:-translate-y-0.5 group-hover:border-orange-300">
                     <div className="flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                       <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
                     </div>
                   </div>
                 </div>
-                <div className="mt-6 flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.22em] text-pine/45">
+                <div className="mt-3 flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.22em] text-pine/45">
                   <span className="h-px flex-1 bg-pine/10" />
-                  <div className="flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 shadow-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-orange-200" />
+                  <div className="flex items-center gap-1 rounded-full bg-white/70 px-2 py-0.5 shadow-sm">
+                    <span className="h-1 w-1 rounded-full bg-orange-500" />
+                    <span className="h-1 w-1 rounded-full bg-orange-300" />
+                    <span className="h-1 w-1 rounded-full bg-orange-200" />
                   </div>
                 </div>
               </div>
@@ -197,7 +197,7 @@ export function SmartCartHeroHeader({
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-700">
                   {feature}
                 </p>
-                <p className="mt-3 text-sm leading-7 text-ink/80">
+                <p className="mt-2 text-sm leading-6 text-ink/80">
                   {featureDescriptions[feature]}
                 </p>
               </div>
