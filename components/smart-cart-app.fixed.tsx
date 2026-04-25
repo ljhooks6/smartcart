@@ -863,17 +863,17 @@ export function SmartCartApp() {
 
     if (!Number.isFinite(budget) || budget <= 0) {
       setValidationError("Enter a weekly budget greater than $0.");
-      return;
+      return false;
     }
 
     if (!Number.isInteger(householdSize) || householdSize <= 0) {
       setValidationError("Household size must be a whole number greater than 0.");
-      return;
+      return false;
     }
 
     if (combinedPantryItems.length === 0) {
       setValidationError("Add at least one pantry item before generating a plan.");
-      return;
+      return false;
     }
 
     setIsLoading(true);
@@ -918,7 +918,7 @@ export function SmartCartApp() {
         setGeneratedPlan(null);
         persistGeneratedPlan(null);
         setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
-        return;
+        return false;
       }
       setGeneratedPlan(data);
       persistGeneratedPlan(data);
@@ -927,6 +927,7 @@ export function SmartCartApp() {
       setHasAppliedUpgrades(applyUpgrades);
       setSavedDesserts([]);
       setExpandedDetailCards(new Set());
+      return true;
     } catch (error) {
       setGeneratedPlan(null);
       persistGeneratedPlan(null);
@@ -937,6 +938,7 @@ export function SmartCartApp() {
             ? error.message
             : "Failed to fetch",
       );
+      return false;
     } finally {
       if (typeof timeoutId === "number") {
         window.clearTimeout(timeoutId);
@@ -947,8 +949,12 @@ export function SmartCartApp() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setActiveMobileTab("meals");
-    await submitPlan(false);
+    const didStartPlan = await submitPlan(false);
+    if (didStartPlan) {
+      setActiveMobileTab("meals");
+    } else {
+      setActiveMobileTab("plan");
+    }
   }
 
   function toggleQuickItem(item: string) {
