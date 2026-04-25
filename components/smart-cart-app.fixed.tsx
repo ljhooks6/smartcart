@@ -1783,7 +1783,7 @@ export function SmartCartApp() {
   }
 
   return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-64 pt-4 md:pb-12 md:pt-8">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-72 pt-4 md:pb-12 md:pt-8">
         {isLoading ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-6">
             <div className="w-full max-w-md rounded-[2rem] border border-stone-200 bg-white px-6 py-7 text-center shadow-2xl">
@@ -1858,7 +1858,7 @@ export function SmartCartApp() {
 
         <div className="grid gap-8 md:hidden">
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-44 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "plan" ? `block ${activeTabMeta.panelClass}` : "hidden"
               }`}
             >
@@ -1969,7 +1969,7 @@ export function SmartCartApp() {
           </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-44 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "meals" ? `block ${mobileTabs[1].panelClass}` : "hidden"
               }`}
             >
@@ -2027,7 +2027,7 @@ export function SmartCartApp() {
             </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-44 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "shop" ? `block ${mobileTabs[2].panelClass}` : "hidden"
               }`}
             >
@@ -2090,7 +2090,7 @@ export function SmartCartApp() {
           </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-44 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "cook" ? `block ${mobileTabs[3].panelClass}` : "hidden"
               }`}
             >
@@ -2130,7 +2130,7 @@ export function SmartCartApp() {
             </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-44 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "vault" ? `block ${mobileTabs[4].panelClass}` : "hidden"
               }`}
             >

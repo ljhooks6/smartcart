@@ -300,8 +300,8 @@ export function SmartCartContextForm({
         </div>
 
         {isEquipmentSheetOpen ? (
-          <div className="fixed inset-0 z-40 bg-ink/35 p-4 md:hidden">
-            <div className="mx-auto mt-4 flex max-h-[82vh] w-full flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
+          <div className="fixed inset-0 z-40 bg-ink/35 px-4 pb-4 pt-10 md:hidden">
+            <div className="mx-auto mt-10 flex max-h-[76vh] w-full flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
               <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 pb-4 pt-5">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-pine/55">
@@ -472,8 +472,8 @@ export function SmartCartContextForm({
       </form>
 
       {isPantrySelectionOpen ? (
-        <div className="fixed inset-0 z-40 bg-ink/35 p-4 md:hidden">
-          <div className="mx-auto mt-4 flex max-h-[82vh] w-full flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
+        <div className="fixed inset-0 z-40 bg-ink/35 px-4 pb-4 pt-10 md:hidden">
+          <div className="mx-auto mt-10 flex max-h-[76vh] w-full flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 pb-4 pt-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/55">
