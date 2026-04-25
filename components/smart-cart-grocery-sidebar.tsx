@@ -3,6 +3,7 @@
 type GroceryListItem = {
   category: string;
   buy_amount?: string;
+  flexibility_note?: string;
   name: string;
   estimated_price: number;
   needed_amount?: string;
@@ -160,13 +161,17 @@ export function SmartCartGrocerySidebar({
                                     )}
                                   </span>
                                   {(item.needed_amount || item.buy_amount) && (
-                                    <span className="mt-1 flex flex-col text-xs text-ink/55">
-                                      {item.needed_amount && (
-                                        <span>Need: {item.needed_amount}</span>
-                                      )}
-                                      {item.buy_amount && <span>Buy: {item.buy_amount}</span>}
+                                    <span className="mt-1 text-xs text-ink/55">
+                                      {item.needed_amount ? `Need ${item.needed_amount}` : ""}
+                                      {item.needed_amount && item.buy_amount ? " • " : ""}
+                                      {item.buy_amount ? `Buy ${item.buy_amount}` : ""}
                                     </span>
                                   )}
+                                  {item.flexibility_note ? (
+                                    <span className="mt-1 text-[11px] leading-5 text-ink/45">
+                                      {item.flexibility_note}
+                                    </span>
+                                  ) : null}
                                 </span>
                               </label>
                               <span className="flex shrink-0 flex-col items-end text-right">
@@ -211,13 +216,17 @@ export function SmartCartGrocerySidebar({
                             <span className="flex flex-col text-sm">
                               <span className="font-medium">{item.name}</span>
                               {(item.needed_amount || item.buy_amount) && (
-                                <span className="mt-1 flex flex-col text-xs text-gray-400">
-                                  {item.needed_amount && (
-                                    <span>Need: {item.needed_amount}</span>
-                                  )}
-                                  {item.buy_amount && <span>Buy: {item.buy_amount}</span>}
+                                <span className="mt-1 text-xs text-gray-400">
+                                  {item.needed_amount ? `Need ${item.needed_amount}` : ""}
+                                  {item.needed_amount && item.buy_amount ? " • " : ""}
+                                  {item.buy_amount ? `Buy ${item.buy_amount}` : ""}
                                 </span>
                               )}
+                              {item.flexibility_note ? (
+                                <span className="mt-1 text-[11px] leading-5 text-gray-400">
+                                  {item.flexibility_note}
+                                </span>
+                              ) : null}
                             </span>
                             <button
                               className="text-xs font-semibold text-orange-500 transition hover:text-orange-600"

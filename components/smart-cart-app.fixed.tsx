@@ -1310,6 +1310,9 @@ export function SmartCartApp() {
     dessert: GenerateListResponse["desserts"][number],
     index: number,
   ) {
+    const isAlreadySaved = savedDesserts.some(
+      (savedDessert) => savedDessert.name === dessert.title,
+    );
     const dessertMeal: MealPlanItem = {
       user_id: safeTrim(user?.id),
       day: `Sweet Treat ${index + 1}`,
@@ -1325,6 +1328,24 @@ export function SmartCartApp() {
         ? current.filter((savedDessert) => savedDessert.name !== dessert.title)
         : [...current, dessertMeal],
     );
+
+    setGeneratedPlan((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const nextPlan = {
+        ...current,
+        desserts: isAlreadySaved
+          ? current.desserts.some((currentDessert) => currentDessert.title === dessert.title)
+            ? current.desserts
+            : [...current.desserts, dessert]
+          : current.desserts.filter((currentDessert) => currentDessert.title !== dessert.title),
+      };
+
+      persistGeneratedPlan(nextPlan);
+      return nextPlan;
+    });
   }
 
   function handleToggleCardDetails(cardKey: string) {

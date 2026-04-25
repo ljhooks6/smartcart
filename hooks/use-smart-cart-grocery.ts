@@ -14,6 +14,7 @@ type MealPlanItem = {
 
 type GroceryListItem = {
   category: string;
+  flexibility_note?: string;
   name: string;
   buy_amount?: string;
   estimated_price: number;
@@ -280,39 +281,69 @@ function estimatePackagePrice(itemName: string, buyAmount?: string) {
   return Math.max(1, Number(estimate.toFixed(2)));
 }
 
+function getFlexibleStapleMeta(itemName: string) {
+  const normalizedName = normalizeIngredientName(itemName);
+
+  if (
+    normalizedName.includes("jasmine rice") ||
+    normalizedName.includes("basmati rice") ||
+    normalizedName === "white rice" ||
+    normalizedName.endsWith(" white rice")
+  ) {
+    return {
+      flexibilityNote: "One bag of jasmine or basmati rice will cover these meals.",
+      key: "flexible-rice",
+      name: "Rice",
+    };
+  }
+
+  return {
+    flexibilityNote: undefined,
+    key: normalizedName,
+    name: safeTrim(itemName),
+  };
+}
+
 function aggregateIngredientItems(ingredients: IngredientItem[]): GroceryListItem[] {
   const grouped = new Map<
     string,
-    { buy_amount?: string; name: string; needed_amount?: string }
+    { buy_amount?: string; flexibility_note?: string; name: string; needed_amount?: string }
   >();
 
   ingredients.forEach((ingredient) => {
-    const normalizedName = normalizeIngredientName(ingredient.name);
-    if (!normalizedName) {
+    const stapleMeta = getFlexibleStapleMeta(ingredient.name);
+
+    if (!stapleMeta.key) {
       return;
     }
 
-    const existing = grouped.get(normalizedName);
+    const existing = grouped.get(stapleMeta.key);
     const nextAmount = safeTrim(ingredient.amount);
 
     if (existing) {
-      grouped.set(normalizedName, {
-        buy_amount: estimatePackageAmount(existing.name, mergeAmounts(existing.needed_amount, nextAmount)),
+      grouped.set(stapleMeta.key, {
+        buy_amount: estimatePackageAmount(
+          existing.name,
+          mergeAmounts(existing.needed_amount, nextAmount),
+        ),
+        flexibility_note: existing.flexibility_note ?? stapleMeta.flexibilityNote,
         name: existing.name,
         needed_amount: mergeAmounts(existing.needed_amount, nextAmount),
       });
       return;
     }
 
-    grouped.set(normalizedName, {
-      buy_amount: estimatePackageAmount(ingredient.name, nextAmount),
-      name: safeTrim(ingredient.name),
+    grouped.set(stapleMeta.key, {
+      buy_amount: estimatePackageAmount(stapleMeta.name, nextAmount),
+      flexibility_note: stapleMeta.flexibilityNote,
+      name: stapleMeta.name,
       needed_amount: nextAmount,
     });
   });
 
   return Array.from(grouped.values()).map((item) => ({
     category: "Meal Ingredients",
+    flexibility_note: item.flexibility_note,
     name: item.name,
     buy_amount: item.buy_amount,
     estimated_price: estimatePackagePrice(item.name, item.buy_amount),

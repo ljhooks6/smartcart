@@ -165,30 +165,34 @@ export function SmartCartHeroHeader({
         {Object.keys(featureDescriptions).map((feature) => (
           <button
             key={feature}
-            className={`rounded-3xl border p-4 text-left transition ${
-              activeFeature === feature
-                ? "border-orange-400 bg-orange-100 shadow-md"
-                : "border-pine/10 bg-cream hover:border-orange-300 hover:bg-orange-50"
-            }`}
+            className="group [perspective:1200px]"
             onClick={() => onFeatureToggle(feature)}
             type="button"
           >
-            <p className="font-display text-2xl text-pine sm:text-3xl">{feature}</p>
-            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-ink/45">
-              Tap to preview
-            </p>
+            <div
+              className={`relative min-h-[10.5rem] rounded-3xl transition-transform duration-500 [transform-style:preserve-3d] ${
+                activeFeature === feature ? "[transform:rotateY(180deg)]" : ""
+              }`}
+            >
+              <div className="absolute inset-0 rounded-3xl border border-pine/10 bg-cream p-4 text-left shadow-sm [backface-visibility:hidden] transition group-hover:border-orange-300 group-hover:bg-orange-50">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-display text-2xl text-pine sm:text-3xl">{feature}</p>
+                  <span className="rounded-full border border-orange-200 bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-orange-600">
+                    Flip
+                  </span>
+                </div>
+              </div>
+              <div className="absolute inset-0 rounded-3xl border border-orange-300 bg-orange-100 p-4 text-left shadow-md [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-700">
+                  {feature}
+                </p>
+                <p className="mt-3 text-sm leading-7 text-ink/80">
+                  {featureDescriptions[feature]}
+                </p>
+              </div>
+            </div>
           </button>
         ))}
-      </div>
-
-      <div
-        className={`overflow-hidden rounded-3xl border border-stone-200 bg-white/80 px-5 py-4 text-sm leading-7 text-ink/75 transition-all ${
-          activeFeature
-            ? "max-h-40 opacity-100 shadow-md"
-            : "max-h-0 border-transparent px-0 py-0 opacity-0"
-        }`}
-      >
-        {activeFeature ? featureDescriptions[activeFeature] : null}
       </div>
     </div>
   );
