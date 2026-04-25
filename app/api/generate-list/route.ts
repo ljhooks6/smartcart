@@ -70,7 +70,11 @@ type GenerateListResponse = z.infer<typeof aiGenerateListResponseSchema> & {
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  maxRetries: 0,
+  timeout: 45000,
 });
+
+const OPENAI_REQUEST_TIMEOUT_MS = 45000;
 
 function estimateRestockPrice(itemName: string) {
   const normalized = itemName.trim().toLowerCase();
@@ -352,18 +356,23 @@ export async function POST(request: Request) {
 
   try {
     async function requestMealPlan(retryInstruction?: string) {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        temperature: 0.4,
-        messages: [
-          { role: "system", content: systemPrompt.trim() },
-          { role: "user", content: userPrompt.trim() },
-          ...(retryInstruction
-            ? [{ role: "user" as const, content: retryInstruction }]
-            : []),
-        ],
-      });
+      const response = await openai.chat.completions.create(
+        {
+          model: "gpt-4o-mini",
+          response_format: { type: "json_object" },
+          temperature: 0.4,
+          messages: [
+            { role: "system", content: systemPrompt.trim() },
+            { role: "user", content: userPrompt.trim() },
+            ...(retryInstruction
+              ? [{ role: "user" as const, content: retryInstruction }]
+              : []),
+          ],
+        },
+        {
+          timeout: OPENAI_REQUEST_TIMEOUT_MS,
+        },
+      );
 
       const content = response.choices[0]?.message?.content;
 
@@ -401,11 +410,10 @@ export async function POST(request: Request) {
     if (
       blockedMatches.length > 0 ||
       repeatedSignatureWords.length > 0 ||
-      equipmentViolations.length > 0 ||
-      missingSelectedEquipmentUsage.length > 0
+      equipmentViolations.length > 0
     ) {
       rawPlan = await requestMealPlan(
-        `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. Selected special equipment not used: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
+        `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
       );
       parsed = aiGenerateListResponseSchema.parse(rawPlan);
       parsed = {

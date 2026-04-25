@@ -878,12 +878,20 @@ export function SmartCartApp() {
 
     setIsLoading(true);
 
+    let timeoutId: number | undefined;
+
     try {
+      const controller = new AbortController();
+      timeoutId = window.setTimeout(() => {
+        controller.abort();
+      }, 65000);
+
       const response = await fetch("/api/generate-list", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
         body: JSON.stringify({
           budget,
           diet: safeTrim(formState.diet) || "No specific diet provided",
@@ -902,7 +910,6 @@ export function SmartCartApp() {
           existingMeals: existingMealTitles,
         }),
       });
-
       const data = (await response.json()) as GenerateListResponse & {
         error?: string;
       };
@@ -924,9 +931,16 @@ export function SmartCartApp() {
       setGeneratedPlan(null);
       persistGeneratedPlan(null);
       setRequestError(
-        error instanceof Error ? error.message : "Failed to fetch",
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Meal generation timed out. Please try again."
+          : error instanceof Error
+            ? error.message
+            : "Failed to fetch",
       );
     } finally {
+      if (typeof timeoutId === "number") {
+        window.clearTimeout(timeoutId);
+      }
       setIsLoading(false);
     }
   }

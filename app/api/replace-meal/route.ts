@@ -36,6 +36,8 @@ const replaceMealResponseSchema = z.object({
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  maxRetries: 0,
+  timeout: 30000,
 });
 
 function buildEquipmentSet(availableEquipment?: string[]) {
