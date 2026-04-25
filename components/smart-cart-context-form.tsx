@@ -300,7 +300,7 @@ export function SmartCartContextForm({
         </div>
 
         {isEquipmentSheetOpen ? (
-          <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-20 pt-10 md:hidden">
+          <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-28 pt-10 md:hidden">
             <div className="mx-auto flex max-h-[72vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
               <div className="flex justify-center pt-3">
                 <span className="h-1.5 w-12 rounded-full bg-stone-300" />
@@ -475,7 +475,7 @@ export function SmartCartContextForm({
       </form>
 
         {isPantrySelectionOpen ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-20 pt-10 md:hidden">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-28 pt-10 md:hidden">
           <div className="mx-auto flex max-h-[72vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
             <div className="flex justify-center pt-3">
               <span className="h-1.5 w-12 rounded-full bg-stone-300" />
