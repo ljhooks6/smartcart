@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { SmartCartContextForm } from "./smart-cart-context-form";
 import { SmartCartCookSections } from "./smart-cart-cook-sections";
@@ -537,6 +537,7 @@ export function SmartCartApp() {
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("plan");
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
+  const lastScrollYRef = useRef(0);
 
   const showToast = useCallback((message: string, tone: ToastTone = "info") => {
     setToastMessage(message);
@@ -707,11 +708,27 @@ export function SmartCartApp() {
     }
 
     const handleScroll = () => {
+      const currentScrollY = window.scrollY;
       const scrollPosition = window.innerHeight + window.scrollY;
       const nearBottom = scrollPosition >= document.documentElement.scrollHeight - 180;
-      setIsMobileDockExpanded((current) => (nearBottom ? true : current));
+      const isScrollingUp = currentScrollY < lastScrollYRef.current - 12;
+
+      setIsMobileDockExpanded((current) => {
+        if (nearBottom) {
+          return true;
+        }
+
+        if (isScrollingUp) {
+          return false;
+        }
+
+        return current;
+      });
+
+      lastScrollYRef.current = currentScrollY;
     };
 
+    lastScrollYRef.current = window.scrollY;
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
 
@@ -2421,117 +2438,110 @@ export function SmartCartApp() {
             </div>
           </button>
 
-          <div className="border-b border-stone-200/70 p-2">
-            <div className="flex items-center gap-2 rounded-[1.4rem] bg-stone-50/90 p-1.5">
-              {activeMobileTab === "plan" ? (
-                <>
-                  <button
-                    className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={isLoading || !isBudgetValid}
-                    form="smart-cart-context-form"
-                    type="submit"
-                  >
-                    {isLoading ? "Generating..." : "Generate"}
-                  </button>
-                  {isMobileDockExpanded ? (
-                    <button
-                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                      onClick={handleClearForm}
-                      type="button"
-                    >
-                      Clear
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-              {activeMobileTab === "meals" ? (
-                <>
-                  <button
-                    className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={!generatedPlan}
-                    onClick={() => setActiveMobileTab("shop")}
-                    type="button"
-                  >
-                    Open Shop
-                  </button>
-                  {isMobileDockExpanded ? (
-                    <button
-                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                      onClick={() => setActiveMobileTab("cook")}
-                      type="button"
-                    >
-                      Cook
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-              {activeMobileTab === "shop" ? (
-                <>
-                  <button
-                    className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={!generatedPlan}
-                    onClick={handleCopyShoppingList}
-                    type="button"
-                  >
-                    {copied ? "Copied" : "Copy List"}
-                  </button>
-                  {isMobileDockExpanded ? (
-                    <button
-                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                      onClick={() => setActiveMobileTab("cook")}
-                      type="button"
-                    >
-                      Cook
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-              {activeMobileTab === "cook" ? (
-                <>
-                  <button
-                    className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={isSaving || !Boolean(user)}
-                    onClick={() => void saveSessionToCloud()}
-                    type="button"
-                  >
-                    {isSaving ? "Saving..." : "Save Week"}
-                  </button>
-                  {isMobileDockExpanded ? (
-                    <button
-                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                      onClick={() => setActiveMobileTab("vault")}
-                      type="button"
-                    >
-                      Vault
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-              {activeMobileTab === "vault" ? (
-                <>
-                  <button
-                    className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90"
-                    onClick={() => setIsVaultOpen((current) => !current)}
-                    type="button"
-                  >
-                    {isVaultOpen ? "Close Vault" : "Open Vault"}
-                  </button>
-                  {Boolean(user) && isMobileDockExpanded ? (
-                    <button
-                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={isSaving}
-                      onClick={() => void saveSessionToCloud()}
-                      type="button"
-                    >
-                      {isSaving ? "Saving..." : "Save"}
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-            </div>
-          </div>
-
           {isMobileDockExpanded ? (
+            <>
+              <div className="border-b border-stone-200/70 p-2">
+                <div className="flex items-center gap-2 rounded-[1.4rem] bg-stone-50/90 p-1.5">
+                  {activeMobileTab === "plan" ? (
+                    <>
+                      <button
+                        className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isLoading || !isBudgetValid}
+                        form="smart-cart-context-form"
+                        type="submit"
+                      >
+                        {isLoading ? "Generating..." : "Generate"}
+                      </button>
+                      <button
+                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                        onClick={handleClearForm}
+                        type="button"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  ) : null}
+                  {activeMobileTab === "meals" ? (
+                    <>
+                      <button
+                        className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={!generatedPlan}
+                        onClick={() => setActiveMobileTab("shop")}
+                        type="button"
+                      >
+                        Open Shop
+                      </button>
+                      <button
+                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                        onClick={() => setActiveMobileTab("cook")}
+                        type="button"
+                      >
+                        Cook
+                      </button>
+                    </>
+                  ) : null}
+                  {activeMobileTab === "shop" ? (
+                    <>
+                      <button
+                        className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={!generatedPlan}
+                        onClick={handleCopyShoppingList}
+                        type="button"
+                      >
+                        {copied ? "Copied" : "Copy List"}
+                      </button>
+                      <button
+                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                        onClick={() => setActiveMobileTab("cook")}
+                        type="button"
+                      >
+                        Cook
+                      </button>
+                    </>
+                  ) : null}
+                  {activeMobileTab === "cook" ? (
+                    <>
+                      <button
+                        className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isSaving || !Boolean(user)}
+                        onClick={() => void saveSessionToCloud()}
+                        type="button"
+                      >
+                        {isSaving ? "Saving..." : "Save Week"}
+                      </button>
+                      <button
+                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                        onClick={() => setActiveMobileTab("vault")}
+                        type="button"
+                      >
+                        Vault
+                      </button>
+                    </>
+                  ) : null}
+                  {activeMobileTab === "vault" ? (
+                    <>
+                      <button
+                        className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90"
+                        onClick={() => setIsVaultOpen((current) => !current)}
+                        type="button"
+                      >
+                        {isVaultOpen ? "Close Vault" : "Open Vault"}
+                      </button>
+                      {Boolean(user) ? (
+                        <button
+                          className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isSaving}
+                          onClick={() => void saveSessionToCloud()}
+                          type="button"
+                        >
+                          {isSaving ? "Saving..." : "Save"}
+                        </button>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
             <nav className="p-2">
               <div className="grid grid-cols-5 gap-2">
                 {mobileTabs.map((tab) => {
@@ -2561,6 +2571,7 @@ export function SmartCartApp() {
                 })}
               </div>
             </nav>
+            </>
           ) : null}
         </div>
       </div>

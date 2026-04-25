@@ -300,8 +300,11 @@ export function SmartCartContextForm({
         </div>
 
         {isEquipmentSheetOpen ? (
-          <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-0 pt-10 md:hidden">
-            <div className="mx-auto flex max-h-[78vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[2rem] border border-b-0 border-stone-200 bg-white shadow-2xl">
+          <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-12 pt-10 md:hidden">
+            <div className="mx-auto flex max-h-[72vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
+              <div className="flex justify-center pt-3">
+                <span className="h-1.5 w-12 rounded-full bg-stone-300" />
+              </div>
               <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 pb-4 pt-5">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-pine/55">
@@ -472,8 +475,11 @@ export function SmartCartContextForm({
       </form>
 
         {isPantrySelectionOpen ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-0 pt-10 md:hidden">
-          <div className="mx-auto flex max-h-[78vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[2rem] border border-b-0 border-stone-200 bg-white shadow-2xl">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-12 pt-10 md:hidden">
+          <div className="mx-auto flex max-h-[72vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
+            <div className="flex justify-center pt-3">
+              <span className="h-1.5 w-12 rounded-full bg-stone-300" />
+            </div>
             <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 pb-4 pt-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/55">
