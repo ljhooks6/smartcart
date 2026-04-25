@@ -177,9 +177,20 @@ export function SmartCartHeroHeader({
               <div className="absolute inset-0 rounded-3xl border border-pine/10 bg-cream p-4 text-left shadow-sm [backface-visibility:hidden] transition group-hover:border-orange-300 group-hover:bg-orange-50">
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-display text-2xl text-pine sm:text-3xl">{feature}</p>
-                  <span className="rounded-full border border-orange-200 bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-orange-600">
-                    Flip
-                  </span>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-orange-200/80 bg-white/85 shadow-sm transition group-hover:-translate-y-0.5 group-hover:border-orange-300">
+                    <div className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.22em] text-pine/45">
+                  <span className="h-px flex-1 bg-pine/10" />
+                  <div className="flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-orange-200" />
+                  </div>
                 </div>
               </div>
               <div className="absolute inset-0 rounded-3xl border border-orange-300 bg-orange-100 p-4 text-left shadow-md [backface-visibility:hidden] [transform:rotateY(180deg)]">
