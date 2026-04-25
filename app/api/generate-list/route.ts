@@ -358,7 +358,7 @@ export async function POST(request: Request) {
     async function requestMealPlan(retryInstruction?: string) {
       const response = await openai.chat.completions.create(
         {
-          model: "gpt-4o-mini",
+          model: "gpt-4.1",
           response_format: { type: "json_object" },
           temperature: 0.4,
           messages: [
