@@ -159,6 +159,8 @@ export function buildGenerateListPrompts({
     "- CRITICAL RULE: FLAVOR MANDATE. Every recipe must explicitly include at least 3 herbs, spices, or aromatics.",
     "- CRITICAL RULE: FLAVOR VARIETY. Do not let the same spice, herb, or aromatic dominate the entire week. Repeating the same signature flavor cue in multiple meal titles is forbidden. If cumin appears in one title, do not keep using cumin in other titles unless it is truly essential.",
     "- CRITICAL RULE: TITLE VARIETY. Do not repeat the same cuisine word, spice word, or meal format over and over in the meal names. Avoid titles that feel templated.",
+    "- CRITICAL RULE: FORMAT VARIETY. Do not let more than 2 meals use the same title family such as stir-fry, skillet, curry, bowl, wrap, sheet-pan, pasta bake, or tacos.",
+    "- CRITICAL RULE: CUISINE VARIETY. Spread the week across distinct flavor lanes. Do not let the menu read like seven variations of the same seasoning profile.",
   ];
 
   const pantryAndIngredientRules = [
@@ -199,6 +201,8 @@ export function buildGenerateListPrompts({
     "  - Keep it simple / Stick to basics: At least 4 of the 7 meals must be familiar weeknight staples. Simple meals like burgers and fries, chicken or turkey burgers and fries, chicken wraps, spaghetti and meatballs, tacos, baked pasta, meatloaf, or sheet-pan chicken are absolutely allowed and encouraged when they fit the rules.",
     "  - Mix it up: Build a clear split with about half familiar comfort meals and half more varied cuisine or format choices.",
     "  - Try something new: Keep only 1 or 2 familiar anchor meals at most. The rest should clearly explore different cuisines, proteins, or formats.",
+    "- CLASSIC MEAL ALLOWLIST: burgers and fries, turkey burgers, chicken burgers, chicken wraps, spaghetti and meatballs, baked ziti, quesadillas, tacos, meatloaf, BBQ chicken plates, pork chops with sides, and sheet-pan dinners are all valid meal concepts when they match the user's preferences.",
+    "- IMPORTANT: Do not avoid simple classics just because they sound common. Familiar meals are often the correct answer, especially for Stick to basics and Mix it up.",
     `- ${adventureGuidance}`,
   ];
 
@@ -300,6 +304,8 @@ export function buildReplaceMealPrompts({
       `- ${adventureGuidance}`,
       "- CRITICAL REPLACEMENT DISTINCTNESS: the replacement must differ from the rejected meal in at least TWO of these dimensions: main protein, cuisine lane, cooking format, or starch/side pairing.",
       "- CRITICAL REPLACEMENT SAFETY: never return the rejected meal again, never return a tiny rename of the rejected meal, and never return a title that is already present in the current menu context.",
+      "- CRITICAL REPLACEMENT VARIETY: if the rejected meal was a burger, wrap, taco, pasta, bowl, curry, stir-fry, skillet, or sheet-pan meal, do not return the same meal family unless the user explicitly asked for very simple staples and even then change the protein and side pairing substantially.",
+      "- CLASSIC REPLACEMENTS ARE ALLOWED when they fit the adventure level. Burgers, wraps, pasta, tacos, quesadillas, BBQ plates, and baked chicken dinners are all valid replacements if they are clearly different from the rejected or existing meals.",
       "- Use pantry items where reasonable.",
       "- Keep the replacement practical for a weeknight home cook.",
       "- Return valid JSON only.",

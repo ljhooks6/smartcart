@@ -40,6 +40,48 @@ const openai = new OpenAI({
   timeout: 30000,
 });
 
+const TITLE_STOP_WORDS = new Set([
+  "and",
+  "with",
+  "the",
+  "a",
+  "an",
+  "style",
+  "classic",
+  "crispy",
+  "creamy",
+  "spicy",
+  "easy",
+  "weeknight",
+  "loaded",
+  "homestyle",
+  "fresh",
+  "roasted",
+  "grilled",
+  "baked",
+]);
+
+const TITLE_FAMILY_KEYWORDS = [
+  "burger",
+  "wrap",
+  "taco",
+  "quesadilla",
+  "pasta",
+  "spaghetti",
+  "meatball",
+  "stir-fry",
+  "stir fry",
+  "skillet",
+  "curry",
+  "bowl",
+  "sheet-pan",
+  "sheet pan",
+  "salad",
+  "sandwich",
+  "soup",
+  "chili",
+] as const;
+
 function buildEquipmentSet(availableEquipment?: string[]) {
   return new Set(
     (Array.isArray(availableEquipment) ? availableEquipment : [])
@@ -94,6 +136,43 @@ function findReplacementEquipmentViolations(
   }
 
   return Array.from(new Set(violations));
+}
+
+function extractMeaningfulTitleTokens(title: string) {
+  return Array.from(
+    new Set(
+      title
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length > 2 && !TITLE_STOP_WORDS.has(token)),
+    ),
+  );
+}
+
+function findTitleFamily(title: string) {
+  const lowered = title.toLowerCase();
+  return TITLE_FAMILY_KEYWORDS.find((keyword) => lowered.includes(keyword)) ?? null;
+}
+
+function isTooSimilarToRejectedMeal(rejectedTitle: string, replacementTitle: string) {
+  const rejectedTokens = extractMeaningfulTitleTokens(rejectedTitle);
+  const replacementTokens = extractMeaningfulTitleTokens(replacementTitle);
+  const sharedTokens = rejectedTokens.filter((token) =>
+    replacementTokens.includes(token),
+  );
+  const rejectedFamily = findTitleFamily(rejectedTitle);
+  const replacementFamily = findTitleFamily(replacementTitle);
+
+  if (sharedTokens.length >= 2) {
+    return true;
+  }
+
+  if (rejectedFamily && replacementFamily && rejectedFamily === replacementFamily) {
+    return true;
+  }
+
+  return false;
 }
 
 export async function POST(request: Request) {
@@ -186,67 +265,101 @@ export async function POST(request: Request) {
   });
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: systemPrompt.trim() },
-        { role: "user", content: userPrompt.trim() },
-      ],
-    });
+    async function requestReplacement(retryInstruction?: string) {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        messages: [
+          { role: "system", content: systemPrompt.trim() },
+          { role: "user", content: userPrompt.trim() },
+          ...(retryInstruction
+            ? [{ role: "user" as const, content: retryInstruction }]
+            : []),
+        ],
+      });
 
-    const content = response.choices[0]?.message?.content;
+      const content = response.choices[0]?.message?.content;
 
-    if (!content) {
-      return NextResponse.json(
-        { error: "OpenAI returned an empty response." },
-        { status: 500 },
-      );
+      if (!content) {
+        throw new Error("OpenAI returned an empty response.");
+      }
+
+      return replaceMealResponseSchema.parse(JSON.parse(content));
     }
 
-    const parsed = replaceMealResponseSchema.parse(JSON.parse(content));
-    const replacementHaystacks = [
-      parsed.title.toLowerCase(),
-      parsed.description.toLowerCase(),
-      ...parsed.ingredients.map((ingredient) => ingredient.toLowerCase()),
-    ];
-    const blockedMatches = dietaryPreferences.blockedIngredients.filter((blocked) =>
-      replacementHaystacks.some((value) => value.includes(blocked)),
-    );
-    const avoidedMatches = avoidanceGuidance.avoidedItems.filter((blocked) =>
-      replacementHaystacks.some((value) => value.includes(blocked)),
-    );
-    const equipmentViolations = findReplacementEquipmentViolations(
-      parsed.title,
-      parsed.description,
-      selectedEquipmentSet,
-    );
-    const normalizedReplacementTitle = parsed.title.trim().toLowerCase();
-    const titleCollision = blockedTitles.some((title) => title === normalizedReplacementTitle);
+    let parsed = await requestReplacement();
 
-    if (blockedMatches.length > 0 || avoidedMatches.length > 0) {
+    const validateReplacement = (candidate: z.infer<typeof replaceMealResponseSchema>) => {
+      const replacementHaystacks = [
+        candidate.title.toLowerCase(),
+        candidate.description.toLowerCase(),
+        ...candidate.ingredients.map((ingredient) => ingredient.toLowerCase()),
+      ];
+      const blockedMatches = dietaryPreferences.blockedIngredients.filter((blocked) =>
+        replacementHaystacks.some((value) => value.includes(blocked)),
+      );
+      const avoidedMatches = avoidanceGuidance.avoidedItems.filter((blocked) =>
+        replacementHaystacks.some((value) => value.includes(blocked)),
+      );
+      const equipmentViolations = findReplacementEquipmentViolations(
+        candidate.title,
+        candidate.description,
+        selectedEquipmentSet,
+      );
+      const normalizedReplacementTitle = candidate.title.trim().toLowerCase();
+      const titleCollision = blockedTitles.some((title) => title === normalizedReplacementTitle);
+      const titleSimilarity = isTooSimilarToRejectedMeal(
+        rejectedMealTitle,
+        candidate.title,
+      );
+
+      return {
+        avoidedMatches,
+        blockedMatches,
+        equipmentViolations,
+        titleCollision,
+        titleSimilarity,
+      };
+    };
+
+    let validation = validateReplacement(parsed);
+
+    if (
+      validation.blockedMatches.length > 0 ||
+      validation.avoidedMatches.length > 0 ||
+      validation.equipmentViolations.length > 0 ||
+      validation.titleCollision ||
+      validation.titleSimilarity
+    ) {
+      parsed = await requestReplacement(
+        `CRITICAL RETRY: The last replacement was still too close to the rejected or existing meals. Blocked terms: ${Array.from(new Set([...validation.blockedMatches, ...validation.avoidedMatches])).join(", ") || "none"}. Equipment violations: ${validation.equipmentViolations.join(", ") || "none"}. Exact title collision: ${validation.titleCollision ? "yes" : "no"}. Too similar to rejected meal family/title: ${validation.titleSimilarity ? "yes" : "no"}. Return a clearly different replacement meal.`,
+      );
+      validation = validateReplacement(parsed);
+    }
+
+    if (validation.blockedMatches.length > 0 || validation.avoidedMatches.length > 0) {
       return NextResponse.json(
         {
-          error: `Replacement meal violated dietary restrictions or avoid rules by including blocked terms: ${Array.from(new Set([...blockedMatches, ...avoidedMatches])).join(", ")}`,
+          error: `Replacement meal violated dietary restrictions or avoid rules by including blocked terms: ${Array.from(new Set([...validation.blockedMatches, ...validation.avoidedMatches])).join(", ")}`,
         },
         { status: 500 },
       );
     }
 
-    if (titleCollision) {
+    if (validation.titleCollision || validation.titleSimilarity) {
       return NextResponse.json(
         {
-          error: `Replacement meal repeated a rejected or existing title: ${parsed.title}`,
+          error: `Replacement meal was still too similar to a rejected or existing meal: ${parsed.title}`,
         },
         { status: 500 },
       );
     }
 
-    if (equipmentViolations.length > 0) {
+    if (validation.equipmentViolations.length > 0) {
       return NextResponse.json(
         {
-          error: `Replacement meal required unselected equipment: ${equipmentViolations.join(", ")}`,
+          error: `Replacement meal required unselected equipment: ${validation.equipmentViolations.join(", ")}`,
         },
         { status: 500 },
       );

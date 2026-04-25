@@ -98,27 +98,27 @@ export function buildAdventureLevelGuidance(adventureLevel?: string) {
   if (normalized.includes("stick") || normalized.includes("simple") || normalized.includes("basic")) {
     return {
       generationBlock:
-        "Adventure guidance: keep the week grounded in familiar, realistic dinners. Prioritize classics like burgers and fries, chicken wraps, spaghetti and meatballs, tacos, baked pasta, sheet-pan dinners, and other straightforward home meals. Avoid making the whole week feel exotic or overly spiced.",
+        "Adventure guidance: keep the week grounded in familiar, realistic dinners. At least 4 meals should be classic weeknight staples or comfort-food adjacent. Prioritize classics like burgers and fries, turkey or chicken burgers, chicken wraps, spaghetti and meatballs, tacos, baked pasta, pork chops with sides, BBQ chicken plates, meatloaf, quesadillas, and sheet-pan dinners. Use mild-to-moderate seasoning and avoid making the week feel exotic, overly spiced, or trend-chasing.",
       replacementBlock:
-        "Replacement guidance: choose a clearly different but still familiar weeknight staple. Burgers, wraps, simple pasta dishes, tacos, baked chicken plates, and homestyle skillet meals are all valid replacements.",
+        "Replacement guidance: choose a clearly different but still familiar weeknight staple. Burgers, wraps, simple pasta dishes, tacos, baked chicken plates, pork chop plates, quesadillas, and homestyle skillet meals are all valid replacements. Do not drift into globally themed meals unless the rejected meal itself was already very simple and repetitive.",
     };
   }
 
   if (normalized.includes("mix")) {
     return {
       generationBlock:
-        "Adventure guidance: build a balanced week. Include at least 3 familiar comfort meals, at least 3 approachable global or fusion meals, and let the final 2 meals add variety without getting too niche.",
+        "Adventure guidance: build a balanced week. Include at least 3 familiar comfort meals, at least 3 approachable global or fusion meals, and let the final 1 or 2 meals add variety without getting too niche. The week should visibly mix classic American staples with more varied but still approachable cuisine lanes.",
       replacementBlock:
-        "Replacement guidance: choose something distinct from the rejected meal, but keep it approachable. Aim for a different cuisine lane, protein, and format without becoming too obscure.",
+        "Replacement guidance: choose something distinct from the rejected meal, but keep it approachable. Aim for a different cuisine lane, protein, and format without becoming too obscure. The replacement should feel like something a normal weeknight cook would still gladly make.",
     };
   }
 
   if (normalized.includes("try")) {
     return {
       generationBlock:
-        "Adventure guidance: push for variety. Keep only 1 or 2 familiar anchor meals, then use the rest of the week for clearly different cuisines, proteins, and formats. Do not let the menu drift back to repetitive defaults.",
+        "Adventure guidance: push for variety. Keep only 1 or 2 familiar anchor meals, then use the rest of the week for clearly different cuisines, proteins, and formats. Use globally inspired meals on purpose and do not let the menu drift back to repetitive defaults or the same sauce profile.",
       replacementBlock:
-        "Replacement guidance: choose a replacement that clearly changes cuisine, protein, and format from the rejected meal and from the majority of the current menu.",
+        "Replacement guidance: choose a replacement that clearly changes cuisine, protein, and format from the rejected meal and from the majority of the current menu. Prefer a new cuisine lane or preparation style over a small rename.",
     };
   }
 
