@@ -536,6 +536,7 @@ export function SmartCartApp() {
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("plan");
+  const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
 
   const showToast = useCallback((message: string, tone: ToastTone = "info") => {
     setToastMessage(message);
@@ -699,6 +700,23 @@ export function SmartCartApp() {
 
     persistGeneratedPlan(generatedPlan);
   }, [generatedPlan, hasLoadedGeneratedPlan, persistGeneratedPlan]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleScroll = () => {
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const nearBottom = scrollPosition >= document.documentElement.scrollHeight - 180;
+      setIsMobileDockExpanded((current) => (nearBottom ? true : current));
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const combinedPantryItems = useMemo(() => {
     const typedItems = formState.pantryItems
@@ -1783,7 +1801,7 @@ export function SmartCartApp() {
   }
 
   return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-[18rem] pt-4 md:pb-12 md:pt-8">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-[12.5rem] pt-4 md:pb-12 md:pt-8">
         {isLoading ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-6">
             <div className="w-full max-w-md rounded-[2rem] border border-stone-200 bg-white px-6 py-7 text-center shadow-2xl">
@@ -1858,7 +1876,7 @@ export function SmartCartApp() {
 
         <div className="grid gap-8 md:hidden">
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-52 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "plan" ? `block ${activeTabMeta.panelClass}` : "hidden"
               }`}
             >
@@ -1969,7 +1987,7 @@ export function SmartCartApp() {
           </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-52 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "meals" ? `block ${mobileTabs[1].panelClass}` : "hidden"
               }`}
             >
@@ -2027,7 +2045,7 @@ export function SmartCartApp() {
             </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-52 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "shop" ? `block ${mobileTabs[2].panelClass}` : "hidden"
               }`}
             >
@@ -2090,7 +2108,7 @@ export function SmartCartApp() {
           </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-52 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "cook" ? `block ${mobileTabs[3].panelClass}` : "hidden"
               }`}
             >
@@ -2130,7 +2148,7 @@ export function SmartCartApp() {
             </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-52 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
                 activeMobileTab === "vault" ? `block ${mobileTabs[4].panelClass}` : "hidden"
               }`}
             >
@@ -2379,8 +2397,32 @@ export function SmartCartApp() {
 
       <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 md:hidden">
         <div className="mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-stone-200 bg-white/95 shadow-[0_-14px_36px_rgba(15,23,42,0.12)] backdrop-blur">
-          <div className="border-b border-stone-200/80 p-2">
-            <div className="flex items-center gap-3 rounded-[1.4rem] bg-stone-50/90 p-1.5">
+          <button
+            className="flex w-full items-center justify-between gap-3 border-b border-stone-200/80 px-4 py-3"
+            onClick={() => setIsMobileDockExpanded((current) => !current)}
+            type="button"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-2xl ${activeTabMeta.badgeClass}`}>
+                <MobileTabIcon tab={activeMobileTab} className="h-4 w-4" />
+              </div>
+              <div className="text-left">
+                <p className={`text-[0.65rem] font-semibold uppercase tracking-[0.2em] ${activeTabMeta.accentClass}`}>
+                  {activeTabMeta.eyebrow}
+                </p>
+                <p className="text-sm font-semibold text-ink">{activeTabMeta.label}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="h-1.5 w-10 rounded-full bg-stone-300" />
+              <span className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-ink/50">
+                {isMobileDockExpanded ? "Hide" : "Reveal"}
+              </span>
+            </div>
+          </button>
+
+          <div className="border-b border-stone-200/70 p-2">
+            <div className="flex items-center gap-2 rounded-[1.4rem] bg-stone-50/90 p-1.5">
               {activeMobileTab === "plan" ? (
                 <>
                   <button
@@ -2391,13 +2433,15 @@ export function SmartCartApp() {
                   >
                     {isLoading ? "Generating..." : "Generate"}
                   </button>
-                  <button
-                    className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                    onClick={handleClearForm}
-                    type="button"
-                  >
-                    Clear
-                  </button>
+                  {isMobileDockExpanded ? (
+                    <button
+                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                      onClick={handleClearForm}
+                      type="button"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
                 </>
               ) : null}
               {activeMobileTab === "meals" ? (
@@ -2410,13 +2454,15 @@ export function SmartCartApp() {
                   >
                     Open Shop
                   </button>
-                  <button
-                    className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                    onClick={() => setActiveMobileTab("cook")}
-                    type="button"
-                  >
-                    Cook
-                  </button>
+                  {isMobileDockExpanded ? (
+                    <button
+                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                      onClick={() => setActiveMobileTab("cook")}
+                      type="button"
+                    >
+                      Cook
+                    </button>
+                  ) : null}
                 </>
               ) : null}
               {activeMobileTab === "shop" ? (
@@ -2429,13 +2475,15 @@ export function SmartCartApp() {
                   >
                     {copied ? "Copied" : "Copy List"}
                   </button>
-                  <button
-                    className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                    onClick={() => setActiveMobileTab("cook")}
-                    type="button"
-                  >
-                    Cook
-                  </button>
+                  {isMobileDockExpanded ? (
+                    <button
+                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                      onClick={() => setActiveMobileTab("cook")}
+                      type="button"
+                    >
+                      Cook
+                    </button>
+                  ) : null}
                 </>
               ) : null}
               {activeMobileTab === "cook" ? (
@@ -2448,13 +2496,15 @@ export function SmartCartApp() {
                   >
                     {isSaving ? "Saving..." : "Save Week"}
                   </button>
-                  <button
-                    className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                    onClick={() => setActiveMobileTab("vault")}
-                    type="button"
-                  >
-                    Vault
-                  </button>
+                  {isMobileDockExpanded ? (
+                    <button
+                      className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
+                      onClick={() => setActiveMobileTab("vault")}
+                      type="button"
+                    >
+                      Vault
+                    </button>
+                  ) : null}
                 </>
               ) : null}
               {activeMobileTab === "vault" ? (
@@ -2466,7 +2516,7 @@ export function SmartCartApp() {
                   >
                     {isVaultOpen ? "Close Vault" : "Open Vault"}
                   </button>
-                  {Boolean(user) ? (
+                  {Boolean(user) && isMobileDockExpanded ? (
                     <button
                       className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={isSaving}
@@ -2481,35 +2531,37 @@ export function SmartCartApp() {
             </div>
           </div>
 
-          <nav className="p-2">
-            <div className="grid grid-cols-5 gap-2">
-              {mobileTabs.map((tab) => {
-                const isActive = activeMobileTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    className={`rounded-[1.25rem] px-3 py-3 text-center text-[0.7rem] font-semibold uppercase tracking-[0.18em] transition ${
-                      isActive
-                        ? "bg-pine text-white shadow-md"
-                        : "bg-transparent text-ink/55 hover:bg-stone-100"
-                    }`}
-                    onClick={() => setActiveMobileTab(tab.id)}
-                    type="button"
-                  >
-                    <span className="mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-2xl bg-black/5">
-                      <MobileTabIcon tab={tab.id} className="h-4 w-4" />
-                    </span>
-                    <span className="block">{tab.shortLabel}</span>
-                    <span
-                      className={`mx-auto mt-1 block h-1.5 w-8 rounded-full ${
-                        isActive ? "bg-white/80" : "bg-stone-200"
+          {isMobileDockExpanded ? (
+            <nav className="p-2">
+              <div className="grid grid-cols-5 gap-2">
+                {mobileTabs.map((tab) => {
+                  const isActive = activeMobileTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      className={`rounded-[1.25rem] px-3 py-3 text-center text-[0.7rem] font-semibold uppercase tracking-[0.18em] transition ${
+                        isActive
+                          ? "bg-pine text-white shadow-md"
+                          : "bg-transparent text-ink/55 hover:bg-stone-100"
                       }`}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
+                      onClick={() => setActiveMobileTab(tab.id)}
+                      type="button"
+                    >
+                      <span className="mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-2xl bg-black/5">
+                        <MobileTabIcon tab={tab.id} className="h-4 w-4" />
+                      </span>
+                      <span className="block">{tab.shortLabel}</span>
+                      <span
+                        className={`mx-auto mt-1 block h-1.5 w-8 rounded-full ${
+                          isActive ? "bg-white/80" : "bg-stone-200"
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          ) : null}
         </div>
       </div>
 
