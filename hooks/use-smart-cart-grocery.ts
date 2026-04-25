@@ -291,9 +291,85 @@ function getFlexibleStapleMeta(itemName: string) {
     normalizedName.endsWith(" white rice")
   ) {
     return {
-      flexibilityNote: "One bag of jasmine or basmati rice will cover these meals.",
+      flexibilityNote: "One bag of jasmine, basmati, or white rice will usually cover these meals.",
       key: "flexible-rice",
       name: "Rice",
+    };
+  }
+
+  if (
+    normalizedName === "pasta" ||
+    normalizedName.includes("spaghetti") ||
+    normalizedName.includes("penne") ||
+    normalizedName.includes("rigatoni") ||
+    normalizedName.includes("rotini") ||
+    normalizedName.includes("fettuccine") ||
+    normalizedName.includes("linguine") ||
+    normalizedName.includes("macaroni") ||
+    normalizedName.includes("farfalle") ||
+    normalizedName.includes("angel hair")
+  ) {
+    return {
+      flexibilityNote: "One box of your preferred pasta shape will usually cover these meals.",
+      key: "flexible-pasta",
+      name: "Pasta",
+    };
+  }
+
+  if (normalizedName.includes("chicken broth") || normalizedName.includes("chicken stock")) {
+    return {
+      flexibilityNote: "Chicken broth or chicken stock will both work for these meals.",
+      key: "flexible-chicken-broth",
+      name: "Chicken broth or stock",
+    };
+  }
+
+  if (
+    normalizedName.includes("vegetable broth") ||
+    normalizedName.includes("vegetable stock")
+  ) {
+    return {
+      flexibilityNote: "Vegetable broth or vegetable stock will both work for these meals.",
+      key: "flexible-vegetable-broth",
+      name: "Vegetable broth or stock",
+    };
+  }
+
+  if (
+    normalizedName.includes("diced tomatoes") ||
+    normalizedName.includes("crushed tomatoes") ||
+    normalizedName === "canned tomatoes" ||
+    normalizedName.endsWith(" canned tomatoes")
+  ) {
+    return {
+      flexibilityNote: "One can of diced or crushed tomatoes will usually work here.",
+      key: "flexible-canned-tomatoes",
+      name: "Canned tomatoes",
+    };
+  }
+
+  if (normalizedName.includes("parmesan") || normalizedName.includes("pecorino")) {
+    return {
+      flexibilityNote:
+        "One tub of Parmesan or another grated hard cheese will usually cover these meals.",
+      key: "flexible-grated-cheese",
+      name: "Grated hard cheese",
+    };
+  }
+
+  if (
+    normalizedName.includes("cheddar") ||
+    normalizedName.includes("mozzarella") ||
+    normalizedName.includes("monterey jack") ||
+    normalizedName.includes("colby jack") ||
+    normalizedName.includes("mexican blend") ||
+    normalizedName.includes("shredded cheese")
+  ) {
+    return {
+      flexibilityNote:
+        "One bag of cheddar, mozzarella, or another melting cheese will usually work here.",
+      key: "flexible-shredded-cheese",
+      name: "Shredded cheese",
     };
   }
 
