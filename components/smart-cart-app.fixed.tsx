@@ -1576,6 +1576,29 @@ export function SmartCartApp() {
     setIsAuthLoading(false);
   }
 
+  async function handleGoogleLogin() {
+    setIsAuthLoading(true);
+    setAuthMessage("");
+
+    const redirectTo =
+      typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+      },
+    });
+
+    if (error) {
+      setAuthMessage(error.message);
+      setIsAuthLoading(false);
+      return;
+    }
+
+    setAuthMessage("Redirecting to Google...");
+  }
+
   const rehydrateMealRecord = useCallback((
     record: Partial<MealPlanItem> | GenerateListResponse["desserts"][number] | null | undefined,
     fallback: Partial<MealPlanItem> = {},
@@ -2104,6 +2127,7 @@ export function SmartCartApp() {
               onFeatureToggle={(feature) =>
                 handleFeatureToggle(feature as keyof typeof featureDescriptions)
               }
+              onGoogleLogin={handleGoogleLogin}
               onUpgrade={handleUpgradeToPlus}
               onLoginSubmit={handleLogin}
               onSignOut={() => {

@@ -13,6 +13,7 @@ type SmartCartHeroHeaderProps = {
   isProfileLoading: boolean;
   onEmailChange: (value: string) => void;
   onFeatureToggle: (feature: string) => void;
+  onGoogleLogin: () => void | Promise<void>;
   onUpgrade: () => void | Promise<void>;
   onLoginSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSignOut: () => void;
@@ -32,6 +33,7 @@ export function SmartCartHeroHeader({
   isProfileLoading,
   onEmailChange,
   onFeatureToggle,
+  onGoogleLogin,
   onUpgrade,
   onLoginSubmit,
   onSignOut,
@@ -169,29 +171,47 @@ export function SmartCartHeroHeader({
 
       {!isSignedIn ? (
         <div className="max-w-3xl rounded-[1.75rem] border border-stone-200 bg-gradient-to-r from-white to-cream px-5 py-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-xl">
               <p className="font-display text-xl text-ink">Save your pantry &amp; settings</p>
               <p className="mt-1 text-sm leading-6 text-ink/70">
                 Sign in to keep your meal plan and vault ready when you come back on your phone or desktop.
               </p>
             </div>
-            <form className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-xl" onSubmit={onLoginSubmit}>
-              <input
-                className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
-                onChange={(event) => onEmailChange(event.target.value)}
-                placeholder="Enter your email"
-                type="email"
-                value={email}
-              />
+            <div className="flex w-full flex-col gap-4 lg:max-w-xl">
               <button
-                className="shrink-0 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink shadow-sm transition hover:border-orange-200 hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isAuthLoading}
-                type="submit"
+                onClick={() => void onGoogleLogin()}
+                type="button"
               >
-                {isAuthLoading ? "Sending..." : "Send Magic Link"}
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[0.7rem] font-bold text-ink shadow-sm">
+                  G
+                </span>
+                {isAuthLoading ? "Opening Google..." : "Continue with Google"}
               </button>
-            </form>
+              <div className="flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-ink/40">
+                <span className="h-px flex-1 bg-stone-200" />
+                <span>or use email</span>
+                <span className="h-px flex-1 bg-stone-200" />
+              </div>
+              <form className="flex w-full flex-col gap-3 sm:flex-row" onSubmit={onLoginSubmit}>
+                <input
+                  className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+                  onChange={(event) => onEmailChange(event.target.value)}
+                  placeholder="Enter your email"
+                  type="email"
+                  value={email}
+                />
+                <button
+                  className="shrink-0 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isAuthLoading}
+                  type="submit"
+                >
+                  {isAuthLoading ? "Sending..." : "Email Magic Link"}
+                </button>
+              </form>
+            </div>
           </div>
           {authMessage ? (
             <p className="mt-3 text-sm font-medium text-ink/70">{authMessage}</p>
