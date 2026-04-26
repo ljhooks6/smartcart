@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 
 type SmartCartHeroHeaderProps = {
   activeFeature: string | null;
@@ -8,10 +9,12 @@ type SmartCartHeroHeaderProps = {
   email: string;
   featureDescriptions: Record<string, string>;
   isAuthLoading: boolean;
+  isProfileLoading: boolean;
   onEmailChange: (value: string) => void;
   onFeatureToggle: (feature: string) => void;
   onLoginSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSignOut: () => void;
+  userPlan: SmartCartPlan | null;
   userEmail: string;
 };
 
@@ -23,15 +26,23 @@ export function SmartCartHeroHeader({
   email,
   featureDescriptions,
   isAuthLoading,
+  isProfileLoading,
   onEmailChange,
   onFeatureToggle,
   onLoginSubmit,
   onSignOut,
+  userPlan,
   userEmail,
 }: SmartCartHeroHeaderProps) {
   const isSignedIn = Boolean(safeTrim(userEmail));
   const initial = safeTrim(userEmail[0] ?? "U").toUpperCase();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const planLabel = isProfileLoading ? "Loading" : userPlan === "plus" ? "Plus" : "Free";
+  const planPanelLabel = isProfileLoading
+    ? "Loading"
+    : userPlan === "plus"
+      ? "Plus plan"
+      : "Free plan";
 
   return (
     <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
@@ -60,11 +71,16 @@ export function SmartCartHeroHeader({
                   <p className="truncate text-sm font-medium text-ink">{safeTrim(userEmail)}</p>
                 </div>
               </div>
-              <span
-                className={`text-sm text-ink/45 transition ${isAccountMenuOpen ? "rotate-180" : ""}`}
-              >
-                ▾
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-orange-700">
+                  {planLabel}
+                </span>
+                <span
+                  className={`text-sm text-ink/45 transition ${isAccountMenuOpen ? "rotate-180" : ""}`}
+                >
+                  ▾
+                </span>
+              </div>
             </button>
             {isAccountMenuOpen ? (
               <div className="fixed inset-0 z-50 bg-ink/25 p-4" onClick={() => setIsAccountMenuOpen(false)}>
@@ -84,13 +100,18 @@ export function SmartCartHeroHeader({
                         <p className="truncate text-sm font-medium text-ink">{safeTrim(userEmail)}</p>
                       </div>
                     </div>
-                    <button
-                      className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/65 transition hover:bg-stone-100"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                      type="button"
-                    >
-                      Close
-                    </button>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-orange-700">
+                        {planPanelLabel}
+                      </span>
+                      <button
+                        className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/65 transition hover:bg-stone-100"
+                        onClick={() => setIsAccountMenuOpen(false)}
+                        type="button"
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-4 rounded-2xl bg-cream px-4 py-3 text-sm leading-6 text-ink/70">
                     Your pantry, weekly plan, and vault stay synced here.

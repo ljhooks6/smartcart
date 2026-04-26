@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { SmartCartContextForm } from "./smart-cart-context-form";
 import { SmartCartCookSections } from "./smart-cart-cook-sections";
@@ -12,6 +13,10 @@ import { SmartCartMealSections } from "./smart-cart-meal-sections";
 import { SmartCartRecipeModal } from "./smart-cart-recipe-modal";
 import { useSmartCartGrocery } from "../hooks/use-smart-cart-grocery";
 import { useSmartCartRecipe } from "../hooks/use-smart-cart-recipe";
+import {
+  ensureSmartCartProfile,
+  type SmartCartProfile,
+} from "../lib/smart-cart-membership";
 import {
   clearStoredJson,
   fetchArchivedMealRows,
@@ -549,7 +554,9 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
 
 export function SmartCartApp() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -603,21 +610,49 @@ export function SmartCartApp() {
 
     saveStoredJson(SMART_CART_GENERATED_PLAN_STORAGE_KEY, plan);
   }, []);
+
+  const loadMembershipProfile = useCallback(async (nextUser: User | null) => {
+    if (!nextUser?.id) {
+      setMembershipProfile(null);
+      setIsProfileLoading(false);
+      return;
+    }
+
+    setIsProfileLoading(true);
+
+    try {
+      const profile = await ensureSmartCartProfile(nextUser.id, safeTrim(nextUser.email));
+      setMembershipProfile(profile);
+    } catch (error) {
+      console.error("SmartCart profile load error:", error);
+      setMembershipProfile(null);
+      setCloudSyncMessage(
+        error instanceof Error ? error.message : "Failed to load your SmartCart profile.",
+      );
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const nextUser = session?.user ?? null;
+      setUser(nextUser);
+      void loadMembershipProfile(nextUser);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-        setUser(session?.user ?? null);
+        const nextUser = session?.user ?? null;
+        setUser(nextUser);
+        void loadMembershipProfile(nextUser);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [loadMembershipProfile]);
 
   useEffect(() => {
     if (!toastMessage) {
@@ -1965,22 +2000,24 @@ export function SmartCartApp() {
       </div>
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
         <div className={activeMobileTab === "plan" ? "block md:block" : "hidden md:block"}>
-          <SmartCartHeroHeader
-            activeFeature={activeFeature}
-            authMessage={authMessage}
-            email={email}
-            featureDescriptions={featureDescriptions}
-            isAuthLoading={isAuthLoading}
-            onEmailChange={setEmail}
-            onFeatureToggle={(feature) =>
-              handleFeatureToggle(feature as keyof typeof featureDescriptions)
-            }
-            onLoginSubmit={handleLogin}
-            onSignOut={() => {
-              void supabase.auth.signOut();
-            }}
-            userEmail={safeTrim(user?.email)}
-          />
+            <SmartCartHeroHeader
+              activeFeature={activeFeature}
+              authMessage={authMessage}
+              email={email}
+              featureDescriptions={featureDescriptions}
+              isAuthLoading={isAuthLoading}
+              isProfileLoading={isProfileLoading}
+              onEmailChange={setEmail}
+              onFeatureToggle={(feature) =>
+                handleFeatureToggle(feature as keyof typeof featureDescriptions)
+              }
+              onLoginSubmit={handleLogin}
+              onSignOut={() => {
+                void supabase.auth.signOut();
+              }}
+              userPlan={membershipProfile?.plan ?? null}
+              userEmail={safeTrim(user?.email)}
+            />
         </div>
 
         <div className="grid gap-8 md:hidden">
