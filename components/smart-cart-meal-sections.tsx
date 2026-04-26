@@ -1,5 +1,7 @@
 "use client";
 
+import type { SmartCartPlan } from "@/lib/smart-cart-membership";
+
 type IngredientItem = {
   name: string;
   amount: string;
@@ -54,6 +56,7 @@ type SmartCartMealSectionsProps = {
   replacingMealKey: string | null;
   savedDessertKeys: Set<string>;
   savedMealKeys: Set<string>;
+  userPlan: SmartCartPlan;
   userId: string;
   weeklyMenuCount: number;
 };
@@ -81,6 +84,7 @@ export function SmartCartMealSections({
   replacingMealKey,
   savedDessertKeys,
   savedMealKeys,
+  userPlan,
   userId,
   weeklyMenuCount,
 }: SmartCartMealSectionsProps) {
@@ -104,6 +108,12 @@ export function SmartCartMealSections({
             Tap <strong>Save to Menu</strong> on the meals you want this week. Saved meals move to
             your <strong>Cook</strong> page and drive your shopping list.
           </p>
+          {userPlan === "free" ? (
+            <p className="mt-2 text-sm leading-6 text-sky-900/80">
+              Free includes standard swaps. <strong>SmartCart Plus</strong> unlocks smarter
+              replacements that do a better job avoiding repeat meal patterns.
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">

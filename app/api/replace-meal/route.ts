@@ -17,6 +17,7 @@ type ReplaceMealRequest = {
   householdSize: number;
   combinedPantryItems: string;
   rejectedMealTitle: string;
+  replacementQuality?: "free" | "plus";
   prepTime?: string;
   adventureLevel?: string;
   mustHaveIngredient?: string;
@@ -193,6 +194,7 @@ export async function POST(request: Request) {
     householdSize,
     combinedPantryItems,
     rejectedMealTitle,
+    replacementQuality,
     prepTime,
     adventureLevel,
     mustHaveIngredient,
@@ -236,11 +238,15 @@ export async function POST(request: Request) {
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
   const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
+  const isPremiumReplacement = replacementQuality === "plus";
+  const premiumRejectedMeals = isPremiumReplacement && Array.isArray(recentRejectedMeals)
+    ? recentRejectedMeals
+    : [];
   const blockedTitles = Array.from(
     new Set([
       ...parseMealNameList(existingMeals),
-      ...parseMealNameList(currentMealsContext),
-      ...((Array.isArray(recentRejectedMeals) ? recentRejectedMeals : []).map((meal) =>
+      ...(isPremiumReplacement ? parseMealNameList(currentMealsContext) : []),
+      ...(premiumRejectedMeals.map((meal) =>
         meal.trim().toLowerCase(),
       )),
       rejectedMealTitle.trim().toLowerCase(),
@@ -290,7 +296,7 @@ export async function POST(request: Request) {
 
     let parsed = await requestReplacement();
 
-    const validateReplacement = (candidate: z.infer<typeof replaceMealResponseSchema>) => {
+      const validateReplacement = (candidate: z.infer<typeof replaceMealResponseSchema>) => {
       const replacementHaystacks = [
         candidate.title.toLowerCase(),
         candidate.description.toLowerCase(),
@@ -308,11 +314,12 @@ export async function POST(request: Request) {
         selectedEquipmentSet,
       );
       const normalizedReplacementTitle = candidate.title.trim().toLowerCase();
-      const titleCollision = blockedTitles.some((title) => title === normalizedReplacementTitle);
-      const titleSimilarity = isTooSimilarToRejectedMeal(
-        rejectedMealTitle,
-        candidate.title,
-      );
+      const titleCollision = isPremiumReplacement
+        ? blockedTitles.some((title) => title === normalizedReplacementTitle)
+        : false;
+      const titleSimilarity = isPremiumReplacement
+        ? isTooSimilarToRejectedMeal(rejectedMealTitle, candidate.title)
+        : false;
 
       return {
         avoidedMatches,
@@ -325,16 +332,16 @@ export async function POST(request: Request) {
 
     let validation = validateReplacement(parsed);
 
-    if (
-      validation.blockedMatches.length > 0 ||
-      validation.avoidedMatches.length > 0 ||
-      validation.equipmentViolations.length > 0 ||
-      validation.titleCollision ||
-      validation.titleSimilarity
-    ) {
-      parsed = await requestReplacement(
-        `CRITICAL RETRY: The last replacement was still too close to the rejected or existing meals. Blocked terms: ${Array.from(new Set([...validation.blockedMatches, ...validation.avoidedMatches])).join(", ") || "none"}. Equipment violations: ${validation.equipmentViolations.join(", ") || "none"}. Exact title collision: ${validation.titleCollision ? "yes" : "no"}. Too similar to rejected meal family/title: ${validation.titleSimilarity ? "yes" : "no"}. Return a clearly different replacement meal.`,
-      );
+      if (
+        validation.blockedMatches.length > 0 ||
+        validation.avoidedMatches.length > 0 ||
+        validation.equipmentViolations.length > 0 ||
+        validation.titleCollision ||
+        validation.titleSimilarity
+      ) {
+        parsed = await requestReplacement(
+          `CRITICAL RETRY: The last replacement still missed the target. Blocked terms: ${Array.from(new Set([...validation.blockedMatches, ...validation.avoidedMatches])).join(", ") || "none"}. Equipment violations: ${validation.equipmentViolations.join(", ") || "none"}. Exact title collision: ${validation.titleCollision ? "yes" : "no"}. Too similar to rejected meal family/title: ${validation.titleSimilarity ? "yes" : "no"}. Return a clearly different replacement meal.${isPremiumReplacement ? " Use a noticeably different meal family, format, or flavor lane from the rejected meal and recent picks." : ""}`,
+        );
       validation = validateReplacement(parsed);
     }
 

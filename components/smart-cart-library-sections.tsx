@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent } from "react";
+import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 
 type IngredientItem = {
   name: string;
@@ -39,7 +40,9 @@ type SmartCartLibrarySectionsProps = {
   onWaitlistSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   recipeCache: Record<string, { ingredients: string[] }>;
   recipeLoadingMeal: string | null;
+  userPlan: SmartCartPlan;
   userSignedIn: boolean;
+  vaultLimit: number;
   waitlistEmail: string;
   waitlistStatus: WaitlistStatus;
 };
@@ -65,7 +68,9 @@ export function SmartCartLibrarySections({
   onWaitlistSubmit,
   recipeCache,
   recipeLoadingMeal,
+  userPlan,
   userSignedIn,
+  vaultLimit,
   waitlistEmail,
   waitlistStatus,
 }: SmartCartLibrarySectionsProps) {
@@ -82,6 +87,12 @@ export function SmartCartLibrarySections({
               <p className="text-sm leading-6 text-ink/65">
                 Sync your dinners, sweet treats, pantry, and vault before you leave.
               </p>
+              {userPlan === "free" ? (
+                <p className="mt-2 text-sm leading-6 text-ink/70">
+                  Free saves your weekly menu. <strong>SmartCart Plus</strong> also remembers your
+                  pantry across weeks.
+                </p>
+              ) : null}
             </div>
             <button
               className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
@@ -106,6 +117,12 @@ export function SmartCartLibrarySections({
           Tap <strong>Stash in Vault</strong> on any active meal to keep it for a future week
           without leaving it in your current grocery plan.
         </p>
+        {userPlan === "free" ? (
+          <p className="mt-2 text-sm leading-6 text-amber-900/80">
+            Free plans can stash up to <strong>{vaultLimit}</strong> recipes. SmartCart Plus
+            expands your saved recipe library.
+          </p>
+        ) : null}
       </div>
       <button
         className="mt-6 inline-flex items-center justify-center rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"

@@ -20,12 +20,35 @@ create table if not exists public.smartcart_subscriptions (
   updated_at timestamptz not null default now()
 );
 
+create index if not exists smartcart_subscriptions_user_id_idx
+on public.smartcart_subscriptions (user_id);
+
+create unique index if not exists smartcart_subscriptions_provider_subscription_id_idx
+on public.smartcart_subscriptions (provider_subscription_id)
+where provider_subscription_id is not null;
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
 as $$
 begin
   new.updated_at = now();
+  return new;
+end;
+$$;
+
+create or replace function public.handle_new_smartcart_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.smartcart_profiles (id, email, plan)
+  values (new.id, coalesce(new.email, ''), 'free')
+  on conflict (id) do update
+    set email = excluded.email;
+
   return new;
 end;
 $$;
@@ -41,6 +64,18 @@ create trigger set_smartcart_subscriptions_updated_at
 before update on public.smartcart_subscriptions
 for each row
 execute function public.set_updated_at();
+
+drop trigger if exists on_auth_user_created_smartcart_profile on auth.users;
+create trigger on_auth_user_created_smartcart_profile
+after insert on auth.users
+for each row
+execute function public.handle_new_smartcart_user();
+
+insert into public.smartcart_profiles (id, email, plan)
+select id, coalesce(email, ''), 'free'
+from auth.users
+on conflict (id) do update
+set email = excluded.email;
 
 alter table public.smartcart_profiles enable row level security;
 alter table public.smartcart_subscriptions enable row level security;

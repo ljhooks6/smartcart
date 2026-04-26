@@ -15,6 +15,7 @@ import { useSmartCartGrocery } from "../hooks/use-smart-cart-grocery";
 import { useSmartCartRecipe } from "../hooks/use-smart-cart-recipe";
 import {
   ensureSmartCartProfile,
+  type SmartCartPlan,
   type SmartCartProfile,
 } from "../lib/smart-cart-membership";
 import {
@@ -133,6 +134,8 @@ const clearedFormState: FormState = {
   isBudgetTight: true,
   availableEquipment: ["Oven", "Stovetop", "Microwave"],
 };
+
+const FREE_VAULT_LIMIT = 10;
 
 const prepTimeOptions = ["Under 30 mins", "Under 1 hour", "No limit"] as const;
 const adventureLevelOptions = [
@@ -557,6 +560,7 @@ export function SmartCartApp() {
   const [user, setUser] = useState<User | null>(null);
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [hasResolvedAuthSession, setHasResolvedAuthSession] = useState(false);
   const [email, setEmail] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -596,6 +600,9 @@ export function SmartCartApp() {
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("plan");
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
   const lastScrollYRef = useRef(0);
+  const userPlan: SmartCartPlan = membershipProfile?.plan === "plus" ? "plus" : "free";
+  const isPlusMember = userPlan === "plus";
+  const canPersistPantryMemory = isPlusMember;
 
   const showToast = useCallback((message: string, tone: ToastTone = "info") => {
     setToastMessage(message);
@@ -638,6 +645,7 @@ export function SmartCartApp() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const nextUser = session?.user ?? null;
       setUser(nextUser);
+      setHasResolvedAuthSession(true);
       void loadMembershipProfile(nextUser);
     });
 
@@ -647,6 +655,7 @@ export function SmartCartApp() {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
         const nextUser = session?.user ?? null;
         setUser(nextUser);
+        setHasResolvedAuthSession(true);
         void loadMembershipProfile(nextUser);
       }
     });
@@ -714,16 +723,30 @@ export function SmartCartApp() {
   }, []);
 
   useEffect(() => {
+    if (!hasResolvedAuthSession || (user && isProfileLoading)) {
+      return;
+    }
+
     saveStoredJson(
       SMART_CART_FORM_STORAGE_KEY,
       {
         ...formState,
-        fullyStocked: Array.from(fullyStocked),
-        runningLow: Array.from(runningLow),
-        restock: Array.from(restock),
+        pantryItems: canPersistPantryMemory ? formState.pantryItems : "",
+        fullyStocked: canPersistPantryMemory ? Array.from(fullyStocked) : [],
+        runningLow: canPersistPantryMemory ? Array.from(runningLow) : [],
+        restock: canPersistPantryMemory ? Array.from(restock) : [],
       },
     );
-  }, [formState, fullyStocked, runningLow, restock]);
+  }, [
+    canPersistPantryMemory,
+    formState,
+    fullyStocked,
+    hasResolvedAuthSession,
+    isProfileLoading,
+    restock,
+    runningLow,
+    user,
+  ]);
 
   useEffect(() => {
     try {
@@ -1220,16 +1243,24 @@ export function SmartCartApp() {
   }
 
   async function handleArchiveMeal(meal: MealPlanItem) {
-    const userId = user?.id || "";
-    if (!userId) {
-      showToast("Please sign in before using the Recipe Vault.", "info");
-      return;
+      const userId = user?.id || "";
+      if (!userId) {
+        showToast("Please sign in before using the Recipe Vault.", "info");
+        return;
     }
 
-    const mealMatcher = (candidate: MealPlanItem) =>
-      meal.dbId
-        ? candidate.dbId === meal.dbId
-        : candidate.name === meal.name;
+      const mealMatcher = (candidate: MealPlanItem) =>
+        meal.dbId
+          ? candidate.dbId === meal.dbId
+          : candidate.name === meal.name;
+
+      if (!isPlusMember && archivedMeals.length >= FREE_VAULT_LIMIT) {
+        showToast(
+          `Free plans can stash up to ${FREE_VAULT_LIMIT} recipes in the vault. SmartCart Plus expands your library.`,
+          "info",
+        );
+        return;
+      }
 
     const rawPrice = (meal as { price?: string | number }).price;
     const cleanPrice =
@@ -1667,7 +1698,7 @@ export function SmartCartApp() {
     try {
       const [ownedPantryItems, { dinners: hydratedDinners, desserts: hydratedDesserts }] =
         await Promise.all([
-          fetchOwnedPantryItems(userId),
+          canPersistPantryMemory ? fetchOwnedPantryItems(userId) : Promise.resolve([]),
           fetchSavedMeals(userId),
         ]);
 
@@ -1677,11 +1708,13 @@ export function SmartCartApp() {
         .map((ingredientName) => safeTrim(ingredientName))
         .filter(Boolean);
 
-      setFullyStocked((current) =>
-        current.size > 0 ? current : new Set(resolvedPantryItems),
-      );
-      setRunningLow((current) => (current.size > 0 ? current : new Set()));
-      setRestock((current) => (current.size > 0 ? current : new Set()));
+      if (canPersistPantryMemory) {
+        setFullyStocked((current) =>
+          current.size > 0 ? current : new Set(resolvedPantryItems),
+        );
+        setRunningLow((current) => (current.size > 0 ? current : new Set()));
+        setRestock((current) => (current.size > 0 ? current : new Set()));
+      }
 
       setWeeklyMenu((currentMenu) => {
         if (currentMenu && currentMenu.length > 0) {
@@ -1703,7 +1736,7 @@ export function SmartCartApp() {
         error instanceof Error ? error.message : "Failed to load cloud data.",
       );
     }
-  }, [fetchSavedMeals]);
+  }, [canPersistPantryMemory, fetchSavedMeals]);
 
   const loadArchivedMeals = useCallback(async () => {
     if (!user?.id) {
@@ -1790,9 +1823,20 @@ export function SmartCartApp() {
       ];
 
       await replaceActiveWeeklyMenuRows(userId, weeklyMenuRows);
-      await replacePantryInventory(userId, combinedPantryItems);
+      if (canPersistPantryMemory) {
+        await replacePantryInventory(userId, combinedPantryItems);
+        setCloudSyncMessage("Your week and pantry are synced.");
+      }
 
       setCloudSyncMessage("✨ Cloud sync complete! Your week is saved.");
+      if (!canPersistPantryMemory) {
+        setCloudSyncMessage(
+          "Your week is synced. Pantry memory across weeks is a SmartCart Plus feature.",
+        );
+      }
+      if (canPersistPantryMemory) {
+        setCloudSyncMessage("Your week and pantry are synced.");
+      }
     } catch (error) {
       console.error("Supabase Save Error:", error);
       setCloudSyncMessage(
@@ -1861,17 +1905,18 @@ export function SmartCartApp() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          budget,
-          diet: safeTrim(formState.diet) || "No specific diet provided",
-          householdSize,
-          combinedPantryItems: combinedPantryItems.join(", "),
-          rejectedMealTitle: meal.name,
-          prepTime: formState.prepTime,
-          adventureLevel: formState.adventureLevel,
-          mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
-          avoidIngredients: safeTrim(formState.avoidIngredients),
-          availableEquipment: formState.availableEquipment,
+          body: JSON.stringify({
+            budget,
+            diet: safeTrim(formState.diet) || "No specific diet provided",
+            householdSize,
+            combinedPantryItems: combinedPantryItems.join(", "),
+            rejectedMealTitle: meal.name,
+            replacementQuality: isPlusMember ? "plus" : "free",
+            prepTime: formState.prepTime,
+            adventureLevel: formState.adventureLevel,
+            mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
+            avoidIngredients: safeTrim(formState.avoidIngredients),
+            availableEquipment: formState.availableEquipment,
           existingMeals: currentMealsContext || existingMealTitles,
           currentMealsContext,
           recentRejectedMeals,
@@ -2177,6 +2222,7 @@ export function SmartCartApp() {
                 replacingMealKey={replacingMealKey}
                 savedDessertKeys={savedDessertKeys}
                 savedMealKeys={savedMealKeys}
+                userPlan={userPlan}
                 userId={safeTrim(user?.id)}
                 weeklyMenuCount={weeklyMenu.length}
               />
@@ -2335,7 +2381,9 @@ export function SmartCartApp() {
               onWaitlistSubmit={handleWaitlistSubmit}
               recipeCache={recipeCache}
               recipeLoadingMeal={recipeLoadingMeal}
+              userPlan={userPlan}
               userSignedIn={Boolean(user)}
+              vaultLimit={FREE_VAULT_LIMIT}
               waitlistEmail={waitlistEmail}
               waitlistStatus={waitlistStatus}
             />
@@ -2456,6 +2504,7 @@ export function SmartCartApp() {
                   replacingMealKey={replacingMealKey}
                   savedDessertKeys={savedDessertKeys}
                   savedMealKeys={savedMealKeys}
+                  userPlan={userPlan}
                   userId={safeTrim(user?.id)}
                   weeklyMenuCount={weeklyMenu.length}
                 />
@@ -2533,7 +2582,9 @@ export function SmartCartApp() {
               onWaitlistSubmit={handleWaitlistSubmit}
               recipeCache={recipeCache}
               recipeLoadingMeal={recipeLoadingMeal}
+              userPlan={userPlan}
               userSignedIn={Boolean(user)}
+              vaultLimit={FREE_VAULT_LIMIT}
               waitlistEmail={waitlistEmail}
               waitlistStatus={waitlistStatus}
             />
