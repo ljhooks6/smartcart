@@ -561,6 +561,7 @@ export function SmartCartApp() {
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [hasResolvedAuthSession, setHasResolvedAuthSession] = useState(false);
+  const [isUpgradeLoading, setIsUpgradeLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -1880,6 +1881,52 @@ export function SmartCartApp() {
     }
   }
 
+  async function handleUpgradeToPlus() {
+    const userId = safeTrim(user?.id);
+    const userEmail = safeTrim(user?.email);
+
+    if (!userId || !userEmail) {
+      showToast("Please sign in before upgrading to SmartCart Plus.", "info");
+      return;
+    }
+
+    if (isPlusMember) {
+      showToast("This account is already on SmartCart Plus.", "info");
+      return;
+    }
+
+    setIsUpgradeLoading(true);
+
+    try {
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          plan: userPlan,
+          userId,
+        }),
+      });
+
+      const data = (await response.json()) as { error?: string; url?: string };
+
+      if (!response.ok || !data.url) {
+        throw new Error(data.error || "Failed to start SmartCart Plus checkout.");
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to start SmartCart Plus checkout.";
+      setRequestError(message);
+      showToast(message, "error");
+    } finally {
+      setIsUpgradeLoading(false);
+    }
+  }
+
   async function handleReplaceMeal(meal: MealPlanItem, index: number) {
     if (!generatedPlan) {
       return;
@@ -2051,11 +2098,13 @@ export function SmartCartApp() {
               email={email}
               featureDescriptions={featureDescriptions}
               isAuthLoading={isAuthLoading}
+              isUpgradeLoading={isUpgradeLoading}
               isProfileLoading={isProfileLoading}
               onEmailChange={setEmail}
               onFeatureToggle={(feature) =>
                 handleFeatureToggle(feature as keyof typeof featureDescriptions)
               }
+              onUpgrade={handleUpgradeToPlus}
               onLoginSubmit={handleLogin}
               onSignOut={() => {
                 void supabase.auth.signOut();

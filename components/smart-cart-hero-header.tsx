@@ -9,9 +9,11 @@ type SmartCartHeroHeaderProps = {
   email: string;
   featureDescriptions: Record<string, string>;
   isAuthLoading: boolean;
+  isUpgradeLoading: boolean;
   isProfileLoading: boolean;
   onEmailChange: (value: string) => void;
   onFeatureToggle: (feature: string) => void;
+  onUpgrade: () => void | Promise<void>;
   onLoginSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSignOut: () => void;
   userPlan: SmartCartPlan | null;
@@ -26,9 +28,11 @@ export function SmartCartHeroHeader({
   email,
   featureDescriptions,
   isAuthLoading,
+  isUpgradeLoading,
   isProfileLoading,
   onEmailChange,
   onFeatureToggle,
+  onUpgrade,
   onLoginSubmit,
   onSignOut,
   userPlan,
@@ -116,6 +120,19 @@ export function SmartCartHeroHeader({
                   <div className="mt-4 rounded-2xl bg-cream px-4 py-3 text-sm leading-6 text-ink/70">
                     Your pantry, weekly plan, and vault stay synced here.
                   </div>
+                  {userPlan !== "plus" ? (
+                    <button
+                      className="mt-4 w-full rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isUpgradeLoading}
+                      onClick={() => {
+                        setIsAccountMenuOpen(false);
+                        void onUpgrade();
+                      }}
+                      type="button"
+                    >
+                      {isUpgradeLoading ? "Opening checkout..." : "Upgrade to SmartCart Plus"}
+                    </button>
+                  ) : null}
                   <button
                     className="mt-4 w-full rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
                     onClick={() => {
