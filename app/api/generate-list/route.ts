@@ -26,6 +26,7 @@ type GenerateListRequest = {
   existingMeals?: string;
   availableEquipment?: string[];
   prepTime?: string;
+  generationQuality?: "free" | "plus";
 };
 
 const ingredientSchema = z.object({
@@ -271,6 +272,108 @@ function findMissingSelectedEquipmentUsage(
   return missing;
 }
 
+function inferPrimaryProtein(meal: z.infer<typeof mealSchema>) {
+  const haystack = `${meal.name} ${meal.notes ?? ""} ${meal.ingredients
+    .map((ingredient) => ingredient.name)
+    .join(" ")}`.toLowerCase();
+
+  if (/\bground chicken\b|\bchicken\b/.test(haystack)) {
+    return "chicken";
+  }
+  if (/\bground turkey\b|\bturkey\b/.test(haystack)) {
+    return "turkey";
+  }
+  if (/\bground beef\b|\bbeef\b|\bsteak\b/.test(haystack)) {
+    return "beef";
+  }
+  if (/\bpork\b|\bsausage\b|\bham\b/.test(haystack)) {
+    return "pork";
+  }
+  if (/\bshrimp\b/.test(haystack)) {
+    return "shrimp";
+  }
+  if (/\bsalmon\b|\bfish\b|\btilapia\b|\bcod\b/.test(haystack)) {
+    return "fish";
+  }
+  if (/\btofu\b/.test(haystack)) {
+    return "tofu";
+  }
+  if (/\bbean\b|\blentil\b|\bchickpea\b/.test(haystack)) {
+    return "legume";
+  }
+
+  return "other";
+}
+
+function findOverusedProteins(meals: Array<z.infer<typeof mealSchema>>) {
+  const counts = new Map<string, number>();
+
+  meals.forEach((meal) => {
+    const protein = inferPrimaryProtein(meal);
+    if (!protein || protein === "other") {
+      return;
+    }
+    counts.set(protein, (counts.get(protein) ?? 0) + 1);
+  });
+
+  return Array.from(counts.entries())
+    .filter(([, count]) => count > 2)
+    .map(([protein, count]) => `${protein} (${count})`);
+}
+
+function inferMealFamily(meal: z.infer<typeof mealSchema>) {
+  const title = meal.name.toLowerCase();
+
+  const families = [
+    "burger",
+    "wrap",
+    "taco",
+    "quesadilla",
+    "pasta",
+    "spaghetti",
+    "curry",
+    "stir-fry",
+    "skillet",
+    "sheet-pan",
+    "bowl",
+    "soup",
+    "salad",
+    "sandwich",
+    "casserole",
+  ] as const;
+
+  for (const family of families) {
+    const matcher =
+      family === "stir-fry"
+        ? /\bstir[- ]fry\b/
+        : family === "sheet-pan"
+          ? /\bsheet[- ]pan\b/
+          : new RegExp(`\\b${family.replace("-", "[- ]")}\\b`);
+
+    if (matcher.test(title)) {
+      return family;
+    }
+  }
+
+  return "other";
+}
+
+function findRepeatedMealFamilies(meals: Array<z.infer<typeof mealSchema>>) {
+  const counts = new Map<string, number>();
+
+  meals.forEach((meal) => {
+    const family = inferMealFamily(meal);
+    if (!family || family === "other") {
+      return;
+    }
+    counts.set(family, (counts.get(family) ?? 0) + 1);
+  });
+
+  return Array.from(counts.entries())
+    .filter(([, count]) => count > 2)
+    .map(([family, count]) => `${family} (${count})`);
+}
+
 export async function POST(request: Request) {
   let body: unknown;
 
@@ -299,8 +402,10 @@ export async function POST(request: Request) {
     existingMeals,
     availableEquipment,
     prepTime,
+    generationQuality,
   } =
     (body as Partial<GenerateListRequest>) ?? {};
+  const isPlusGeneration = generationQuality === "plus";
 
   const selectedEquipment =
     Array.isArray(availableEquipment) && availableEquipment.length > 0
@@ -406,6 +511,8 @@ export async function POST(request: Request) {
       parsed.meals,
       selectedEquipmentSet,
     );
+    let overusedProteins = findOverusedProteins(parsed.meals);
+    let repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
 
     if (
       blockedMatches.length > 0 ||
@@ -430,6 +537,38 @@ export async function POST(request: Request) {
         parsed.meals,
         selectedEquipmentSet,
       );
+      overusedProteins = findOverusedProteins(parsed.meals);
+      repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
+    }
+
+    if (
+      isPlusGeneration &&
+      (
+        missingSelectedEquipmentUsage.length > 0 ||
+        overusedProteins.length > 0 ||
+        repeatedMealFamilies.length > 0
+      )
+    ) {
+      rawPlan = await requestMealPlan(
+        `PLUS REFINEMENT RETRY: Keep the same budget, diet, pantry, and prep-time constraints, but improve the weekly plan quality. Fix these soft-quality issues: missing selected special equipment usage: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Overused proteins: ${overusedProteins.join(", ") || "none"}. Repeated meal families: ${repeatedMealFamilies.join(", ") || "none"}. Return a noticeably more varied, balanced weekly plan with exactly 7 dinner meals and valid JSON only. Desserts may be 0, 1, or 2 items.`,
+      );
+      parsed = aiGenerateListResponseSchema.parse(rawPlan);
+      parsed = {
+        ...parsed,
+        meals: normalizeGeneratedMeals(parsed.meals, householdSize),
+      };
+      blockedMatches = findBlockedContentMatches(
+        parsed.meals,
+        [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
+      );
+      repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
+      equipmentViolations = findEquipmentViolations(parsed.meals, selectedEquipmentSet);
+      missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
+        parsed.meals,
+        selectedEquipmentSet,
+      );
+      overusedProteins = findOverusedProteins(parsed.meals);
+      repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
     }
 
     if (blockedMatches.length > 0) {

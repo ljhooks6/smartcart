@@ -1014,6 +1014,7 @@ export function SmartCartApp() {
           budget,
           diet: safeTrim(formState.diet) || "No specific diet provided",
           householdSize,
+          generationQuality: isPlusMember ? "plus" : "free",
           combinedPantryItems: combinedPantryItems.join(", "),
           fullyStocked: Array.from(fullyStocked),
           runningLow: Array.from(runningLow),
