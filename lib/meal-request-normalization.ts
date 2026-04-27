@@ -98,16 +98,16 @@ export function buildAdventureLevelGuidance(adventureLevel?: string) {
   if (normalized.includes("stick") || normalized.includes("simple") || normalized.includes("basic")) {
     return {
       generationBlock:
-        "Adventure guidance: keep the week grounded in familiar, realistic dinners. At least 4 meals should be classic weeknight staples or comfort-food adjacent. Prioritize classics like burgers and fries, turkey or chicken burgers, chicken wraps, spaghetti and meatballs, tacos, baked pasta, pork chops with sides, BBQ chicken plates, meatloaf, quesadillas, and sheet-pan dinners. Use mild-to-moderate seasoning and avoid making the week feel exotic, overly spiced, or trend-chasing.",
+        "Adventure guidance: keep the week grounded in familiar, realistic dinners. At least 4 meals should be classic weeknight staples or comfort-food adjacent. Prioritize classics like burgers and fries, turkey or chicken burgers, chicken wraps, spaghetti and meatballs, tacos, baked pasta, pork chops with sides, BBQ chicken plates, meatloaf, quesadillas, and sheet-pan dinners. It is also acceptable for 1 comfort-food anchor to appear occasionally, such as fried chicken with mashed potatoes, baked mac and cheese with protein, or another homestyle plate, as long as the whole week does not become too heavy or repetitive. Use mild-to-moderate seasoning and avoid making the week feel exotic, overly spiced, or trend-chasing.",
       replacementBlock:
-        "Replacement guidance: choose a clearly different but still familiar weeknight staple. Burgers, wraps, simple pasta dishes, tacos, baked chicken plates, pork chop plates, quesadillas, and homestyle skillet meals are all valid replacements. Do not drift into globally themed meals unless the rejected meal itself was already very simple and repetitive.",
+        "Replacement guidance: choose a clearly different but still familiar weeknight staple. Burgers, wraps, simple pasta dishes, tacos, baked chicken plates, pork chop plates, quesadillas, homestyle skillet meals, and occasional comfort-food plates are all valid replacements. Do not drift into globally themed meals unless the rejected meal itself was already very simple and repetitive.",
     };
   }
 
   if (normalized.includes("mix")) {
     return {
       generationBlock:
-        "Adventure guidance: build a balanced week. Include at least 3 familiar comfort meals, at least 3 approachable global or fusion meals, and let the final 1 or 2 meals add variety without getting too niche. The week should visibly mix classic American staples with more varied but still approachable cuisine lanes.",
+        "Adventure guidance: build a balanced week. Include at least 3 familiar comfort meals, at least 3 approachable global or fusion meals, and let the final 1 or 2 meals add variety without getting too niche. The week should visibly mix classic American staples with more varied but still approachable cuisine lanes. It is acceptable for 1 comfort-food anchor such as fried chicken, mashed potatoes, or mac and cheese with a real protein to appear occasionally, but not dominate the plan.",
       replacementBlock:
         "Replacement guidance: choose something distinct from the rejected meal, but keep it approachable. Aim for a different cuisine lane, protein, and format without becoming too obscure. The replacement should feel like something a normal weeknight cook would still gladly make.",
     };
