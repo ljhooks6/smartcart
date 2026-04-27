@@ -135,7 +135,7 @@ const clearedFormState: FormState = {
   availableEquipment: ["Oven", "Stovetop", "Microwave"],
 };
 
-const FREE_VAULT_LIMIT = 10;
+const FREE_VAULT_LIMIT = 5;
 
 const prepTimeOptions = ["Under 30 mins", "Under 1 hour", "No limit"] as const;
 const adventureLevelOptions = [

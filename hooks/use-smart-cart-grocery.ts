@@ -298,6 +298,19 @@ function getFlexibleStapleMeta(itemName: string) {
   }
 
   if (
+    normalizedName === "whole milk" ||
+    normalizedName === "2% milk" ||
+    normalizedName === "skim milk" ||
+    normalizedName.endsWith(" milk")
+  ) {
+    return {
+      flexibilityNote: "One carton of the milk you prefer will usually cover these meals.",
+      key: "flexible-milk",
+      name: "Milk",
+    };
+  }
+
+  if (
     normalizedName === "pasta" ||
     normalizedName.includes("spaghetti") ||
     normalizedName.includes("penne") ||
@@ -313,6 +326,48 @@ function getFlexibleStapleMeta(itemName: string) {
       flexibilityNote: "One box of your preferred pasta shape will usually cover these meals.",
       key: "flexible-pasta",
       name: "Pasta",
+    };
+  }
+
+  if (
+    normalizedName.includes("russet potato") ||
+    normalizedName.includes("yukon gold potato") ||
+    normalizedName.includes("red potato") ||
+    normalizedName === "potatoes" ||
+    normalizedName === "potato"
+  ) {
+    return {
+      flexibilityNote: "One bag of potatoes will usually cover these meals.",
+      key: "flexible-potatoes",
+      name: "Potatoes",
+    };
+  }
+
+  if (
+    normalizedName === "yellow onion" ||
+    normalizedName === "white onion" ||
+    normalizedName === "red onion" ||
+    normalizedName === "sweet onion" ||
+    normalizedName === "onion" ||
+    normalizedName === "onions"
+  ) {
+    return {
+      flexibilityNote: "A small bag of onions will usually cover these meals.",
+      key: "flexible-onions",
+      name: "Onions",
+    };
+  }
+
+  if (
+    normalizedName.includes("flour tortilla") ||
+    normalizedName.includes("corn tortilla") ||
+    normalizedName.includes("wrap") ||
+    normalizedName.includes("burrito tortilla")
+  ) {
+    return {
+      flexibilityNote: "One pack of tortillas or wraps will usually cover these meals.",
+      key: "flexible-tortillas",
+      name: "Tortillas or wraps",
     };
   }
 
@@ -332,6 +387,14 @@ function getFlexibleStapleMeta(itemName: string) {
       flexibilityNote: "Vegetable broth or vegetable stock will both work for these meals.",
       key: "flexible-vegetable-broth",
       name: "Vegetable broth or stock",
+    };
+  }
+
+  if (normalizedName.includes("beef broth") || normalizedName.includes("beef stock")) {
+    return {
+      flexibilityNote: "Beef broth or beef stock will both work for these meals.",
+      key: "flexible-beef-broth",
+      name: "Beef broth or stock",
     };
   }
 
@@ -424,7 +487,7 @@ function aggregateIngredientItems(ingredients: IngredientItem[]): GroceryListIte
     buy_amount: item.buy_amount,
     estimated_price: estimatePackagePrice(item.name, item.buy_amount),
     needed_amount: item.needed_amount,
-  }));
+  })).sort((left, right) => left.name.localeCompare(right.name));
 }
 
 function estimateRestockPrice(itemName: string) {
@@ -483,13 +546,15 @@ export function useSmartCartGrocery({
     const directGroceryList = aggregateIngredientItems(rawGroceryList);
     const directSkippedList = aggregateIngredientItems(rawSkippedList);
 
-    const restockItems: GroceryListItem[] = Array.from(restock).map((restockItem) => ({
-      category: "Restock",
-      buy_amount: estimatePackageAmount(restockItem),
-      name: safeTrim(restockItem),
-      needed_amount: "Restock pantry",
-      estimated_price: Math.max(1, estimateRestockPrice(restockItem)),
-    }));
+    const restockItems: GroceryListItem[] = Array.from(restock)
+      .map((restockItem) => ({
+        category: "Restock",
+        buy_amount: estimatePackageAmount(restockItem),
+        name: safeTrim(restockItem),
+        needed_amount: "Restock pantry",
+        estimated_price: Math.max(1, estimateRestockPrice(restockItem)),
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name));
 
     return {
       derivedGroceryList: [...directGroceryList, ...restockItems],
