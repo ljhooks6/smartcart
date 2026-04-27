@@ -110,8 +110,9 @@ export function SmartCartMealSections({
           </p>
           {userPlan === "free" ? (
             <p className="mt-2 text-sm leading-6 text-sky-900/80">
-              Free includes standard swaps. <strong>SmartCart Plus</strong> unlocks smarter
-              replacements that do a better job avoiding repeat meal patterns.
+              Core weekly meal generation is the same for everyone today. <strong>SmartCart
+              Plus</strong> adds pantry memory, a bigger vault, and smarter replacements that do
+              a better job avoiding repeat meal patterns.
             </p>
           ) : null}
         </div>

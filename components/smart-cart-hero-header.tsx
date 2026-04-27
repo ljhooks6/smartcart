@@ -14,6 +14,7 @@ type SmartCartHeroHeaderProps = {
   onEmailChange: (value: string) => void;
   onFeatureToggle: (feature: string) => void;
   onGoogleLogin: () => void | Promise<void>;
+  onSwitchGoogleAccount: () => void | Promise<void>;
   onUpgrade: () => void | Promise<void>;
   onLoginSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSignOut: () => void;
@@ -34,6 +35,7 @@ export function SmartCartHeroHeader({
   onEmailChange,
   onFeatureToggle,
   onGoogleLogin,
+  onSwitchGoogleAccount,
   onUpgrade,
   onLoginSubmit,
   onSignOut,
@@ -136,6 +138,17 @@ export function SmartCartHeroHeader({
                     </button>
                   ) : null}
                   <button
+                    className="mt-4 w-full rounded-full border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={isAuthLoading}
+                    onClick={() => {
+                      setIsAccountMenuOpen(false);
+                      void onSwitchGoogleAccount();
+                    }}
+                    type="button"
+                  >
+                    {isAuthLoading ? "Switching..." : "Use a Different Google Account"}
+                  </button>
+                  <button
                     className="mt-4 w-full rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
                     onClick={() => {
                       setIsAccountMenuOpen(false);
@@ -190,6 +203,9 @@ export function SmartCartHeroHeader({
                 </span>
                 {isAuthLoading ? "Opening Google..." : "Continue with Google"}
               </button>
+              <p className="text-center text-xs font-medium leading-6 text-ink/55">
+                Shared device? Google will ask which account to use before SmartCart signs in.
+              </p>
               <div className="flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-ink/40">
                 <span className="h-px flex-1 bg-stone-200" />
                 <span>or use email</span>

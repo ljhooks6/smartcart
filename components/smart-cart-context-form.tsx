@@ -179,19 +179,24 @@ export function SmartCartContextForm({
             </p>
           </div>
           <button
-            className="flex w-full items-center justify-between rounded-[1.5rem] border border-stone-200 bg-white px-5 py-4 text-left shadow-sm transition hover:bg-stone-50 md:hidden"
+            className="flex w-full items-center justify-between rounded-[1.75rem] border border-pine/20 bg-gradient-to-r from-emerald-50 via-white to-amber-50 px-5 py-4 text-left shadow-md ring-1 ring-pine/10 transition hover:-translate-y-0.5 hover:border-pine/30 hover:shadow-lg md:hidden"
             onClick={onToggleEquipmentSheetOpen}
             type="button"
           >
-            <div>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pine text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-sm">
+                Gear
+              </div>
+              <div>
               <p className="text-sm font-semibold text-ink">Choose your equipment</p>
               <p className="mt-1 text-sm leading-6 text-ink/65">
                 {formState.availableEquipment.length > 0
                   ? `${formState.availableEquipment.length} selected`
                   : "Tap to select your kitchen setup"}
               </p>
+              </div>
             </div>
-            <span className="text-xs uppercase tracking-[0.2em] text-ink/55">
+            <span className="rounded-full bg-white/85 px-3 py-1 text-xs uppercase tracking-[0.2em] text-pine shadow-sm">
                 {isEquipmentSheetOpen ? "Close" : "Open"}
             </span>
           </button>
@@ -221,19 +226,24 @@ export function SmartCartContextForm({
           </div>
         </div>
 
-        <div className="rounded-[1.75rem] border border-stone-200 bg-white shadow-sm">
+        <div className="rounded-[1.75rem] border border-orange-200 bg-gradient-to-r from-orange-50 via-white to-amber-50 shadow-md ring-1 ring-orange-100">
           <button
             className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
             onClick={onTogglePantrySelectionOpen}
             type="button"
           >
-            <div>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-sm">
+                Pantry
+              </div>
+              <div>
               <p className="text-sm font-semibold text-ink">Pantry Quick-Select</p>
               <p className="mt-1 text-sm leading-6 text-ink/65">
                 Tap common staples to add them before typing anything custom.
               </p>
+              </div>
             </div>
-            <span className="text-xs uppercase tracking-[0.2em] text-ink/55">
+            <span className="rounded-full bg-white/85 px-3 py-1 text-xs uppercase tracking-[0.2em] text-orange-700 shadow-sm">
               {isPantrySelectionOpen ? "Hide" : "Select Pantry Items"}
             </span>
           </button>

@@ -845,6 +845,14 @@ export function SmartCartApp() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || window.innerWidth >= 768) {
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeMobileTab]);
+
   const combinedPantryItems = useMemo(() => {
     const typedItems = formState.pantryItems
       .split(",")
@@ -1061,8 +1069,10 @@ export function SmartCartApp() {
     event.preventDefault();
     const didStartPlan = await submitPlan(false);
     if (didStartPlan) {
+      setIsMobileDockExpanded(false);
       setActiveMobileTab("meals");
     } else {
+      setIsMobileDockExpanded(false);
       setActiveMobileTab("plan");
     }
   }
@@ -1222,25 +1232,6 @@ export function SmartCartApp() {
     setWeeklyMenu((current) =>
       current.filter((savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey),
     );
-
-    setGeneratedPlan((current) => {
-      if (!current) {
-        return current;
-      }
-
-      if (current.meals.some((generatedMeal) => `${generatedMeal.day}::${generatedMeal.name}` === mealKey)) {
-        return current;
-      }
-
-      const nextMeals = [...current.meals, meal].slice(0, 7);
-      const nextPlan = {
-        ...current,
-        meals: nextMeals,
-      };
-
-      persistGeneratedPlan(nextPlan);
-      return nextPlan;
-    });
   }
 
   async function handleArchiveMeal(meal: MealPlanItem) {
@@ -1508,15 +1499,7 @@ export function SmartCartApp() {
     setValidationError(null);
     setRequestError(null);
     setIsLoading(false);
-    setGeneratedPlan((current) =>
-      current
-        ? {
-            ...current,
-            meals: [],
-            desserts: [],
-          }
-        : null,
-    );
+    setGeneratedPlan(null);
     persistGeneratedPlan(null);
     setFullyStocked(new Set());
     setRunningLow(new Set());
@@ -1530,6 +1513,13 @@ export function SmartCartApp() {
     setReplacingDessertKey(null);
     setRecentRejectedMeals([]);
     setExpandedDetailCards(new Set());
+    setActiveFeature(null);
+    setCloudSyncMessage("");
+    setIsEquipmentSheetOpen(false);
+    setIsPantryOpen(false);
+    setIsPantrySelectionOpen(false);
+    setIsMobileDockExpanded(false);
+    setActiveMobileTab("plan");
 
     clearStoredJson(
       SMART_CART_FORM_STORAGE_KEY,
@@ -1576,22 +1566,26 @@ export function SmartCartApp() {
     setIsAuthLoading(false);
   }
 
-  async function handleGoogleLogin() {
-    setIsAuthLoading(true);
-    setAuthMessage("");
-
+  async function startGoogleLogin() {
     const redirectTo =
       typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    return supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         queryParams: {
-          prompt: "select_account",
+          prompt: "consent select_account",
         },
         redirectTo,
       },
     });
+  }
+
+  async function handleGoogleLogin() {
+    setIsAuthLoading(true);
+    setAuthMessage("");
+
+    const { error } = await startGoogleLogin();
 
     if (error) {
       setAuthMessage(error.message);
@@ -1600,6 +1594,29 @@ export function SmartCartApp() {
     }
 
     setAuthMessage("Redirecting to Google...");
+  }
+
+  async function handleSwitchGoogleAccount() {
+    setIsAuthLoading(true);
+    setAuthMessage("");
+
+    const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+
+    if (signOutError) {
+      setAuthMessage(signOutError.message);
+      setIsAuthLoading(false);
+      return;
+    }
+
+    const { error } = await startGoogleLogin();
+
+    if (error) {
+      setAuthMessage(error.message);
+      setIsAuthLoading(false);
+      return;
+    }
+
+    setAuthMessage("Redirecting to Google account chooser...");
   }
 
   const rehydrateMealRecord = useCallback((
@@ -2131,6 +2148,7 @@ export function SmartCartApp() {
                 handleFeatureToggle(feature as keyof typeof featureDescriptions)
               }
               onGoogleLogin={handleGoogleLogin}
+              onSwitchGoogleAccount={handleSwitchGoogleAccount}
               onUpgrade={handleUpgradeToPlus}
               onLoginSubmit={handleLogin}
               onSignOut={() => {
