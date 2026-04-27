@@ -78,16 +78,39 @@ export async function ensureSmartCartProfile(userId: string, email: string) {
 
   const normalizedEmail = typeof email === "string" ? email.trim() : "";
 
+  const existingProfile = await fetchSmartCartProfile(userId);
+
+  if (existingProfile) {
+    if (normalizedEmail && existingProfile.email !== normalizedEmail) {
+      const { data, error } = await supabase
+        .from("smartcart_profiles")
+        .update({ email: normalizedEmail })
+        .eq("id", userId)
+        .select("*")
+        .single();
+
+      if (error) {
+        if (isMissingProfileTableError(error)) {
+          console.warn("smartcart_profiles table is not set up yet.");
+          return existingProfile;
+        }
+
+        throw error;
+      }
+
+      return normalizeProfile((data ?? null) as SmartCartProfileRow | null, normalizedEmail);
+    }
+
+    return existingProfile;
+  }
+
   const { data, error } = await supabase
     .from("smartcart_profiles")
-    .upsert(
-      {
-        email: normalizedEmail,
-        id: userId,
-        plan: "free" as SmartCartPlan,
-      },
-      { onConflict: "id" },
-    )
+    .insert({
+      email: normalizedEmail,
+      id: userId,
+      plan: "free" as SmartCartPlan,
+    })
     .select("*")
     .single();
 
@@ -102,4 +125,3 @@ export async function ensureSmartCartProfile(userId: string, email: string) {
 
   return normalizeProfile((data ?? null) as SmartCartProfileRow | null, normalizedEmail);
 }
-

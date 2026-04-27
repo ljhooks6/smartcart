@@ -1586,6 +1586,9 @@ export function SmartCartApp() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
+        queryParams: {
+          prompt: "select_account",
+        },
         redirectTo,
       },
     });
