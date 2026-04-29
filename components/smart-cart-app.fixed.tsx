@@ -556,6 +556,7 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
 }
 
 export function SmartCartApp() {
+  type SaveStatus = "idle" | "saving" | "saved" | "error";
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [user, setUser] = useState<User | null>(null);
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
@@ -567,6 +568,7 @@ export function SmartCartApp() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [cloudSyncMessage, setCloudSyncMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -852,6 +854,18 @@ export function SmartCartApp() {
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [activeMobileTab]);
+
+  useEffect(() => {
+    if (saveStatus !== "saved") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSaveStatus("idle");
+    }, 2600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [saveStatus]);
 
   const combinedPantryItems = useMemo(() => {
     const typedItems = formState.pantryItems
@@ -1516,6 +1530,7 @@ export function SmartCartApp() {
     setExpandedDetailCards(new Set());
     setActiveFeature(null);
     setCloudSyncMessage("");
+    setSaveStatus("idle");
     setIsEquipmentSheetOpen(false);
     setIsPantryOpen(false);
     setIsPantrySelectionOpen(false);
@@ -1840,6 +1855,7 @@ export function SmartCartApp() {
     }
 
     setIsSaving(true);
+    setSaveStatus("saving");
     setCloudSyncMessage("");
 
     try {
@@ -1882,11 +1898,13 @@ export function SmartCartApp() {
       if (canPersistPantryMemory) {
         setCloudSyncMessage("Your week and pantry are synced.");
       }
+      setSaveStatus("saved");
     } catch (error) {
       console.error("Supabase Save Error:", error);
       setCloudSyncMessage(
         error instanceof Error ? error.message : "Cloud sync failed.",
       );
+      setSaveStatus("error");
     } finally {
       setIsSaving(false);
     }
@@ -2464,6 +2482,7 @@ export function SmartCartApp() {
               expandedIngredientsMeals={expandedIngredientsMeals}
               formatCardEyebrow={formatCardEyebrow}
               isSaving={isSaving}
+              saveStatus={saveStatus}
               isVaultOpen={isVaultOpen}
               onGetRecipe={handleGetRecipe}
               onPermanentDelete={handlePermanentDelete}
@@ -2665,6 +2684,7 @@ export function SmartCartApp() {
               expandedIngredientsMeals={expandedIngredientsMeals}
               formatCardEyebrow={formatCardEyebrow}
               isSaving={isSaving}
+              saveStatus={saveStatus}
               isVaultOpen={isVaultOpen}
               onGetRecipe={handleGetRecipe}
               onPermanentDelete={handlePermanentDelete}
@@ -2782,7 +2802,13 @@ export function SmartCartApp() {
                         onClick={() => void saveSessionToCloud()}
                         type="button"
                       >
-                        {isSaving ? "Saving..." : "Save Week"}
+                        {saveStatus === "saving"
+                          ? "Saving..."
+                          : saveStatus === "saved"
+                            ? "Saved"
+                            : saveStatus === "error"
+                              ? "Retry Save"
+                              : "Save Week"}
                       </button>
                       <button
                         className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
@@ -2809,7 +2835,13 @@ export function SmartCartApp() {
                           onClick={() => void saveSessionToCloud()}
                           type="button"
                         >
-                          {isSaving ? "Saving..." : "Save"}
+                          {saveStatus === "saving"
+                            ? "Saving..."
+                            : saveStatus === "saved"
+                              ? "Saved"
+                              : saveStatus === "error"
+                                ? "Retry Save"
+                                : "Save"}
                         </button>
                       ) : null}
                     </>

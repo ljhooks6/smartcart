@@ -20,6 +20,7 @@ type MealPlanItem = {
 };
 
 type WaitlistStatus = "idle" | "submitting" | "success" | "error";
+type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 type SmartCartLibrarySectionsProps = {
   archivedMeals: MealPlanItem[];
@@ -29,6 +30,7 @@ type SmartCartLibrarySectionsProps = {
   formatCardEyebrow: (day: string) => string;
   isSaving: boolean;
   isVaultOpen: boolean;
+  saveStatus: SaveStatus;
   onGetRecipe: (meal: MealPlanItem) => void | Promise<void>;
   onPermanentDelete: (meal: MealPlanItem) => void | Promise<void>;
   onRestoreMeal: (meal: MealPlanItem) => void | Promise<void>;
@@ -57,6 +59,7 @@ export function SmartCartLibrarySections({
   formatCardEyebrow,
   isSaving,
   isVaultOpen,
+  saveStatus,
   onGetRecipe,
   onPermanentDelete,
   onRestoreMeal,
@@ -95,12 +98,35 @@ export function SmartCartLibrarySections({
               ) : null}
             </div>
             <button
-              className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`inline-flex min-w-[9.5rem] items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                saveStatus === "saved"
+                  ? "bg-emerald-600 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"
+                  : saveStatus === "error"
+                    ? "bg-rose-500"
+                    : "bg-orange-500 hover:bg-orange-600"
+              }`}
               disabled={isSaving}
               onClick={() => void onSaveSession()}
               type="button"
             >
-              {isSaving ? "Saving..." : "Save"}
+              {saveStatus === "saving" ? (
+                <>
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white" />
+                  <span>Saving...</span>
+                </>
+              ) : saveStatus === "saved" ? (
+                <>
+                  <span className="text-base leading-none">✓</span>
+                  <span>Saved</span>
+                </>
+              ) : saveStatus === "error" ? (
+                <>
+                  <span className="text-base leading-none">!</span>
+                  <span>Retry Save</span>
+                </>
+              ) : (
+                "Save"
+              )}
             </button>
           </div>
           {cloudSyncMessage ? (
