@@ -94,6 +94,8 @@ type ReplaceDessertResponse = {
 type ToastTone = "success" | "error" | "info";
 type MobileTab = "plan" | "meals" | "shop" | "cook" | "vault";
 type ActionGuidancePreferences = {
+  skipPermanentDeleteConfirm: boolean;
+  skipRemoveFromMenuConfirm: boolean;
   skipSaveToMenuConfirm: boolean;
   skipVaultConfirm: boolean;
 };
@@ -564,6 +566,8 @@ export function SmartCartApp() {
   type SaveStatus = "idle" | "saving" | "saved" | "error";
   type ConfirmDialog =
     | { kind: "clear" }
+    | { kind: "permanentDelete"; meal: MealPlanItem }
+    | { kind: "removeFromMenu"; meal: MealPlanItem }
     | { kind: "saveToMenu"; meal: MealPlanItem }
     | { kind: "stashToVault"; meal: MealPlanItem }
     | null;
@@ -615,6 +619,8 @@ export function SmartCartApp() {
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
   const lastScrollYRef = useRef(0);
   const [actionGuidance, setActionGuidance] = useState<ActionGuidancePreferences>({
+    skipPermanentDeleteConfirm: false,
+    skipRemoveFromMenuConfirm: false,
     skipSaveToMenuConfirm: false,
     skipVaultConfirm: false,
   });
@@ -700,6 +706,8 @@ export function SmartCartApp() {
 
       if (savedActionGuidance) {
         setActionGuidance({
+          skipPermanentDeleteConfirm: Boolean(savedActionGuidance.skipPermanentDeleteConfirm),
+          skipRemoveFromMenuConfirm: Boolean(savedActionGuidance.skipRemoveFromMenuConfirm),
           skipSaveToMenuConfirm: Boolean(savedActionGuidance.skipSaveToMenuConfirm),
           skipVaultConfirm: Boolean(savedActionGuidance.skipVaultConfirm),
         });
@@ -1289,12 +1297,23 @@ export function SmartCartApp() {
     performSaveToWeeklyMenu(meal);
   }
 
-  function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
+  function performRemoveFromWeeklyMenu(meal: MealPlanItem) {
     const mealKey = `${meal.day}::${meal.name}`;
 
     setWeeklyMenu((current) =>
       current.filter((savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey),
     );
+    showToast(`${meal.name} was removed from this week’s cook lineup.`, "info");
+  }
+
+  function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
+    if (!actionGuidance.skipRemoveFromMenuConfirm) {
+      setConfirmDontShowAgain(false);
+      setConfirmDialog({ kind: "removeFromMenu", meal });
+      return;
+    }
+
+    performRemoveFromWeeklyMenu(meal);
   }
 
   async function performArchiveMeal(meal: MealPlanItem) {
@@ -1430,7 +1449,7 @@ export function SmartCartApp() {
     });
   }
 
-  async function handlePermanentDelete(meal: MealPlanItem) {
+  async function performPermanentDelete(meal: MealPlanItem) {
     const userId = user?.id || "";
     if (!userId) {
       return;
@@ -1484,11 +1503,22 @@ export function SmartCartApp() {
       setArchivedMeals((current) =>
         current.filter((archivedMeal) => !mealMatcher(archivedMeal)),
       );
+      showToast(`${meal.name} was permanently deleted.`, "info");
     } catch (error) {
       setCloudSyncMessage(
         error instanceof Error ? error.message : "Failed to permanently delete meal.",
       );
     }
+  }
+
+  async function handlePermanentDelete(meal: MealPlanItem) {
+    if (!actionGuidance.skipPermanentDeleteConfirm) {
+      setConfirmDontShowAgain(false);
+      setConfirmDialog({ kind: "permanentDelete", meal });
+      return;
+    }
+
+    await performPermanentDelete(meal);
   }
 
   function handleToggleDessertSave(
@@ -1632,6 +1662,14 @@ export function SmartCartApp() {
     }
 
     if (confirmDontShowAgain) {
+      if (currentDialog.kind === "permanentDelete") {
+        setActionGuidance((current) => ({ ...current, skipPermanentDeleteConfirm: true }));
+      }
+
+      if (currentDialog.kind === "removeFromMenu") {
+        setActionGuidance((current) => ({ ...current, skipRemoveFromMenuConfirm: true }));
+      }
+
       if (currentDialog.kind === "saveToMenu") {
         setActionGuidance((current) => ({ ...current, skipSaveToMenuConfirm: true }));
       }
@@ -1649,6 +1687,16 @@ export function SmartCartApp() {
       return;
     }
 
+    if (currentDialog.kind === "permanentDelete") {
+      await performPermanentDelete(currentDialog.meal);
+      return;
+    }
+
+    if (currentDialog.kind === "removeFromMenu") {
+      performRemoveFromWeeklyMenu(currentDialog.meal);
+      return;
+    }
+
     if (currentDialog.kind === "saveToMenu") {
       performSaveToWeeklyMenu(currentDialog.meal);
       return;
@@ -1660,21 +1708,33 @@ export function SmartCartApp() {
   }
 
   const confirmDialogTitle =
-    confirmDialog?.kind === "saveToMenu"
+    confirmDialog?.kind === "permanentDelete"
+      ? "Permanently Delete This Meal?"
+      : confirmDialog?.kind === "removeFromMenu"
+        ? "Remove This Meal From the Week?"
+      : confirmDialog?.kind === "saveToMenu"
       ? "Save This Meal for This Week?"
       : confirmDialog?.kind === "stashToVault"
         ? "Send This Meal to the Vault?"
         : "Reset Workspace?";
 
   const confirmDialogBody =
-    confirmDialog?.kind === "saveToMenu"
+    confirmDialog?.kind === "permanentDelete"
+      ? `This will permanently delete ${confirmDialog.meal.name}. It will not stay in your weekly lineup or your vault.`
+      : confirmDialog?.kind === "removeFromMenu"
+        ? `This will remove ${confirmDialog.meal.name} from this week’s Cook lineup. It will no longer help drive your shopping list.`
+      : confirmDialog?.kind === "saveToMenu"
       ? `This will move ${confirmDialog.meal.name} into your Cook lineup for this week and use it to help build your shopping list.`
       : confirmDialog?.kind === "stashToVault"
         ? `This will remove ${confirmDialog.meal.name} from the active plan and stash it in your Recipe Vault so you can bring it back later.`
         : "This will clear your form and active weekly menu, but your Recipe Vault will remain safe.";
 
   const confirmDialogConfirmLabel =
-    confirmDialog?.kind === "saveToMenu"
+    confirmDialog?.kind === "permanentDelete"
+      ? "Delete Forever"
+      : confirmDialog?.kind === "removeFromMenu"
+        ? "Remove From Week"
+      : confirmDialog?.kind === "saveToMenu"
       ? "Save to Cook"
       : confirmDialog?.kind === "stashToVault"
         ? "Stash in Vault"
@@ -1684,7 +1744,11 @@ export function SmartCartApp() {
     confirmDialog?.kind === "clear" ? "Keep My Work" : "Cancel";
 
   const confirmDialogOptOutLabel =
-    confirmDialog?.kind === "saveToMenu"
+    confirmDialog?.kind === "permanentDelete"
+      ? "Don’t show this Permanent Delete reminder again."
+      : confirmDialog?.kind === "removeFromMenu"
+        ? "Don’t show this Remove from Menu reminder again."
+      : confirmDialog?.kind === "saveToMenu"
       ? "Don’t show this Save to Menu reminder again."
       : confirmDialog?.kind === "stashToVault"
         ? "Don’t show this Vault reminder again."
