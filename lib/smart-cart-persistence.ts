@@ -4,6 +4,7 @@ export const SMART_CART_FORM_STORAGE_KEY = "smartcart-smart-context-form";
 export const SMART_CART_WEEKLY_MENU_STORAGE_KEY = "smartcart-weekly-menu";
 export const SMART_CART_SAVED_DESSERTS_STORAGE_KEY = "smartcart-saved-desserts";
 export const SMART_CART_GENERATED_PLAN_STORAGE_KEY = "smartcart-generated-plan";
+export const SMART_CART_ACTION_GUIDANCE_STORAGE_KEY = "smartcart-action-guidance";
 
 type PantryInventoryRow = {
   ingredient_name?: string | null;

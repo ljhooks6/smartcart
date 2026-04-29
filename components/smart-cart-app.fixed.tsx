@@ -26,6 +26,7 @@ import {
   replaceActiveWeeklyMenuRows,
   replacePantryInventory,
   saveStoredJson,
+  SMART_CART_ACTION_GUIDANCE_STORAGE_KEY,
   SMART_CART_FORM_STORAGE_KEY,
   SMART_CART_GENERATED_PLAN_STORAGE_KEY,
   SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
@@ -92,6 +93,10 @@ type ReplaceDessertResponse = {
 
 type ToastTone = "success" | "error" | "info";
 type MobileTab = "plan" | "meals" | "shop" | "cook" | "vault";
+type ActionGuidancePreferences = {
+  skipSaveToMenuConfirm: boolean;
+  skipVaultConfirm: boolean;
+};
 
 type FormState = {
   budget: string;
@@ -557,6 +562,11 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
 
 export function SmartCartApp() {
   type SaveStatus = "idle" | "saving" | "saved" | "error";
+  type ConfirmDialog =
+    | { kind: "clear" }
+    | { kind: "saveToMenu"; meal: MealPlanItem }
+    | { kind: "stashToVault"; meal: MealPlanItem }
+    | null;
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [user, setUser] = useState<User | null>(null);
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
@@ -587,7 +597,8 @@ export function SmartCartApp() {
   >("idle");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTone, setToastTone] = useState<ToastTone>("info");
-  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog>(null);
+  const [confirmDontShowAgain, setConfirmDontShowAgain] = useState(false);
   const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
   const [savedDesserts, setSavedDesserts] = useState<MealPlanItem[]>([]);
   const [archivedMeals, setArchivedMeals] = useState<MealPlanItem[]>([]);
@@ -603,6 +614,10 @@ export function SmartCartApp() {
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("plan");
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
   const lastScrollYRef = useRef(0);
+  const [actionGuidance, setActionGuidance] = useState<ActionGuidancePreferences>({
+    skipSaveToMenuConfirm: false,
+    skipVaultConfirm: false,
+  });
   const userPlan: SmartCartPlan = membershipProfile?.plan === "plus" ? "plus" : "free";
   const isPlusMember = userPlan === "plus";
   const canPersistPantryMemory = isPlusMember;
@@ -680,6 +695,16 @@ export function SmartCartApp() {
 
   useEffect(() => {
     try {
+      const savedActionGuidance =
+        loadStoredJson<Partial<ActionGuidancePreferences>>(SMART_CART_ACTION_GUIDANCE_STORAGE_KEY);
+
+      if (savedActionGuidance) {
+        setActionGuidance({
+          skipSaveToMenuConfirm: Boolean(savedActionGuidance.skipSaveToMenuConfirm),
+          skipVaultConfirm: Boolean(savedActionGuidance.skipVaultConfirm),
+        });
+      }
+
       const parsed = loadStoredJson<
         Partial<FormState> & {
           selectedQuickItems?: string[];
@@ -724,6 +749,10 @@ export function SmartCartApp() {
       clearStoredJson(SMART_CART_FORM_STORAGE_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    saveStoredJson(SMART_CART_ACTION_GUIDANCE_STORAGE_KEY, actionGuidance);
+  }, [actionGuidance]);
 
   useEffect(() => {
     if (!hasResolvedAuthSession || (user && isProfileLoading)) {
@@ -1202,18 +1231,20 @@ export function SmartCartApp() {
     }
   }
 
-  function handleSaveToWeeklyMenu(meal: MealPlanItem) {
+  function performSaveToWeeklyMenu(meal: MealPlanItem) {
     const mealKey = `${meal.day}::${meal.name}`;
+
+    let didSaveMeal = false;
 
     setWeeklyMenu((current) => {
       if (current.some((savedMeal) => `${savedMeal.day}::${savedMeal.name}` === mealKey)) {
         return current;
       }
-
       if (current.length >= 5) {
         return current;
       }
 
+      didSaveMeal = true;
       return [...current, meal];
     });
 
@@ -1239,6 +1270,23 @@ export function SmartCartApp() {
           }
         : null,
     );
+
+    if (didSaveMeal) {
+      showToast(
+        `${meal.name} is now in your Cook lineup and will help drive your shopping list.`,
+        "success",
+      );
+    }
+  }
+
+  function handleSaveToWeeklyMenu(meal: MealPlanItem) {
+    if (!actionGuidance.skipSaveToMenuConfirm) {
+      setConfirmDontShowAgain(false);
+      setConfirmDialog({ kind: "saveToMenu", meal });
+      return;
+    }
+
+    performSaveToWeeklyMenu(meal);
   }
 
   function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
@@ -1249,7 +1297,7 @@ export function SmartCartApp() {
     );
   }
 
-  async function handleArchiveMeal(meal: MealPlanItem) {
+  async function performArchiveMeal(meal: MealPlanItem) {
       const userId = user?.id || "";
       if (!userId) {
         showToast("Please sign in before using the Recipe Vault.", "info");
@@ -1333,8 +1381,21 @@ export function SmartCartApp() {
         setSavedDesserts((current) =>
           current.filter((savedDessert) => !mealMatcher(savedDessert)),
         );
-        showToast("Meal stashed in your Recipe Vault.", "success");
+        showToast(
+          `${meal.name} is safe in your Recipe Vault for a future week.`,
+          "success",
+        );
     }
+  }
+
+  async function handleArchiveMeal(meal: MealPlanItem) {
+    if (!actionGuidance.skipVaultConfirm) {
+      setConfirmDontShowAgain(false);
+      setConfirmDialog({ kind: "stashToVault", meal });
+      return;
+    }
+
+    await performArchiveMeal(meal);
   }
 
   function handleRestoreMeal(meal: MealPlanItem) {
@@ -1559,8 +1620,75 @@ export function SmartCartApp() {
   }
 
   function handleClearForm() {
-    setIsClearConfirmOpen(true);
+    setConfirmDontShowAgain(false);
+    setConfirmDialog({ kind: "clear" });
   }
+
+  async function handleConfirmDialogConfirm() {
+    const currentDialog = confirmDialog;
+
+    if (!currentDialog) {
+      return;
+    }
+
+    if (confirmDontShowAgain) {
+      if (currentDialog.kind === "saveToMenu") {
+        setActionGuidance((current) => ({ ...current, skipSaveToMenuConfirm: true }));
+      }
+
+      if (currentDialog.kind === "stashToVault") {
+        setActionGuidance((current) => ({ ...current, skipVaultConfirm: true }));
+      }
+    }
+
+    setConfirmDialog(null);
+    setConfirmDontShowAgain(false);
+
+    if (currentDialog.kind === "clear") {
+      await performClearForm();
+      return;
+    }
+
+    if (currentDialog.kind === "saveToMenu") {
+      performSaveToWeeklyMenu(currentDialog.meal);
+      return;
+    }
+
+    if (currentDialog.kind === "stashToVault") {
+      await performArchiveMeal(currentDialog.meal);
+    }
+  }
+
+  const confirmDialogTitle =
+    confirmDialog?.kind === "saveToMenu"
+      ? "Save This Meal for This Week?"
+      : confirmDialog?.kind === "stashToVault"
+        ? "Send This Meal to the Vault?"
+        : "Reset Workspace?";
+
+  const confirmDialogBody =
+    confirmDialog?.kind === "saveToMenu"
+      ? `This will move ${confirmDialog.meal.name} into your Cook lineup for this week and use it to help build your shopping list.`
+      : confirmDialog?.kind === "stashToVault"
+        ? `This will remove ${confirmDialog.meal.name} from the active plan and stash it in your Recipe Vault so you can bring it back later.`
+        : "This will clear your form and active weekly menu, but your Recipe Vault will remain safe.";
+
+  const confirmDialogConfirmLabel =
+    confirmDialog?.kind === "saveToMenu"
+      ? "Save to Cook"
+      : confirmDialog?.kind === "stashToVault"
+        ? "Stash in Vault"
+        : "Reset Workspace";
+
+  const confirmDialogCancelLabel =
+    confirmDialog?.kind === "clear" ? "Keep My Work" : "Cancel";
+
+  const confirmDialogOptOutLabel =
+    confirmDialog?.kind === "saveToMenu"
+      ? "Don’t show this Save to Menu reminder again."
+      : confirmDialog?.kind === "stashToVault"
+        ? "Don’t show this Vault reminder again."
+        : undefined;
 
   function handleFeatureToggle(feature: keyof typeof featureDescriptions) {
     setActiveFeature((current) => (current === feature ? null : feature));
@@ -2119,16 +2247,21 @@ export function SmartCartApp() {
           </div>
         ) : null}
         <SmartCartFeedback
-        confirmBody="This will clear your form and active weekly menu, but your Recipe Vault will remain safe."
-        confirmCancelLabel="Keep My Work"
-        confirmConfirmLabel="Reset Workspace"
-        confirmOpen={isClearConfirmOpen}
-        confirmTitle="Reset Workspace?"
-        onCancelConfirm={() => setIsClearConfirmOpen(false)}
-        onConfirm={() => {
-          setIsClearConfirmOpen(false);
-          void performClearForm();
+        confirmBody={confirmDialogBody}
+        confirmCancelLabel={confirmDialogCancelLabel}
+        confirmConfirmLabel={confirmDialogConfirmLabel}
+        confirmOpen={Boolean(confirmDialog)}
+        confirmOptOutChecked={confirmDontShowAgain}
+        confirmOptOutLabel={confirmDialogOptOutLabel}
+        confirmTitle={confirmDialogTitle}
+        onCancelConfirm={() => {
+          setConfirmDialog(null);
+          setConfirmDontShowAgain(false);
         }}
+        onConfirm={() => {
+          void handleConfirmDialogConfirm();
+        }}
+        onToggleConfirmOptOut={() => setConfirmDontShowAgain((current) => !current)}
         toastMessage={toastMessage}
         toastTone={toastTone}
       />

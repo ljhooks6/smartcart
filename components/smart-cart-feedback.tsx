@@ -6,10 +6,13 @@ type SmartCartFeedbackProps = {
   confirmBody: string;
   confirmCancelLabel?: string;
   confirmConfirmLabel?: string;
+  confirmOptOutChecked?: boolean;
+  confirmOptOutLabel?: string;
   confirmOpen: boolean;
   confirmTitle: string;
   onCancelConfirm: () => void;
   onConfirm: () => void;
+  onToggleConfirmOptOut?: () => void;
   toastMessage: string | null;
   toastTone: ToastTone;
 };
@@ -24,10 +27,13 @@ export function SmartCartFeedback({
   confirmBody,
   confirmCancelLabel = "Cancel",
   confirmConfirmLabel = "Confirm",
+  confirmOptOutChecked = false,
+  confirmOptOutLabel,
   confirmOpen,
   confirmTitle,
   onCancelConfirm,
   onConfirm,
+  onToggleConfirmOptOut,
   toastMessage,
   toastTone,
 }: SmartCartFeedbackProps) {
@@ -39,7 +45,18 @@ export function SmartCartFeedback({
             className={`w-full max-w-md rounded-2xl border px-4 py-3 text-sm font-medium shadow-xl ${toneClasses[toastTone]}`}
             role="status"
           >
-            {toastMessage}
+            <div className="flex items-start gap-3">
+              <span className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                toastTone === "success"
+                  ? "bg-emerald-100 text-emerald-700 animate-pulse"
+                  : toastTone === "error"
+                    ? "bg-rose-100 text-rose-700"
+                    : "bg-sky-100 text-sky-700"
+              }`}>
+                {toastTone === "success" ? "✓" : toastTone === "error" ? "!" : "i"}
+              </span>
+              <span>{toastMessage}</span>
+            </div>
           </div>
         </div>
       ) : null}
@@ -49,6 +66,17 @@ export function SmartCartFeedback({
           <div className="w-full max-w-md rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-2xl">
             <p className="font-display text-2xl text-ink">{confirmTitle}</p>
             <p className="mt-3 text-sm leading-6 text-ink/70">{confirmBody}</p>
+            {confirmOptOutLabel && onToggleConfirmOptOut ? (
+              <label className="mt-4 flex items-start gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-ink/75">
+                <input
+                  checked={confirmOptOutChecked}
+                  className="mt-1 h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
+                  onChange={onToggleConfirmOptOut}
+                  type="checkbox"
+                />
+                <span>{confirmOptOutLabel}</span>
+              </label>
+            ) : null}
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
                 className="rounded-full border border-stone-200 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
