@@ -5,7 +5,9 @@ import { z } from "zod";
 import {
   buildAvoidanceGuidance,
   buildAdventureLevelGuidance,
+  buildCuisineGuidance,
   buildMustHaveGuidance,
+  mealMatchesCuisinePreference,
   normalizeDietaryPreferences,
   parseMealNameList,
 } from "@/lib/meal-request-normalization";
@@ -20,6 +22,7 @@ type ReplaceMealRequest = {
   replacementQuality?: "free" | "plus";
   prepTime?: string;
   adventureLevel?: string;
+  cuisinePreference?: string;
   mustHaveIngredient?: string;
   avoidIngredients?: string;
   existingMeals?: string;
@@ -197,6 +200,7 @@ export async function POST(request: Request) {
     replacementQuality,
     prepTime,
     adventureLevel,
+    cuisinePreference,
     mustHaveIngredient,
     avoidIngredients,
     existingMeals,
@@ -237,6 +241,7 @@ export async function POST(request: Request) {
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
+  const cuisineGuidance = buildCuisineGuidance(cuisinePreference);
   const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
   const isPremiumReplacement = replacementQuality === "plus";
   const premiumRejectedMeals = isPremiumReplacement && Array.isArray(recentRejectedMeals)
@@ -260,6 +265,7 @@ export async function POST(request: Request) {
     blockedTitles,
     budget,
     combinedPantryItems,
+    cuisinePromptBlock: cuisineGuidance.promptBlock,
     currentMealsContext: (currentMealsContext ?? existingMeals)?.trim() || "None provided",
     dietaryPromptBlock: dietaryPreferences.promptBlock,
     existingMeals: existingMeals?.trim() || "None provided",
@@ -320,10 +326,19 @@ export async function POST(request: Request) {
       const titleSimilarity = isPremiumReplacement
         ? isTooSimilarToRejectedMeal(rejectedMealTitle, candidate.title)
         : false;
+      const cuisineMismatch =
+        isPremiumReplacement && Boolean(cuisinePreference?.trim())
+          ? !mealMatchesCuisinePreference(cuisinePreference, {
+              name: candidate.title,
+              notes: candidate.description,
+              ingredients: candidate.ingredients,
+            })
+          : false;
 
       return {
         avoidedMatches,
         blockedMatches,
+        cuisineMismatch,
         equipmentViolations,
         titleCollision,
         titleSimilarity,
@@ -337,10 +352,11 @@ export async function POST(request: Request) {
         validation.avoidedMatches.length > 0 ||
         validation.equipmentViolations.length > 0 ||
         validation.titleCollision ||
-        validation.titleSimilarity
+        validation.titleSimilarity ||
+        validation.cuisineMismatch
       ) {
         parsed = await requestReplacement(
-          `CRITICAL RETRY: The last replacement still missed the target. Blocked terms: ${Array.from(new Set([...validation.blockedMatches, ...validation.avoidedMatches])).join(", ") || "none"}. Equipment violations: ${validation.equipmentViolations.join(", ") || "none"}. Exact title collision: ${validation.titleCollision ? "yes" : "no"}. Too similar to rejected meal family/title: ${validation.titleSimilarity ? "yes" : "no"}. Return a clearly different replacement meal.${isPremiumReplacement ? " Use a noticeably different meal family, format, or flavor lane from the rejected meal and recent picks." : ""}`,
+          `CRITICAL RETRY: The last replacement still missed the target. Blocked terms: ${Array.from(new Set([...validation.blockedMatches, ...validation.avoidedMatches])).join(", ") || "none"}. Equipment violations: ${validation.equipmentViolations.join(", ") || "none"}. Exact title collision: ${validation.titleCollision ? "yes" : "no"}. Too similar to rejected meal family/title: ${validation.titleSimilarity ? "yes" : "no"}. Missed the requested cuisine vibe: ${validation.cuisineMismatch ? "yes" : "no"}. Return a clearly different replacement meal.${isPremiumReplacement ? " Use a noticeably different meal family, format, or flavor lane from the rejected meal and recent picks, while still leaning toward the selected cuisine vibe." : ""}`,
         );
       validation = validateReplacement(parsed);
     }

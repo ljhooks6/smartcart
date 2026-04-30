@@ -11,6 +11,88 @@ const BLOCKED_CATEGORY_MAP: Record<string, string[]> = {
   tree_nuts: ["almonds", "walnuts", "pecans", "cashews", "pistachios"],
 };
 
+const CUISINE_KEYWORD_MAP: Record<string, string[]> = {
+  american: [
+    "bbq",
+    "barbecue",
+    "burger",
+    "meatloaf",
+    "fried chicken",
+    "mashed potatoes",
+    "mac and cheese",
+    "macaroni",
+    "pork chops",
+    "sheet-pan",
+    "casserole",
+    "ranch",
+  ],
+  mexican: [
+    "taco",
+    "quesadilla",
+    "enchilada",
+    "fajita",
+    "salsa",
+    "chipotle",
+    "cilantro lime",
+    "mexican",
+    "tex-mex",
+    "burrito",
+    "pico",
+  ],
+  italian: [
+    "pasta",
+    "spaghetti",
+    "alfredo",
+    "parmesan",
+    "marinara",
+    "meatballs",
+    "bolognese",
+    "risotto",
+    "italian",
+    "mozzarella",
+    "baked ziti",
+  ],
+  asian: [
+    "stir-fry",
+    "stir fry",
+    "soy",
+    "ginger",
+    "sesame",
+    "teriyaki",
+    "curry",
+    "noodle",
+    "rice bowl",
+    "thai",
+    "korean",
+    "sriracha",
+  ],
+  mediterranean: [
+    "mediterranean",
+    "greek",
+    "lemon herb",
+    "tzatziki",
+    "feta",
+    "olive",
+    "couscous",
+    "orzo",
+    "hummus",
+    "shawarma",
+  ],
+  "comfort food": [
+    "fried chicken",
+    "mashed potatoes",
+    "mac and cheese",
+    "meatloaf",
+    "casserole",
+    "biscuit",
+    "creamy",
+    "homestyle",
+    "skillet",
+    "pot pie",
+    "gravy",
+  ],
+};
+
 function uniqueList(values: string[]) {
   return Array.from(
     new Set(
@@ -195,6 +277,73 @@ export function buildCuisineGuidance(cuisinePreference?: string) {
     selectedCuisine: normalized,
     promptBlock: `Cuisine preference: lean the week toward ${normalized} flavors and meal styles, but keep the seven dinners varied in protein, format, and supporting sides.`,
   };
+}
+
+export function normalizeCuisinePreference(cuisinePreference?: string) {
+  const normalized = safeTrim(cuisinePreference).toLowerCase();
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized.includes("mediterr")) {
+    return "mediterranean";
+  }
+
+  if (normalized.includes("comfort")) {
+    return "comfort food";
+  }
+
+  if (normalized.includes("american")) {
+    return "american";
+  }
+
+  if (normalized.includes("mexican")) {
+    return "mexican";
+  }
+
+  if (normalized.includes("ital")) {
+    return "italian";
+  }
+
+  if (normalized.includes("asian")) {
+    return "asian";
+  }
+
+  return normalized;
+}
+
+export function mealMatchesCuisinePreference(
+  cuisinePreference: string | undefined,
+  meal: {
+    name?: string;
+    notes?: string;
+    ingredients?: Array<{ name?: string } | string>;
+  },
+) {
+  const normalizedCuisine = normalizeCuisinePreference(cuisinePreference);
+
+  if (!normalizedCuisine || normalizedCuisine === "no preference") {
+    return false;
+  }
+
+  const keywords = CUISINE_KEYWORD_MAP[normalizedCuisine] ?? [];
+
+  if (keywords.length === 0) {
+    return false;
+  }
+
+  const ingredientText = Array.isArray(meal.ingredients)
+    ? meal.ingredients
+        .map((ingredient) =>
+          typeof ingredient === "string" ? ingredient : safeTrim(ingredient?.name),
+        )
+        .join(" ")
+    : "";
+
+  const haystack = `${safeTrim(meal.name)} ${safeTrim(meal.notes)} ${ingredientText}`.toLowerCase();
+
+  return keywords.some((keyword) => haystack.includes(keyword));
 }
 
 export function parseMealNameList(input?: string) {

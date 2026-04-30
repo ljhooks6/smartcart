@@ -7,6 +7,7 @@ import {
   buildAdventureLevelGuidance,
   buildCuisineGuidance,
   buildMustHaveGuidance,
+  mealMatchesCuisinePreference,
   normalizeDietaryPreferences,
 } from "@/lib/meal-request-normalization";
 import { buildGenerateListPrompts } from "@/lib/meal-prompt-builders";
@@ -376,6 +377,13 @@ function findRepeatedMealFamilies(meals: Array<z.infer<typeof mealSchema>>) {
     .map(([family, count]) => `${family} (${count})`);
 }
 
+function countCuisineAlignedMeals(
+  meals: Array<z.infer<typeof mealSchema>>,
+  cuisinePreference?: string,
+) {
+  return meals.filter((meal) => mealMatchesCuisinePreference(cuisinePreference, meal)).length;
+}
+
 export async function POST(request: Request) {
   let body: unknown;
 
@@ -518,6 +526,7 @@ export async function POST(request: Request) {
     );
     let overusedProteins = findOverusedProteins(parsed.meals);
     let repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
+    let cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
 
     if (
       blockedMatches.length > 0 ||
@@ -544,6 +553,7 @@ export async function POST(request: Request) {
       );
       overusedProteins = findOverusedProteins(parsed.meals);
       repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
+      cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
     }
 
     if (
@@ -551,11 +561,12 @@ export async function POST(request: Request) {
       (
         missingSelectedEquipmentUsage.length > 0 ||
         overusedProteins.length > 0 ||
-        repeatedMealFamilies.length > 0
+        repeatedMealFamilies.length > 0 ||
+        (Boolean(cuisinePreference?.trim()) && cuisineAlignedMeals < 3)
       )
     ) {
       rawPlan = await requestMealPlan(
-        `PLUS REFINEMENT RETRY: Keep the same budget, diet, pantry, and prep-time constraints, but improve the weekly plan quality. Fix these soft-quality issues: missing selected special equipment usage: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Overused proteins: ${overusedProteins.join(", ") || "none"}. Repeated meal families: ${repeatedMealFamilies.join(", ") || "none"}. Return a noticeably more varied, balanced weekly plan with exactly 7 dinner meals and valid JSON only. Desserts may be 0, 1, or 2 items.`,
+        `PLUS REFINEMENT RETRY: Keep the same budget, diet, pantry, and prep-time constraints, but improve the weekly plan quality. Fix these soft-quality issues: missing selected special equipment usage: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Overused proteins: ${overusedProteins.join(", ") || "none"}. Repeated meal families: ${repeatedMealFamilies.join(", ") || "none"}. Cuisine alignment count for the requested cuisine vibe is currently ${cuisineAlignedMeals} out of 7 and should be at least 3 when a cuisine preference is provided. Return a noticeably more varied, balanced weekly plan with exactly 7 dinner meals and valid JSON only. Desserts may be 0, 1, or 2 items.`,
       );
       parsed = aiGenerateListResponseSchema.parse(rawPlan);
       parsed = {
@@ -574,6 +585,7 @@ export async function POST(request: Request) {
       );
       overusedProteins = findOverusedProteins(parsed.meals);
       repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
+      cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
     }
 
     if (blockedMatches.length > 0) {

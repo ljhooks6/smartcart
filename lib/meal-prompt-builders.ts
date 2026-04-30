@@ -24,6 +24,7 @@ type ReplacePromptArgs = {
   blockedTitles: string[];
   budget: number;
   combinedPantryItems: string;
+  cuisinePromptBlock: string;
   currentMealsContext: string;
   dietaryPromptBlock: string;
   existingMeals: string;
@@ -280,6 +281,7 @@ export function buildReplaceMealPrompts({
   avoidancePromptBlock,
   budget,
   combinedPantryItems,
+  cuisinePromptBlock,
   currentMealsContext,
   dietaryPromptBlock,
   existingMeals,
@@ -309,6 +311,7 @@ export function buildReplaceMealPrompts({
       "  - Mix it up: choose something distinct but still approachable.",
       "  - Try new cuisines: choose a clearly different cuisine or flavor lane from the rejected meal and the current menu.",
       `- ${adventureGuidance}`,
+      `- ${cuisinePromptBlock}`,
       "- CRITICAL REPLACEMENT DISTINCTNESS: the replacement must differ from the rejected meal in at least TWO of these dimensions: main protein, cuisine lane, cooking format, or starch/side pairing.",
       "- CRITICAL REPLACEMENT SAFETY: never return the rejected meal again, never return a tiny rename of the rejected meal, and never return a title that is already present in the current menu context.",
       "- CRITICAL REPLACEMENT VARIETY: if the rejected meal was a burger, wrap, taco, pasta, bowl, curry, stir-fry, skillet, or sheet-pan meal, do not return the same meal family unless the user explicitly asked for very simple staples and even then change the protein and side pairing substantially.",
@@ -331,11 +334,13 @@ export function buildReplaceMealPrompts({
     `Rejected Meal Title: ${rejectedMealTitle}`,
     `Prep Time Preference: ${prepTime || "No preference provided"}`,
     `Adventure Level: ${adventureLevel || "No preference provided"}`,
+    `Cuisine Preference: ${cuisinePromptBlock.replace("Cuisine preference: ", "")}`,
     `Available Kitchen Equipment: ${selectedEquipment}`,
     dietaryPromptBlock,
     mustHavePromptBlock,
     avoidancePromptBlock,
     adventureGuidance,
+    cuisinePromptBlock,
     "",
     `The new meal must be distinctly different from "${rejectedMealTitle}".`,
   ]);

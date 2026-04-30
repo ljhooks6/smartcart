@@ -2524,6 +2524,7 @@ export function SmartCartApp() {
               </div>
             {generatedPlan ? (
               <SmartCartMealSections
+                cuisinePreference={formState.cuisinePreference}
                 expandedDetailCards={expandedDetailCards}
                 expandedIngredientsMeals={expandedIngredientsMeals}
                 formatCardEyebrow={formatCardEyebrow}
@@ -2813,6 +2814,7 @@ export function SmartCartApp() {
             {generatedPlan ? (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <SmartCartMealSections
+                  cuisinePreference={formState.cuisinePreference}
                   expandedDetailCards={expandedDetailCards}
                   expandedIngredientsMeals={expandedIngredientsMeals}
                   formatCardEyebrow={formatCardEyebrow}

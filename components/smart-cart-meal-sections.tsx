@@ -1,6 +1,7 @@
 "use client";
 
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
+import { mealMatchesCuisinePreference } from "@/lib/meal-request-normalization";
 
 type IngredientItem = {
   name: string;
@@ -36,6 +37,7 @@ type RecipeCacheEntry = {
 };
 
 type SmartCartMealSectionsProps = {
+  cuisinePreference: string;
   expandedDetailCards: Set<string>;
   expandedIngredientsMeals: Set<string>;
   formatCardEyebrow: (day: string) => string;
@@ -64,6 +66,7 @@ type SmartCartMealSectionsProps = {
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
 export function SmartCartMealSections({
+  cuisinePreference,
   expandedDetailCards,
   expandedIngredientsMeals,
   formatCardEyebrow,
@@ -122,6 +125,7 @@ export function SmartCartMealSections({
           {generatedPlan.meals.map((meal, index) => {
             const mealCardKey = `generated-${meal.day}::${meal.name}`;
             const mealEyebrow = formatCardEyebrow(meal.day);
+            const matchesCuisinePreference = mealMatchesCuisinePreference(cuisinePreference, meal);
             return (
               <article
                 key={`${meal.day}-${meal.name}-${index}`}
@@ -132,6 +136,11 @@ export function SmartCartMealSections({
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
                       {mealEyebrow}
                     </p>
+                    {matchesCuisinePreference ? (
+                      <p className="mt-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-emerald-800 shadow-sm">
+                        Matches Your Cuisine Vibe
+                      </p>
+                    ) : null}
                     <h2 className="mt-2 font-display text-[1.45rem] leading-tight text-ink sm:text-2xl">
                       {safeTrim(meal.name)}
                     </h2>
