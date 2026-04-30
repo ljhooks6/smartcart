@@ -5,6 +5,7 @@ type GeneratePromptArgs = {
   avoidancePromptBlock: string;
   budget: number;
   combinedPantryItems: string;
+  cuisinePromptBlock: string;
   dietaryPromptBlock: string;
   existingMeals: string;
   fullyStocked: string[];
@@ -121,6 +122,7 @@ export function buildGenerateListPrompts({
   avoidancePromptBlock,
   budget,
   combinedPantryItems,
+  cuisinePromptBlock,
   dietaryPromptBlock,
   existingMeals,
   fullyStocked,
@@ -161,6 +163,7 @@ export function buildGenerateListPrompts({
     "- CRITICAL RULE: TITLE VARIETY. Do not repeat the same cuisine word, spice word, or meal format over and over in the meal names. Avoid titles that feel templated.",
     "- CRITICAL RULE: FORMAT VARIETY. Do not let more than 2 meals use the same title family such as stir-fry, skillet, curry, bowl, wrap, sheet-pan, pasta bake, or tacos.",
     "- CRITICAL RULE: CUISINE VARIETY. Spread the week across distinct flavor lanes. Do not let the menu read like seven variations of the same seasoning profile.",
+    "- If the user provides a cuisine preference, let the menu clearly lean that direction, but do not let all 7 dinners collapse into one repetitive cuisine pattern unless the rest of the user's inputs strongly demand it.",
   ];
 
   const pantryAndIngredientRules = [
@@ -205,6 +208,7 @@ export function buildGenerateListPrompts({
     "- COMFORT-FOOD BALANCE: it is healthy for the menu to occasionally include one comfort-food anchor like fried chicken, mashed potatoes, or mac and cheese, especially for Stick to basics and Mix it up, but do not let multiple meals become heavy copies of the same soul-food lane.",
     "- IMPORTANT: Do not avoid simple classics just because they sound common. Familiar meals are often the correct answer, especially for Stick to basics and Mix it up.",
     `- ${adventureGuidance}`,
+    `- ${cuisinePromptBlock}`,
   ];
 
   const budgetRules = [
@@ -248,6 +252,7 @@ export function buildGenerateListPrompts({
     `Restock Pantry Items: ${restock.length > 0 ? restock.join(", ") : "None provided"}`,
     `Include Dessert: ${includeDessert ? "Yes" : "No"}`,
     `Adventure Level: ${adventureLevel || "No preference provided"}`,
+    `Cuisine Preference: ${cuisinePromptBlock.replace("Cuisine preference: ", "")}`,
     `Prep Time Preference: ${prepTime || "No preference provided"}`,
     `Available Kitchen Equipment: ${selectedEquipment}`,
     "Protein Variety Reminder: Even if the pantry only includes chicken, you must still diversify across at least 3 to 4 different main proteins and cap chicken at 2 meals.",
@@ -255,6 +260,7 @@ export function buildGenerateListPrompts({
     mustHavePromptBlock,
     avoidancePromptBlock,
     adventureGuidance,
+    cuisinePromptBlock,
     "",
     applyUpgrades
       ? "The user has chosen to upgrade. Rewrite this plan using premium, high-quality ingredients (for example fresh herbs, better proteins, organic ingredients) to get as close to the max budget as possible."

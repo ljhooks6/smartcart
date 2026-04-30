@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   buildAvoidanceGuidance,
   buildAdventureLevelGuidance,
+  buildCuisineGuidance,
   buildMustHaveGuidance,
   normalizeDietaryPreferences,
 } from "@/lib/meal-request-normalization";
@@ -22,6 +23,7 @@ type GenerateListRequest = {
   avoidIngredients?: string;
   includeDessert?: boolean;
   adventureLevel?: string;
+  cuisinePreference?: string;
   apply_upgrades?: boolean;
   existingMeals?: string;
   availableEquipment?: string[];
@@ -398,6 +400,7 @@ export async function POST(request: Request) {
     avoidIngredients,
     includeDessert,
     adventureLevel,
+    cuisinePreference,
     apply_upgrades,
     existingMeals,
     availableEquipment,
@@ -438,6 +441,7 @@ export async function POST(request: Request) {
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
+  const cuisineGuidance = buildCuisineGuidance(cuisinePreference);
   const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
 
   const { systemPrompt, userPrompt } = buildGenerateListPrompts({
@@ -447,6 +451,7 @@ export async function POST(request: Request) {
     avoidancePromptBlock: avoidanceGuidance.promptBlock,
     budget,
     combinedPantryItems,
+    cuisinePromptBlock: cuisineGuidance.promptBlock,
     dietaryPromptBlock: dietaryPreferences.promptBlock,
     existingMeals: existingMeals?.trim() || "None provided",
     fullyStocked: Array.isArray(fullyStocked) ? fullyStocked : [],

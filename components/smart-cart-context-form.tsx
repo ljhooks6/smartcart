@@ -5,6 +5,7 @@ import { FormEvent } from "react";
 type SmartCartFormState = {
   budget: string;
   diet: string;
+  cuisinePreference: string;
   householdSize: string;
   pantryItems: string;
   mustHaveIngredient: string;
@@ -29,6 +30,7 @@ type SmartCartContextFormProps = {
   isPantrySelectionOpen: boolean;
   onBudgetChange: (value: string) => void;
   onClearForm: () => void;
+  onCuisinePreferenceChange: (value: string) => void;
   onDietChange: (value: string) => void;
   onHouseholdSizeChange: (value: string) => void;
   onIncludeDessertChange: (checked: boolean) => void;
@@ -63,6 +65,7 @@ export function SmartCartContextForm({
   isPantrySelectionOpen,
   onBudgetChange,
   onClearForm,
+  onCuisinePreferenceChange,
   onDietChange,
   onHouseholdSizeChange,
   onIncludeDessertChange,
@@ -137,6 +140,26 @@ export function SmartCartContextForm({
             type="text"
             value={formState.diet}
           />
+        </label>
+
+        <label className="space-y-2">
+          <span className="text-sm font-semibold text-ink">Cuisine Vibe (Optional)</span>
+          <select
+            className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+            onChange={(event) => onCuisinePreferenceChange(event.target.value)}
+            value={formState.cuisinePreference}
+          >
+            <option value="">No preference</option>
+            <option value="American">American</option>
+            <option value="Mexican">Mexican</option>
+            <option value="Italian">Italian</option>
+            <option value="Asian">Asian</option>
+            <option value="Mediterranean">Mediterranean</option>
+            <option value="Comfort Food">Comfort food</option>
+          </select>
+          <p className="text-sm leading-6 text-ink/60">
+            Let the week lean toward a flavor lane without boxing every meal into the same pattern.
+          </p>
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">

@@ -103,6 +103,7 @@ type ActionGuidancePreferences = {
 type FormState = {
   budget: string;
   diet: string;
+  cuisinePreference: string;
   householdSize: string;
   pantryItems: string;
   mustHaveIngredient: string;
@@ -117,6 +118,7 @@ type FormState = {
 const initialFormState: FormState = {
   budget: "75",
   diet: "Vegetarian",
+  cuisinePreference: "",
   householdSize: "2",
   pantryItems: "",
   mustHaveIngredient: "",
@@ -131,6 +133,7 @@ const initialFormState: FormState = {
 const clearedFormState: FormState = {
   budget: "",
   diet: "",
+  cuisinePreference: "",
   householdSize: "",
   pantryItems: "",
   mustHaveIngredient: "",
@@ -730,6 +733,7 @@ export function SmartCartApp() {
         ...current,
         budget: parsed.budget ?? current.budget,
         diet: parsed.diet ?? current.diet,
+        cuisinePreference: parsed.cuisinePreference ?? current.cuisinePreference,
         householdSize: parsed.householdSize ?? current.householdSize,
         pantryItems: parsed.pantryItems ?? current.pantryItems,
         mustHaveIngredient:
@@ -1064,6 +1068,7 @@ export function SmartCartApp() {
         body: JSON.stringify({
           budget,
           diet: safeTrim(formState.diet) || "No specific diet provided",
+          cuisinePreference: safeTrim(formState.cuisinePreference),
           householdSize,
           generationQuality: isPlusMember ? "plus" : "free",
           combinedPantryItems: combinedPantryItems.join(", "),
@@ -2209,6 +2214,7 @@ export function SmartCartApp() {
           body: JSON.stringify({
             budget,
             diet: safeTrim(formState.diet) || "No specific diet provided",
+            cuisinePreference: safeTrim(formState.cuisinePreference),
             householdSize,
             combinedPantryItems: combinedPantryItems.join(", "),
             rejectedMealTitle: meal.name,
@@ -2415,6 +2421,12 @@ export function SmartCartApp() {
                 }))
               }
               onClearForm={handleClearForm}
+              onCuisinePreferenceChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  cuisinePreference: value,
+                }))
+              }
               onDietChange={(value) =>
                 setFormState((current) => ({
                   ...current,
@@ -2721,6 +2733,12 @@ export function SmartCartApp() {
               }))
             }
             onClearForm={handleClearForm}
+            onCuisinePreferenceChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                cuisinePreference: value,
+              }))
+            }
             onDietChange={(value) =>
               setFormState((current) => ({
                 ...current,

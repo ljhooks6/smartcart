@@ -130,6 +130,73 @@ export function buildAdventureLevelGuidance(adventureLevel?: string) {
   };
 }
 
+export function buildCuisineGuidance(cuisinePreference?: string) {
+  const normalized = safeTrim(cuisinePreference);
+
+  if (!normalized || normalized.toLowerCase() === "no preference") {
+    return {
+      selectedCuisine: "",
+      promptBlock:
+        "Cuisine preference: none provided. Vary the week naturally based on the user's other inputs.",
+    };
+  }
+
+  const lower = normalized.toLowerCase();
+
+  if (lower.includes("american")) {
+    return {
+      selectedCuisine: normalized,
+      promptBlock:
+        "Cuisine preference: lean the week toward classic American and weeknight comfort-food lanes. Familiar plates, BBQ, homestyle dinners, burgers, casseroles, and hearty skillet meals are all welcome when they fit the user's other constraints.",
+    };
+  }
+
+  if (lower.includes("mexican")) {
+    return {
+      selectedCuisine: normalized,
+      promptBlock:
+        "Cuisine preference: lean the week toward approachable Mexican and Tex-Mex flavor lanes. Use that preference as a guiding vibe, but keep the week varied enough that it does not become seven near-duplicates of tacos, burritos, or bowls.",
+    };
+  }
+
+  if (lower.includes("asian")) {
+    return {
+      selectedCuisine: normalized,
+      promptBlock:
+        "Cuisine preference: lean the week toward broad Asian-inspired flavor lanes such as stir-fries, rice dishes, noodle dishes, soy-ginger profiles, curry-adjacent meals, or sesame-chili notes. Keep the meals distinct from one another.",
+    };
+  }
+
+  if (lower.includes("mediterr")) {
+    return {
+      selectedCuisine: normalized,
+      promptBlock:
+        "Cuisine preference: lean the week toward Mediterranean flavor lanes such as lemon-herb proteins, rice or grain plates, Greek-inspired bowls, olive and feta accents, roasted vegetables, and bright herb-forward meals.",
+    };
+  }
+
+  if (lower.includes("ital")) {
+    return {
+      selectedCuisine: normalized,
+      promptBlock:
+        "Cuisine preference: lean the week toward Italian and Italian-American dinner lanes such as pasta, baked dishes, saucy skillet meals, meatballs, cutlets, and herb-forward tomato or cream-based plates, while still keeping the week varied.",
+    };
+  }
+
+  if (lower.includes("comfort")) {
+    return {
+      selectedCuisine: normalized,
+      promptBlock:
+        "Cuisine preference: lean the week toward comfort-food lanes with familiar, satisfying plates. Homestyle dinners, baked dishes, hearty skillets, mac and cheese with protein, mashed-potato plates, and classic American comfort meals are all valid when balanced across the week.",
+    };
+  }
+
+  return {
+    selectedCuisine: normalized,
+    promptBlock: `Cuisine preference: lean the week toward ${normalized} flavors and meal styles, but keep the seven dinners varied in protein, format, and supporting sides.`,
+  };
+}
+
 export function parseMealNameList(input?: string) {
   const normalized = safeTrim(input);
   if (!normalized) {
