@@ -6,6 +6,16 @@ export const metadata: Metadata = {
   title: "SmartCart | AI Meal & Grocery Planner",
   description:
     "SmartCart builds budget-conscious dinner plans and grocery lists around your pantry, time, and dietary needs.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SmartCart",
+  },
+  icons: {
+    apple: "/og-image.png",
+    icon: "/og-image.png",
+  },
 };
 
 export default function RootLayout({

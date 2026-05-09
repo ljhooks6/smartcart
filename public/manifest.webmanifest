@@ -1,0 +1,23 @@
+{
+  "name": "SmartCart",
+  "short_name": "SmartCart",
+  "description": "Plan meals, shop smarter, and keep dinner stress under control with SmartCart.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf7f1",
+  "theme_color": "#dd6b20",
+  "icons": [
+    {
+      "src": "/og-image.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/og-image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

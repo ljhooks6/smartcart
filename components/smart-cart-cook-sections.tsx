@@ -139,7 +139,7 @@ export function SmartCartCookSections({
                     onClick={() => void onRemoveFromWeeklyMenu(meal)}
                     type="button"
                   >
-                    Remove from Menu
+                    Cooked It / Remove
                   </button>
                 </div>
                 {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&

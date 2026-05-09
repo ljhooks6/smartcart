@@ -1308,7 +1308,7 @@ export function SmartCartApp() {
     setWeeklyMenu((current) =>
       current.filter((savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey),
     );
-    showToast(`${meal.name} was removed from this week’s cook lineup.`, "info");
+    showToast(`Nice — ${meal.name} is off this week’s cook lineup.`, "success");
   }
 
   function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
@@ -1716,7 +1716,7 @@ export function SmartCartApp() {
     confirmDialog?.kind === "permanentDelete"
       ? "Permanently Delete This Meal?"
       : confirmDialog?.kind === "removeFromMenu"
-        ? "Remove This Meal From the Week?"
+        ? "Cooked This Meal?"
       : confirmDialog?.kind === "saveToMenu"
       ? "Save This Meal for This Week?"
       : confirmDialog?.kind === "stashToVault"
@@ -1727,7 +1727,7 @@ export function SmartCartApp() {
     confirmDialog?.kind === "permanentDelete"
       ? `This will permanently delete ${confirmDialog.meal.name}. It will not stay in your weekly lineup or your vault.`
       : confirmDialog?.kind === "removeFromMenu"
-        ? `This will remove ${confirmDialog.meal.name} from this week’s Cook lineup. It will no longer help drive your shopping list.`
+        ? `If you already cooked ${confirmDialog.meal.name}, you can safely remove it from this week’s Cook lineup. It will no longer help drive your shopping list after this.`
       : confirmDialog?.kind === "saveToMenu"
       ? `This will move ${confirmDialog.meal.name} into your Cook lineup for this week and use it to help build your shopping list.`
       : confirmDialog?.kind === "stashToVault"
@@ -1738,7 +1738,7 @@ export function SmartCartApp() {
     confirmDialog?.kind === "permanentDelete"
       ? "Delete Forever"
       : confirmDialog?.kind === "removeFromMenu"
-        ? "Remove From Week"
+        ? "Cooked It"
       : confirmDialog?.kind === "saveToMenu"
       ? "Save to Cook"
       : confirmDialog?.kind === "stashToVault"
@@ -1752,7 +1752,7 @@ export function SmartCartApp() {
     confirmDialog?.kind === "permanentDelete"
       ? "Don’t show this Permanent Delete reminder again."
       : confirmDialog?.kind === "removeFromMenu"
-        ? "Don’t show this Remove from Menu reminder again."
+        ? "Don’t show this cooked-meal reminder again."
       : confirmDialog?.kind === "saveToMenu"
       ? "Don’t show this Save to Menu reminder again."
       : confirmDialog?.kind === "stashToVault"
