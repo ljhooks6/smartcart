@@ -47,6 +47,110 @@ type SmartCartGrocerySidebarProps = {
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
+function normalizeRestoreKey(name: string) {
+  const trimmed = safeTrim(name).toLowerCase();
+
+  if (
+    trimmed.includes("jasmine rice") ||
+    trimmed.includes("basmati rice") ||
+    trimmed === "white rice" ||
+    trimmed === "rice"
+  ) {
+    return "flexible-rice";
+  }
+
+  if (
+    trimmed === "whole milk" ||
+    trimmed === "2% milk" ||
+    trimmed === "skim milk" ||
+    trimmed === "milk"
+  ) {
+    return "flexible-milk";
+  }
+
+  if (
+    trimmed === "pasta" ||
+    trimmed.includes("spaghetti") ||
+    trimmed.includes("penne") ||
+    trimmed.includes("rigatoni") ||
+    trimmed.includes("rotini") ||
+    trimmed.includes("fettuccine") ||
+    trimmed.includes("linguine") ||
+    trimmed.includes("macaroni") ||
+    trimmed.includes("farfalle") ||
+    trimmed.includes("angel hair")
+  ) {
+    return "flexible-pasta";
+  }
+
+  if (
+    trimmed.includes("russet potato") ||
+    trimmed.includes("yukon gold potato") ||
+    trimmed.includes("red potato") ||
+    trimmed === "potatoes" ||
+    trimmed === "potato"
+  ) {
+    return "flexible-potatoes";
+  }
+
+  if (
+    trimmed === "yellow onion" ||
+    trimmed === "white onion" ||
+    trimmed === "red onion" ||
+    trimmed === "sweet onion" ||
+    trimmed === "onion" ||
+    trimmed === "onions"
+  ) {
+    return "flexible-onions";
+  }
+
+  if (
+    trimmed.includes("flour tortilla") ||
+    trimmed.includes("corn tortilla") ||
+    trimmed.includes("wrap") ||
+    trimmed.includes("burrito tortilla")
+  ) {
+    return "flexible-tortillas";
+  }
+
+  if (trimmed.includes("chicken broth") || trimmed.includes("chicken stock")) {
+    return "flexible-chicken-broth";
+  }
+
+  if (trimmed.includes("vegetable broth") || trimmed.includes("vegetable stock")) {
+    return "flexible-vegetable-broth";
+  }
+
+  if (trimmed.includes("beef broth") || trimmed.includes("beef stock")) {
+    return "flexible-beef-broth";
+  }
+
+  if (
+    trimmed.includes("diced tomatoes") ||
+    trimmed.includes("crushed tomatoes") ||
+    trimmed === "canned tomatoes"
+  ) {
+    return "flexible-canned-tomatoes";
+  }
+
+  if (trimmed.includes("parmesan") || trimmed.includes("pecorino")) {
+    return "flexible-grated-cheese";
+  }
+
+  if (
+    trimmed.includes("cheddar") ||
+    trimmed.includes("mozzarella") ||
+    trimmed.includes("monterey jack") ||
+    trimmed.includes("colby jack") ||
+    trimmed.includes("mexican blend") ||
+    trimmed.includes("shredded cheese")
+  ) {
+    return "flexible-shredded-cheese";
+  }
+
+  return trimmed;
+}
+
 export function SmartCartGrocerySidebar({
   budgetPercentage,
   budgetProgressBarClass,
@@ -118,7 +222,9 @@ export function SmartCartGrocerySidebar({
                           const bellPepperPattern = /bell pepper/i;
                           const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
                           const trimmedName = safeTrim(item.name);
-                          const isRestoredItem = restoredItems.includes(trimmedName.toLowerCase());
+                          const isRestoredItem = restoredItems.includes(
+                            normalizeRestoreKey(trimmedName),
+                          );
                           const displayName =
                             bellPepperPattern.test(trimmedName) &&
                             !bellPepperColorPattern.test(trimmedName)

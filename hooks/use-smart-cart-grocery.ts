@@ -443,6 +443,34 @@ function getFlexibleStapleMeta(itemName: string) {
   };
 }
 
+function singularize(value: string) {
+  return value.endsWith("s") ? value.slice(0, -1) : value;
+}
+
+function getIngredientMatchKeys(itemName: string) {
+  const stapleMeta = getFlexibleStapleMeta(itemName);
+  const keys = new Set<string>();
+  const normalizedName = normalizeIngredientName(itemName);
+  const normalizedDisplayName = normalizeIngredientName(stapleMeta.name);
+
+  if (normalizedName) {
+    keys.add(normalizedName);
+    keys.add(singularize(normalizedName));
+  }
+
+  if (stapleMeta.key) {
+    keys.add(stapleMeta.key);
+    keys.add(singularize(stapleMeta.key));
+  }
+
+  if (normalizedDisplayName) {
+    keys.add(normalizedDisplayName);
+    keys.add(singularize(normalizedDisplayName));
+  }
+
+  return Array.from(keys).filter(Boolean);
+}
+
 function aggregateIngredientItems(ingredients: IngredientItem[]): GroceryListItem[] {
   const grouped = new Map<
     string,
@@ -513,10 +541,12 @@ export function useSmartCartGrocery({
 
   const { derivedGroceryList, skippedGroceryList } = useMemo(() => {
     const pantry = [...Array.from(fullyStocked), ...Array.from(runningLow)];
-    const validPantry = pantry
-      .filter((item) => typeof item === "string")
-      .map((item) => safeTrim(item).toLowerCase())
-      .filter((item) => item.length > 2);
+    const validPantryKeys = new Set(
+      pantry
+        .filter((item) => typeof item === "string")
+        .flatMap((item) => getIngredientMatchKeys(item))
+        .filter((item) => item.length > 1),
+    );
 
     const allMeals = [...weeklyMenu, ...savedDesserts];
     const rawGroceryList: IngredientItem[] = [];
@@ -524,16 +554,13 @@ export function useSmartCartGrocery({
 
     allMeals.forEach((meal) => {
       (meal.ingredients ?? []).forEach((ingredient) => {
+        const ingredientKeys = getIngredientMatchKeys(ingredient.name);
+        const restoreKey = getFlexibleStapleMeta(ingredient.name).key;
         const ingName = normalizeIngredientName(ingredient.name);
-        const isForced = restoredItems.includes(ingName);
-
-        const isOwned = validPantry.some((pantryItem) => {
-          const singularPantryItem = pantryItem.endsWith("s")
-            ? pantryItem.slice(0, -1)
-            : pantryItem;
-
-          return ingName.includes(pantryItem) || ingName.includes(singularPantryItem);
-        });
+        const isForced =
+          restoredItems.includes(restoreKey) ||
+          restoredItems.includes(ingName);
+        const isOwned = ingredientKeys.some((key) => validPantryKeys.has(key));
 
         if (!isOwned || isForced) {
           rawGroceryList.push(ingredient);
@@ -742,11 +769,13 @@ export function useSmartCartGrocery({
       setCustomItems((current) => current.filter((item) => item.id !== id)),
     removeRestoredItem: (name: string) =>
       setRestoredItems((current) =>
-        current.filter((currentName) => currentName !== normalizeIngredientName(name)),
+        current.filter(
+          (currentName) => currentName !== getFlexibleStapleMeta(name).key,
+        ),
       ),
     restoreSkippedItem: (name: string) =>
       setRestoredItems((current) => {
-        const normalizedName = normalizeIngredientName(name);
+        const normalizedName = getFlexibleStapleMeta(name).key;
         return current.includes(normalizedName) ? current : [...current, normalizedName];
       }),
   };
