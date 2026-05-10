@@ -235,6 +235,30 @@ export function SmartCartHeroHeader({
         </div>
       ) : null}
 
+      <div className="max-w-3xl rounded-[1.75rem] border border-pine/10 bg-gradient-to-r from-sage/10 via-white to-cream px-5 py-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="max-w-xl">
+            <p className="font-display text-lg text-pine">Add SmartCart to your home screen</p>
+            <p className="mt-1 text-sm leading-6 text-ink/70">
+              Keep SmartCart one tap away so your weekly plan, shopping list, and saved meals are
+              easier to jump back into.
+            </p>
+          </div>
+          <div className="grid gap-2 text-sm leading-6 text-ink/70 sm:max-w-sm">
+            <p>
+              <span className="font-semibold text-ink">iPhone:</span> Open SmartCart in Safari,
+              tap <span className="font-semibold text-ink">Share</span>, then choose{" "}
+              <span className="font-semibold text-ink">Add to Home Screen</span>.
+            </p>
+            <p>
+              <span className="font-semibold text-ink">Android:</span> Open your browser menu,
+              then tap <span className="font-semibold text-ink">Add to Home screen</span> or{" "}
+              <span className="font-semibold text-ink">Install app</span>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-3">
         {Object.keys(featureDescriptions).map((feature) => (
           <button

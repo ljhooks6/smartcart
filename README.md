@@ -13,6 +13,7 @@ SmartCart is a Next.js meal and grocery planning app that uses the OpenAI API to
 ## Getting Started
 
 1. Install Node.js 22 LTS.
+   Use the version in `.nvmrc` if you are using a Node version manager.
 2. Install dependencies:
 
 ```bash
@@ -34,12 +35,23 @@ npm run dev
 
 6. Open `http://localhost:3000`.
 
+## Recommended Local Workspace
+
+For the smoothest Windows experience, keep the active development repo in a normal local folder such as `C:\dev\SmartCart` instead of a synced OneDrive directory.
+
+Why:
+
+- Next.js writes a large `.next` build cache and trace files.
+- OneDrive syncing/indexing can slow builds and make interrupted builds feel stuck.
+- Running outside OneDrive makes local build behavior more predictable.
+
 ## Recommended Node Version
 
-SmartCart is currently most reliable on Node.js 22 LTS, especially on Windows when using the Next.js WASM compiler fallback.
+SmartCart is currently most reliable on Node.js 22 LTS on this Windows tablet, using the Next.js WASM compiler fallback for compatibility.
 
 - Recommended: Node.js 22.x LTS
 - Not recommended for local development here: Node.js 24.x
+- `.npmrc` enforces the supported Node range during installs so version drift fails fast instead of causing mystery build hangs later.
 
 ## Environment Variables
 
