@@ -45,6 +45,7 @@ export function SmartCartHeroHeader({
   const isSignedIn = Boolean(safeTrim(userEmail));
   const initial = safeTrim(userEmail[0] ?? "U").toUpperCase();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isInstallHelpOpen, setIsInstallHelpOpen] = useState(false);
   const planLabel = isProfileLoading ? "Loading" : userPlan === "plus" ? "Plus" : "Free";
   const planPanelLabel = isProfileLoading
     ? "Loading"
@@ -170,15 +171,32 @@ export function SmartCartHeroHeader({
         )}
       </div>
 
-      <div className="space-y-5">
-        <p className="font-display text-sm uppercase tracking-[0.35em] text-berry/75">
-          Budget-conscious meal planning
-        </p>
-        <div className="max-w-3xl rounded-2xl bg-slate-50/50 p-5 shadow-sm">
-          <p className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-xl font-extrabold leading-tight text-transparent sm:text-2xl">
-            A calmer way to feed your week. Pick the meals you want help with, and MealCaddie
-            helps plan, organize, and shop for the week ahead.
+      <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
+        <div className="rounded-[2rem] border border-pine/10 bg-gradient-to-br from-cream via-white to-sage/10 p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-berry/75">
+            Meal planning without the mental load
           </p>
+          <h1 className="mt-4 max-w-3xl font-display text-4xl leading-[0.95] text-ink sm:text-5xl lg:text-6xl">
+            Pick the meals. Carry less of the week.
+          </h1>
+          <p className="mt-5 max-w-2xl text-base leading-8 text-ink/72 sm:text-lg">
+            MealCaddie turns what you have, what you need, and what you can spend into a plan you
+            can cook, shop, and come back to without starting over.
+          </p>
+        </div>
+        <div className="grid gap-3 rounded-[2rem] border border-orange-200/80 bg-orange-50/80 p-4 shadow-sm">
+          {[
+            ["Plan", "Build around your pantry, budget, time, and taste."],
+            ["Shop", "Turn the plan into a clear list you can actually use."],
+            ["Cook", "Save meals for the week and move finished ones out safely."],
+          ].map(([label, description]) => (
+            <div key={label} className="rounded-2xl bg-white/85 px-4 py-3 shadow-sm">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-orange-700">
+                {label}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-ink/70">{description}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -236,15 +254,25 @@ export function SmartCartHeroHeader({
       ) : null}
 
       <div className="max-w-3xl rounded-[1.75rem] border border-pine/10 bg-gradient-to-r from-sage/10 via-white to-cream px-5 py-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-xl">
             <p className="font-display text-lg text-pine">Add MealCaddie to your home screen</p>
             <p className="mt-1 text-sm leading-6 text-ink/70">
-              Keep MealCaddie one tap away so your weekly plan, shopping list, and saved meals are
-              easier to jump back into.
+              Keep your plan, shopping list, and saved meals one tap away.
             </p>
           </div>
-          <div className="grid gap-2 text-sm leading-6 text-ink/70 sm:max-w-sm">
+          <button
+            aria-expanded={isInstallHelpOpen}
+            className="inline-flex w-fit items-center justify-center gap-2 rounded-full border border-pine/15 bg-white px-4 py-2 text-sm font-semibold text-pine shadow-sm transition hover:border-pine/30 hover:bg-cream"
+            onClick={() => setIsInstallHelpOpen((current) => !current)}
+            type="button"
+          >
+            {isInstallHelpOpen ? "Hide steps" : "Show steps"}
+            <span className={`transition ${isInstallHelpOpen ? "rotate-180" : ""}`}>v</span>
+          </button>
+        </div>
+        {isInstallHelpOpen ? (
+          <div className="mt-4 grid gap-2 border-t border-pine/10 pt-4 text-sm leading-6 text-ink/70 sm:grid-cols-2">
             <p>
               <span className="font-semibold text-ink">iPhone:</span> Open MealCaddie in Safari,
               tap <span className="font-semibold text-ink">Share</span>, then choose{" "}
@@ -256,7 +284,7 @@ export function SmartCartHeroHeader({
               <span className="font-semibold text-ink">Install app</span>.
             </p>
           </div>
-        </div>
+        ) : null}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

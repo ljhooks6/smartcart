@@ -335,6 +335,7 @@ const mobileTabs: Array<{
   label: string;
   shortLabel: string;
   eyebrow: string;
+  description: string;
   accentClass: string;
   badgeClass: string;
   panelClass: string;
@@ -347,6 +348,7 @@ const mobileTabs: Array<{
     label: "Plan",
     shortLabel: "Plan",
     eyebrow: "Planner",
+    description: "Set the week up once around budget, pantry, time, and taste.",
     accentClass: "text-orange-700",
     badgeClass: "bg-orange-100 text-orange-700",
     panelClass: "border-orange-200 bg-[#fff7eb]",
@@ -359,6 +361,7 @@ const mobileTabs: Array<{
     label: "Meals",
     shortLabel: "Meals",
     eyebrow: "Dinner flow",
+    description: "Review generated dinners, desserts, swaps, and saves.",
     accentClass: "text-berry",
     badgeClass: "bg-rose-100 text-berry",
     panelClass: "border-rose-200 bg-[#fff8fb]",
@@ -371,6 +374,7 @@ const mobileTabs: Array<{
     label: "Shop",
     shortLabel: "Shop",
     eyebrow: "Grocery run",
+    description: "Use the shopping list, budget progress, and pantry checks together.",
     accentClass: "text-emerald-700",
     badgeClass: "bg-emerald-100 text-emerald-700",
     panelClass: "border-emerald-200 bg-[#f4fbf7]",
@@ -383,6 +387,7 @@ const mobileTabs: Array<{
     label: "Cook",
     shortLabel: "Cook",
     eyebrow: "Ready to cook",
+    description: "Keep this week's meals handy and clear cooked items safely.",
     accentClass: "text-pine",
     badgeClass: "bg-amber-100 text-pine",
     panelClass: "border-amber-200 bg-[#f8f4ec]",
@@ -395,6 +400,7 @@ const mobileTabs: Array<{
     label: "Vault",
     shortLabel: "Vault",
     eyebrow: "Saved library",
+    description: "Save favorites, sync your week, and track what is coming next.",
     accentClass: "text-amber-800",
     badgeClass: "bg-amber-100 text-amber-800",
     panelClass: "border-amber-200 bg-[#f7f1e7]",
@@ -2337,19 +2343,20 @@ export function SmartCartApp() {
       />
       <div className="sticky top-0 z-40 w-full max-w-7xl md:hidden">
         <div className={`rounded-[1.75rem] border px-4 py-3 shadow-lg backdrop-blur ${activeTabMeta.shellClass}`}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${activeTabMeta.badgeClass}`}>
                 <MobileTabIcon tab={activeTabMeta.id} className="h-5 w-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className={`text-xs font-semibold uppercase tracking-[0.25em] ${activeTabMeta.accentClass}`}>
                   {activeTabMeta.eyebrow}
                 </p>
                 <p className="font-display text-2xl text-ink">{activeTabMeta.label}</p>
+                <p className="mt-1 text-xs leading-5 text-ink/60">{activeTabMeta.description}</p>
               </div>
             </div>
-            <div className="text-right text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
+            <div className="shrink-0 pt-1 text-right text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
               {user ? "Signed In" : "Guest"}
             </div>
           </div>
@@ -2388,7 +2395,7 @@ export function SmartCartApp() {
               }`}
             >
               <div className={`mb-4 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[0].headerClass}`}>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[0].badgeClass}`}>
                     <MobileTabIcon tab="plan" className="h-5 w-5" />
                   </div>
@@ -2396,9 +2403,7 @@ export function SmartCartApp() {
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-orange-700">
                       Planner
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-ink/65">
-                      Set your week up once, then jump over to meals when you are ready.
-                    </p>
+                    <p className="font-display text-2xl text-ink">Plan</p>
                   </div>
                 </div>
               </div>
@@ -2505,7 +2510,7 @@ export function SmartCartApp() {
               }`}
             >
               <div className={`mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[1].headerClass}`}>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[1].badgeClass}`}>
                     <MobileTabIcon tab="meals" className="h-5 w-5" />
                   </div>
@@ -2513,9 +2518,7 @@ export function SmartCartApp() {
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
                       Meals
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-ink/65">
-                      Your generated dinners and dessert picks live here before you save them forward.
-                    </p>
+                    <p className="font-display text-2xl text-ink">Meals</p>
                   </div>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${mobileTabs[1].statusClass}`}>
@@ -2565,7 +2568,7 @@ export function SmartCartApp() {
               }`}
             >
               <div className={`mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[2].headerClass}`}>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[2].badgeClass}`}>
                     <MobileTabIcon tab="shop" className="h-5 w-5" />
                   </div>
@@ -2573,9 +2576,7 @@ export function SmartCartApp() {
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">
                       Shop
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-ink/65">
-                      Grocery list, budget progress, and pantry checks all in one place.
-                    </p>
+                    <p className="font-display text-2xl text-ink">Shop</p>
                   </div>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${mobileTabs[2].statusClass}`}>
@@ -2628,7 +2629,7 @@ export function SmartCartApp() {
               }`}
             >
               <div className={`mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[3].headerClass}`}>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[3].badgeClass}`}>
                     <MobileTabIcon tab="cook" className="h-5 w-5" />
                   </div>
@@ -2636,9 +2637,7 @@ export function SmartCartApp() {
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine">
                       Cook
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-ink/65">
-                      Your saved weekly menu and ready-to-cook desserts live here.
-                    </p>
+                    <p className="font-display text-2xl text-ink">Cook</p>
                   </div>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${mobileTabs[3].statusClass}`}>
@@ -2668,7 +2667,7 @@ export function SmartCartApp() {
               }`}
             >
               <div className={`mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[4].headerClass}`}>
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[4].badgeClass}`}>
                     <MobileTabIcon tab="vault" className="h-5 w-5" />
                   </div>
@@ -2676,9 +2675,7 @@ export function SmartCartApp() {
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-800">
                       Vault
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-ink/65">
-                      Your saved library, cloud sync, and future-facing features stay together here.
-                    </p>
+                    <p className="font-display text-2xl text-ink">Vault</p>
                   </div>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${mobileTabs[4].statusClass}`}>
