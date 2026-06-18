@@ -9,7 +9,7 @@ const requestSchema = z.object({
 const responseSchema = z.array(
   z.object({
     name: z.string().min(1),
-    estimated_price: z.number().nonnegative(),
+    price: z.number().nonnegative(),
   }),
 );
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   const systemPrompt =
-    "You are a culinary data parser and grocery estimator. Combine duplicate ingredients from the provided list. Mathematically add matching or convertible units (e.g., 2 cups + 2 cups = 4 cups). You MUST completely deduplicate the list. If an item appears twice, combine them into a single line item. Return ONLY a flat, valid JSON array of objects. Each object must contain a name string and an estimated_price number in USD. Do not return markdown, code blocks, or conversational text.";
+    "You are a culinary data parser and grocery estimator. Combine duplicate ingredients from the provided list. Mathematically add matching or convertible units (e.g., 2 cups + 2 cups = 4 cups). You MUST completely deduplicate the list. If an item appears twice, combine them into a single line item. Return ONLY a flat, valid JSON array of objects. Each object must contain a name string and a price number in USD. Do not return markdown, code blocks, or conversational text.";
 
   try {
     const response = await openai.chat.completions.create({
@@ -70,7 +70,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const parsed = responseSchema.parse(JSON.parse(content));
+    const cleanedContent = content
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .replace(/^[^[{]*([\[{])/, "$1")
+      .trim();
+
+    const parsed = responseSchema.parse(JSON.parse(cleanedContent));
     return NextResponse.json(parsed);
   } catch (error) {
     if (error instanceof z.ZodError) {

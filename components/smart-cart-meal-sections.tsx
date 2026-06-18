@@ -113,7 +113,7 @@ export function SmartCartMealSections({
           </p>
           {userPlan === "free" ? (
             <p className="mt-2 text-sm leading-6 text-sky-900/80">
-              Free gives you the core weekly plan. <strong>SmartCart Plus</strong> adds pantry
+              Free gives you the core weekly plan. <strong>MealCaddie Plus</strong> adds pantry
               memory, a bigger vault, smarter replacements, and an extra meal-quality refinement
               pass that pushes for better protein balance, format variety, and equipment-aware
               planning.

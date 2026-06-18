@@ -1,6 +1,8 @@
-# SmartCart
+# MealCaddie
 
-SmartCart is a Next.js meal and grocery planning app that uses the OpenAI API to generate a 5-day dinner plan, a categorized grocery list, an estimated total cost, and a single delivery-app savings tip.
+MealCaddie is a Next.js meal and grocery planning helper built around a calmer weekly food flow: plan meals, organize groceries, and shop with less guesswork.
+
+Dinner planning is live today. Breakfast and lunch planning are part of the roadmap so users can eventually choose exactly which meals they want help carrying through the week.
 
 ## Stack
 
@@ -13,7 +15,6 @@ SmartCart is a Next.js meal and grocery planning app that uses the OpenAI API to
 ## Getting Started
 
 1. Install Node.js 22 LTS.
-   Use the version in `.nvmrc` if you are using a Node version manager.
 2. Install dependencies:
 
 ```bash
@@ -35,23 +36,14 @@ npm run dev
 
 6. Open `http://localhost:3000`.
 
-## Recommended Local Workspace
+## Recommended Local Setup
 
-For the smoothest Windows experience, keep the active development repo in a normal local folder such as `C:\dev\SmartCart` instead of a synced OneDrive directory.
-
-Why:
-
-- Next.js writes a large `.next` build cache and trace files.
-- OneDrive syncing/indexing can slow builds and make interrupted builds feel stuck.
-- Running outside OneDrive makes local build behavior more predictable.
-
-## Recommended Node Version
-
-SmartCart is currently most reliable on Node.js 22 LTS on this Windows tablet, using the Next.js WASM compiler fallback for compatibility.
+MealCaddie is currently most reliable on Node.js 22 LTS, especially on Windows when using the Next.js WASM compiler fallback.
 
 - Recommended: Node.js 22.x LTS
 - Not recommended for local development here: Node.js 24.x
-- `.npmrc` enforces the supported Node range during installs so version drift fails fast instead of causing mystery build hangs later.
+
+For the smoothest development experience, keep the active repo in a local folder such as `C:\dev\MealCaddie` instead of OneDrive or Google Drive. Use GitHub as the source of truth when moving to a new computer, then clone the repo fresh and recreate `.env.local` from `.env.example`.
 
 ## Environment Variables
 

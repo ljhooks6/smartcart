@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
   if (plan === "plus") {
     return NextResponse.json(
-      { error: "This account is already on SmartCart Plus." },
+      { error: "This account is already on MealCaddie Plus." },
       { status: 400 },
     );
   }
@@ -92,4 +92,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

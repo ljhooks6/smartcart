@@ -658,10 +658,10 @@ export function SmartCartApp() {
       const profile = await ensureSmartCartProfile(nextUser.id, safeTrim(nextUser.email));
       setMembershipProfile(profile);
     } catch (error) {
-      console.error("SmartCart profile load error:", error);
+      console.error("MealCaddie profile load error:", error);
       setMembershipProfile(null);
       setCloudSyncMessage(
-        error instanceof Error ? error.message : "Failed to load your SmartCart profile.",
+        error instanceof Error ? error.message : "Failed to load your MealCaddie profile.",
       );
     } finally {
       setIsProfileLoading(false);
@@ -1335,7 +1335,7 @@ export function SmartCartApp() {
 
       if (!isPlusMember && archivedMeals.length >= FREE_VAULT_LIMIT) {
         showToast(
-          `Free plans can stash up to ${FREE_VAULT_LIMIT} recipes in the vault. SmartCart Plus expands your library.`,
+          `Free plans can stash up to ${FREE_VAULT_LIMIT} recipes in the vault. MealCaddie Plus expands your library.`,
           "info",
         );
         return;
@@ -2089,7 +2089,7 @@ export function SmartCartApp() {
       setCloudSyncMessage("✨ Cloud sync complete! Your week is saved.");
       if (!canPersistPantryMemory) {
         setCloudSyncMessage(
-          "Your week is synced. Pantry memory across weeks is a SmartCart Plus feature.",
+          "Your week is synced. Pantry memory across weeks is a MealCaddie Plus feature.",
         );
       }
       if (canPersistPantryMemory) {
@@ -2145,12 +2145,12 @@ export function SmartCartApp() {
     const userEmail = safeTrim(user?.email);
 
     if (!userId || !userEmail) {
-      showToast("Please sign in before upgrading to SmartCart Plus.", "info");
+      showToast("Please sign in before upgrading to MealCaddie Plus.", "info");
       return;
     }
 
     if (isPlusMember) {
-      showToast("This account is already on SmartCart Plus.", "info");
+      showToast("This account is already on MealCaddie Plus.", "info");
       return;
     }
 
@@ -2172,13 +2172,13 @@ export function SmartCartApp() {
       const data = (await response.json()) as { error?: string; url?: string };
 
       if (!response.ok || !data.url) {
-        throw new Error(data.error || "Failed to start SmartCart Plus checkout.");
+        throw new Error(data.error || "Failed to start MealCaddie Plus checkout.");
       }
 
       window.location.href = data.url;
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to start SmartCart Plus checkout.";
+        error instanceof Error ? error.message : "Failed to start MealCaddie Plus checkout.";
       setRequestError(message);
       showToast(message, "error");
     } finally {
@@ -2307,7 +2307,7 @@ export function SmartCartApp() {
                 </svg>
               </div>
               <p className="mt-5 text-xs font-semibold uppercase tracking-[0.28em] text-orange-500">
-                SmartCart is cooking
+                MealCaddie is planning
               </p>
               <p className="mt-2 font-display text-3xl text-ink">Building your week</p>
               <p className="mt-3 text-sm leading-7 text-ink/70">
@@ -2616,7 +2616,7 @@ export function SmartCartApp() {
               <div className="rounded-[1.5rem] border border-dashed border-emerald-200 bg-white px-4 py-10 text-center text-ink/60">
                 <p className="font-display text-2xl text-ink">Your grocery list will appear here</p>
                 <p className="mt-3 text-sm leading-7">
-                  Generate a menu first and SmartCart will organize what you need to buy.
+                  Generate a menu first and MealCaddie will organize what you need to buy.
                 </p>
               </div>
             )}

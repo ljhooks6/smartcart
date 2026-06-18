@@ -1,7 +1,7 @@
 {
-  "name": "SmartCart",
-  "short_name": "SmartCart",
-  "description": "Plan meals, shop smarter, and keep dinner stress under control with SmartCart.",
+  "name": "MealCaddie",
+  "short_name": "MealCaddie",
+  "description": "A calmer way to feed your week. Plan meals, shop smarter, and carry less of the weekly meal load.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

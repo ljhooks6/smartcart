@@ -92,7 +92,7 @@ export function SmartCartLibrarySections({
               </p>
               {userPlan === "free" ? (
                 <p className="mt-2 text-sm leading-6 text-ink/70">
-                  Free saves your weekly menu. <strong>SmartCart Plus</strong> also remembers your
+                  Free saves your weekly menu. <strong>MealCaddie Plus</strong> also remembers your
                   pantry across weeks.
                 </p>
               ) : null}
@@ -145,7 +145,7 @@ export function SmartCartLibrarySections({
         </p>
         {userPlan === "free" ? (
           <p className="mt-2 text-sm leading-6 text-amber-900/80">
-            Free plans can stash up to <strong>{vaultLimit}</strong> recipes. SmartCart Plus
+            Free plans can stash up to <strong>{vaultLimit}</strong> recipes. MealCaddie Plus
             expands your saved recipe library.
           </p>
         ) : null}
@@ -265,18 +265,17 @@ export function SmartCartLibrarySections({
 
       <section className="mt-6 rounded-[2.25rem] border border-stone-200 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-8">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="font-display text-3xl text-ink">SmartCart Plus and Grocery Map Are Coming</p>
+          <p className="font-display text-3xl text-ink">MealCaddie Plus and Full-Week Planning Are Coming</p>
           <p className="mt-3 text-sm leading-7 text-ink/70 sm:text-base">
-            We are building the next SmartCart layer: pantry memory across weeks, smarter meal
-            swaps, a bigger saved-recipe vault, and a future grocery map that helps you spot the
-            best stores for your weekly plan. Join the waitlist for early access and product
-            updates.
+            We are building the next MealCaddie layer: pantry memory across weeks, smarter meal
+            swaps, a bigger saved-recipe vault, and support for breakfast and lunch planning. Join
+            the waitlist for early access and product updates.
           </p>
 
           {waitlistStatus === "success" ? (
             <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">
-              Thanks for joining. You are on the list for SmartCart Plus updates and the Grocery
-              Map rollout.
+              Thanks for joining. You are on the list for MealCaddie Plus updates and full-week
+              planning previews.
             </div>
           ) : waitlistStatus === "error" ? (
             <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">

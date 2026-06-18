@@ -1,10 +1,10 @@
-# Stripe Setup For SmartCart
+# Stripe Setup For MealCaddie
 
 ## Stripe dashboard
 
 Create:
 
-1. Product: `SmartCart Plus`
+1. Product: `MealCaddie Plus`
 2. Price: monthly recurring subscription
 3. Save the monthly price id
 

@@ -202,7 +202,7 @@ export function SmartCartGrocerySidebar({
             </p>
             <p className="mb-4 mt-2 text-xs italic text-gray-500">
               *Need shows what your selected meals use. Buy shows the likely package you
-              would grab at the store. When SmartCart groups flexible staples like rice,
+              would grab at the store. When MealCaddie groups flexible staples like rice,
               pasta, potatoes, onions, or tortillas, one practical package will usually do.*
             </p>
 

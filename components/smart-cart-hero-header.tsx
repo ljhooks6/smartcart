@@ -56,7 +56,7 @@ export function SmartCartHeroHeader({
     <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
       <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
-          SmartCart
+          MealCaddie
           <span className="h-2.5 w-2.5 rounded-full bg-sage" />
         </div>
 
@@ -134,7 +134,7 @@ export function SmartCartHeroHeader({
                       }}
                       type="button"
                     >
-                      {isUpgradeLoading ? "Opening checkout..." : "Upgrade to SmartCart Plus"}
+                      {isUpgradeLoading ? "Opening checkout..." : "Upgrade to MealCaddie Plus"}
                     </button>
                   ) : null}
                   <button
@@ -176,8 +176,8 @@ export function SmartCartHeroHeader({
         </p>
         <div className="max-w-3xl rounded-2xl bg-slate-50/50 p-5 shadow-sm">
           <p className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-xl font-extrabold leading-tight text-transparent sm:text-2xl">
-            SmartCart turns your pantry, budget, and time constraints into a practical dinner
-            plan with a grocery checklist you can actually shop.
+            A calmer way to feed your week. Pick the meals you want help with, and MealCaddie
+            helps plan, organize, and shop for the week ahead.
           </p>
         </div>
       </div>
@@ -204,7 +204,7 @@ export function SmartCartHeroHeader({
                 {isAuthLoading ? "Opening Google..." : "Continue with Google"}
               </button>
               <p className="text-center text-xs font-medium leading-6 text-ink/55">
-                Shared device? Google will ask which account to use before SmartCart signs in.
+                Shared device? Google will ask which account to use before MealCaddie signs in.
               </p>
               <div className="flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-ink/40">
                 <span className="h-px flex-1 bg-stone-200" />
@@ -238,15 +238,15 @@ export function SmartCartHeroHeader({
       <div className="max-w-3xl rounded-[1.75rem] border border-pine/10 bg-gradient-to-r from-sage/10 via-white to-cream px-5 py-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-xl">
-            <p className="font-display text-lg text-pine">Add SmartCart to your home screen</p>
+            <p className="font-display text-lg text-pine">Add MealCaddie to your home screen</p>
             <p className="mt-1 text-sm leading-6 text-ink/70">
-              Keep SmartCart one tap away so your weekly plan, shopping list, and saved meals are
+              Keep MealCaddie one tap away so your weekly plan, shopping list, and saved meals are
               easier to jump back into.
             </p>
           </div>
           <div className="grid gap-2 text-sm leading-6 text-ink/70 sm:max-w-sm">
             <p>
-              <span className="font-semibold text-ink">iPhone:</span> Open SmartCart in Safari,
+              <span className="font-semibold text-ink">iPhone:</span> Open MealCaddie in Safari,
               tap <span className="font-semibold text-ink">Share</span>, then choose{" "}
               <span className="font-semibold text-ink">Add to Home Screen</span>.
             </p>

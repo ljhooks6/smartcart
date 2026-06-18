@@ -97,6 +97,41 @@ export function SmartCartContextForm({
         </p>
       </div>
 
+      <div className="mb-6 rounded-[1.75rem] border border-pine/10 bg-gradient-to-r from-sage/10 via-white to-cream px-5 py-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine/60">
+          Choose what MealCaddie helps with
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {[
+            ["Dinner", "Ready today"],
+            ["Breakfast", "Coming soon"],
+            ["Lunch", "Coming soon"],
+          ].map(([mealType, status]) => {
+            const isReady = status === "Ready today";
+
+            return (
+              <div
+                key={mealType}
+                className={`rounded-2xl border px-4 py-3 ${
+                  isReady
+                    ? "border-pine/20 bg-white text-pine shadow-sm"
+                    : "border-stone-200 bg-white/60 text-ink/60"
+                }`}
+              >
+                <p className="font-display text-xl text-ink">{mealType}</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em]">
+                  {status}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-4 text-sm leading-6 text-ink/70">
+          Dinner planning is live now. Breakfast and lunch support are on the way so MealCaddie can
+          help carry more of the weekly meal load.
+        </p>
+      </div>
+
       <form className="space-y-5" id="smart-cart-context-form" onSubmit={onSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-2">

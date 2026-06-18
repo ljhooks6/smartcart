@@ -3,14 +3,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SmartCart | AI Meal & Grocery Planner",
+  title: "MealCaddie | Meal & Grocery Planning Helper",
   description:
-    "SmartCart builds budget-conscious dinner plans and grocery lists around your pantry, time, and dietary needs.",
+    "MealCaddie helps plan, organize, and shop for calmer weeks around your pantry, budget, time, and dietary needs.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "SmartCart",
+    title: "MealCaddie",
   },
   icons: {
     apple: "/og-image.png",
