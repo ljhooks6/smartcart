@@ -310,14 +310,6 @@ const pantryQuickSelectOptions = {
 } as const;
 
 const SMART_CART_WAITLIST_ENDPOINT = "https://formspree.io/f/mqegdoly";
-const featureDescriptions = {
-  "Budget first":
-    "Strictly enforces your weekly budget so you never overspend at the checkout.",
-  "Pantry aware":
-    "Uses your existing ingredients first to reduce waste and lower your grocery bill.",
-  "Fast setup":
-    "Skip the endless scrolling and get a personalized, 7-day dinner plan in seconds.",
-} as const;
 const pantryCategoryStyles: Record<string, string> = {
   "Proteins (Freezer & Fridge)": "border-rose-200 bg-rose-50",
   "DAIRY & REFRIGERATED": "border-cyan-200 bg-cyan-50",
@@ -622,7 +614,6 @@ export function SmartCartApp() {
   const [expandedDetailCards, setExpandedDetailCards] = useState<Set<string>>(
     new Set(),
   );
-  const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("plan");
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
@@ -1630,7 +1621,6 @@ export function SmartCartApp() {
     setReplacingDessertKey(null);
     setRecentRejectedMeals([]);
     setExpandedDetailCards(new Set());
-    setActiveFeature(null);
     setCloudSyncMessage("");
     setSaveStatus("idle");
     setIsEquipmentSheetOpen(false);
@@ -1764,10 +1754,6 @@ export function SmartCartApp() {
       : confirmDialog?.kind === "stashToVault"
         ? "Don’t show this Vault reminder again."
         : undefined;
-
-  function handleFeatureToggle(feature: keyof typeof featureDescriptions) {
-    setActiveFeature((current) => (current === feature ? null : feature));
-  }
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2365,17 +2351,12 @@ export function SmartCartApp() {
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
         <div className={activeMobileTab === "plan" ? "block md:block" : "hidden md:block"}>
             <SmartCartHeroHeader
-              activeFeature={activeFeature}
               authMessage={authMessage}
               email={email}
-              featureDescriptions={featureDescriptions}
               isAuthLoading={isAuthLoading}
               isUpgradeLoading={isUpgradeLoading}
               isProfileLoading={isProfileLoading}
               onEmailChange={setEmail}
-              onFeatureToggle={(feature) =>
-                handleFeatureToggle(feature as keyof typeof featureDescriptions)
-              }
               onGoogleLogin={handleGoogleLogin}
               onSwitchGoogleAccount={handleSwitchGoogleAccount}
               onUpgrade={handleUpgradeToPlus}
@@ -2394,19 +2375,6 @@ export function SmartCartApp() {
                 activeMobileTab === "plan" ? `block ${activeTabMeta.panelClass}` : "hidden"
               }`}
             >
-              <div className={`mb-4 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[0].headerClass}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[0].badgeClass}`}>
-                    <MobileTabIcon tab="plan" className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-orange-700">
-                      Planner
-                    </p>
-                    <p className="font-display text-2xl text-ink">Plan</p>
-                  </div>
-                </div>
-              </div>
             <SmartCartContextForm
               adventureLevelOptions={adventureLevelOptions}
               combinedPantryItems={combinedPantryItems}
@@ -2509,22 +2477,6 @@ export function SmartCartApp() {
                 activeMobileTab === "meals" ? `block ${mobileTabs[1].panelClass}` : "hidden"
               }`}
             >
-              <div className={`mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[1].headerClass}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[1].badgeClass}`}>
-                    <MobileTabIcon tab="meals" className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                      Meals
-                    </p>
-                    <p className="font-display text-2xl text-ink">Meals</p>
-                  </div>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${mobileTabs[1].statusClass}`}>
-                  {hasMealSurfaceContent ? "Active" : "Waiting"}
-                </span>
-              </div>
             {generatedPlan ? (
               <SmartCartMealSections
                 cuisinePreference={formState.cuisinePreference}
@@ -2567,22 +2519,6 @@ export function SmartCartApp() {
                 activeMobileTab === "shop" ? `block ${mobileTabs[2].panelClass}` : "hidden"
               }`}
             >
-              <div className={`mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[2].headerClass}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[2].badgeClass}`}>
-                    <MobileTabIcon tab="shop" className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">
-                      Shop
-                    </p>
-                    <p className="font-display text-2xl text-ink">Shop</p>
-                  </div>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${mobileTabs[2].statusClass}`}>
-                  {generatedPlan ? "Ready" : "Empty"}
-                </span>
-              </div>
             {generatedPlan ? (
               <SmartCartGrocerySidebar
                 budgetPercentage={budgetPercentage}
@@ -2628,22 +2564,6 @@ export function SmartCartApp() {
                 activeMobileTab === "cook" ? `block ${mobileTabs[3].panelClass}` : "hidden"
               }`}
             >
-              <div className={`mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[3].headerClass}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[3].badgeClass}`}>
-                    <MobileTabIcon tab="cook" className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine">
-                      Cook
-                    </p>
-                    <p className="font-display text-2xl text-ink">Cook</p>
-                  </div>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${mobileTabs[3].statusClass}`}>
-                  {hasCookSurfaceContent ? "Ready" : "Empty"}
-                </span>
-              </div>
               <SmartCartCookSections
                 expandedDetailCards={expandedDetailCards}
                 expandedIngredientsMeals={expandedIngredientsMeals}
@@ -2666,22 +2586,6 @@ export function SmartCartApp() {
                 activeMobileTab === "vault" ? `block ${mobileTabs[4].panelClass}` : "hidden"
               }`}
             >
-              <div className={`mb-4 flex items-center justify-between gap-3 rounded-[1.5rem] border px-4 py-4 shadow-sm ${mobileTabs[4].headerClass}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${mobileTabs[4].badgeClass}`}>
-                    <MobileTabIcon tab="vault" className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-800">
-                      Vault
-                    </p>
-                    <p className="font-display text-2xl text-ink">Vault</p>
-                  </div>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${mobileTabs[4].statusClass}`}>
-                  {hasVaultSurfaceContent ? "Live" : "Start Saving"}
-                </span>
-              </div>
             <SmartCartLibrarySections
               archivedMeals={archivedMeals}
               cloudSyncMessage={cloudSyncMessage}

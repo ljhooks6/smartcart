@@ -4,15 +4,12 @@ import { FormEvent, useState } from "react";
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 
 type SmartCartHeroHeaderProps = {
-  activeFeature: string | null;
   authMessage: string;
   email: string;
-  featureDescriptions: Record<string, string>;
   isAuthLoading: boolean;
   isUpgradeLoading: boolean;
   isProfileLoading: boolean;
   onEmailChange: (value: string) => void;
-  onFeatureToggle: (feature: string) => void;
   onGoogleLogin: () => void | Promise<void>;
   onSwitchGoogleAccount: () => void | Promise<void>;
   onUpgrade: () => void | Promise<void>;
@@ -25,15 +22,12 @@ type SmartCartHeroHeaderProps = {
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
 export function SmartCartHeroHeader({
-  activeFeature,
   authMessage,
   email,
-  featureDescriptions,
   isAuthLoading,
   isUpgradeLoading,
   isProfileLoading,
   onEmailChange,
-  onFeatureToggle,
   onGoogleLogin,
   onSwitchGoogleAccount,
   onUpgrade,
@@ -285,51 +279,6 @@ export function SmartCartHeroHeader({
             </p>
           </div>
         ) : null}
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        {Object.keys(featureDescriptions).map((feature) => (
-          <button
-            key={feature}
-            className="group [perspective:1200px]"
-            onClick={() => onFeatureToggle(feature)}
-            type="button"
-          >
-            <div
-              className={`relative min-h-[7.75rem] rounded-3xl transition-transform duration-500 [transform-style:preserve-3d] ${
-                activeFeature === feature ? "[transform:rotateY(180deg)]" : ""
-              }`}
-            >
-              <div className="absolute inset-0 rounded-3xl border border-pine/10 bg-cream p-4 text-left shadow-sm [backface-visibility:hidden] transition group-hover:border-orange-300 group-hover:bg-orange-50">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="font-display text-xl text-pine sm:text-2xl">{feature}</p>
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-orange-200/80 bg-white/85 shadow-sm transition group-hover:-translate-y-0.5 group-hover:border-orange-300">
-                    <div className="flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                      <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.22em] text-pine/45">
-                  <span className="h-px flex-1 bg-pine/10" />
-                  <div className="flex items-center gap-1 rounded-full bg-white/70 px-2 py-0.5 shadow-sm">
-                    <span className="h-1 w-1 rounded-full bg-orange-500" />
-                    <span className="h-1 w-1 rounded-full bg-orange-300" />
-                    <span className="h-1 w-1 rounded-full bg-orange-200" />
-                  </div>
-                </div>
-              </div>
-              <div className="absolute inset-0 rounded-3xl border border-orange-300 bg-orange-100 p-4 text-left shadow-md [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-700">
-                  {feature}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-ink/80">
-                  {featureDescriptions[feature]}
-                </p>
-              </div>
-            </div>
-          </button>
-        ))}
       </div>
     </div>
   );

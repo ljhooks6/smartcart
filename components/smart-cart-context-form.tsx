@@ -112,16 +112,32 @@ export function SmartCartContextForm({
             return (
               <div
                 key={mealType}
-                className={`rounded-2xl border px-4 py-3 ${
+                className={`relative overflow-hidden rounded-2xl border px-4 py-3 ${
                   isReady
-                    ? "border-pine/20 bg-white text-pine shadow-sm"
+                    ? "border-orange-300 bg-gradient-to-br from-orange-100 via-white to-amber-50 text-pine shadow-md ring-2 ring-orange-200/70"
                     : "border-stone-200 bg-white/60 text-ink/60"
                 }`}
               >
-                <p className="font-display text-xl text-ink">{mealType}</p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em]">
+                {isReady ? (
+                  <span className="absolute right-3 top-3 rounded-full bg-orange-500 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.18em] text-white shadow-sm">
+                    Live
+                  </span>
+                ) : null}
+                <p className={`font-display text-xl ${isReady ? "text-pine" : "text-ink"}`}>
+                  {mealType}
+                </p>
+                <p
+                  className={`mt-1 text-xs font-semibold uppercase tracking-[0.2em] ${
+                    isReady ? "text-orange-700" : "text-ink/45"
+                  }`}
+                >
                   {status}
                 </p>
+                {isReady ? (
+                  <p className="mt-3 text-sm leading-6 text-ink/70">
+                    Ready to build your weekly dinner plan right now.
+                  </p>
+                ) : null}
               </div>
             );
           })}
