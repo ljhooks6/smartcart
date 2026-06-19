@@ -533,7 +533,6 @@ export function useSmartCartGrocery({
 }: UseSmartCartGroceryArgs) {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
-  const [isPremiumMode, setIsPremiumMode] = useState(false);
   const [isGroceryOpen, setIsGroceryOpen] = useState(false);
   const [restoredItems, setRestoredItems] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
@@ -589,55 +588,8 @@ export function useSmartCartGrocery({
     };
   }, [fullyStocked, restock, restoredItems, runningLow, savedDesserts, weeklyMenu]);
 
-  const displayGroceryList = useMemo(() => {
-    if (!isPremiumMode) {
-      return derivedGroceryList;
-    }
-
-    return derivedGroceryList.map((item) => {
-      const lowerName = item.name.toLowerCase();
-      let prefix = "Premium ";
-
-      if (
-        lowerName.includes("beef") ||
-        lowerName.includes("chicken") ||
-        lowerName.includes("turkey") ||
-        lowerName.includes("pork") ||
-        lowerName.includes("eggs")
-      ) {
-        prefix = "Organic Pasture-Raised ";
-      } else if (
-        lowerName.includes("milk") ||
-        lowerName.includes("cheese") ||
-        lowerName.includes("butter")
-      ) {
-        prefix = "Organic Grass-Fed ";
-      } else if (
-        lowerName.includes("pasta") ||
-        lowerName.includes("rice") ||
-        lowerName.includes("bread")
-      ) {
-        prefix = "Artisanal ";
-      } else if (
-        lowerName.includes("broccoli") ||
-        lowerName.includes("spinach") ||
-        lowerName.includes("tomatoes") ||
-        lowerName.includes("apples") ||
-        lowerName.includes("berries")
-      ) {
-        prefix = "Local Organic ";
-      }
-
-      return {
-        ...item,
-        name: `${prefix}${item.name}`,
-        estimated_price: Number((item.estimated_price * 1.5).toFixed(2)),
-      };
-    });
-  }, [derivedGroceryList, isPremiumMode]);
-
   const displayGroceriesByCategory = useMemo(() => {
-    const grouped = displayGroceryList.reduce<Record<string, GroceryListItem[]>>(
+    const grouped = derivedGroceryList.reduce<Record<string, GroceryListItem[]>>(
       (accumulator, item) => {
         const category = item.category || "Other";
         if (!accumulator[category]) {
@@ -650,7 +602,7 @@ export function useSmartCartGrocery({
     );
 
     return Object.entries(grouped);
-  }, [displayGroceryList]);
+  }, [derivedGroceryList]);
 
   const skippedGroceriesByCategory = useMemo(() => {
     const grouped = skippedGroceryList.reduce<Record<string, GroceryListItem[]>>(
@@ -691,8 +643,8 @@ export function useSmartCartGrocery({
   }, [customItems, displayGroceriesByCategory, formatCurrency]);
 
   const totalCost = useMemo(
-    () => displayGroceryList.reduce((sum, item) => sum + item.estimated_price, 0),
-    [displayGroceryList],
+    () => derivedGroceryList.reduce((sum, item) => sum + item.estimated_price, 0),
+    [derivedGroceryList],
   );
 
   function toggleCheckedItem(itemKey: string) {
@@ -736,7 +688,6 @@ export function useSmartCartGrocery({
   function resetGroceryState() {
     setCheckedItems(new Set());
     setCopied(false);
-    setIsPremiumMode(false);
     setIsGroceryOpen(false);
     setRestoredItems([]);
     setCustomItems([]);
@@ -751,7 +702,6 @@ export function useSmartCartGrocery({
     handleAddCustomItem,
     handleCopyShoppingList,
     isGroceryOpen,
-    isPremiumMode,
     newCustomItem,
     resetGroceryState,
     restoredItems,
@@ -761,7 +711,6 @@ export function useSmartCartGrocery({
       ),
     setGroceryOpen: setIsGroceryOpen,
     setNewCustomItem,
-    setPremiumMode: setIsPremiumMode,
     skippedGroceriesByCategory,
     toggleCheckedItem,
     totalCost,

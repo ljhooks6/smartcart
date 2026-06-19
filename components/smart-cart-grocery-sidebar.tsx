@@ -26,7 +26,6 @@ type SmartCartGrocerySidebarProps = {
   displayGroceriesByCategory: [string, GroceryListItem[]][];
   formatCurrency: (value: number) => string;
   isGroceryOpen: boolean;
-  isPremiumMode: boolean;
   newCustomItem: string;
   onAddCustomItem: () => void;
   onChangeCustomItem: (value: string) => void;
@@ -37,7 +36,6 @@ type SmartCartGrocerySidebarProps = {
   onSetCustomItemChecked: (id: string, isChecked: boolean) => void;
   onToggleCheckedItem: (key: string) => void;
   onToggleGroceryOpen: () => void;
-  onTogglePremiumMode: () => void;
   parsedBudget: number;
   restoredItems: string[];
   rawBudgetPercentage: number;
@@ -162,7 +160,6 @@ export function SmartCartGrocerySidebar({
   displayGroceriesByCategory,
   formatCurrency,
   isGroceryOpen,
-  isPremiumMode,
   newCustomItem,
   onAddCustomItem,
   onChangeCustomItem,
@@ -173,7 +170,6 @@ export function SmartCartGrocerySidebar({
   onSetCustomItemChecked,
   onToggleCheckedItem,
   onToggleGroceryOpen,
-  onTogglePremiumMode,
   parsedBudget,
   rawBudgetPercentage,
   restoredItems,
@@ -433,13 +429,6 @@ export function SmartCartGrocerySidebar({
             </div>
 
             <div className="mt-4 flex items-center gap-4">
-              <button
-                className="mb-2 w-full rounded-md bg-orange-100 px-4 py-3 font-bold text-orange-700"
-                onClick={onTogglePremiumMode}
-                type="button"
-              >
-                {isPremiumMode ? "Revert to Standard" : "Upgrade to Premium Ingredients"}
-              </button>
               <button
                 className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"
                 onClick={onCopyShoppingList}

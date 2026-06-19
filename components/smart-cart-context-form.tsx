@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent } from "react";
+import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 
 type SmartCartFormState = {
   budget: string;
@@ -49,6 +50,7 @@ type SmartCartContextFormProps = {
   pantryCategoryStyles: Record<string, string>;
   pantryQuickSelectOptions: Record<string, readonly string[]>;
   prepTimeOptions: readonly string[];
+  userPlan: SmartCartPlan;
 };
 
 export function SmartCartContextForm({
@@ -84,7 +86,10 @@ export function SmartCartContextForm({
   pantryCategoryStyles,
   pantryQuickSelectOptions,
   prepTimeOptions,
+  userPlan,
 }: SmartCartContextFormProps) {
+  const isPlusMember = userPlan === "plus";
+
   return (
     <div className="rounded-[2.25rem] border border-stone-200 bg-[#fcfaf6]/95 p-6 shadow-xl backdrop-blur xl:p-8">
       <div className="mb-6 rounded-[1.75rem] border border-stone-200/80 bg-white/75 px-5 py-5 shadow-sm">
@@ -194,9 +199,15 @@ export function SmartCartContextForm({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-ink">Cuisine Vibe (Optional)</span>
+          <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+            Cuisine Vibe
+            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-orange-700">
+              Plus
+            </span>
+          </span>
           <select
-            className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+            className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-ink/45 focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+            disabled={!isPlusMember}
             onChange={(event) => onCuisinePreferenceChange(event.target.value)}
             value={formState.cuisinePreference}
           >
@@ -209,7 +220,9 @@ export function SmartCartContextForm({
             <option value="Comfort Food">Comfort food</option>
           </select>
           <p className="text-sm leading-6 text-ink/60">
-            Let the week lean toward a flavor lane without boxing every meal into the same pattern.
+            {isPlusMember
+              ? "Let the week lean toward a flavor lane without boxing every meal into the same pattern."
+              : "MealCaddie Plus unlocks cuisine personalization and stronger meal-quality refinement."}
           </p>
         </label>
 

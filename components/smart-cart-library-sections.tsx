@@ -92,8 +92,8 @@ export function SmartCartLibrarySections({
               </p>
               {userPlan === "free" ? (
                 <p className="mt-2 text-sm leading-6 text-ink/70">
-                  Free saves your weekly menu. <strong>MealCaddie Plus</strong> also remembers your
-                  pantry across weeks.
+                  Free saves this week&apos;s menu. <strong>MealCaddie Plus</strong> remembers more
+                  across weeks so planning starts with less repeated setup.
                 </p>
               ) : null}
             </div>
@@ -145,8 +145,8 @@ export function SmartCartLibrarySections({
         </p>
         {userPlan === "free" ? (
           <p className="mt-2 text-sm leading-6 text-amber-900/80">
-            Free plans can stash up to <strong>{vaultLimit}</strong> recipes. MealCaddie Plus
-            expands your saved recipe library.
+            Free plans can stash up to <strong>{vaultLimit}</strong> recipes. MealCaddie Plus gives
+            your saved library more room to grow.
           </p>
         ) : null}
       </div>
@@ -267,9 +267,9 @@ export function SmartCartLibrarySections({
         <div className="mx-auto max-w-3xl text-center">
           <p className="font-display text-3xl text-ink">MealCaddie Plus and Full-Week Planning Are Coming</p>
           <p className="mt-3 text-sm leading-7 text-ink/70 sm:text-base">
-            We are building the next MealCaddie layer: pantry memory across weeks, smarter meal
-            swaps, a bigger saved-recipe vault, and support for breakfast and lunch planning. Join
-            the waitlist for early access and product updates.
+            We are building the next MealCaddie layer: better memory across weeks, smarter meal
+            swaps, cuisine personalization, a larger saved-recipe vault, and support for breakfast
+            and lunch planning. Join the waitlist for early access and product updates.
           </p>
 
           {waitlistStatus === "success" ? (

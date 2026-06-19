@@ -932,14 +932,12 @@ export function SmartCartApp() {
     handleAddCustomItem,
     handleCopyShoppingList,
     isGroceryOpen,
-    isPremiumMode,
     newCustomItem,
     resetGroceryState,
     restoredItems,
     setCustomItemChecked,
     setGroceryOpen,
     setNewCustomItem,
-    setPremiumMode,
     skippedGroceriesByCategory,
     toggleCheckedItem,
     totalCost,
@@ -1065,7 +1063,7 @@ export function SmartCartApp() {
         body: JSON.stringify({
           budget,
           diet: safeTrim(formState.diet) || "No specific diet provided",
-          cuisinePreference: safeTrim(formState.cuisinePreference),
+          cuisinePreference: isPlusMember ? safeTrim(formState.cuisinePreference) : "",
           householdSize,
           generationQuality: isPlusMember ? "plus" : "free",
           combinedPantryItems: combinedPantryItems.join(", "),
@@ -2206,7 +2204,7 @@ export function SmartCartApp() {
           body: JSON.stringify({
             budget,
             diet: safeTrim(formState.diet) || "No specific diet provided",
-            cuisinePreference: safeTrim(formState.cuisinePreference),
+            cuisinePreference: isPlusMember ? safeTrim(formState.cuisinePreference) : "",
             householdSize,
             combinedPantryItems: combinedPantryItems.join(", "),
             rejectedMealTitle: meal.name,
@@ -2469,6 +2467,7 @@ export function SmartCartApp() {
               pantryCategoryStyles={pantryCategoryStyles}
               pantryQuickSelectOptions={pantryQuickSelectOptions}
               prepTimeOptions={prepTimeOptions}
+              userPlan={userPlan}
             />
           </section>
 
@@ -2531,7 +2530,6 @@ export function SmartCartApp() {
                 displayGroceriesByCategory={displayGroceriesByCategory}
                 formatCurrency={formatCurrency}
                 isGroceryOpen={isGroceryOpen}
-                isPremiumMode={isPremiumMode}
                 newCustomItem={newCustomItem}
                 onAddCustomItem={handleAddCustomItem}
                 onChangeCustomItem={setNewCustomItem}
@@ -2542,7 +2540,6 @@ export function SmartCartApp() {
                 onSetCustomItemChecked={setCustomItemChecked}
                 onToggleCheckedItem={toggleCheckedItem}
                 onToggleGroceryOpen={() => setGroceryOpen(!isGroceryOpen)}
-                onTogglePremiumMode={() => setPremiumMode(!isPremiumMode)}
                 parsedBudget={parsedBudget}
                 rawBudgetPercentage={rawBudgetPercentage}
                 restoredItems={restoredItems}
@@ -2710,6 +2707,7 @@ export function SmartCartApp() {
             pantryCategoryStyles={pantryCategoryStyles}
             pantryQuickSelectOptions={pantryQuickSelectOptions}
             prepTimeOptions={prepTimeOptions}
+            userPlan={userPlan}
           />
           <section className="mt-10 pb-16">
             {generatedPlan ? (
@@ -2751,7 +2749,6 @@ export function SmartCartApp() {
                   displayGroceriesByCategory={displayGroceriesByCategory}
                   formatCurrency={formatCurrency}
                   isGroceryOpen={isGroceryOpen}
-                  isPremiumMode={isPremiumMode}
                   newCustomItem={newCustomItem}
                   onAddCustomItem={handleAddCustomItem}
                   onChangeCustomItem={setNewCustomItem}
@@ -2762,7 +2759,6 @@ export function SmartCartApp() {
                   onSetCustomItemChecked={setCustomItemChecked}
                   onToggleCheckedItem={toggleCheckedItem}
                   onToggleGroceryOpen={() => setGroceryOpen(!isGroceryOpen)}
-                  onTogglePremiumMode={() => setPremiumMode(!isPremiumMode)}
                   parsedBudget={parsedBudget}
                   rawBudgetPercentage={rawBudgetPercentage}
                   restoredItems={restoredItems}
