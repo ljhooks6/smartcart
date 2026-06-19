@@ -263,19 +263,55 @@ export function SmartCartLibrarySections({
         </div>
       ) : null}
 
-      <section className="mt-6 rounded-[2.25rem] border border-stone-200 bg-white/80 p-6 shadow-xl backdrop-blur xl:p-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="font-display text-3xl text-ink">MealCaddie Plus and Full-Week Planning Are Coming</p>
-          <p className="mt-3 text-sm leading-7 text-ink/70 sm:text-base">
-            We are building the next MealCaddie layer: better memory across weeks, smarter meal
-            swaps, cuisine personalization, a larger saved-recipe vault, and support for breakfast
-            and lunch planning. Join the waitlist for early access and product updates.
-          </p>
+      <section className="mt-6 overflow-hidden rounded-[2.25rem] border border-orange-200 bg-gradient-to-br from-white via-orange-50/80 to-cream p-6 shadow-xl backdrop-blur xl:p-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-700/80">
+              MealCaddie Plus Preview
+            </p>
+            <p className="mt-3 font-display text-3xl text-ink">
+              More memory, more control, less dinner math.
+            </p>
+            <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-ink/70 sm:text-base">
+              Free helps you plan this week. Plus is being shaped for the households that want
+              MealCaddie to carry more of the routine: remembering pantry habits, tuning meals to
+              your taste, saving more favorites, and expanding beyond dinner.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {[
+              {
+                title: "Remember the kitchen",
+                copy: "Keep more pantry context across weeks so planning starts with fewer repeated choices.",
+              },
+              {
+                title: "Shape the meal vibe",
+                copy: "Cuisine direction and stronger refinement tools make generated meals feel more personal.",
+              },
+              {
+                title: "Grow the vault",
+                copy: `Free keeps ${vaultLimit} saved recipes. Plus will give your go-to meals room to stack up.`,
+              },
+              {
+                title: "Plan more of the day",
+                copy: "Breakfast and lunch planning are on the roadmap so MealCaddie can help beyond dinner.",
+              },
+            ].map((feature) => (
+              <div
+                className="rounded-3xl border border-white/80 bg-white/75 px-4 py-4 shadow-sm"
+                key={feature.title}
+              >
+                <p className="font-semibold text-ink">{feature.title}</p>
+                <p className="mt-2 text-sm leading-6 text-ink/65">{feature.copy}</p>
+              </div>
+            ))}
+          </div>
 
           {waitlistStatus === "success" ? (
             <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">
-              Thanks for joining. You are on the list for MealCaddie Plus updates and full-week
-              planning previews.
+              You are on the list. We will use Plus updates to bring early testers into pantry
+              memory, bigger vaults, and full-day planning as they are ready.
             </div>
           ) : waitlistStatus === "error" ? (
             <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
@@ -300,7 +336,7 @@ export function SmartCartLibrarySections({
                 disabled={waitlistStatus === "submitting"}
                 type="submit"
               >
-                {waitlistStatus === "submitting" ? "Joining..." : "Join Waitlist"}
+                {waitlistStatus === "submitting" ? "Joining..." : "Join the Plus Waitlist"}
               </button>
             </form>
           )}

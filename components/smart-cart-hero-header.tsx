@@ -7,7 +7,6 @@ type SmartCartHeroHeaderProps = {
   authMessage: string;
   email: string;
   isAuthLoading: boolean;
-  isUpgradeLoading: boolean;
   isProfileLoading: boolean;
   onEmailChange: (value: string) => void;
   onGoogleLogin: () => void | Promise<void>;
@@ -25,7 +24,6 @@ export function SmartCartHeroHeader({
   authMessage,
   email,
   isAuthLoading,
-  isUpgradeLoading,
   isProfileLoading,
   onEmailChange,
   onGoogleLogin,
@@ -121,15 +119,14 @@ export function SmartCartHeroHeader({
                   </div>
                   {userPlan !== "plus" ? (
                     <button
-                      className="mt-4 w-full rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={isUpgradeLoading}
+                      className="mt-4 w-full rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"
                       onClick={() => {
                         setIsAccountMenuOpen(false);
                         void onUpgrade();
                       }}
                       type="button"
                     >
-                      {isUpgradeLoading ? "Opening checkout..." : "Upgrade to MealCaddie Plus"}
+                      Preview MealCaddie Plus
                     </button>
                   ) : null}
                   <button

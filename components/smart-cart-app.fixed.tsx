@@ -577,7 +577,6 @@ export function SmartCartApp() {
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [hasResolvedAuthSession, setHasResolvedAuthSession] = useState(false);
-  const [isUpgradeLoading, setIsUpgradeLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -2132,10 +2131,9 @@ export function SmartCartApp() {
 
   async function handleUpgradeToPlus() {
     const userId = safeTrim(user?.id);
-    const userEmail = safeTrim(user?.email);
 
-    if (!userId || !userEmail) {
-      showToast("Please sign in before upgrading to MealCaddie Plus.", "info");
+    if (!userId) {
+      showToast("Please sign in to preview MealCaddie Plus.", "info");
       return;
     }
 
@@ -2144,36 +2142,9 @@ export function SmartCartApp() {
       return;
     }
 
-    setIsUpgradeLoading(true);
-
-    try {
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          plan: userPlan,
-          userId,
-        }),
-      });
-
-      const data = (await response.json()) as { error?: string; url?: string };
-
-      if (!response.ok || !data.url) {
-        throw new Error(data.error || "Failed to start MealCaddie Plus checkout.");
-      }
-
-      window.location.href = data.url;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to start MealCaddie Plus checkout.";
-      setRequestError(message);
-      showToast(message, "error");
-    } finally {
-      setIsUpgradeLoading(false);
-    }
+    setWaitlistEmail((current) => current || safeTrim(user?.email));
+    setActiveMobileTab("vault");
+    showToast("MealCaddie Plus is not taking payments yet. Join the waitlist for early access.", "info");
   }
 
   async function handleReplaceMeal(meal: MealPlanItem, index: number) {
@@ -2352,7 +2323,6 @@ export function SmartCartApp() {
               authMessage={authMessage}
               email={email}
               isAuthLoading={isAuthLoading}
-              isUpgradeLoading={isUpgradeLoading}
               isProfileLoading={isProfileLoading}
               onEmailChange={setEmail}
               onGoogleLogin={handleGoogleLogin}
