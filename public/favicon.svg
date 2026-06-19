@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="MealCaddie">
+  <rect width="64" height="64" rx="18" fill="#f8f1e7"/>
+  <path d="M17 20h30l-4 25H21L17 20Z" fill="#2f5d3d"/>
+  <path d="M22 20c2-7 7-10 10-10s8 3 10 10" fill="none" stroke="#dd6b20" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="25" cy="46" r="3" fill="#dd6b20"/>
+  <circle cx="39" cy="46" r="3" fill="#dd6b20"/>
+  <path d="M24 29h16M24 36h12" stroke="#f8f1e7" stroke-width="4" stroke-linecap="round"/>
+</svg>

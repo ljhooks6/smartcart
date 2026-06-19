@@ -9,12 +9,12 @@
   "theme_color": "#dd6b20",
   "icons": [
     {
-      "src": "/og-image.png",
+      "src": "/app-icon.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "/og-image.png",
+      "src": "/app-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
