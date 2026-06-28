@@ -105,6 +105,7 @@ type FormState = {
   diet: string;
   cuisinePreference: string;
   householdSize: string;
+  mealSourceMode: "pantry-and-store" | "pantry-only";
   pantryItems: string;
   mustHaveIngredient: string;
   avoidIngredients: string;
@@ -120,6 +121,7 @@ const initialFormState: FormState = {
   diet: "Vegetarian",
   cuisinePreference: "",
   householdSize: "2",
+  mealSourceMode: "pantry-and-store",
   pantryItems: "",
   mustHaveIngredient: "",
   avoidIngredients: "",
@@ -135,6 +137,7 @@ const clearedFormState: FormState = {
   diet: "",
   cuisinePreference: "",
   householdSize: "",
+  mealSourceMode: "pantry-and-store",
   pantryItems: "",
   mustHaveIngredient: "",
   avoidIngredients: "",
@@ -731,6 +734,8 @@ export function SmartCartApp() {
         diet: parsed.diet ?? current.diet,
         cuisinePreference: parsed.cuisinePreference ?? current.cuisinePreference,
         householdSize: parsed.householdSize ?? current.householdSize,
+        mealSourceMode:
+          parsed.mealSourceMode === "pantry-only" ? "pantry-only" : "pantry-and-store",
         pantryItems: parsed.pantryItems ?? current.pantryItems,
         mustHaveIngredient:
           parsed.mustHaveIngredient ?? current.mustHaveIngredient,
@@ -1065,6 +1070,7 @@ export function SmartCartApp() {
           cuisinePreference: isPlusMember ? safeTrim(formState.cuisinePreference) : "",
           householdSize,
           generationQuality: isPlusMember ? "plus" : "free",
+          mealSourceMode: formState.mealSourceMode,
           combinedPantryItems: combinedPantryItems.join(", "),
           fullyStocked: Array.from(fullyStocked),
           runningLow: Array.from(runningLow),
@@ -2380,6 +2386,12 @@ export function SmartCartApp() {
                   householdSize: value,
                 }))
               }
+              onMealSourceModeChange={(value) =>
+                setFormState((current) => ({
+                  ...current,
+                  mealSourceMode: value,
+                }))
+              }
               onIncludeDessertChange={(checked) =>
                 setFormState((current) => ({
                   ...current,
@@ -2618,6 +2630,12 @@ export function SmartCartApp() {
               setFormState((current) => ({
                 ...current,
                 householdSize: value,
+              }))
+            }
+            onMealSourceModeChange={(value) =>
+              setFormState((current) => ({
+                ...current,
+                mealSourceMode: value,
               }))
             }
             onIncludeDessertChange={(checked) =>

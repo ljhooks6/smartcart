@@ -8,6 +8,7 @@ type SmartCartFormState = {
   diet: string;
   cuisinePreference: string;
   householdSize: string;
+  mealSourceMode: "pantry-and-store" | "pantry-only";
   pantryItems: string;
   mustHaveIngredient: string;
   avoidIngredients: string;
@@ -35,6 +36,7 @@ type SmartCartContextFormProps = {
   onDietChange: (value: string) => void;
   onHouseholdSizeChange: (value: string) => void;
   onIncludeDessertChange: (checked: boolean) => void;
+  onMealSourceModeChange: (value: SmartCartFormState["mealSourceMode"]) => void;
   onMustHaveIngredientChange: (value: string) => void;
   onAvoidIngredientsChange: (value: string) => void;
   onPantryItemsChange: (value: string) => void;
@@ -71,6 +73,7 @@ export function SmartCartContextForm({
   onDietChange,
   onHouseholdSizeChange,
   onIncludeDessertChange,
+  onMealSourceModeChange,
   onMustHaveIngredientChange,
   onAvoidIngredientsChange,
   onPantryItemsChange,
@@ -185,6 +188,49 @@ export function SmartCartContextForm({
               value={formState.householdSize}
             />
           </label>
+        </div>
+
+        <div className="rounded-[1.75rem] border border-orange-200 bg-gradient-to-br from-white via-orange-50/70 to-cream px-4 py-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-700/80">
+            Meal source
+          </p>
+          <p className="mt-2 text-sm leading-6 text-ink/70">
+            Choose whether MealCaddie can plan around a store trip or should only use what is
+            already in your kitchen.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {[
+              {
+                value: "pantry-and-store" as const,
+                title: "Pantry + store pickup",
+                copy: "Use what you have, then fill the gaps with a smart grocery list.",
+              },
+              {
+                value: "pantry-only" as const,
+                title: "Pantry only",
+                copy: "Generate meals from what you already have. No planned grocery run.",
+              },
+            ].map((option) => {
+              const isSelected = formState.mealSourceMode === option.value;
+
+              return (
+                <button
+                  aria-pressed={isSelected}
+                  className={`rounded-2xl border px-4 py-4 text-left transition ${
+                    isSelected
+                      ? "border-orange-400 bg-white text-ink shadow-md ring-2 ring-orange-200"
+                      : "border-stone-200 bg-white/60 text-ink/65 hover:border-orange-200 hover:bg-white"
+                  }`}
+                  key={option.value}
+                  onClick={() => onMealSourceModeChange(option.value)}
+                  type="button"
+                >
+                  <span className="block font-semibold">{option.title}</span>
+                  <span className="mt-2 block text-sm leading-6">{option.copy}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <label className="space-y-2">

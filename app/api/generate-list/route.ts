@@ -30,6 +30,7 @@ type GenerateListRequest = {
   availableEquipment?: string[];
   prepTime?: string;
   generationQuality?: "free" | "plus";
+  mealSourceMode?: "pantry-and-store" | "pantry-only";
 };
 
 const ingredientSchema = z.object({
@@ -414,9 +415,12 @@ export async function POST(request: Request) {
     availableEquipment,
     prepTime,
     generationQuality,
+    mealSourceMode,
   } =
     (body as Partial<GenerateListRequest>) ?? {};
   const isPlusGeneration = generationQuality === "plus";
+  const normalizedMealSourceMode =
+    mealSourceMode === "pantry-only" ? "pantry-only" : "pantry-and-store";
 
   const selectedEquipment =
     Array.isArray(availableEquipment) && availableEquipment.length > 0
@@ -467,9 +471,11 @@ export async function POST(request: Request) {
     includeDessert: Boolean(includeDessert),
     mustHavePromptBlock: mustHaveGuidance.promptBlock,
     prepTime,
-    restock: Array.isArray(restock) ? restock : [],
+    restock:
+      normalizedMealSourceMode === "pantry-only" ? [] : Array.isArray(restock) ? restock : [],
     runningLow: Array.isArray(runningLow) ? runningLow : [],
     selectedEquipment,
+    mealSourceMode: normalizedMealSourceMode,
   });
 
   try {
@@ -615,7 +621,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const deterministicRestockItems = (Array.isArray(restock) ? restock : [])
+    const deterministicRestockItems = (
+      normalizedMealSourceMode === "pantry-only"
+        ? []
+        : Array.isArray(restock)
+          ? restock
+          : []
+    )
       .map((item) => item.trim())
       .filter(Boolean)
       .map((item) => ({

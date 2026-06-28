@@ -11,6 +11,7 @@ type GeneratePromptArgs = {
   fullyStocked: string[];
   householdSize: number;
   includeDessert: boolean;
+  mealSourceMode: "pantry-and-store" | "pantry-only";
   mustHavePromptBlock: string;
   prepTime?: string;
   restock: string[];
@@ -129,6 +130,7 @@ export function buildGenerateListPrompts({
   fullyStocked,
   householdSize,
   includeDessert,
+  mealSourceMode,
   mustHavePromptBlock,
   prepTime,
   restock,
@@ -136,10 +138,13 @@ export function buildGenerateListPrompts({
   selectedEquipment,
 }: GeneratePromptArgs) {
   const equipmentGuidance = buildEquipmentGuidance(selectedEquipment);
+  const isPantryOnlyMode = mealSourceMode === "pantry-only";
 
   const introSection = [
     "You are an expert, budget-conscious logistical meal planner.",
-    "Create 7 dinner meal suggestions that strictly adhere to the user's budget, diet, household size, and pantry items.",
+    isPantryOnlyMode
+      ? "Create 7 dinner meal suggestions that can be made from the user's available pantry items without planning a store trip."
+      : "Create 7 dinner meal suggestions that strictly adhere to the user's budget, diet, household size, and pantry items.",
   ];
 
   const corePlanningRules = [
@@ -156,8 +161,12 @@ export function buildGenerateListPrompts({
   ];
 
   const varietyRules = [
-    "- CRITICAL RULE: BALANCED PROTEIN VARIETY. You are generating 7 meals. Limit any single main protein (for example chicken) to a MAXIMUM of 2 meals. You MUST use at least 3 to 4 different main proteins. Do not let the user's pantry limit this rule.",
-    "- CRITICAL RULE: Pantry items are helpful context, not a restriction. You are allowed to introduce additional proteins that are not already in the pantry and place them in the meal ingredients so the menu stays varied.",
+    isPantryOnlyMode
+      ? "- CRITICAL RULE: PANTRY-ONLY VARIETY. Create as much variety as the available pantry allows, but NEVER invent proteins, produce, sauces, or staple ingredients that are not listed as available."
+      : "- CRITICAL RULE: BALANCED PROTEIN VARIETY. You are generating 7 meals. Limit any single main protein (for example chicken) to a MAXIMUM of 2 meals. You MUST use at least 3 to 4 different main proteins. Do not let the user's pantry limit this rule.",
+    isPantryOnlyMode
+      ? "- CRITICAL RULE: Pantry items are a hard restriction. You may only use ingredients from Pantry Items, Fully Stocked Pantry Items, and Running Low Pantry Items. Restock Pantry Items are not available for cooking in pantry-only mode."
+      : "- CRITICAL RULE: Pantry items are helpful context, not a restriction. You are allowed to introduce additional proteins that are not already in the pantry and place them in the meal ingredients so the menu stays varied.",
     "- CRITICAL RULE: Stop defaulting to cheap LLM tropes like Chickpea Curry, Lentil Soup, or Bean Tacos unless the user explicitly marked those items as owned in their pantry. You must prioritize the actual proteins the user selected. Do not force legumes into the menu just to keep the budget low. Be creative with the ingredients provided.",
     "- CRITICAL RULE: FLAVOR MANDATE. Every recipe must explicitly include at least 3 herbs, spices, or aromatics.",
     "- CRITICAL RULE: FLAVOR VARIETY. Do not let the same spice, herb, or aromatic dominate the entire week. Repeating the same signature flavor cue in multiple meal titles is forbidden. If cumin appears in one title, do not keep using cumin in other titles unless it is truly essential.",
@@ -168,8 +177,12 @@ export function buildGenerateListPrompts({
   ];
 
   const pantryAndIngredientRules = [
-    "- Reuse pantry items whenever possible.",
-    "- Use pantry items from the \"fully stocked\", \"running low\", and \"restock\" lists to shape the meals.",
+    isPantryOnlyMode
+      ? "- Pantry-only mode is active: every ingredient in every meal must be something the user already has. Do not add grocery-gap ingredients."
+      : "- Reuse pantry items whenever possible.",
+    isPantryOnlyMode
+      ? "- Use Pantry Items, Fully Stocked Pantry Items, and Running Low Pantry Items as the available kitchen inventory. Do not use Restock Pantry Items."
+      : "- Use pantry items from the \"fully stocked\", \"running low\", and \"restock\" lists to shape the meals.",
     "- Do not generate a root-level grocery list.",
     "- Every meal must include its own localized \"ingredients\" array.",
     "- Each ingredient object must use this exact format:",
@@ -213,10 +226,18 @@ export function buildGenerateListPrompts({
   ];
 
   const budgetRules = [
-    "- Keep the full plan budget-conscious without making every meal feel like the same cheap fallback.",
-    "- Prioritize practical grocery overlap where it helps, but do not sacrifice variety just to reuse the same ingredients repeatedly.",
-    "- Include a final budget note that compares the estimated total cost against the target budget.",
-    "- If the estimated total cost is less than 80% of the user's maximum budget, set \"upgrade_available\" to true. Otherwise set it to false.",
+    isPantryOnlyMode
+      ? "- Pantry-only mode: the goal is avoiding a store trip, not spending the budget. Keep the plan realistic with the owned ingredients."
+      : "- Keep the full plan budget-conscious without making every meal feel like the same cheap fallback.",
+    isPantryOnlyMode
+      ? "- Include a final budget note that says this plan is designed around owned ingredients and may need minor substitutions if the pantry list is incomplete."
+      : "- Prioritize practical grocery overlap where it helps, but do not sacrifice variety just to reuse the same ingredients repeatedly.",
+    isPantryOnlyMode
+      ? "- Set \"upgrade_available\" to false because pantry-only mode is not a grocery upgrade flow."
+      : "- Include a final budget note that compares the estimated total cost against the target budget.",
+    isPantryOnlyMode
+      ? ""
+      : "- If the estimated total cost is less than 80% of the user's maximum budget, set \"upgrade_available\" to true. Otherwise set it to false.",
   ];
 
   const safetyAndOutputRules = [
@@ -245,6 +266,11 @@ export function buildGenerateListPrompts({
     "Build 7 dinner meal suggestions with localized ingredients using these inputs:",
     "",
     `Budget: ${budget}`,
+    `Meal Source Mode: ${
+      isPantryOnlyMode
+        ? "Pantry only - use only available kitchen inventory and do not plan a grocery trip."
+        : "Pantry plus store pickup - use pantry items and add reasonable grocery ingredients when needed."
+    }`,
     `Diet: ${dietaryPromptBlock.includes("User-entered diet text:") ? dietaryPromptBlock.split("\n")[0].replace("User-entered diet text: ", "") : "None provided"}`,
     `Household Size: ${householdSize}`,
     `Pantry Items: ${combinedPantryItems || "None provided"}`,
