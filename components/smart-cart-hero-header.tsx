@@ -38,9 +38,12 @@ export function SmartCartHeroHeader({
   const initial = safeTrim(userEmail[0] ?? "U").toUpperCase();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isInstallHelpOpen, setIsInstallHelpOpen] = useState(false);
-  const shouldShowPlanBadge = isProfileLoading || userPlan !== "plus";
-  const planLabel = isProfileLoading ? "Loading" : "Free";
-  const planPanelLabel = isProfileLoading ? "Loading" : "Free plan";
+  const planLabel = isProfileLoading ? "Loading" : userPlan === "plus" ? "Plus" : "Free";
+  const planPanelLabel = isProfileLoading
+    ? "Loading"
+    : userPlan === "plus"
+      ? "Plus plan"
+      : "Free plan";
 
   return (
     <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
@@ -70,11 +73,9 @@ export function SmartCartHeroHeader({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {shouldShowPlanBadge ? (
-                  <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-orange-700">
-                    {planLabel}
-                  </span>
-                ) : null}
+                <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-orange-700">
+                  {planLabel}
+                </span>
                 <span
                   className={`text-sm text-ink/45 transition ${isAccountMenuOpen ? "rotate-180" : ""}`}
                 >
@@ -101,11 +102,9 @@ export function SmartCartHeroHeader({
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      {shouldShowPlanBadge ? (
-                        <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-orange-700">
-                          {planPanelLabel}
-                        </span>
-                      ) : null}
+                      <span className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-orange-700">
+                        {planPanelLabel}
+                      </span>
                       <button
                         className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink/65 transition hover:bg-stone-100"
                         onClick={() => setIsAccountMenuOpen(false)}
