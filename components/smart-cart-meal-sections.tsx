@@ -105,11 +105,11 @@ export function SmartCartMealSections({
 
         <div className="mt-5 rounded-[1.5rem] border border-sky-200 bg-gradient-to-r from-sky-50 to-white px-4 py-4 text-sm text-sky-900 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
-            Save-to-menu flow
+            Cook lineup flow
           </p>
           <p className="mt-2 font-semibold">
-            Tap <strong>Save to Menu</strong> on the meals you want this week. Saved meals move to
-            your <strong>Cook</strong> page and drive your shopping list.
+            Tap <strong>Save to Cook Lineup</strong> on the meals you want this week. Saved meals
+            move to your <strong>Cook</strong> page and drive your shopping list.
           </p>
           {userPlan === "free" ? (
             <p className="mt-2 text-sm leading-6 text-sky-900/80">
@@ -176,8 +176,8 @@ export function SmartCartMealSections({
                       {savedMealKeys.has(`${meal.day}::${meal.name}`)
                         ? "Saved"
                         : weeklyMenuCount >= 5
-                          ? "Menu Full"
-                          : "Save to Menu"}
+                          ? "Lineup Full"
+                          : "Save to Cook Lineup"}
                     </button>
                     <button
                       className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2.5 text-sm font-semibold text-ink transition hover:bg-stone-200"

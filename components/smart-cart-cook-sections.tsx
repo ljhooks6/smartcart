@@ -63,7 +63,8 @@ export function SmartCartCookSections({
             </p>
             <p className="font-display text-2xl text-ink">Your cook-ready lineup</p>
             <p className="mt-1 text-sm leading-6 text-ink/70">
-              Meals you save to menu land here so your recipes are ready when it is time to cook.
+              Meals and sweet treats you save land here so your recipes are ready when it is time
+              to cook.
             </p>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-pine shadow-sm">
@@ -75,7 +76,8 @@ export function SmartCartCookSections({
           <div className="mt-5 rounded-[1.5rem] border border-dashed border-pine/20 bg-white px-4 py-10 text-center text-ink/60">
             <p className="font-display text-2xl text-ink">Nothing saved for cooking yet</p>
             <p className="mt-3 text-sm leading-7">
-              Tap <strong>Save to Menu</strong> on meals or desserts you want to cook this week.
+              Tap <strong>Save to Cook Lineup</strong> on meals or desserts you want to cook this
+              week.
             </p>
           </div>
         ) : null}

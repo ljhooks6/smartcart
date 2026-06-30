@@ -92,8 +92,8 @@ export function SmartCartLibrarySections({
               </p>
               {userPlan === "free" ? (
                 <p className="mt-2 text-sm leading-6 text-ink/70">
-                  Free saves this week&apos;s menu. <strong>MealCaddie Plus</strong> remembers more
-                  across weeks so planning starts with less repeated setup.
+                  Free syncs this week&apos;s Cook lineup. <strong>MealCaddie Plus</strong> remembers
+                  more across weeks so planning starts with less repeated setup.
                 </p>
               ) : null}
             </div>
@@ -263,6 +263,7 @@ export function SmartCartLibrarySections({
         </div>
       ) : null}
 
+      {userPlan === "free" ? (
       <section className="mt-6 overflow-hidden rounded-[2.25rem] border border-orange-200 bg-gradient-to-br from-white via-orange-50/80 to-cream p-6 shadow-xl backdrop-blur xl:p-8">
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
@@ -342,6 +343,7 @@ export function SmartCartLibrarySections({
           )}
         </div>
       </section>
+      ) : null}
     </section>
   );
 }

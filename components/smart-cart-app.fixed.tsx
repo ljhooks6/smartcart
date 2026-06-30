@@ -1781,7 +1781,7 @@ export function SmartCartApp() {
       ? `This will move ${confirmDialog.meal.name} into your Cook lineup for this week and use it to help build your shopping list.`
       : confirmDialog?.kind === "stashToVault"
         ? `This will remove ${confirmDialog.meal.name} from the active plan and stash it in your Recipe Vault so you can bring it back later.`
-        : "This will clear your form and active weekly menu, but your Recipe Vault will remain safe.";
+        : "This will clear your form and active Cook lineup, but your Recipe Vault will remain safe.";
 
   const confirmDialogConfirmLabel =
     confirmDialog?.kind === "permanentDelete"
@@ -1789,7 +1789,7 @@ export function SmartCartApp() {
       : confirmDialog?.kind === "removeFromMenu"
         ? "Cooked It"
       : confirmDialog?.kind === "saveToMenu"
-      ? "Save to Cook"
+      ? "Save to Cook Lineup"
       : confirmDialog?.kind === "stashToVault"
         ? "Stash in Vault"
         : "Reset Workspace";
@@ -1803,7 +1803,7 @@ export function SmartCartApp() {
       : confirmDialog?.kind === "removeFromMenu"
         ? "Don’t show this cooked-meal reminder again."
       : confirmDialog?.kind === "saveToMenu"
-      ? "Don’t show this Save to Menu reminder again."
+      ? "Don’t show this Cook lineup reminder again."
       : confirmDialog?.kind === "stashToVault"
         ? "Don’t show this Vault reminder again."
         : undefined;

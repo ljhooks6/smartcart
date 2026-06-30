@@ -247,9 +247,11 @@ export function SmartCartContextForm({
         <label className="space-y-2">
           <span className="flex items-center gap-2 text-sm font-semibold text-ink">
             Cuisine Vibe
-            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-orange-700">
-              Plus
-            </span>
+            {!isPlusMember ? (
+              <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-orange-700">
+                Plus
+              </span>
+            ) : null}
           </span>
           <select
             className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-ink/45 focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
