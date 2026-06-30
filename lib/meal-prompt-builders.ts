@@ -199,9 +199,14 @@ export function buildGenerateListPrompts({
   const writingAndDessertRules = [
     "- Write a rich, helpful 2-3 sentence description for every dinner meal and every dessert option. Do not use one-sentence descriptions.",
     includeDessert
-      ? "- If includeDessert is true, evaluate the remaining budget after planning the 7 dinners. If there is room, generate up to TWO dessert options for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 7 dinners and dessert options, return an empty \"desserts\" array."
+      ? isPantryOnlyMode
+        ? "- If includeDessert is true in pantry-only mode, generate up to TWO dessert options only if they can be made from the user's available pantry items. Do not add grocery-only dessert ingredients. If the listed pantry cannot support a realistic dessert, return an empty \"desserts\" array."
+        : "- If includeDessert is true, evaluate the remaining budget after planning the 7 dinners. If there is room, generate up to TWO dessert options for the week. Prioritize utilizing the user's pantry baking staples to keep costs low. If the budget is too tight to afford the 7 dinners and dessert options, return an empty \"desserts\" array."
       : "- If includeDessert is false, return an empty \"desserts\" array.",
     "- Every dessert option must include its own localized \"ingredients\" array using the exact same ingredient format as meals.",
+    isPantryOnlyMode
+      ? "- Pantry-only dessert rule: every dessert ingredient must be present in Pantry Items, Fully Stocked Pantry Items, or Running Low Pantry Items. Do not use Restock Pantry Items for dessert."
+      : "- Dessert ingredients may use pantry items and reasonable grocery additions when they fit the budget.",
     "- Generate only sweet, sugary desserts. Do not suggest savory items, biscuits, or bread-based side dishes like cheddar biscuits or spinach biscuits.",
     "- DESSERT VARIETY RULE: If you return two desserts, they must feel clearly different in category and flavor base. Do not return two versions of the same dessert family.",
     "- Use different dessert lanes such as cookies, bars, cobbler, pudding, cheesecake, pie, crisp, icebox dessert, or cake. Avoid repetitive chocolate-only or cinnamon-only duplication unless the pantry forces it.",

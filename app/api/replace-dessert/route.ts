@@ -8,6 +8,7 @@ type ReplaceDessertRequest = {
   diet?: string;
   householdSize?: number;
   combinedPantryItems?: string;
+  mealSourceMode?: "pantry-and-store" | "pantry-only";
 };
 
 const replaceDessertResponseSchema = z.object({
@@ -47,7 +48,9 @@ export async function POST(request: Request) {
     diet,
     householdSize,
     combinedPantryItems,
+    mealSourceMode,
   } = (body as Partial<ReplaceDessertRequest>) ?? {};
+  const isPantryOnlyMode = mealSourceMode === "pantry-only";
 
   if (
     typeof rejectedDessertTitle !== "string" ||
@@ -77,7 +80,11 @@ Rules:
 - Generate exactly ONE dessert.
 - It must feel different from the rejected dessert title.
 - Keep it practical, appealing, and budget-conscious.
-- Prefer pantry-friendly desserts when possible.
+- ${
+    isPantryOnlyMode
+      ? "Pantry-only mode is active. Only use ingredients from the provided pantry items. Do not invent grocery additions or ingredients that require a store trip."
+      : "Prefer pantry-friendly desserts when possible, and add reasonable grocery ingredients only when needed."
+  }
 - The replacement should change dessert category or flavor lane when possible. For example, if the rejected dessert sounds like a cookie, brownie, or bar, try a pie, cobbler, pudding, crisp, cheesecake, or cake instead.
 - Avoid repeating the same dominant flavor word from the rejected dessert title unless the pantry strongly forces it.
 - Include a localized "ingredients" array using this exact shape for each item: { "name": "string", "amount": "string", "price": number }.
@@ -104,6 +111,11 @@ Budget: ${budget}
 Diet: ${diet?.trim() || "No specific diet provided"}
 Household Size: ${typeof householdSize === "number" ? householdSize : "Not provided"}
 Pantry Items: ${combinedPantryItems?.trim() || "None provided"}
+Meal Source Mode: ${
+    isPantryOnlyMode
+      ? "Pantry only - use only available kitchen inventory and do not plan a grocery trip."
+      : "Pantry plus store pickup - pantry-friendly is preferred, but reasonable grocery additions are allowed."
+  }
 
 The new dessert must be clearly different from "${rejectedDessertTitle}".
 `;

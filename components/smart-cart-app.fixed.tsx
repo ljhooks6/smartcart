@@ -1173,7 +1173,10 @@ export function SmartCartApp() {
           budget: Number(formState.budget),
           diet: safeTrim(formState.diet) || "No specific diet provided",
           householdSize: Number(formState.householdSize),
-          combinedPantryItems: combinedPantryItems.join(", "),
+          combinedPantryItems: Array.from(
+            new Set([...combinedPantryItems, ...Array.from(runningLow)]),
+          ).join(", "),
+          mealSourceMode: formState.mealSourceMode,
         }),
       });
 
@@ -1246,8 +1249,45 @@ export function SmartCartApp() {
 
   function performSaveToWeeklyMenu(meal: MealPlanItem) {
     const mealKey = `${meal.day}::${meal.name}`;
+    const sweetTreat = isSweetTreatMeal(meal);
 
     let didSaveMeal = false;
+
+    if (sweetTreat) {
+      setSavedDesserts((current) => {
+        if (current.some((savedDessert) => `${savedDessert.day}::${savedDessert.name}` === mealKey)) {
+          return current;
+        }
+
+        didSaveMeal = true;
+        return [...current, meal];
+      });
+
+      setGeneratedPlan((current) =>
+        current
+          ? {
+              ...current,
+              desserts: current.desserts.filter((dessert) => dessert.title !== meal.name),
+            }
+          : current,
+      );
+      persistGeneratedPlan(
+        generatedPlan
+          ? {
+              ...generatedPlan,
+              desserts: generatedPlan.desserts.filter((dessert) => dessert.title !== meal.name),
+            }
+          : null,
+      );
+
+      if (didSaveMeal) {
+        showToast(
+          `${meal.name} is now in your Cook lineup and will help drive your shopping list.`,
+          "success",
+        );
+      }
+      return;
+    }
 
     setWeeklyMenu((current) => {
       if (current.some((savedMeal) => `${savedMeal.day}::${savedMeal.name}` === mealKey)) {
@@ -1304,6 +1344,14 @@ export function SmartCartApp() {
 
   function performRemoveFromWeeklyMenu(meal: MealPlanItem) {
     const mealKey = `${meal.day}::${meal.name}`;
+
+    if (isSweetTreatMeal(meal)) {
+      setSavedDesserts((current) =>
+        current.filter((savedDessert) => `${savedDessert.day}::${savedDessert.name}` !== mealKey),
+      );
+      showToast(`Nice — ${meal.name} is off this week’s cook lineup.`, "success");
+      return;
+    }
 
     setWeeklyMenu((current) =>
       current.filter((savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey),
@@ -1543,10 +1591,13 @@ export function SmartCartApp() {
       imageUrl: dessert.imageUrl,
     };
 
+    if (!isAlreadySaved) {
+      handleSaveToWeeklyMenu(dessertMeal);
+      return;
+    }
+
     setSavedDesserts((current) =>
-      current.some((savedDessert) => savedDessert.name === dessert.title)
-        ? current.filter((savedDessert) => savedDessert.name !== dessert.title)
-        : [...current, dessertMeal],
+      current.filter((savedDessert) => savedDessert.name !== dessert.title),
     );
 
     setGeneratedPlan((current) => {
@@ -1556,16 +1607,15 @@ export function SmartCartApp() {
 
       const nextPlan = {
         ...current,
-        desserts: isAlreadySaved
-          ? current.desserts.some((currentDessert) => currentDessert.title === dessert.title)
-            ? current.desserts
-            : [...current.desserts, dessert]
-          : current.desserts.filter((currentDessert) => currentDessert.title !== dessert.title),
+        desserts: current.desserts.some((currentDessert) => currentDessert.title === dessert.title)
+          ? current.desserts
+          : [...current.desserts, dessert],
       };
 
       persistGeneratedPlan(nextPlan);
       return nextPlan;
     });
+    showToast(`Nice — ${dessert.title} is off this week’s cook lineup.`, "success");
   }
 
   function handleToggleCardDetails(cardKey: string) {
@@ -2549,7 +2599,6 @@ export function SmartCartApp() {
                 formatCardEyebrow={formatCardEyebrow}
                 onArchiveMeal={handleArchiveMeal}
                 onGetRecipe={handleGetRecipe}
-                onPermanentDelete={handlePermanentDelete}
                 onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
                 onToggleCardDetails={handleToggleCardDetails}
                 onToggleIngredients={handleToggleIngredients}
@@ -2769,7 +2818,6 @@ export function SmartCartApp() {
                 formatCardEyebrow={formatCardEyebrow}
                 onArchiveMeal={handleArchiveMeal}
                 onGetRecipe={handleGetRecipe}
-                onPermanentDelete={handlePermanentDelete}
                 onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
                 onToggleCardDetails={handleToggleCardDetails}
                 onToggleIngredients={handleToggleIngredients}

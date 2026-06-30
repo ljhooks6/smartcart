@@ -26,7 +26,6 @@ type SmartCartCookSectionsProps = {
   formatCardEyebrow: (day: string) => string;
   onArchiveMeal: (meal: MealPlanItem) => void | Promise<void>;
   onGetRecipe: (meal: MealPlanItem) => void | Promise<void>;
-  onPermanentDelete: (meal: MealPlanItem) => void | Promise<void>;
   onRemoveFromWeeklyMenu: (meal: MealPlanItem) => void | Promise<void>;
   onToggleCardDetails: (cardKey: string) => void;
   onToggleIngredients: (meal: MealPlanItem) => void | Promise<void>;
@@ -44,7 +43,6 @@ export function SmartCartCookSections({
   formatCardEyebrow,
   onArchiveMeal,
   onGetRecipe,
-  onPermanentDelete,
   onRemoveFromWeeklyMenu,
   onToggleCardDetails,
   onToggleIngredients,
@@ -263,10 +261,10 @@ export function SmartCartCookSections({
                       </button>
                       <button
                         className="col-span-2 inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"
-                        onClick={() => void onPermanentDelete(meal)}
+                        onClick={() => void onRemoveFromWeeklyMenu(meal)}
                         type="button"
                       >
-                        Remove entirely
+                        Cooked It / Remove
                       </button>
                     </div>
                     {expandedIngredientsMeals.has(mealKey) && (meal.ingredients ?? []).length > 0 ? (
