@@ -80,6 +80,8 @@ const openai = new OpenAI({
 });
 
 const OPENAI_REQUEST_TIMEOUT_MS = 45000;
+const FREE_MEAL_GENERATION_MODEL = "gpt-4.1";
+const PLUS_MEAL_GENERATION_MODEL = "gpt-5.4";
 
 function estimateRestockPrice(itemName: string) {
   const normalized = itemName.trim().toLowerCase();
@@ -482,7 +484,7 @@ export async function POST(request: Request) {
     async function requestMealPlan(retryInstruction?: string) {
       const response = await openai.chat.completions.create(
         {
-          model: "gpt-4.1",
+          model: isPlusGeneration ? PLUS_MEAL_GENERATION_MODEL : FREE_MEAL_GENERATION_MODEL,
           response_format: { type: "json_object" },
           temperature: 0.4,
           messages: [
