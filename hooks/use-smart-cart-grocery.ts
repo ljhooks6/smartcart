@@ -22,11 +22,13 @@ type GroceryListItem = {
   buy_amount?: string;
   estimated_price: number;
   meal_names?: string[];
+  usage_notes?: Array<{ meal: string; usage: string }>;
   needed_amount?: string;
 };
 
 type GroceryIngredientSource = IngredientItem & {
   mealName: string;
+  mealNotes: string;
 };
 
 type CustomItem = {
@@ -106,6 +108,49 @@ function toDisplayName(itemName: string) {
       word.length > 2 ? `${word[0]?.toUpperCase() ?? ""}${word.slice(1)}` : word,
     )
     .join(" ");
+}
+
+function inferIngredientUsage(itemName: string, mealName: string, mealNotes: string) {
+  const ingredient = normalizeIngredientName(itemName);
+  const title = safeTrim(mealName);
+  const notes = safeTrim(mealNotes);
+  const lowerNotes = notes.toLowerCase();
+  const lowerTitle = title.toLowerCase();
+
+  const usageMatch = notes
+    .split(/[.!?]/)
+    .map((sentence) => safeTrim(sentence))
+    .find((sentence) => sentence.toLowerCase().includes(ingredient));
+
+  if (usageMatch) {
+    return usageMatch.length > 120 ? `${usageMatch.slice(0, 117)}...` : usageMatch;
+  }
+
+  if (lowerTitle.includes(ingredient)) {
+    return `Featured in ${title}.`;
+  }
+
+  if (/\bgarlic|onion|ginger|pepper|salt|paprika|cumin|seasoning|spice|herb\b/.test(ingredient)) {
+    return "Used to season or build the flavor base.";
+  }
+
+  if (/\bcheese|sauce|salsa|cream|yogurt|dressing\b/.test(ingredient)) {
+    return "Used as a sauce, topping, or creamy finishing ingredient.";
+  }
+
+  if (/\brice|pasta|tortilla|wrap|bread|bun|potato\b/.test(ingredient)) {
+    return "Used as the base, side, or serving component.";
+  }
+
+  if (/\bchicken|beef|pork|turkey|shrimp|salmon|fish|tofu|beans\b/.test(ingredient)) {
+    return "Used as a main protein in the meal.";
+  }
+
+  if (lowerNotes || lowerTitle) {
+    return "Used in this meal's prep or plating.";
+  }
+
+  return "Used in this selected meal.";
 }
 
 function getGroceryDepartment(itemName: string) {
@@ -609,6 +654,7 @@ function aggregateIngredientItems(ingredients: GroceryIngredientSource[]): Groce
       meal_names: Set<string>;
       name: string;
       needed_amount?: string;
+      usage_notes: Map<string, string>;
     }
   >();
 
@@ -632,6 +678,13 @@ function aggregateIngredientItems(ingredients: GroceryIngredientSource[]): Groce
       if (safeTrim(ingredient.mealName)) {
         nextMealNames.add(safeTrim(ingredient.mealName));
       }
+      const nextUsageNotes = new Map(existing.usage_notes);
+      if (safeTrim(ingredient.mealName)) {
+        nextUsageNotes.set(
+          safeTrim(ingredient.mealName),
+          inferIngredientUsage(ingredient.name, ingredient.mealName, ingredient.mealNotes),
+        );
+      }
 
       grouped.set(aggregateKey, {
         buy_amount: estimatePackageAmount(
@@ -643,8 +696,17 @@ function aggregateIngredientItems(ingredients: GroceryIngredientSource[]): Groce
         meal_names: nextMealNames,
         name: existing.name,
         needed_amount: mergeAmounts(existing.needed_amount, nextAmount),
+        usage_notes: nextUsageNotes,
       });
       return;
+    }
+
+    const usageNotes = new Map<string, string>();
+    if (safeTrim(ingredient.mealName)) {
+      usageNotes.set(
+        safeTrim(ingredient.mealName),
+        inferIngredientUsage(ingredient.name, ingredient.mealName, ingredient.mealNotes),
+      );
     }
 
     grouped.set(aggregateKey, {
@@ -654,6 +716,7 @@ function aggregateIngredientItems(ingredients: GroceryIngredientSource[]): Groce
       meal_names: new Set(safeTrim(ingredient.mealName) ? [safeTrim(ingredient.mealName)] : []),
       name: displayName,
       needed_amount: nextAmount,
+      usage_notes: usageNotes,
     });
   });
 
@@ -665,6 +728,9 @@ function aggregateIngredientItems(ingredients: GroceryIngredientSource[]): Groce
     buy_amount: item.buy_amount,
     estimated_price: estimatePackagePrice(item.name, item.buy_amount),
     meal_names: Array.from(item.meal_names).sort((left, right) => left.localeCompare(right)),
+    usage_notes: Array.from(item.usage_notes.entries())
+      .map(([meal, usage]) => ({ meal, usage }))
+      .sort((left, right) => left.meal.localeCompare(right.meal)),
     needed_amount: item.needed_amount,
   })).sort((left, right) => left.name.localeCompare(right.name));
 }
@@ -746,7 +812,11 @@ export function useSmartCartGrocery({
           restoredItems.includes(restoreKey) ||
           restoredItems.includes(ingName);
         const isOwned = ingredientKeys.some((key) => validPantryKeys.has(key));
-        const sourcedIngredient = { ...ingredient, mealName };
+        const sourcedIngredient = {
+          ...ingredient,
+          mealName,
+          mealNotes: safeTrim((meal as { notes?: string }).notes),
+        };
 
         if (!isOwned || isForced) {
           rawGroceryList.push(sourcedIngredient);
@@ -825,7 +895,7 @@ export function useSmartCartGrocery({
         `${category}\n${items
           .map(
             (item) =>
-              `- ${item.name}${item.needed_amount ? ` | Need: ${item.needed_amount}` : ""}${item.buy_amount ? ` | Buy: ${item.buy_amount}` : ""}${item.meal_names?.length ? ` | For: ${item.meal_names.join(", ")}` : ""} (${formatCurrency(item.estimated_price)})`,
+              `- ${item.name}${item.needed_amount ? ` | Need: ${item.needed_amount}` : ""}${item.buy_amount ? ` | Buy: ${item.buy_amount}` : ""}${item.meal_names?.length ? ` | For: ${item.meal_names.join(", ")}` : ""}${item.usage_notes?.length ? ` | How used: ${item.usage_notes.map((note) => `${note.meal}: ${note.usage}`).join(" ")}` : ""} (${formatCurrency(item.estimated_price)})`,
           )
           .join("\n")}`,
       )

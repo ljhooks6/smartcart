@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type GroceryListItem = {
   category: string;
   buy_amount?: string;
@@ -8,6 +10,7 @@ type GroceryListItem = {
   item_key: string;
   estimated_price: number;
   meal_names?: string[];
+  usage_notes?: Array<{ meal: string; usage: string }>;
   needed_amount?: string;
 };
 
@@ -180,6 +183,20 @@ export function SmartCartGrocerySidebar({
   skippedGroceriesByCategory,
   totalCost,
 }: SmartCartGrocerySidebarProps) {
+  const [expandedUsageItems, setExpandedUsageItems] = useState<Set<string>>(new Set());
+
+  function toggleUsageItem(itemKey: string) {
+    setExpandedUsageItems((current) => {
+      const next = new Set(current);
+      if (next.has(itemKey)) {
+        next.delete(itemKey);
+      } else {
+        next.add(itemKey);
+      }
+      return next;
+    });
+  }
+
   return (
     <div className="lg:col-span-4 sticky top-4">
       <aside className="rounded-[2.25rem] border border-stone-200 bg-[#faf7f1] p-6 shadow-xl">
@@ -219,6 +236,7 @@ export function SmartCartGrocerySidebar({
                       <ul className="mt-4 space-y-3">
                         {items.map((item) => {
                           const isRestock = item.name.includes("(Includes Restock)");
+                          const isUsageExpanded = expandedUsageItems.has(item.item_key);
                           const bellPepperPattern = /bell pepper/i;
                           const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
                           const trimmedName = safeTrim(item.name);
@@ -286,6 +304,29 @@ export function SmartCartGrocerySidebar({
                                       For: {item.meal_names.join(", ")}
                                     </span>
                                   ) : null}
+                                  {item.usage_notes && item.usage_notes.length > 0 ? (
+                                    <>
+                                      <button
+                                        className="mt-1 w-fit text-xs font-semibold text-pine transition hover:text-pine/75"
+                                        onClick={() => toggleUsageItem(item.item_key)}
+                                        type="button"
+                                      >
+                                        {isUsageExpanded ? "Hide how used" : "How used"}
+                                      </button>
+                                      {isUsageExpanded ? (
+                                        <div className="mt-2 rounded-2xl bg-cream px-3 py-2 text-[11px] leading-5 text-ink/65">
+                                          {item.usage_notes.map((usageNote) => (
+                                            <p key={`${item.item_key}-${usageNote.meal}`}>
+                                              <span className="font-semibold text-ink/75">
+                                                {usageNote.meal}:
+                                              </span>{" "}
+                                              {usageNote.usage}
+                                            </p>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </>
+                                  ) : null}
                                   <button
                                     className="mt-1 w-fit text-xs font-semibold text-red-400 transition hover:text-red-500"
                                     onClick={() => onRemoveGroceryItem(item.item_key)}
@@ -351,6 +392,11 @@ export function SmartCartGrocerySidebar({
                               {item.meal_names && item.meal_names.length > 0 ? (
                                 <span className="mt-1 text-[11px] leading-5 text-gray-400">
                                   For: {item.meal_names.join(", ")}
+                                </span>
+                              ) : null}
+                              {item.usage_notes && item.usage_notes.length > 0 ? (
+                                <span className="mt-1 text-[11px] leading-5 text-gray-400">
+                                  How used: {item.usage_notes.map((note) => `${note.meal}: ${note.usage}`).join(" ")}
                                 </span>
                               ) : null}
                             </span>
