@@ -946,6 +946,7 @@ export function SmartCartApp() {
     toggleCheckedItem,
     totalCost,
     removeCustomItem,
+    removeGroceryItem,
     removeRestoredItem,
     restoreSkippedItem,
   } = useSmartCartGrocery({
@@ -2567,6 +2568,7 @@ export function SmartCartApp() {
                 onChangeCustomItem={setNewCustomItem}
                 onCopyShoppingList={handleCopyShoppingList}
                 onRemoveCustomItem={removeCustomItem}
+                onRemoveGroceryItem={removeGroceryItem}
                 onRemoveRestoredItem={removeRestoredItem}
                 onRestoreSkippedItem={restoreSkippedItem}
                 onSetCustomItemChecked={setCustomItemChecked}
@@ -2791,6 +2793,7 @@ export function SmartCartApp() {
                   onChangeCustomItem={setNewCustomItem}
                   onCopyShoppingList={handleCopyShoppingList}
                   onRemoveCustomItem={removeCustomItem}
+                  onRemoveGroceryItem={removeGroceryItem}
                   onRemoveRestoredItem={removeRestoredItem}
                   onRestoreSkippedItem={restoreSkippedItem}
                   onSetCustomItemChecked={setCustomItemChecked}

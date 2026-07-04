@@ -9,16 +9,24 @@ type IngredientItem = {
 };
 
 type MealPlanItem = {
+  day?: string;
   ingredients?: IngredientItem[];
+  name?: string;
 };
 
 type GroceryListItem = {
   category: string;
   flexibility_note?: string;
   name: string;
+  item_key: string;
   buy_amount?: string;
   estimated_price: number;
+  meal_names?: string[];
   needed_amount?: string;
+};
+
+type GroceryIngredientSource = IngredientItem & {
+  mealName: string;
 };
 
 type CustomItem = {
@@ -41,6 +49,109 @@ const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() :
 
 function normalizeIngredientName(itemName: string) {
   return safeTrim(itemName).toLowerCase();
+}
+
+function compactIngredientName(itemName: string) {
+  return normalizeIngredientName(itemName)
+    .replace(/\b(fresh|dried|large|small|medium|whole|chopped|diced|minced|sliced|shredded|grated|optional)\b/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const canonicalIngredientPatterns: Array<[RegExp, string]> = [
+  [/\b(zucchini|courgette)\b/, "zucchini"],
+  [/\bcelery\b/, "celery"],
+  [/\bcarrot\b/, "carrots"],
+  [/\bonion\b/, "onions"],
+  [/\bpotato\b/, "potatoes"],
+  [/\btomato\b/, "tomatoes"],
+  [/\bgreen beans?\b/, "green beans"],
+  [/\bbell pepper\b|\b(red|green|yellow|orange) peppers?\b/, "bell peppers"],
+  [/\bgarlic\b/, "garlic"],
+  [/\bginger\b/, "ginger"],
+  [/\blettuce\b|\bromaine\b/, "lettuce"],
+  [/\bspinach\b/, "spinach"],
+  [/\bbroccoli\b/, "broccoli"],
+  [/\brice\b/, "rice"],
+  [/\bpasta\b|\bspaghetti\b|\bpenne\b|\brigatoni\b|\brotini\b|\bfettuccine\b|\blinguine\b|\bmacaroni\b/, "pasta"],
+  [/\bflour\b/, "flour"],
+  [/\bsugar\b/, "sugar"],
+  [/\bmilk\b/, "milk"],
+  [/\begg\b/, "eggs"],
+  [/\bbutter\b/, "butter"],
+  [/\bcheese\b|\bcheddar\b|\bmozzarella\b|\bparmesan\b/, "cheese"],
+  [/\bchicken\b/, "chicken"],
+  [/\bbeef\b|\bsteak\b/, "beef"],
+  [/\bpork\b|\bsausage\b|\bbacon\b/, "pork"],
+  [/\bturkey\b/, "turkey"],
+  [/\bshrimp\b/, "shrimp"],
+  [/\bsalmon\b/, "salmon"],
+  [/\btilapia\b|\bfish\b/, "fish"],
+  [/\btofu\b/, "tofu"],
+  [/\bbeans?\b|\bblack beans\b|\bpinto beans\b|\bchickpeas?\b/, "beans"],
+  [/\btortilla\b|\bwrap\b/, "tortillas or wraps"],
+];
+
+function getCanonicalIngredientName(itemName: string) {
+  const compactName = compactIngredientName(itemName);
+  const matchedPattern = canonicalIngredientPatterns.find(([pattern]) => pattern.test(compactName));
+  return matchedPattern?.[1] ?? compactName;
+}
+
+function toDisplayName(itemName: string) {
+  return safeTrim(itemName)
+    .split(" ")
+    .map((word) =>
+      word.length > 2 ? `${word[0]?.toUpperCase() ?? ""}${word.slice(1)}` : word,
+    )
+    .join(" ");
+}
+
+function getGroceryDepartment(itemName: string) {
+  const normalizedName = normalizeIngredientName(itemName);
+
+  if (normalizedName.includes("[restock]")) {
+    return "Restock";
+  }
+
+  if (
+    /\b(zucchini|celery|carrot|onion|potato|tomato|bell pepper|red pepper|green pepper|yellow pepper|orange pepper|garlic|ginger|lettuce|spinach|broccoli|kale|cucumber|avocado|apple|banana|lemon|lime|cilantro|parsley|basil|green bean|corn|mushroom)\b/.test(
+      normalizedName,
+    )
+  ) {
+    return "Produce";
+  }
+
+  if (/\b(chicken|beef|steak|pork|sausage|bacon|turkey|shrimp|salmon|tilapia|fish|seafood)\b/.test(normalizedName)) {
+    return "Meat & Seafood";
+  }
+
+  if (/\b(milk|cream|cheese|egg|butter|yogurt|sour cream|cream cheese|half-and-half)\b/.test(normalizedName)) {
+    return "Dairy & Eggs";
+  }
+
+  if (/\b(bread|bun|roll|tortilla|wrap|pita|naan)\b/.test(normalizedName)) {
+    return "Bakery & Bread";
+  }
+
+  if (/\b(oil|vinegar|sauce|mustard|ketchup|mayo|dressing|salsa|honey|syrup|soy sauce|worcestershire|hot sauce)\b/.test(normalizedName)) {
+    return "Condiments & Sauces";
+  }
+
+  if (/\b(salt|pepper|paprika|cumin|chili powder|seasoning|spice|oregano|thyme|cinnamon|nutmeg|garlic powder|onion powder)\b/.test(normalizedName)) {
+    return "Spices & Seasonings";
+  }
+
+  if (/\b(rice|pasta|flour|sugar|beans|chickpea|tomatoes|broth|stock|oats|quinoa|cereal|cornmeal|breadcrumbs)\b/.test(normalizedName)) {
+    return "Pantry & Dry Goods";
+  }
+
+  if (/\b(frozen|ice cream)\b/.test(normalizedName)) {
+    return "Frozen";
+  }
+
+  return "Other";
 }
 
 function getAmountParts(amount: string) {
@@ -452,6 +563,7 @@ function getIngredientMatchKeys(itemName: string) {
   const keys = new Set<string>();
   const normalizedName = normalizeIngredientName(itemName);
   const normalizedDisplayName = normalizeIngredientName(stapleMeta.name);
+  const canonicalName = getCanonicalIngredientName(itemName);
 
   if (normalizedName) {
     keys.add(normalizedName);
@@ -468,58 +580,129 @@ function getIngredientMatchKeys(itemName: string) {
     keys.add(singularize(normalizedDisplayName));
   }
 
+  if (canonicalName) {
+    keys.add(canonicalName);
+    keys.add(singularize(canonicalName));
+  }
+
   return Array.from(keys).filter(Boolean);
 }
 
-function aggregateIngredientItems(ingredients: IngredientItem[]): GroceryListItem[] {
+function getAggregateKey(itemName: string) {
+  const stapleMeta = getFlexibleStapleMeta(itemName);
+  const canonicalName = getCanonicalIngredientName(itemName);
+
+  if (stapleMeta.key !== normalizeIngredientName(itemName)) {
+    return stapleMeta.key;
+  }
+
+  return canonicalName || stapleMeta.key;
+}
+
+function aggregateIngredientItems(ingredients: GroceryIngredientSource[]): GroceryListItem[] {
   const grouped = new Map<
     string,
-    { buy_amount?: string; flexibility_note?: string; name: string; needed_amount?: string }
+    {
+      buy_amount?: string;
+      category: string;
+      flexibility_note?: string;
+      meal_names: Set<string>;
+      name: string;
+      needed_amount?: string;
+    }
   >();
 
   ingredients.forEach((ingredient) => {
     const stapleMeta = getFlexibleStapleMeta(ingredient.name);
+    const aggregateKey = getAggregateKey(ingredient.name);
 
-    if (!stapleMeta.key) {
+    if (!aggregateKey) {
       return;
     }
 
-    const existing = grouped.get(stapleMeta.key);
+    const existing = grouped.get(aggregateKey);
     const nextAmount = safeTrim(ingredient.amount);
+    const displayName =
+      stapleMeta.key === normalizeIngredientName(ingredient.name)
+        ? toDisplayName(getCanonicalIngredientName(ingredient.name) || stapleMeta.name)
+        : stapleMeta.name;
 
     if (existing) {
-      grouped.set(stapleMeta.key, {
+      const nextMealNames = new Set(existing.meal_names);
+      if (safeTrim(ingredient.mealName)) {
+        nextMealNames.add(safeTrim(ingredient.mealName));
+      }
+
+      grouped.set(aggregateKey, {
         buy_amount: estimatePackageAmount(
           existing.name,
           mergeAmounts(existing.needed_amount, nextAmount),
         ),
+        category: existing.category,
         flexibility_note: existing.flexibility_note ?? stapleMeta.flexibilityNote,
+        meal_names: nextMealNames,
         name: existing.name,
         needed_amount: mergeAmounts(existing.needed_amount, nextAmount),
       });
       return;
     }
 
-    grouped.set(stapleMeta.key, {
-      buy_amount: estimatePackageAmount(stapleMeta.name, nextAmount),
+    grouped.set(aggregateKey, {
+      buy_amount: estimatePackageAmount(displayName, nextAmount),
+      category: getGroceryDepartment(displayName),
       flexibility_note: stapleMeta.flexibilityNote,
-      name: stapleMeta.name,
+      meal_names: new Set(safeTrim(ingredient.mealName) ? [safeTrim(ingredient.mealName)] : []),
+      name: displayName,
       needed_amount: nextAmount,
     });
   });
 
-  return Array.from(grouped.values()).map((item) => ({
-    category: "Meal Ingredients",
+  return Array.from(grouped.entries()).map(([itemKey, item]) => ({
+    category: item.category,
     flexibility_note: item.flexibility_note,
     name: item.name,
+    item_key: itemKey,
     buy_amount: item.buy_amount,
     estimated_price: estimatePackagePrice(item.name, item.buy_amount),
+    meal_names: Array.from(item.meal_names).sort((left, right) => left.localeCompare(right)),
     needed_amount: item.needed_amount,
   })).sort((left, right) => left.name.localeCompare(right.name));
 }
 
 function estimateRestockPrice(itemName: string) {
   return estimatePackagePrice(itemName, estimatePackageAmount(itemName));
+}
+
+const GROCERY_DEPARTMENT_ORDER = [
+  "Produce",
+  "Meat & Seafood",
+  "Dairy & Eggs",
+  "Bakery & Bread",
+  "Pantry & Dry Goods",
+  "Condiments & Sauces",
+  "Spices & Seasonings",
+  "Frozen",
+  "Beverages",
+  "Restock",
+  "Other",
+];
+
+function getDepartmentOrder(category: string) {
+  const index = GROCERY_DEPARTMENT_ORDER.indexOf(category);
+  return index === -1 ? GROCERY_DEPARTMENT_ORDER.length : index;
+}
+
+function sortGroceryGroups(groups: Record<string, GroceryListItem[]>) {
+  return Object.entries(groups)
+    .map(([category, items]) => [
+      category,
+      [...items].sort((left, right) => left.name.localeCompare(right.name)),
+    ] as [string, GroceryListItem[]])
+    .sort(
+      ([leftCategory], [rightCategory]) =>
+        getDepartmentOrder(leftCategory) - getDepartmentOrder(rightCategory) ||
+        leftCategory.localeCompare(rightCategory),
+    );
 }
 
 export function useSmartCartGrocery({
@@ -535,6 +718,7 @@ export function useSmartCartGrocery({
   const [copied, setCopied] = useState(false);
   const [isGroceryOpen, setIsGroceryOpen] = useState(false);
   const [restoredItems, setRestoredItems] = useState<string[]>([]);
+  const [removedGroceryItems, setRemovedGroceryItems] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [newCustomItem, setNewCustomItem] = useState("");
 
@@ -548,28 +732,33 @@ export function useSmartCartGrocery({
     );
 
     const allMeals = [...weeklyMenu, ...savedDesserts];
-    const rawGroceryList: IngredientItem[] = [];
-    const rawSkippedList: IngredientItem[] = [];
+    const rawGroceryList: GroceryIngredientSource[] = [];
+    const rawSkippedList: GroceryIngredientSource[] = [];
 
     allMeals.forEach((meal) => {
+      const mealName = safeTrim(meal.name) || "Selected meal";
+
       (meal.ingredients ?? []).forEach((ingredient) => {
         const ingredientKeys = getIngredientMatchKeys(ingredient.name);
-        const restoreKey = getFlexibleStapleMeta(ingredient.name).key;
+        const restoreKey = getAggregateKey(ingredient.name);
         const ingName = normalizeIngredientName(ingredient.name);
         const isForced =
           restoredItems.includes(restoreKey) ||
           restoredItems.includes(ingName);
         const isOwned = ingredientKeys.some((key) => validPantryKeys.has(key));
+        const sourcedIngredient = { ...ingredient, mealName };
 
         if (!isOwned || isForced) {
-          rawGroceryList.push(ingredient);
+          rawGroceryList.push(sourcedIngredient);
         } else {
-          rawSkippedList.push(ingredient);
+          rawSkippedList.push(sourcedIngredient);
         }
       });
     });
 
-    const directGroceryList = aggregateIngredientItems(rawGroceryList);
+    const directGroceryList = aggregateIngredientItems(rawGroceryList).filter(
+      (item) => !removedGroceryItems.includes(item.item_key),
+    );
     const directSkippedList = aggregateIngredientItems(rawSkippedList);
 
     const restockItems: GroceryListItem[] = Array.from(restock)
@@ -577,16 +766,26 @@ export function useSmartCartGrocery({
         category: "Restock",
         buy_amount: estimatePackageAmount(restockItem),
         name: safeTrim(restockItem),
+        item_key: `restock-${normalizeIngredientName(restockItem)}`,
         needed_amount: "Restock pantry",
         estimated_price: Math.max(1, estimateRestockPrice(restockItem)),
       }))
+      .filter((item) => !removedGroceryItems.includes(item.item_key))
       .sort((left, right) => left.name.localeCompare(right.name));
 
     return {
       derivedGroceryList: [...directGroceryList, ...restockItems],
       skippedGroceryList: directSkippedList,
     };
-  }, [fullyStocked, restock, restoredItems, runningLow, savedDesserts, weeklyMenu]);
+  }, [
+    fullyStocked,
+    removedGroceryItems,
+    restock,
+    restoredItems,
+    runningLow,
+    savedDesserts,
+    weeklyMenu,
+  ]);
 
   const displayGroceriesByCategory = useMemo(() => {
     const grouped = derivedGroceryList.reduce<Record<string, GroceryListItem[]>>(
@@ -601,7 +800,7 @@ export function useSmartCartGrocery({
       {},
     );
 
-    return Object.entries(grouped);
+    return sortGroceryGroups(grouped);
   }, [derivedGroceryList]);
 
   const skippedGroceriesByCategory = useMemo(() => {
@@ -617,7 +816,7 @@ export function useSmartCartGrocery({
       {},
     );
 
-    return Object.entries(grouped);
+    return sortGroceryGroups(grouped);
   }, [skippedGroceryList]);
 
   const shoppingListText = useMemo(() => {
@@ -626,7 +825,7 @@ export function useSmartCartGrocery({
         `${category}\n${items
           .map(
             (item) =>
-              `- ${item.name}${item.needed_amount ? ` | Need: ${item.needed_amount}` : ""}${item.buy_amount ? ` | Buy: ${item.buy_amount}` : ""} (${formatCurrency(item.estimated_price)})`,
+              `- ${item.name}${item.needed_amount ? ` | Need: ${item.needed_amount}` : ""}${item.buy_amount ? ` | Buy: ${item.buy_amount}` : ""}${item.meal_names?.length ? ` | For: ${item.meal_names.join(", ")}` : ""} (${formatCurrency(item.estimated_price)})`,
           )
           .join("\n")}`,
       )
@@ -690,6 +889,7 @@ export function useSmartCartGrocery({
     setCopied(false);
     setIsGroceryOpen(false);
     setRestoredItems([]);
+    setRemovedGroceryItems([]);
     setCustomItems([]);
     setNewCustomItem("");
   }
@@ -716,15 +916,19 @@ export function useSmartCartGrocery({
     totalCost,
     removeCustomItem: (id: string) =>
       setCustomItems((current) => current.filter((item) => item.id !== id)),
+    removeGroceryItem: (itemKey: string) =>
+      setRemovedGroceryItems((current) =>
+        current.includes(itemKey) ? current : [...current, itemKey],
+      ),
     removeRestoredItem: (name: string) =>
       setRestoredItems((current) =>
         current.filter(
-          (currentName) => currentName !== getFlexibleStapleMeta(name).key,
+          (currentName) => currentName !== getAggregateKey(name),
         ),
       ),
     restoreSkippedItem: (name: string) =>
       setRestoredItems((current) => {
-        const normalizedName = getFlexibleStapleMeta(name).key;
+        const normalizedName = getAggregateKey(name);
         return current.includes(normalizedName) ? current : [...current, normalizedName];
       }),
   };

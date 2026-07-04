@@ -5,7 +5,9 @@ type GroceryListItem = {
   buy_amount?: string;
   flexibility_note?: string;
   name: string;
+  item_key: string;
   estimated_price: number;
+  meal_names?: string[];
   needed_amount?: string;
 };
 
@@ -31,6 +33,7 @@ type SmartCartGrocerySidebarProps = {
   onChangeCustomItem: (value: string) => void;
   onCopyShoppingList: () => void;
   onRemoveCustomItem: (id: string) => void;
+  onRemoveGroceryItem: (itemKey: string) => void;
   onRemoveRestoredItem: (name: string) => void;
   onRestoreSkippedItem: (name: string) => void;
   onSetCustomItemChecked: (id: string, isChecked: boolean) => void;
@@ -165,6 +168,7 @@ export function SmartCartGrocerySidebar({
   onChangeCustomItem,
   onCopyShoppingList,
   onRemoveCustomItem,
+  onRemoveGroceryItem,
   onRemoveRestoredItem,
   onRestoreSkippedItem,
   onSetCustomItemChecked,
@@ -219,6 +223,8 @@ export function SmartCartGrocerySidebar({
                           const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
                           const trimmedName = safeTrim(item.name);
                           const isRestoredItem = restoredItems.includes(
+                            item.item_key,
+                          ) || restoredItems.includes(
                             normalizeRestoreKey(trimmedName),
                           );
                           const displayName =
@@ -229,20 +235,20 @@ export function SmartCartGrocerySidebar({
 
                           return (
                             <li
-                              key={`${category}-${item.name}`}
+                              key={`${category}-${item.item_key}`}
                               className="flex items-start justify-between gap-4"
                             >
                               <label className="flex items-start gap-3">
                                 <input
-                                  checked={checkedItems.has(`${category}-${item.name}`)}
+                                  checked={checkedItems.has(item.item_key)}
                                   className="mt-0.5 h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-                                  onChange={() => onToggleCheckedItem(`${category}-${item.name}`)}
+                                  onChange={() => onToggleCheckedItem(item.item_key)}
                                   type="checkbox"
                                 />
                                 <span className="flex flex-col">
                                   <span
                                     className={`flex items-center gap-2 text-sm font-medium text-ink ${
-                                    checkedItems.has(`${category}-${item.name}`)
+                                    checkedItems.has(item.item_key)
                                         ? "line-through opacity-60"
                                         : ""
                                     }`}
@@ -275,6 +281,18 @@ export function SmartCartGrocerySidebar({
                                       {item.flexibility_note}
                                     </span>
                                   ) : null}
+                                  {item.meal_names && item.meal_names.length > 0 ? (
+                                    <span className="mt-1 text-[11px] leading-5 text-pine/60">
+                                      For: {item.meal_names.join(", ")}
+                                    </span>
+                                  ) : null}
+                                  <button
+                                    className="mt-1 w-fit text-xs font-semibold text-red-400 transition hover:text-red-500"
+                                    onClick={() => onRemoveGroceryItem(item.item_key)}
+                                    type="button"
+                                  >
+                                    Remove from list
+                                  </button>
                                 </span>
                               </label>
                               <span className="flex shrink-0 flex-col items-end text-right">
@@ -313,7 +331,7 @@ export function SmartCartGrocerySidebar({
                       <ul className="mt-3 space-y-3">
                         {items.map((item) => (
                           <li
-                            key={`skipped-${category}-${item.name}`}
+                            key={`skipped-${category}-${item.item_key}`}
                             className="flex items-start justify-between gap-4 text-gray-400"
                           >
                             <span className="flex flex-col text-sm">
@@ -328,6 +346,11 @@ export function SmartCartGrocerySidebar({
                               {item.flexibility_note ? (
                                 <span className="mt-1 text-[11px] leading-5 text-gray-400">
                                   {item.flexibility_note}
+                                </span>
+                              ) : null}
+                              {item.meal_names && item.meal_names.length > 0 ? (
+                                <span className="mt-1 text-[11px] leading-5 text-gray-400">
+                                  For: {item.meal_names.join(", ")}
                                 </span>
                               ) : null}
                             </span>
