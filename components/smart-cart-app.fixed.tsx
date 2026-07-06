@@ -650,7 +650,7 @@ export function SmartCartApp() {
 
     const timeoutId = window.setTimeout(
       () => setShowLaunchAnimation(false),
-      prefersReducedMotion ? 900 : 2100,
+      prefersReducedMotion ? 900 : 4000,
     );
 
     return () => window.clearTimeout(timeoutId);

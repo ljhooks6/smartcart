@@ -44,7 +44,7 @@ body::before {
 }
 
 .launch-cart-scene {
-  animation: launch-scene-out 2.1s ease forwards;
+  animation: launch-scene-out 4s ease forwards;
 }
 
 .launch-cart-badge {
