@@ -65,7 +65,7 @@ const canonicalIngredientPatterns: Array<[RegExp, string]> = [
   [/\b(zucchini|courgette)\b/, "zucchini"],
   [/\bcelery\b/, "celery"],
   [/\bcarrot\b/, "carrots"],
-  [/\bonion\b/, "onions"],
+  [/\bonions?\b/, "onions"],
   [/\bpotato\b/, "potatoes"],
   [/\btomato\b/, "tomatoes"],
   [/\bgreen beans?\b/, "green beans"],
@@ -161,7 +161,7 @@ function getGroceryDepartment(itemName: string) {
   }
 
   if (
-    /\b(zucchini|celery|carrot|onion|potato|tomato|bell pepper|red pepper|green pepper|yellow pepper|orange pepper|garlic|ginger|lettuce|spinach|broccoli|kale|cucumber|avocado|apple|banana|lemon|lime|cilantro|parsley|basil|green bean|corn|mushroom)\b/.test(
+    /\b(zucchini|celery|carrots?|onions?|potatoes?|tomatoes?|bell peppers?|red peppers?|green peppers?|yellow peppers?|orange peppers?|garlic|ginger|lettuce|spinach|broccoli|kale|cucumber|avocado|apple|banana|lemon|lime|cilantro|parsley|basil|green beans?|corn|mushroom)\b/.test(
       normalizedName,
     )
   ) {
@@ -499,14 +499,7 @@ function getFlexibleStapleMeta(itemName: string) {
     };
   }
 
-  if (
-    normalizedName === "yellow onion" ||
-    normalizedName === "white onion" ||
-    normalizedName === "red onion" ||
-    normalizedName === "sweet onion" ||
-    normalizedName === "onion" ||
-    normalizedName === "onions"
-  ) {
+  if (/^(yellow|white|red|sweet)?\s*onions?$/.test(normalizedName)) {
     return {
       flexibilityNote: "A small bag of onions will usually cover these meals.",
       key: "flexible-onions",
@@ -829,7 +822,10 @@ export function useSmartCartGrocery({
     const directGroceryList = aggregateIngredientItems(rawGroceryList).filter(
       (item) => !removedGroceryItems.includes(item.item_key),
     );
-    const directSkippedList = aggregateIngredientItems(rawSkippedList);
+    const activeGroceryKeys = new Set(directGroceryList.map((item) => item.item_key));
+    const directSkippedList = aggregateIngredientItems(rawSkippedList).filter(
+      (item) => !activeGroceryKeys.has(item.item_key),
+    );
 
     const restockItems: GroceryListItem[] = Array.from(restock)
       .map((restockItem) => ({

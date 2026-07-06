@@ -51,6 +51,14 @@ type SmartCartGrocerySidebarProps = {
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
+function formatMealCount(item: GroceryListItem) {
+  const count = item.meal_names?.length ?? 0;
+  if (count <= 0) {
+    return "";
+  }
+  return count === 1 ? "Used in 1 meal" : `Used in ${count} meals`;
+}
+
 function normalizeRestoreKey(name: string) {
   const trimmed = safeTrim(name).toLowerCase();
 
@@ -299,30 +307,34 @@ export function SmartCartGrocerySidebar({
                                       {item.flexibility_note}
                                     </span>
                                   ) : null}
-                                  {item.meal_names && item.meal_names.length > 0 ? (
-                                    <span className="mt-1 text-[11px] leading-5 text-pine/60">
-                                      For: {item.meal_names.join(", ")}
-                                    </span>
-                                  ) : null}
-                                  {item.usage_notes && item.usage_notes.length > 0 ? (
+                                  {(item.meal_names?.length || item.usage_notes?.length) ? (
                                     <>
                                       <button
                                         className="mt-1 w-fit text-xs font-semibold text-pine transition hover:text-pine/75"
                                         onClick={() => toggleUsageItem(item.item_key)}
                                         type="button"
                                       >
-                                        {isUsageExpanded ? "Hide how used" : "How used"}
+                                        {isUsageExpanded
+                                          ? "Hide details"
+                                          : `Details${formatMealCount(item) ? ` (${formatMealCount(item)})` : ""}`}
                                       </button>
                                       {isUsageExpanded ? (
                                         <div className="mt-2 rounded-2xl bg-cream px-3 py-2 text-[11px] leading-5 text-ink/65">
-                                          {item.usage_notes.map((usageNote) => (
-                                            <p key={`${item.item_key}-${usageNote.meal}`}>
-                                              <span className="font-semibold text-ink/75">
-                                                {usageNote.meal}:
-                                              </span>{" "}
-                                              {usageNote.usage}
+                                          {item.meal_names && item.meal_names.length > 0 ? (
+                                            <p className="font-semibold text-ink/70">
+                                              For: {item.meal_names.join(", ")}
                                             </p>
-                                          ))}
+                                          ) : null}
+                                          {item.usage_notes && item.usage_notes.length > 0 ? (
+                                            item.usage_notes.map((usageNote) => (
+                                              <p key={`${item.item_key}-${usageNote.meal}`}>
+                                                <span className="font-semibold text-ink/75">
+                                                  {usageNote.meal}:
+                                                </span>{" "}
+                                                {usageNote.usage}
+                                              </p>
+                                            ))
+                                          ) : null}
                                         </div>
                                       ) : null}
                                     </>
@@ -389,15 +401,35 @@ export function SmartCartGrocerySidebar({
                                   {item.flexibility_note}
                                 </span>
                               ) : null}
-                              {item.meal_names && item.meal_names.length > 0 ? (
-                                <span className="mt-1 text-[11px] leading-5 text-gray-400">
-                                  For: {item.meal_names.join(", ")}
-                                </span>
+                              {(item.meal_names?.length || item.usage_notes?.length) ? (
+                                <button
+                                  className="mt-1 w-fit text-xs font-semibold text-gray-500 transition hover:text-gray-600"
+                                  onClick={() => toggleUsageItem(`skipped-${item.item_key}`)}
+                                  type="button"
+                                >
+                                  {expandedUsageItems.has(`skipped-${item.item_key}`)
+                                    ? "Hide details"
+                                    : `Details${formatMealCount(item) ? ` (${formatMealCount(item)})` : ""}`}
+                                </button>
                               ) : null}
-                              {item.usage_notes && item.usage_notes.length > 0 ? (
-                                <span className="mt-1 text-[11px] leading-5 text-gray-400">
-                                  How used: {item.usage_notes.map((note) => `${note.meal}: ${note.usage}`).join(" ")}
-                                </span>
+                              {expandedUsageItems.has(`skipped-${item.item_key}`) ? (
+                                <div className="mt-2 rounded-2xl bg-white/70 px-3 py-2 text-[11px] leading-5 text-gray-500">
+                                  {item.meal_names && item.meal_names.length > 0 ? (
+                                    <p className="font-semibold text-gray-600">
+                                      For: {item.meal_names.join(", ")}
+                                    </p>
+                                  ) : null}
+                                  {item.usage_notes && item.usage_notes.length > 0 ? (
+                                    item.usage_notes.map((note) => (
+                                      <p key={`skipped-${item.item_key}-${note.meal}`}>
+                                        <span className="font-semibold text-gray-600">
+                                          {note.meal}:
+                                        </span>{" "}
+                                        {note.usage}
+                                      </p>
+                                    ))
+                                  ) : null}
+                                </div>
                               ) : null}
                             </span>
                             <button
