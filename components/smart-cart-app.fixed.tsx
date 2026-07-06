@@ -580,6 +580,7 @@ export function SmartCartApp() {
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [hasResolvedAuthSession, setHasResolvedAuthSession] = useState(false);
+  const [showLaunchAnimation, setShowLaunchAnimation] = useState(false);
   const [email, setEmail] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -633,6 +634,26 @@ export function SmartCartApp() {
   const showToast = useCallback((message: string, tone: ToastTone = "info") => {
     setToastMessage(message);
     setToastTone(tone);
+  }, []);
+
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
+
+    if (!isStandalone) {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setShowLaunchAnimation(true);
+
+    const timeoutId = window.setTimeout(
+      () => setShowLaunchAnimation(false),
+      prefersReducedMotion ? 900 : 2100,
+    );
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const persistGeneratedPlan = useCallback((plan: GenerateListResponse | null) => {
@@ -2316,6 +2337,61 @@ export function SmartCartApp() {
 
   return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-[12.5rem] pt-4 md:pb-12 md:pt-8">
+        {showLaunchAnimation ? (
+          <div
+            aria-label="MealCaddie is opening"
+            className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-[#f8f0df]"
+            role="status"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_25%,rgba(248,180,109,0.34),transparent_30%),radial-gradient(circle_at_68%_72%,rgba(79,112,84,0.24),transparent_32%)]" />
+            <div className="launch-cart-scene relative flex flex-col items-center px-6 text-center">
+              <div className="launch-cart-badge mb-5 rounded-full border border-white/80 bg-white/70 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-pine shadow-lg backdrop-blur">
+                MealCaddie
+              </div>
+              <div className="launch-cart-track relative h-28 w-72 max-w-[80vw]">
+                <div className="launch-cart-shadow absolute bottom-2 left-1/2 h-4 w-40 -translate-x-1/2 rounded-full bg-ink/10 blur-sm" />
+                <svg
+                  aria-hidden="true"
+                  className="launch-cart-icon absolute bottom-2 left-1/2 h-24 w-24 -translate-x-1/2 text-pine"
+                  fill="none"
+                  viewBox="0 0 120 120"
+                >
+                  <path
+                    d="M25 28h10l10 45h43l9-31H43"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="7"
+                  />
+                  <path
+                    d="M48 42c4-13 20-13 24 0"
+                    stroke="#f39a63"
+                    strokeLinecap="round"
+                    strokeWidth="7"
+                  />
+                  <path
+                    d="M56 42c-4-9 1-18 10-21 4 8 2 17-6 22"
+                    fill="#8faa73"
+                  />
+                  <circle cx="52" cy="88" fill="#1b120d" r="7" />
+                  <circle cx="84" cy="88" fill="#1b120d" r="7" />
+                  <path
+                    d="M47 56h42"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="5"
+                  />
+                </svg>
+              </div>
+              <p className="launch-cart-title mt-6 font-display text-4xl text-ink">
+                Carry less of the week.
+              </p>
+              <p className="launch-cart-copy mt-3 max-w-sm text-sm leading-6 text-ink/65">
+                Pantry checked. Cart warmed up. Your calmer meal plan is ready.
+              </p>
+            </div>
+          </div>
+        ) : null}
         {isLoading ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-6">
             <div className="w-full max-w-md rounded-[2rem] border border-stone-200 bg-white px-6 py-7 text-center shadow-2xl">

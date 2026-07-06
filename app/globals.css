@@ -42,3 +42,105 @@ body::before {
 .text-balance {
   text-wrap: balance;
 }
+
+.launch-cart-scene {
+  animation: launch-scene-out 2.1s ease forwards;
+}
+
+.launch-cart-badge {
+  animation: launch-pop 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+
+.launch-cart-icon {
+  animation: launch-cart-roll 1.35s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  transform-origin: center bottom;
+}
+
+.launch-cart-shadow {
+  animation: launch-shadow 1.35s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.launch-cart-title {
+  animation: launch-pop 0.55s 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+
+.launch-cart-copy {
+  animation: launch-fade-up 0.55s 0.75s ease both;
+}
+
+@keyframes launch-cart-roll {
+  0% {
+    opacity: 0;
+    transform: translateX(-170%) translateY(10px) rotate(-12deg) scale(0.9);
+  }
+  45% {
+    opacity: 1;
+    transform: translateX(-45%) translateY(-4px) rotate(5deg) scale(1.06);
+  }
+  70% {
+    transform: translateX(-50%) translateY(0) rotate(-2deg) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes launch-shadow {
+  0% {
+    opacity: 0;
+    transform: translateX(-65%) scaleX(0.35);
+  }
+  45% {
+    opacity: 0.8;
+    transform: translateX(-50%) scaleX(1.1);
+  }
+  100% {
+    opacity: 0.65;
+    transform: translateX(-50%) scaleX(1);
+  }
+}
+
+@keyframes launch-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes launch-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes launch-scene-out {
+  0%,
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-cart-scene,
+  .launch-cart-badge,
+  .launch-cart-icon,
+  .launch-cart-shadow,
+  .launch-cart-title,
+  .launch-cart-copy {
+    animation-duration: 0.01ms;
+    animation-delay: 0ms;
+  }
+}
