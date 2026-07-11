@@ -110,6 +110,84 @@ function toDisplayName(itemName: string) {
     .join(" ");
 }
 
+function getSpecificShoppingName(itemName: string, fallbackName: string) {
+  const compactName = compactIngredientName(itemName);
+
+  const specificStaples: Array<[RegExp, string]> = [
+    [/\belbow macaroni\b|\bmacaroni\b/, "Macaroni"],
+    [/\bspaghetti\b/, "Spaghetti"],
+    [/\bpenne\b/, "Penne"],
+    [/\brigatoni\b/, "Rigatoni"],
+    [/\brotini\b/, "Rotini"],
+    [/\bfettuccine\b/, "Fettuccine"],
+    [/\blinguine\b/, "Linguine"],
+    [/\bfarfalle\b|\bbow tie pasta\b/, "Farfalle"],
+    [/\bangel hair\b/, "Angel hair pasta"],
+    [/\blasagna noodles?\b/, "Lasagna noodles"],
+    [/\bjasmine rice\b/, "Jasmine rice"],
+    [/\bbasmati rice\b/, "Basmati rice"],
+    [/\bbrown rice\b/, "Brown rice"],
+    [/\bwhite rice\b/, "White rice"],
+    [/\byellow onions?\b/, "Yellow onions"],
+    [/\bred onions?\b/, "Red onions"],
+    [/\bwhite onions?\b/, "White onions"],
+    [/\bsweet onions?\b/, "Sweet onions"],
+    [/\brusset potatoes?\b/, "Russet potatoes"],
+    [/\byukon gold potatoes?\b/, "Yukon gold potatoes"],
+    [/\bred potatoes?\b/, "Red potatoes"],
+    [/\bflour tortillas?\b/, "Flour tortillas"],
+    [/\bcorn tortillas?\b/, "Corn tortillas"],
+  ];
+
+  const match = specificStaples.find(([pattern]) => pattern.test(compactName));
+  return match?.[1] ?? fallbackName;
+}
+
+function chooseMoreSpecificShoppingName(currentName: string, nextName: string) {
+  const current = safeTrim(currentName);
+  const next = safeTrim(nextName);
+
+  if (!current) {
+    return next;
+  }
+
+  if (!next) {
+    return current;
+  }
+
+  if (current.toLowerCase() === next.toLowerCase()) {
+    return current;
+  }
+
+  const genericStaples = new Set([
+    "pasta",
+    "rice",
+    "milk",
+    "potatoes",
+    "onions",
+    "tortillas or wraps",
+    "chicken broth or stock",
+    "vegetable broth or stock",
+    "beef broth or stock",
+    "canned tomatoes",
+    "shredded cheese",
+    "grated hard cheese",
+  ]);
+
+  const currentIsGeneric = genericStaples.has(current.toLowerCase());
+  const nextIsGeneric = genericStaples.has(next.toLowerCase());
+
+  if (currentIsGeneric && !nextIsGeneric) {
+    return next;
+  }
+
+  if (!currentIsGeneric && nextIsGeneric) {
+    return current;
+  }
+
+  return next.length > current.length ? next : current;
+}
+
 function inferIngredientUsage(itemName: string, mealName: string, mealNotes: string) {
   const ingredient = normalizeIngredientName(itemName);
   const title = safeTrim(mealName);
@@ -188,7 +266,7 @@ function getGroceryDepartment(itemName: string) {
     return "Spices & Seasonings";
   }
 
-  if (/\b(rice|pasta|flour|sugar|beans|chickpea|tomatoes|broth|stock|oats|quinoa|cereal|cornmeal|breadcrumbs)\b/.test(normalizedName)) {
+  if (/\b(rice|pasta|spaghetti|penne|rigatoni|rotini|fettuccine|linguine|macaroni|farfalle|angel hair|lasagna noodles?|flour|sugar|beans|chickpea|tomatoes|broth|stock|oats|quinoa|cereal|cornmeal|breadcrumbs)\b/.test(normalizedName)) {
     return "Pantry & Dry Goods";
   }
 
@@ -280,7 +358,19 @@ function estimatePackageAmount(itemName: string, neededAmount?: string) {
     return "1 bag";
   }
 
-  if (normalizedName.includes("pasta")) {
+  if (
+    normalizedName.includes("pasta") ||
+    normalizedName.includes("spaghetti") ||
+    normalizedName.includes("penne") ||
+    normalizedName.includes("rigatoni") ||
+    normalizedName.includes("rotini") ||
+    normalizedName.includes("fettuccine") ||
+    normalizedName.includes("linguine") ||
+    normalizedName.includes("macaroni") ||
+    normalizedName.includes("farfalle") ||
+    normalizedName.includes("angel hair") ||
+    normalizedName.includes("lasagna noodles")
+  ) {
     return "1 box";
   }
 
@@ -426,6 +516,16 @@ function estimatePackagePrice(itemName: string, buyAmount?: string) {
     normalizedName.includes("flour") ||
     normalizedName.includes("rice") ||
     normalizedName.includes("pasta") ||
+    normalizedName.includes("spaghetti") ||
+    normalizedName.includes("penne") ||
+    normalizedName.includes("rigatoni") ||
+    normalizedName.includes("rotini") ||
+    normalizedName.includes("fettuccine") ||
+    normalizedName.includes("linguine") ||
+    normalizedName.includes("macaroni") ||
+    normalizedName.includes("farfalle") ||
+    normalizedName.includes("angel hair") ||
+    normalizedName.includes("lasagna noodles") ||
     normalizedName.includes("beans") ||
     normalizedName.includes("potato") ||
     normalizedName.includes("produce") ||
@@ -479,7 +579,7 @@ function getFlexibleStapleMeta(itemName: string) {
     normalizedName.includes("angel hair")
   ) {
     return {
-      flexibilityNote: "One box of your preferred pasta shape will usually cover these meals.",
+      flexibilityNote: "Use the pasta shape named by the meal when one is specified.",
       key: "flexible-pasta",
       name: "Pasta",
     };
@@ -629,8 +729,18 @@ function getIngredientMatchKeys(itemName: string) {
 function getAggregateKey(itemName: string) {
   const stapleMeta = getFlexibleStapleMeta(itemName);
   const canonicalName = getCanonicalIngredientName(itemName);
+  const specificShoppingName = getSpecificShoppingName(itemName, stapleMeta.name);
+  const normalizedSpecificShoppingName = normalizeIngredientName(specificShoppingName);
+  const normalizedStapleName = normalizeIngredientName(stapleMeta.name);
 
   if (stapleMeta.key !== normalizeIngredientName(itemName)) {
+    if (
+      normalizedSpecificShoppingName &&
+      normalizedSpecificShoppingName !== normalizedStapleName
+    ) {
+      return `${stapleMeta.key}-${normalizedSpecificShoppingName}`;
+    }
+
     return stapleMeta.key;
   }
 
@@ -664,7 +774,7 @@ function aggregateIngredientItems(ingredients: GroceryIngredientSource[]): Groce
     const displayName =
       stapleMeta.key === normalizeIngredientName(ingredient.name)
         ? toDisplayName(getCanonicalIngredientName(ingredient.name) || stapleMeta.name)
-        : stapleMeta.name;
+        : getSpecificShoppingName(ingredient.name, stapleMeta.name);
 
     if (existing) {
       const nextMealNames = new Set(existing.meal_names);
@@ -681,13 +791,13 @@ function aggregateIngredientItems(ingredients: GroceryIngredientSource[]): Groce
 
       grouped.set(aggregateKey, {
         buy_amount: estimatePackageAmount(
-          existing.name,
+          chooseMoreSpecificShoppingName(existing.name, displayName),
           mergeAmounts(existing.needed_amount, nextAmount),
         ),
-        category: existing.category,
+        category: getGroceryDepartment(chooseMoreSpecificShoppingName(existing.name, displayName)),
         flexibility_note: existing.flexibility_note ?? stapleMeta.flexibilityNote,
         meal_names: nextMealNames,
-        name: existing.name,
+        name: chooseMoreSpecificShoppingName(existing.name, displayName),
         needed_amount: mergeAmounts(existing.needed_amount, nextAmount),
         usage_notes: nextUsageNotes,
       });

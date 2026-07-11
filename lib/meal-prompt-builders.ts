@@ -189,6 +189,7 @@ export function buildGenerateListPrompts({
     "  - { \"name\": \"Red Bell Peppers\", \"amount\": \"2\", \"price\": 3.00 }",
     "- Only include ingredients required for that specific meal inside that meal's ingredients array.",
     "- You MUST be specific with ingredient names (for example \"Red Bell Peppers\" or \"Roma Tomatoes\", not just \"Peppers\").",
+    "- Title-specific shopping rule: if a meal title or description names a specific ingredient format, the ingredient array must use that same shopper-facing specificity. For example, \"Cheesy Macaroni\" must list \"Macaroni\" or \"Elbow Macaroni\", not generic \"Pasta\"; \"Spaghetti\" must list \"Spaghetti\", not generic \"Pasta\"; \"Yellow Onion\" must not become generic \"Onion\".",
     "- NEVER append conversational text like \"(assumed purchase)\" to ingredient names.",
     "- BANNED: Any text like \"1 item\", \"(assumed purchase)\", or \"to taste\". If an amount is small, use \"1 pinch\" or \"1 tsp\".",
     "- You are a professional grocery curator. You are FORBIDDEN from using generic names. You must specify types: \"Red Bell Peppers\", \"English Cucumber\", \"Honeycrisp Apples\", \"80/20 Ground Beef\". Every ingredient MUST have a realistic store-bought quantity (for example \"16oz jar\", \"1 lb pack\", \"Bundle of 5\").",
