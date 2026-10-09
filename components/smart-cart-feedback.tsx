@@ -3,6 +3,9 @@
 type ToastTone = "success" | "error" | "info";
 
 type SmartCartFeedbackProps = {
+  undoMessage: string | null;
+  onUndo: () => void;
+  onDismissUndo: () => void;
   confirmBody: string;
   confirmCancelLabel?: string;
   confirmConfirmLabel?: string;
@@ -24,6 +27,9 @@ const toneClasses: Record<ToastTone, string> = {
 };
 
 export function SmartCartFeedback({
+  undoMessage,
+  onUndo,
+  onDismissUndo,
   confirmBody,
   confirmCancelLabel = "Cancel",
   confirmConfirmLabel = "Confirm",
@@ -39,7 +45,7 @@ export function SmartCartFeedback({
 }: SmartCartFeedbackProps) {
   return (
     <>
-      {toastMessage ? (
+      {undoMessage || toastMessage ? (
         <div className="fixed inset-x-0 top-4 z-[60] flex justify-center px-4">
           <div
             className={`w-full max-w-md rounded-2xl border px-4 py-3 text-sm font-medium shadow-xl ${toneClasses[toastTone]}`}
@@ -55,8 +61,14 @@ export function SmartCartFeedback({
               }`}>
                 {toastTone === "success" ? "✓" : toastTone === "error" ? "!" : "i"}
               </span>
-              <span>{toastMessage}</span>
+              <span>{undoMessage || toastMessage}</span>
             </div>
+            {undoMessage ? (
+              <div className="mt-2 flex items-center justify-end gap-3">
+                <button type="button" onClick={onUndo} className="min-h-11 rounded-full bg-pine px-4 py-2 font-semibold text-white" aria-label="Undo Cooked It">Undo</button>
+                <button type="button" onClick={onDismissUndo} className="min-h-11 px-3 font-semibold underline underline-offset-4" aria-label="Dismiss meal undo">Dismiss</button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -12,6 +12,7 @@
     "lint": "next lint",
     "test:grocery": "node --experimental-strip-types --test tests/grocery-reliability.test.mjs",
     "test:week": "node --experimental-strip-types --test tests/week-progress.test.mjs",
+    "test:recovery": "node --experimental-strip-types --test tests/meal-recovery.test.mjs",
     "test:shopping": "node --experimental-strip-types --test tests/shopping-progress.test.mjs"
   },
   "dependencies": {

@@ -7,6 +7,7 @@ import { SmartCartContextForm } from "./smart-cart-context-form";
 import { SmartCartStoreMode } from "./smart-cart-store-mode";
 import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
 import { deriveGroceryLists } from "../lib/grocery-list";
+import { restoreMealAtPosition, undoCookedEntry } from "../lib/meal-recovery";
 import { countCookedThisWeek } from "../lib/week-progress";
 import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
@@ -635,8 +636,16 @@ export function SmartCartApp() {
   const [isStoreMode, setIsStoreMode] = useState(false);
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
   const [cookedHistory, setCookedHistory] = useState<{ key: string; entries: Array<{ name: string; cookedAt: string }> }>({ key: "", entries: [] });
+  const [mealUndo, setMealUndo] = useState<{
+    meal: MealPlanItem;
+    position: number;
+    sweetTreat: boolean;
+    entry: { name: string; cookedAt: string };
+    storageKey: string;
+  } | null>(null);
   const cookedStorageKey = `mealcaddie-cooked-${user?.id || "guest"}`;
   useEffect(() => {
+    setMealUndo(null);
     const stored = loadStoredJson<Array<{ name: string; cookedAt: string }>>(cookedStorageKey);
     setCookedHistory({ key: cookedStorageKey, entries: Array.isArray(stored) ? stored.filter(entry => typeof entry?.name === "string" && typeof entry?.cookedAt === "string") : [] });
   }, [cookedStorageKey]);
@@ -1215,6 +1224,7 @@ export function SmartCartApp() {
       setGeneratedPlan(data);
       persistGeneratedPlan(data);
       resetGroceryState();
+      setMealUndo(null);
       setIsStoreMode(false);
       resetRecipeState();
       setHasAppliedUpgrades(applyUpgrades);
@@ -1407,21 +1417,35 @@ export function SmartCartApp() {
 
   function performRemoveFromWeeklyMenu(meal: MealPlanItem) {
     const mealKey = `${meal.day}::${meal.name}`;
-    if (![...weeklyMenu, ...savedDesserts].some(item => `${item.day}::${item.name}` === mealKey)) return;
-    setCookedHistory(current => ({ key: cookedStorageKey, entries: [...(current.key === cookedStorageKey ? current.entries : []), { name: meal.name, cookedAt: new Date().toISOString() }] }));
+    const sweetTreat = isSweetTreatMeal(meal);
+    const lineup = sweetTreat ? savedDesserts : weeklyMenu;
+    const position = lineup.findIndex((item) => `${item.day}::${item.name}` === mealKey);
+    if (position < 0) return;
+    const entry = { name: meal.name, cookedAt: new Date().toISOString() };
+    setMealUndo({ meal: lineup[position], position, sweetTreat, entry, storageKey: cookedStorageKey });
+    setCookedHistory((current) => ({ key: cookedStorageKey, entries: [...(current.key === cookedStorageKey ? current.entries : []), entry] }));
+    const removeMeal = (current: MealPlanItem[]) => current.filter((item) => `${item.day}::${item.name}` !== mealKey);
+    if (sweetTreat) setSavedDesserts(removeMeal);
+    else setWeeklyMenu(removeMeal);
+    setToastMessage(null);
+    setToastTone("success");
+  }
 
-    if (isSweetTreatMeal(meal)) {
-      setSavedDesserts((current) =>
-        current.filter((savedDessert) => `${savedDessert.day}::${savedDessert.name}` !== mealKey),
-      );
-      showToast(`Nice — ${meal.name} is off this week’s cook lineup.`, "success");
+  function handleUndoCookedMeal() {
+    if (!mealUndo || mealUndo.storageKey !== cookedStorageKey) return;
+    const lineup = mealUndo.sweetTreat ? savedDesserts : weeklyMenu;
+    const restored = restoreMealAtPosition(lineup, mealUndo.meal, mealUndo.position, mealUndo.sweetTreat ? Infinity : 5);
+    if (!restored) {
+      setToastTone("info");
       return;
     }
-
-    setWeeklyMenu((current) =>
-      current.filter((savedMeal) => `${savedMeal.day}::${savedMeal.name}` !== mealKey),
-    );
-    showToast(`Nice — ${meal.name} is off this week’s cook lineup.`, "success");
+    if (mealUndo.sweetTreat) setSavedDesserts(restored);
+    else setWeeklyMenu(restored);
+    setCookedHistory((current) => current.key === cookedStorageKey
+      ? { ...current, entries: undoCookedEntry(current.entries, mealUndo.entry) }
+      : current);
+    setMealUndo(null);
+    showToast(`${mealUndo.meal.name} is back in This Week. Your shopping list and cooked count are updated.`, "success");
   }
 
   function handleRemoveFromWeeklyMenu(meal: MealPlanItem) {
@@ -1740,6 +1764,7 @@ export function SmartCartApp() {
     setRestock(new Set());
     setHasAppliedUpgrades(false);
     resetGroceryState();
+    setMealUndo(null);
     setIsStoreMode(false);
     resetRecipeState();
     setWeeklyMenu([]);
@@ -2470,6 +2495,13 @@ export function SmartCartApp() {
           </div>
         ) : null}
         <SmartCartFeedback
+          undoMessage={mealUndo?.storageKey === cookedStorageKey
+            ? !mealUndo.sweetTreat && weeklyMenu.length >= 5 && !weeklyMenu.some((item) => item.day === mealUndo.meal.day && item.name === mealUndo.meal.name)
+              ? `This Week is full. Make room to restore ${mealUndo.meal.name}, then use Undo.`
+              : `${mealUndo.meal.name} marked cooked. Undo to put it back in This Week.`
+            : null}
+          onUndo={handleUndoCookedMeal}
+          onDismissUndo={() => setMealUndo(null)}
         confirmBody={confirmDialogBody}
         confirmCancelLabel={confirmDialogCancelLabel}
         confirmConfirmLabel={confirmDialogConfirmLabel}
