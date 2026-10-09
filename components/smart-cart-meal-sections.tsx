@@ -1,5 +1,6 @@
 "use client";
 
+import { SmartCartMealActions } from "./smart-cart-meal-actions";
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 import { mealMatchesCuisinePreference } from "@/lib/meal-request-normalization";
 
@@ -108,7 +109,7 @@ export function SmartCartMealSections({
             Cook lineup flow
           </p>
           <p className="mt-2 font-semibold">
-            Tap <strong>Save to Cook Lineup</strong> on the meals you want this week. Saved meals
+            Tap <strong>Add to This Week</strong> on the meals you want this week. Chosen meals
             move to your <strong>Cook</strong> page and drive your shopping list.
           </p>
           {userPlan === "free" ? (
@@ -160,52 +161,18 @@ export function SmartCartMealSections({
                   >
                     {expandedDetailCards.has(mealCardKey) ? "Hide Details" : "Show Details"}
                   </button>
-                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-                    <button
-                      className={`inline-flex items-center justify-center rounded-full px-3 py-2.5 text-sm font-semibold transition ${
-                        savedMealKeys.has(`${meal.day}::${meal.name}`)
-                          ? "bg-orange-500 text-white"
-                          : weeklyMenuCount >= 5
-                            ? "bg-stone-100 text-stone-400"
-                            : "bg-orange-50 text-orange-700 hover:bg-orange-100"
-                      }`}
-                      disabled={weeklyMenuCount >= 5 && !savedMealKeys.has(`${meal.day}::${meal.name}`)}
-                      onClick={() => onSaveToWeeklyMenu(meal)}
-                      type="button"
-                    >
-                      {savedMealKeys.has(`${meal.day}::${meal.name}`)
-                        ? "Saved"
-                        : weeklyMenuCount >= 5
-                          ? "Lineup Full"
-                          : "Save to Cook Lineup"}
-                    </button>
-                    <button
-                      className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2.5 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                      onClick={() => void onArchiveMeal(meal)}
-                      type="button"
-                    >
-                      Stash in Vault
-                    </button>
-                    <button
-                      className="inline-flex items-center justify-center rounded-full border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={replacingMealKey === `${meal.day}::${meal.name}`}
-                      onClick={() => void onReplaceMeal(meal, index)}
-                      type="button"
-                    >
-                      {replacingMealKey === `${meal.day}::${meal.name}` ? "Replacing..." : "Replace"}
-                    </button>
-                    <button
-                      className="col-span-2 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1"
-                      disabled={
-                        recipeLoadingMeal === meal.name ||
-                        replacingMealKey === `${meal.day}::${meal.name}`
-                      }
-                      onClick={() => void onGetRecipe(meal)}
-                      type="button"
-                    >
-                      {recipeLoadingMeal === meal.name ? "Loading recipe..." : "Get Recipe"}
-                    </button>
-                  </div>
+                  <SmartCartMealActions
+                    inThisWeek={savedMealKeys.has(`${meal.day}::${meal.name}`)}
+                    weekFull={weeklyMenuCount >= 5}
+                    recipeLoading={recipeLoadingMeal === meal.name}
+                    busy={replacingMealKey === `${meal.day}::${meal.name}`}
+                    onViewRecipe={() => void onGetRecipe(meal)}
+                    onAddToWeek={() => onSaveToWeeklyMenu(meal)}
+                    onSaveToVault={() => void onArchiveMeal(meal)}
+                  />
+                  <button className="min-h-11 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60" disabled={replacingMealKey === `${meal.day}::${meal.name}`} onClick={() => void onReplaceMeal(meal, index)} type="button">
+                    {replacingMealKey === `${meal.day}::${meal.name}` ? "Replacing..." : "Replace"}
+                  </button>
                 </div>
               </article>
             );
@@ -296,32 +263,16 @@ export function SmartCartMealSections({
                       </ul>
                     </div>
                   ) : null}
-                  <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-                    <button
-                      className={`inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition ${
-                        isDessertSaved
-                          ? "bg-orange-500 text-white"
-                          : "bg-orange-50 text-orange-700 hover:bg-orange-100"
-                      }`}
-                      onClick={() => onToggleDessertSave(dessert, index)}
-                      type="button"
-                    >
-                      {isDessertSaved ? "Saved" : "Save Dessert"}
-                    </button>
-                    <button
-                      className="col-span-2 inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1"
-                      disabled={recipeLoadingMeal === dessert.title || isReplacingThisDessert}
-                      onClick={() => void onGetDessertRecipe(dessert, index)}
-                      type="button"
-                    >
-                      {recipeLoadingMeal === dessert.title ? "Loading recipe..." : "Get Recipe"}
-                    </button>
-                    <button
-                      className="inline-flex items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={isReplacingThisDessert}
-                      onClick={() => void onReplaceDessert(dessert, index)}
-                      type="button"
-                    >
+                  <div className="mt-4">
+                    <SmartCartMealActions
+                      inThisWeek={isDessertSaved}
+                      recipeLoading={recipeLoadingMeal === dessert.title}
+                      busy={isReplacingThisDessert}
+                      onViewRecipe={() => void onGetDessertRecipe(dessert, index)}
+                      onAddToWeek={() => onToggleDessertSave(dessert, index)}
+                      onSaveToVault={() => void onArchiveMeal({ user_id: safeTrim(userId), day: `Sweet Treat ${index + 1}`, name: dessert.title, servings: householdSize || 2, notes: dessert.description, ingredients: dessert.ingredients, imageUrl: dessert.imageUrl })}
+                    />
+                    <button className="mt-3 min-h-11 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60" disabled={isReplacingThisDessert} onClick={() => void onReplaceDessert(dessert, index)} type="button">
                       {isReplacingThisDessert ? "Replacing..." : "Replace"}
                     </button>
                   </div>

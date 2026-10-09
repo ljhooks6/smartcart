@@ -1,5 +1,7 @@
 "use client";
 
+import { SmartCartMealActions } from "./smart-cart-meal-actions";
+
 type IngredientItem = {
   name: string;
   amount: string;
@@ -63,7 +65,7 @@ export function SmartCartCookSections({
             </p>
             <p className="font-display text-2xl text-ink">Your cook-ready lineup</p>
             <p className="mt-1 text-sm leading-6 text-ink/70">
-              Meals and sweet treats you save land here so your recipes are ready when it is time
+              Meals and sweet treats you add to This Week land here so your recipes are ready when it is time
               to cook.
             </p>
           </div>
@@ -74,9 +76,9 @@ export function SmartCartCookSections({
 
         {!hasCookPlan ? (
           <div className="mt-5 rounded-[1.5rem] border border-dashed border-pine/20 bg-white px-4 py-10 text-center text-ink/60">
-            <p className="font-display text-2xl text-ink">Nothing saved for cooking yet</p>
+            <p className="font-display text-2xl text-ink">Nothing in This Week yet</p>
             <p className="mt-3 text-sm leading-7">
-              Tap <strong>Save to Cook Lineup</strong> on meals or desserts you want to cook this
+              Tap <strong>Add to This Week</strong> on meals or desserts you want to cook this
               week.
             </p>
           </div>
@@ -108,15 +110,15 @@ export function SmartCartCookSections({
                     ? "Hide Details"
                     : "Show Details"}
                 </button>
+                <div className="mt-4">
+                  <SmartCartMealActions
+                    inThisWeek
+                    recipeLoading={recipeLoadingMeal === meal.name}
+                    onViewRecipe={() => void onGetRecipe(meal)}
+                    onSaveToVault={() => void onArchiveMeal(meal)}
+                  />
+                </div>
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={recipeLoadingMeal === meal.name}
-                    onClick={() => void onGetRecipe(meal)}
-                    type="button"
-                  >
-                    {recipeLoadingMeal === meal.name ? "Loading recipe..." : "Get Recipe"}
-                  </button>
                   <button
                     className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={recipeLoadingMeal === meal.name}
@@ -126,13 +128,6 @@ export function SmartCartCookSections({
                     {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
                       ? "Hide Ingredients"
                       : "View Ingredients"}
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                    onClick={() => void onArchiveMeal(meal)}
-                    type="button"
-                  >
-                    Stash in Vault
                   </button>
                   <button
                     className="col-span-2 inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"
@@ -189,13 +184,13 @@ export function SmartCartCookSections({
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
                 Sweet treat
               </p>
-              <p className="font-display text-2xl text-ink">Saved Desserts</p>
+              <p className="font-display text-2xl text-ink">This Week&apos;s Sweet Treats</p>
               <p className="mt-1 text-sm leading-6 text-ink/70">
                 Keep your favorite sweet treats with this week&apos;s cook-ready plan.
               </p>
             </div>
             <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-berry">
-              {savedDesserts.length} saved
+              {savedDesserts.length} ready
             </span>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -234,17 +229,13 @@ export function SmartCartCookSections({
                         ? "Hide Details"
                         : "Show Details"}
                     </button>
+                    <SmartCartMealActions
+                      inThisWeek
+                      recipeLoading={recipeLoadingMeal === meal.name}
+                      onViewRecipe={() => void onGetRecipe(meal)}
+                      onSaveToVault={() => void onArchiveMeal(meal)}
+                    />
                     <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={recipeLoadingMeal === safeTrim(meal.name)}
-                        onClick={() => void onGetRecipe(meal)}
-                        type="button"
-                      >
-                        {recipeLoadingMeal === safeTrim(meal.name)
-                          ? "Loading recipe..."
-                          : "Get Recipe"}
-                      </button>
                       <button
                         className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
                         onClick={() => onToggleIngredients(meal)}
@@ -253,13 +244,6 @@ export function SmartCartCookSections({
                         {expandedIngredientsMeals.has(mealKey)
                           ? "Hide Ingredients"
                           : "View Ingredients"}
-                      </button>
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                        onClick={() => void onArchiveMeal(meal)}
-                        type="button"
-                      >
-                        Stash in Vault
                       </button>
                       <button
                         className="col-span-2 inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"

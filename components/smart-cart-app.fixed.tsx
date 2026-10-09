@@ -1365,86 +1365,31 @@ export function SmartCartApp() {
   function performSaveToWeeklyMenu(meal: MealPlanItem) {
     const mealKey = `${meal.day}::${meal.name}`;
     const sweetTreat = isSweetTreatMeal(meal);
-
-    let didSaveMeal = false;
-
-    if (sweetTreat) {
-      setSavedDesserts((current) => {
-        if (current.some((savedDessert) => `${savedDessert.day}::${savedDessert.name}` === mealKey)) {
-          return current;
-        }
-
-        didSaveMeal = true;
-        return [...current, meal];
-      });
-
-      setGeneratedPlan((current) =>
-        current
-          ? {
-              ...current,
-              desserts: current.desserts.filter((dessert) => dessert.title !== meal.name),
-            }
-          : current,
-      );
-      persistGeneratedPlan(
-        generatedPlan
-          ? {
-              ...generatedPlan,
-              desserts: generatedPlan.desserts.filter((dessert) => dessert.title !== meal.name),
-            }
-          : null,
-      );
-
-      if (didSaveMeal) {
-        showToast(
-          `${meal.name} is now in your Cook lineup and will help drive your shopping list.`,
-          "success",
-        );
-      }
+    const currentLineup = sweetTreat ? savedDesserts : weeklyMenu;
+    if (currentLineup.some((item) => `${item.day}::${item.name}` === mealKey)) return;
+    if (!sweetTreat && weeklyMenu.length >= 5) {
+      showToast("This Week has five dinners. Cook a meal before adding another.", "info");
       return;
     }
 
-    setWeeklyMenu((current) => {
-      if (current.some((savedMeal) => `${savedMeal.day}::${savedMeal.name}` === mealKey)) {
-        return current;
-      }
-      if (current.length >= 5) {
-        return current;
-      }
+    const addMeal = (current: MealPlanItem[]) =>
+      current.some((item) => `${item.day}::${item.name}` === mealKey)
+        ? current
+        : [...current, meal];
+    if (sweetTreat) setSavedDesserts(addMeal);
+    else setWeeklyMenu(addMeal);
 
-      didSaveMeal = true;
-      return [...current, meal];
+    setGeneratedPlan((current) => {
+      if (!current) return current;
+      const nextPlan = {
+        ...current,
+        meals: sweetTreat ? current.meals : current.meals.filter((item) => `${item.day}::${item.name}` !== mealKey),
+        desserts: sweetTreat ? current.desserts.filter((item) => item.title !== meal.name) : current.desserts,
+      };
+      persistGeneratedPlan(nextPlan);
+      return nextPlan;
     });
-
-    setGeneratedPlan((current) =>
-      current
-        ? {
-            ...current,
-            meals: current.meals.filter(
-              (generatedMeal) =>
-                `${generatedMeal.day}::${generatedMeal.name}` !== mealKey,
-            ),
-          }
-        : current,
-    );
-    persistGeneratedPlan(
-      generatedPlan
-        ? {
-            ...generatedPlan,
-            meals: generatedPlan.meals.filter(
-              (generatedMeal) =>
-                `${generatedMeal.day}::${generatedMeal.name}` !== mealKey,
-            ),
-          }
-        : null,
-    );
-
-    if (didSaveMeal) {
-      showToast(
-        `${meal.name} is now in your Cook lineup and will help drive your shopping list.`,
-        "success",
-      );
-    }
+    showToast(`${meal.name} is in This Week and included in your shopping list.`, "success");
   }
 
   function handleSaveToWeeklyMenu(meal: MealPlanItem) {
@@ -1500,7 +1445,7 @@ export function SmartCartApp() {
 
       if (!isPlusMember && archivedMeals.length >= FREE_VAULT_LIMIT) {
         showToast(
-          `Free plans can stash up to ${FREE_VAULT_LIMIT} recipes in the vault. MealCaddie Plus expands your library.`,
+          `Free plans can save up to ${FREE_VAULT_LIMIT} recipes in the vault. MealCaddie Plus expands your library.`,
           "info",
         );
         return;
@@ -1561,6 +1506,7 @@ export function SmartCartApp() {
           const nextPlan = {
             ...current,
             meals: current.meals.filter((generatedMeal) => !mealMatcher(generatedMeal)),
+            desserts: current.desserts.filter((dessert) => dessert.title !== meal.name),
           };
 
           persistGeneratedPlan(nextPlan);
@@ -1588,6 +1534,11 @@ export function SmartCartApp() {
   }
 
   function handleRestoreMeal(meal: MealPlanItem) {
+    if (!isSweetTreatMeal(meal) && weeklyMenu.length >= 5) {
+      showToast("This Week has five dinners. Cook a meal before adding another.", "info");
+      return;
+    }
+
     const mealMatcher = (candidate: MealPlanItem) =>
       meal.dbId
         ? candidate.dbId === meal.dbId
@@ -1603,6 +1554,7 @@ export function SmartCartApp() {
           ? current
           : [...current, meal],
       );
+      showToast(`${meal.name} is in This Week and included in your shopping list.`, "success");
       return;
     }
 
@@ -1617,6 +1569,7 @@ export function SmartCartApp() {
 
       return [...current, meal];
     });
+    showToast(`${meal.name} is in This Week and included in your shopping list.`, "success");
   }
 
   async function performPermanentDelete(meal: MealPlanItem) {
@@ -1885,9 +1838,9 @@ export function SmartCartApp() {
       : confirmDialog?.kind === "removeFromMenu"
         ? "Cooked This Meal?"
       : confirmDialog?.kind === "saveToMenu"
-      ? "Save This Meal for This Week?"
+      ? "Add This Meal to This Week?"
       : confirmDialog?.kind === "stashToVault"
-        ? "Send This Meal to the Vault?"
+        ? "Save This Meal to the Vault?"
         : "Reset Workspace?";
 
   const confirmDialogBody =
@@ -1898,7 +1851,7 @@ export function SmartCartApp() {
       : confirmDialog?.kind === "saveToMenu"
       ? `This will move ${confirmDialog.meal.name} into your Cook lineup for this week and use it to help build your shopping list.`
       : confirmDialog?.kind === "stashToVault"
-        ? `This will remove ${confirmDialog.meal.name} from the active plan and stash it in your Recipe Vault so you can bring it back later.`
+        ? `This will remove ${confirmDialog.meal.name} from the active plan and save it in your Recipe Vault so you can bring it back later.`
         : "This will clear your form and active Cook lineup, but your Recipe Vault will remain safe.";
 
   const confirmDialogConfirmLabel =
@@ -1907,9 +1860,9 @@ export function SmartCartApp() {
       : confirmDialog?.kind === "removeFromMenu"
         ? "Cooked It"
       : confirmDialog?.kind === "saveToMenu"
-      ? "Save to Cook Lineup"
+      ? "Add to This Week"
       : confirmDialog?.kind === "stashToVault"
-        ? "Stash in Vault"
+        ? "Save to Vault"
         : "Reset Workspace";
 
   const confirmDialogCancelLabel =

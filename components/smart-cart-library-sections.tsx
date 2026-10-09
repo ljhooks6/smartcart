@@ -140,12 +140,12 @@ export function SmartCartLibrarySections({
           Vault flow
         </p>
         <p className="mt-2">
-          Tap <strong>Stash in Vault</strong> on any active meal to keep it for a future week
-          without leaving it in your current grocery plan.
+          Tap <strong>Save to Vault</strong> on a dinner or Sweet Treat to move it out of This Week
+          and keep it for a future week. Use <strong>Add to This Week</strong> to bring it back.
         </p>
         {userPlan === "free" ? (
           <p className="mt-2 text-sm leading-6 text-amber-900/80">
-            Free plans can stash up to <strong>{vaultLimit}</strong> recipes. MealCaddie Plus gives
+            Free plans can save up to <strong>{vaultLimit}</strong> recipes. MealCaddie Plus gives
             your saved library more room to grow.
           </p>
         ) : null}
@@ -171,6 +171,7 @@ export function SmartCartLibrarySections({
                   </p>
                   <h3 className="mt-2 font-display text-xl text-ink">{safeTrim(meal.name)}</h3>
                   <p className="mt-2 text-sm leading-6 text-ink/70">Serves {meal.servings}</p>
+                  <p className="mt-2 text-xs font-semibold text-pine">Saved to Vault</p>
                   {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`) && (
                     <p className="mt-3 text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
                   )}
@@ -190,7 +191,7 @@ export function SmartCartLibrarySections({
                       onClick={() => onGetRecipe(meal)}
                       type="button"
                     >
-                      {recipeLoadingMeal === meal.name ? "Loading recipe..." : "Get Recipe"}
+                      {recipeLoadingMeal === meal.name ? "Loading recipe..." : "View Recipe"}
                     </button>
                     <button
                       className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
@@ -257,7 +258,7 @@ export function SmartCartLibrarySections({
             </div>
           ) : (
             <p className="text-sm text-ink/60">
-              No archived recipes yet. Removed meals will land here for future weeks.
+              No recipes saved to the Vault yet. Use Save to Vault on a dinner or Sweet Treat to keep it for a future week.
             </p>
           )}
         </div>
