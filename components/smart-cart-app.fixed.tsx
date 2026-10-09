@@ -10,6 +10,7 @@ import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
 import { deriveGroceryLists } from "../lib/grocery-list";
 import { restoreMealAtPosition, undoCookedEntry } from "../lib/meal-recovery";
 import { countCookedThisWeek } from "../lib/week-progress";
+import { recoverWeekDraft, weekDraftKey, weekSnapshot, saveErrorMessage } from "../lib/save-recovery";
 import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
 import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
@@ -30,8 +31,7 @@ import {
   fetchArchivedMealRows,
   fetchOwnedPantryItems,
   fetchSavedMealRows,
-  replaceActiveWeeklyMenuRows,
-  replacePantryInventory,
+  saveWeekToCloud,
   saveStoredJson,
   SMART_CART_ACTION_GUIDANCE_STORAGE_KEY,
   SMART_CART_FORM_STORAGE_KEY,
@@ -602,6 +602,18 @@ export function SmartCartApp() {
   const [cloudSyncMessage, setCloudSyncMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const saveInFlight = useRef(false);
+  const currentUserId = useRef(user?.id);
+  currentUserId.current = user?.id;
+  const [loadedCloudUser, setLoadedCloudUser] = useState<string | null>(null);
+  const [recoveredDraftUser, setRecoveredDraftUser] = useState<string | null>(null);
+  const cloudLoadInFlight = useRef<string | null>(null);
+  const [cloudLoadingUser, setCloudLoadingUser] = useState<string | null>(null);
+  const [isVaultLoading, setIsVaultLoading] = useState(false);
+  const [vaultLoadError, setVaultLoadError] = useState<string | null>(null);
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  const [localSaveFailed, setLocalSaveFailed] = useState(false);
+  const [guestStorageReady, setGuestStorageReady] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -636,6 +648,7 @@ export function SmartCartApp() {
   );
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("week");
+  const mobileScrollPositions = useRef<Partial<Record<MobileTab, number>>>({});
   const [isStoreMode, setIsStoreMode] = useState(false);
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
   const [cookedHistory, setCookedHistory] = useState<{ key: string; entries: Array<{ name: string; cookedAt: string }> }>({ key: "", entries: [] });
@@ -850,42 +863,40 @@ export function SmartCartApp() {
   ]);
 
   useEffect(() => {
+    if (!hasResolvedAuthSession || user) return;
     try {
       const parsed = loadStoredJson<MealPlanItem[]>(
         SMART_CART_WEEKLY_MENU_STORAGE_KEY,
       );
 
-      if (!parsed || !Array.isArray(parsed)) {
-        return;
-      }
-      setWeeklyMenu(parsed);
+      setWeeklyMenu(Array.isArray(parsed) ? parsed.filter((meal) => meal && !meal.user_id) : []);
     } catch {
       clearStoredJson(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
     }
-  }, []);
+  }, [hasResolvedAuthSession, user]);
 
   useEffect(() => {
-    saveStoredJson(SMART_CART_WEEKLY_MENU_STORAGE_KEY, weeklyMenu);
-  }, [weeklyMenu]);
+    if (hasResolvedAuthSession && !user && guestStorageReady) saveStoredJson(SMART_CART_WEEKLY_MENU_STORAGE_KEY, weeklyMenu);
+  }, [hasResolvedAuthSession, user, guestStorageReady, weeklyMenu]);
 
   useEffect(() => {
+    if (!hasResolvedAuthSession || user) return;
     try {
       const parsed = loadStoredJson<MealPlanItem[]>(
         SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
       );
 
-      if (!parsed || !Array.isArray(parsed)) {
-        return;
-      }
-      setSavedDesserts(parsed);
+      setSavedDesserts(Array.isArray(parsed) ? parsed.filter((meal) => meal && !meal.user_id) : []);
     } catch {
       clearStoredJson(SMART_CART_SAVED_DESSERTS_STORAGE_KEY);
+    } finally {
+      setGuestStorageReady(true);
     }
-  }, []);
+  }, [hasResolvedAuthSession, user]);
 
   useEffect(() => {
-    saveStoredJson(SMART_CART_SAVED_DESSERTS_STORAGE_KEY, savedDesserts);
-  }, [savedDesserts]);
+    if (hasResolvedAuthSession && !user && guestStorageReady) saveStoredJson(SMART_CART_SAVED_DESSERTS_STORAGE_KEY, savedDesserts);
+  }, [hasResolvedAuthSession, user, guestStorageReady, savedDesserts]);
 
   useEffect(() => {
     try {
@@ -950,20 +961,8 @@ export function SmartCartApp() {
       return;
     }
 
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({ top: mobileScrollPositions.current[activeMobileTab] ?? 0, behavior: "instant" });
   }, [activeMobileTab]);
-
-  useEffect(() => {
-    if (saveStatus !== "saved") {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setSaveStatus("idle");
-    }, 2600);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [saveStatus]);
 
   const combinedPantryItems = useMemo(() => {
     const typedItems = formState.pantryItems
@@ -979,6 +978,43 @@ export function SmartCartApp() {
       ]),
     );
   }, [formState.pantryItems, fullyStocked]);
+
+  const currentSnapshot = weekSnapshot(weeklyMenu, savedDesserts, canPersistPantryMemory ? combinedPantryItems : null);
+  const currentSnapshotRef = useRef(currentSnapshot);
+  currentSnapshotRef.current = currentSnapshot;
+
+  useEffect(() => {
+    if (!user?.id || (loadedCloudUser !== user.id && recoveredDraftUser !== user.id)) return;
+    const dirty = currentSnapshot !== savedSnapshot;
+    const stored = saveStoredJson(weekDraftKey(user.id), {
+      userId: user.id, dinners: weeklyMenu, desserts: savedDesserts,
+      pantry: canPersistPantryMemory ? combinedPantryItems : [], dirty,
+    });
+    setLocalSaveFailed(!stored);
+    if (saveStatus !== "saving" && saveStatus !== "error") {
+      setSaveStatus(dirty ? "idle" : "saved");
+      setCloudSyncMessage(dirty
+        ? stored ? "Changes saved on this computer. Save to sync them across devices." : "This browser could not keep a draft. Save to cloud before leaving."
+        : canPersistPantryMemory ? "Your week and pantry are saved to cloud." : "Your week is saved to cloud. Pantry memory is a Plus feature.");
+    }
+  }, [user?.id, loadedCloudUser, recoveredDraftUser, currentSnapshot, savedSnapshot, weeklyMenu, savedDesserts, canPersistPantryMemory, combinedPantryItems, saveStatus]);
+
+  useEffect(() => {
+    setLoadedCloudUser(null);
+    setRecoveredDraftUser(null);
+    setSavedSnapshot(null);
+    setSaveStatus("idle");
+    setCloudSyncMessage("");
+    setArchivedMeals([]);
+    setVaultLoadError(null);
+    if (user?.id) {
+      setGuestStorageReady(false);
+      setWeeklyMenu([]);
+      setSavedDesserts([]);
+      setFullyStocked(new Set());
+      setFormState((current) => ({ ...current, pantryItems: "" }));
+    }
+  }, [user?.id]);
 
   const selectedPantryItems = useMemo(
     () => Array.from(fullyStocked).map((item) => safeTrim(item)).filter(Boolean),
@@ -1095,11 +1131,12 @@ export function SmartCartApp() {
   const cookedCount = cookedHistory.key === cookedStorageKey
     ? countCookedThisWeek(cookedHistory.entries) : 0;
   function navigateToStage(stage: MobileTab) {
+    if (window.innerWidth < 768) mobileScrollPositions.current[activeMobileTab] = window.scrollY;
     setActiveMobileTab(stage);
     if (stage === "vault") setIsVaultOpen(true);
     if (stage === "shop") setGroceryOpen(true);
     window.requestAnimationFrame(() => {
-      if (window.innerWidth < 768) window.scrollTo({ top: 0, behavior: "instant" });
+      if (window.innerWidth < 768) window.scrollTo({ top: mobileScrollPositions.current[stage] ?? 0, behavior: "instant" });
       else (document.getElementById(`desktop-${stage}`) ?? document.getElementById("desktop-meals"))?.scrollIntoView({ block: "start", behavior: "instant" });
     });
   }
@@ -1476,6 +1513,10 @@ export function SmartCartApp() {
         showToast("Please sign in before using the Recipe Vault.", "info");
         return;
     }
+    if (isVaultLoading || vaultLoadError) {
+      showToast("Your Vault has not finished loading. Open Vault and retry before saving another recipe.", "info");
+      return;
+    }
 
       const mealMatcher = (candidate: MealPlanItem) =>
         meal.dbId
@@ -1504,6 +1545,8 @@ export function SmartCartApp() {
       price: Number.isFinite(cleanPrice) ? cleanPrice : getMealEstimatedPrice(meal),
       ingredients: meal.ingredients ?? [],
       instructions: meal.instructions ?? [],
+      recipe_data: meal,
+      type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
     };
 
     const { data, error } = await supabase
@@ -1513,7 +1556,7 @@ export function SmartCartApp() {
 
     if (error) {
       console.error("Vault Save Error:", error);
-      showToast("Failed to save to cloud. Check console.", "error");
+      showToast(`Vault save failed. Your recipe is still here. ${saveErrorMessage(error)}`, "error");
       return;
     }
 
@@ -1583,9 +1626,7 @@ export function SmartCartApp() {
         ? candidate.dbId === meal.dbId
         : candidate.name === meal.name;
 
-    setArchivedMeals((current) =>
-      current.filter((archivedMeal) => !mealMatcher(archivedMeal)),
-    );
+    // Adding a favorite to this week keeps its reusable cloud Vault copy.
 
     if (isSweetTreatMeal(meal)) {
       setSavedDesserts((current) =>
@@ -1785,6 +1826,7 @@ export function SmartCartApp() {
     setReplacingDessertKey(null);
     setRecentRejectedMeals([]);
     setExpandedDetailCards(new Set());
+    mobileScrollPositions.current = {};
     setCloudSyncMessage("");
     setSaveStatus("idle");
     setIsEquipmentSheetOpen(false);
@@ -1802,12 +1844,14 @@ export function SmartCartApp() {
 
     if (userId) {
       try {
-        await Promise.all([
-          replaceActiveWeeklyMenuRows(userId, []),
-          replacePantryInventory(userId, []),
-        ]);
+        await saveWeekToCloud(userId, [], canPersistPantryMemory ? [] : null);
+        if (currentUserId.current === userId) setSavedSnapshot(weekSnapshot([], [], canPersistPantryMemory ? [] : null));
       } catch (error) {
         console.error("Failed to clear cloud session state:", error);
+        setSaveStatus("error");
+        setCloudSyncMessage(`The workspace was reset on this computer, but cloud reset failed. Retry Save to sync the empty week. ${saveErrorMessage(error)}`);
+        showToast("Local workspace reset. Cloud reset failed; retry saving before leaving.", "error");
+        return;
       }
     }
 
@@ -2083,7 +2127,7 @@ export function SmartCartApp() {
     const dinners = sanitized
       .filter((row) => row.type === "dinner")
       .map((row) =>
-        rehydrateMealRecord(row.recipe_data as Partial<MealPlanItem> | null, {
+        rehydrateMealRecord((row.recipe_data ?? { ...row, name: row.meal_title }) as Partial<MealPlanItem> | null, {
           dbId: row.id ?? undefined,
           user_id: safeTrim(row.user_id),
         }),
@@ -2109,6 +2153,16 @@ export function SmartCartApp() {
   }, [formState.householdSize, rehydrateMealRecord]);
 
   const loadSessionFromCloud = useCallback(async (userId: string) => {
+    if (cloudLoadInFlight.current === userId) return;
+    cloudLoadInFlight.current = userId;
+    setCloudLoadingUser(userId);
+    const draft = recoverWeekDraft<MealPlanItem>(loadStoredJson(weekDraftKey(userId)), userId);
+    if (draft?.dirty) {
+      setWeeklyMenu(draft.dinners);
+      setSavedDesserts(draft.desserts);
+      if (canPersistPantryMemory) setFullyStocked(new Set(draft.pantry));
+    }
+    setCloudSyncMessage("Loading your saved week...");
     try {
       const [ownedPantryItems, { dinners: hydratedDinners, desserts: hydratedDesserts }] =
         await Promise.all([
@@ -2116,39 +2170,38 @@ export function SmartCartApp() {
           fetchSavedMeals(userId),
         ]);
 
-      const resolvedWeeklyMenu = hydratedDinners;
-      const resolvedSavedDesserts = hydratedDesserts;
+      if (currentUserId.current !== userId) return;
+      // Retain an older account-owned unsynced lineup during the first upgrade.
+      const legacyDinners = loadStoredJson<MealPlanItem[]>(SMART_CART_WEEKLY_MENU_STORAGE_KEY);
+      const legacyDesserts = loadStoredJson<MealPlanItem[]>(SMART_CART_SAVED_DESSERTS_STORAGE_KEY);
+      const ownedLegacyDinners = Array.isArray(legacyDinners) ? legacyDinners.filter((meal) => meal?.user_id === userId) : [];
+      const ownedLegacyDesserts = Array.isArray(legacyDesserts) ? legacyDesserts.filter((meal) => meal?.user_id === userId) : [];
+      const recoverLegacy = !draft && (ownedLegacyDinners.length > 0 || ownedLegacyDesserts.length > 0);
+      const resolvedWeeklyMenu = draft?.dirty ? draft.dinners : recoverLegacy ? ownedLegacyDinners : hydratedDinners;
+      const resolvedSavedDesserts = draft?.dirty ? draft.desserts : recoverLegacy ? ownedLegacyDesserts : hydratedDesserts;
       const resolvedPantryItems = ownedPantryItems
         .map((ingredientName) => safeTrim(ingredientName))
         .filter(Boolean);
 
       if (canPersistPantryMemory) {
-        setFullyStocked((current) =>
-          current.size > 0 ? current : new Set(resolvedPantryItems),
-        );
-        setRunningLow((current) => (current.size > 0 ? current : new Set()));
-        setRestock((current) => (current.size > 0 ? current : new Set()));
+        setFullyStocked(new Set(draft?.dirty ? draft.pantry : resolvedPantryItems));
+        setRunningLow(new Set());
+        setRestock(new Set());
       }
 
-      setWeeklyMenu((currentMenu) => {
-        if (currentMenu && currentMenu.length > 0) {
-          return currentMenu;
-        }
-
-        return resolvedWeeklyMenu;
-      });
-
-      setSavedDesserts((currentDesserts) => {
-        if (currentDesserts && currentDesserts.length > 0) {
-          return currentDesserts;
-        }
-
-        return resolvedSavedDesserts;
-      });
+      setWeeklyMenu(resolvedWeeklyMenu);
+      setSavedDesserts(resolvedSavedDesserts);
+      setSavedSnapshot(weekSnapshot(hydratedDinners, hydratedDesserts, canPersistPantryMemory ? resolvedPantryItems : null));
+      setLoadedCloudUser(userId);
+      setSaveStatus("idle");
     } catch (error) {
-      setCloudSyncMessage(
-        error instanceof Error ? error.message : "Failed to load cloud data.",
-      );
+      if (currentUserId.current !== userId) return;
+      if (draft?.dirty) setRecoveredDraftUser(userId);
+      setCloudSyncMessage(`Could not load your saved week. Retry Save will retry loading first. ${saveErrorMessage(error)}`);
+      setSaveStatus("error");
+    } finally {
+      if (cloudLoadInFlight.current === userId) cloudLoadInFlight.current = null;
+      setCloudLoadingUser((current) => current === userId ? null : current);
     }
   }, [canPersistPantryMemory, fetchSavedMeals]);
 
@@ -2157,8 +2210,11 @@ export function SmartCartApp() {
       return;
     }
 
+    setIsVaultLoading(true);
+    setVaultLoadError(null);
     try {
       const archivedMealRows = await fetchArchivedMealRows(user.id);
+      if (currentUserId.current !== user.id) return;
 
       const hydratedVaultMeals = archivedMealRows
         .map((row: SmartCartArchivedMealRow) =>
@@ -2184,19 +2240,22 @@ export function SmartCartApp() {
 
       setArchivedMeals(hydratedVaultMeals);
     } catch (error) {
+      if (currentUserId.current !== user.id) return;
       console.error("Vault Load Error:", error);
-      setCloudSyncMessage("Failed to load archived meals.");
+      setVaultLoadError(`Could not load your Vault. ${saveErrorMessage(error)}`);
+    } finally {
+      if (currentUserId.current === user.id) setIsVaultLoading(false);
     }
   }, [formState.householdSize, rehydrateMealRecord, user?.id]);
 
   useEffect(() => {
     const userId = user?.id || "";
-    if (!userId) {
+    if (!userId || isProfileLoading || !membershipProfile || loadedCloudUser === userId) {
       return;
     }
 
     void loadSessionFromCloud(userId);
-  }, [loadSessionFromCloud, user?.id]);
+  }, [loadSessionFromCloud, user?.id, isProfileLoading, membershipProfile, loadedCloudUser]);
 
   useEffect(() => {
     void loadArchivedMeals();
@@ -2204,10 +2263,18 @@ export function SmartCartApp() {
 
   async function saveSessionToCloud() {
     const userId = user?.id || "";
-    if (!userId) {
+    if (!userId || saveInFlight.current) {
       return;
     }
 
+    if (loadedCloudUser !== userId) {
+      if (isProfileLoading || !membershipProfile) return;
+      await loadSessionFromCloud(userId);
+      return;
+    }
+
+    saveInFlight.current = true;
+    const snapshotBeingSaved = currentSnapshot;
     setIsSaving(true);
     setSaveStatus("saving");
     setCloudSyncMessage("");
@@ -2216,10 +2283,7 @@ export function SmartCartApp() {
       const activeDessertRows = savedDesserts.map((dessert) => ({
         meal_title: dessert.name,
         recipe_data: {
-          title: dessert.name,
-          description: dessert.notes,
-          ingredients: dessert.ingredients ?? [],
-          imageUrl: dessert.imageUrl,
+          ...dessert,
         },
         type: "sweet_treat",
         status: "active_week",
@@ -2237,29 +2301,21 @@ export function SmartCartApp() {
         ...activeDessertRows,
       ];
 
-      await replaceActiveWeeklyMenuRows(userId, weeklyMenuRows);
-      if (canPersistPantryMemory) {
-        await replacePantryInventory(userId, combinedPantryItems);
-        setCloudSyncMessage("Your week and pantry are synced.");
-      }
-
-      setCloudSyncMessage("✨ Cloud sync complete! Your week is saved.");
-      if (!canPersistPantryMemory) {
-        setCloudSyncMessage(
-          "Your week is synced. Pantry memory across weeks is a MealCaddie Plus feature.",
-        );
-      }
-      if (canPersistPantryMemory) {
-        setCloudSyncMessage("Your week and pantry are synced.");
-      }
-      setSaveStatus("saved");
+      await saveWeekToCloud(userId, weeklyMenuRows, canPersistPantryMemory ? combinedPantryItems : null);
+      if (currentUserId.current !== userId) return;
+      setSavedSnapshot(snapshotBeingSaved);
+      const stillSaved = currentSnapshotRef.current === snapshotBeingSaved;
+      setSaveStatus(stillSaved ? "saved" : "idle");
+      setCloudSyncMessage(stillSaved ? "Your week is saved to cloud." : "The earlier version was saved. Save again to sync your latest changes.");
     } catch (error) {
       console.error("Supabase Save Error:", error);
+      if (currentUserId.current !== userId) return;
       setCloudSyncMessage(
-        error instanceof Error ? error.message : "Cloud sync failed.",
+        `Save failed. ${localSaveFailed ? "Keep this page open and retry." : "Your draft is still on this computer."} ${saveErrorMessage(error)}`,
       );
       setSaveStatus("error");
     } finally {
+      saveInFlight.current = false;
       setIsSaving(false);
     }
   }
@@ -2763,9 +2819,12 @@ export function SmartCartApp() {
               expandedDetailCards={expandedDetailCards}
               expandedIngredientsMeals={expandedIngredientsMeals}
               formatCardEyebrow={formatCardEyebrow}
-              isSaving={isSaving}
+              isSaving={isSaving || cloudLoadingUser === user?.id}
               saveStatus={saveStatus}
               isVaultOpen={isVaultOpen}
+              isVaultLoading={isVaultLoading}
+              vaultLoadError={vaultLoadError}
+              onRetryVault={loadArchivedMeals}
               onGetRecipe={handleGetRecipe}
               onPermanentDelete={handlePermanentDelete}
               onRestoreMeal={handleRestoreMeal}
@@ -2960,9 +3019,12 @@ export function SmartCartApp() {
               expandedDetailCards={expandedDetailCards}
               expandedIngredientsMeals={expandedIngredientsMeals}
               formatCardEyebrow={formatCardEyebrow}
-              isSaving={isSaving}
+              isSaving={isSaving || cloudLoadingUser === user?.id}
               saveStatus={saveStatus}
               isVaultOpen={isVaultOpen}
+              isVaultLoading={isVaultLoading}
+              vaultLoadError={vaultLoadError}
+              onRetryVault={loadArchivedMeals}
               onGetRecipe={handleGetRecipe}
               onPermanentDelete={handlePermanentDelete}
               onRestoreMeal={handleRestoreMeal}
@@ -3046,7 +3108,7 @@ export function SmartCartApp() {
                       </button>
                       <button
                         className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                        onClick={() => setActiveMobileTab("cook")}
+                        onClick={() => navigateToStage("cook")}
                         type="button"
                       >
                         Cook
@@ -3065,7 +3127,7 @@ export function SmartCartApp() {
                       </button>
                       <button
                         className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                        onClick={() => setActiveMobileTab("cook")}
+                        onClick={() => navigateToStage("cook")}
                         type="button"
                       >
                         Cook
@@ -3076,7 +3138,7 @@ export function SmartCartApp() {
                     <>
                       <button
                         className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={isSaving || !Boolean(user)}
+                        disabled={isSaving || cloudLoadingUser === user?.id || !Boolean(user)}
                         onClick={() => void saveSessionToCloud()}
                         type="button"
                       >
@@ -3090,7 +3152,7 @@ export function SmartCartApp() {
                       </button>
                       <button
                         className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                        onClick={() => setActiveMobileTab("vault")}
+                        onClick={() => navigateToStage("vault")}
                         type="button"
                       >
                         Vault
@@ -3109,7 +3171,7 @@ export function SmartCartApp() {
                       {Boolean(user) ? (
                         <button
                           className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          disabled={isSaving}
+                          disabled={isSaving || cloudLoadingUser === user?.id}
                           onClick={() => void saveSessionToCloud()}
                           type="button"
                         >

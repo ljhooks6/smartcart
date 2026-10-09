@@ -32,6 +32,9 @@ type SmartCartLibrarySectionsProps = FirstUseGuidanceProps & {
   formatCardEyebrow: (day: string) => string;
   isSaving: boolean;
   isVaultOpen: boolean;
+  isVaultLoading: boolean;
+  vaultLoadError: string | null;
+  onRetryVault: () => void | Promise<void>;
   saveStatus: SaveStatus;
   onGetRecipe: (meal: MealPlanItem) => void | Promise<void>;
   onPermanentDelete: (meal: MealPlanItem) => void | Promise<void>;
@@ -63,6 +66,9 @@ export function SmartCartLibrarySections({
   formatCardEyebrow,
   isSaving,
   isVaultOpen,
+  isVaultLoading,
+  vaultLoadError,
+  onRetryVault,
   saveStatus,
   onGetRecipe,
   onPermanentDelete,
@@ -92,7 +98,7 @@ export function SmartCartLibrarySections({
               </p>
               <p className="mt-1 text-sm font-semibold text-ink">Save your current week</p>
               <p className="text-sm leading-6 text-ink/65">
-                Sync your dinners, sweet treats, pantry, and vault before you leave.
+                Save dinners and Sweet Treats across devices. Plus also saves your pantry. Vault recipes save when you add them.
               </p>
               {userPlan === "free" ? (
                 <p className="mt-2 text-sm leading-6 text-ink/70">
@@ -134,7 +140,7 @@ export function SmartCartLibrarySections({
             </button>
           </div>
           {cloudSyncMessage ? (
-            <p className="mt-3 text-sm font-medium text-ink/70">{cloudSyncMessage}</p>
+            <p role="status" aria-live="polite" className="mt-3 text-sm font-medium text-ink/70">{cloudSyncMessage}</p>
           ) : null}
         </div>
       ) : null}
@@ -150,10 +156,12 @@ export function SmartCartLibrarySections({
         onClick={onToggleVaultOpen}
         type="button"
       >
-        {isVaultOpen ? "Close Recipe Vault" : `Open Recipe Vault (${archivedMeals.length})`}
+        {isVaultOpen ? "Close Recipe Vault" : isVaultLoading ? "Loading Recipe Vault..." : vaultLoadError ? "Open Recipe Vault" : `Open Recipe Vault (${archivedMeals.length})`}
       </button>
       {isVaultOpen ? (
         <div className="mt-5 rounded-[1.5rem] border border-stone-200 bg-white px-4 py-4 shadow-sm">
+          {isVaultLoading ? <p role="status" className="text-sm text-ink/70">Loading your saved recipes...</p> : null}
+          {vaultLoadError ? <div role="alert" className="mb-4 text-sm text-berry"><p>{vaultLoadError}</p><button type="button" onClick={() => void onRetryVault()} className="mt-3 rounded-full border border-berry/30 px-4 py-2 font-semibold">Retry loading Vault</button></div> : null}
           {archivedMeals.length > 0 ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {archivedMeals.map((meal) => (
@@ -251,11 +259,11 @@ export function SmartCartLibrarySections({
                 </article>
               ))}
             </div>
-          ) : (
+          ) : !isVaultLoading && !vaultLoadError ? (
             <p className="text-sm text-ink/60">
               No recipes saved to the Vault yet. Use Save to Vault on a dinner or Sweet Treat to keep it for a future week.
             </p>
-          )}
+          ) : null}
         </div>
       ) : null}
 

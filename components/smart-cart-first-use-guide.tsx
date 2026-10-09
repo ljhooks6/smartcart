@@ -15,7 +15,7 @@ const guidance = {
   },
   vault: {
     title: "Keep recipes for another week",
-    body: "Save to Vault moves a dinner or Sweet Treat out of your active week and keeps it here for later. Add to This Week brings it back to Cook and your shopping list.",
+    body: "Save to Vault moves a dinner or Sweet Treat out of your active week and keeps it here for later. Add to This Week adds it to Cook and your shopping list while keeping your Vault favorite for future weeks.",
   },
   shop: {
     title: "Shop for the meals you chose",

@@ -47,17 +47,22 @@ export function loadStoredJson<T>(storageKey: string): T | null {
 
     return JSON.parse(rawValue) as T;
   } catch {
-    window.localStorage.removeItem(storageKey);
+    try { window.localStorage.removeItem(storageKey); } catch { /* Storage may be unavailable. */ }
     return null;
   }
 }
 
 export function saveStoredJson(storageKey: string, value: unknown) {
   if (typeof window === "undefined") {
-    return;
+    return false;
   }
 
-  window.localStorage.setItem(storageKey, JSON.stringify(value));
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function clearStoredJson(...storageKeys: string[]) {
@@ -66,7 +71,7 @@ export function clearStoredJson(...storageKeys: string[]) {
   }
 
   storageKeys.forEach((storageKey) => {
-    window.localStorage.removeItem(storageKey);
+    try { window.localStorage.removeItem(storageKey); } catch { /* Storage may be unavailable. */ }
   });
 }
 
@@ -125,69 +130,18 @@ export async function fetchArchivedMealRows(userId: string) {
   return (data ?? []) as SmartCartArchivedMealRow[];
 }
 
-export async function replaceActiveWeeklyMenuRows(
+export async function saveWeekToCloud(
   userId: string,
   weeklyMenuRows: Array<Record<string, unknown>>,
+  pantryItems: string[] | null,
 ) {
   if (!userId) {
     return;
   }
 
-  const { error: archiveError } = await supabase
-    .from("weekly_menus")
-    .update({ status: "archived" })
-    .eq("user_id", userId)
-    .eq("status", "active_week");
-
-  if (archiveError) {
-    throw archiveError;
-  }
-
-  if (weeklyMenuRows.length === 0) {
-    return;
-  }
-
-  const { error: insertMenuError } = await supabase
-    .from("weekly_menus")
-    .insert(weeklyMenuRows);
-
-  if (insertMenuError) {
-    throw insertMenuError;
-  }
-}
-
-export async function replacePantryInventory(
-  userId: string,
-  pantryItems: string[],
-) {
-  if (!userId) {
-    return;
-  }
-
-  const { error: deletePantryError } = await supabase
-    .from("pantry_inventory")
-    .delete()
-    .eq("user_id", userId);
-
-  if (deletePantryError) {
-    throw deletePantryError;
-  }
-
-  if (pantryItems.length === 0) {
-    return;
-  }
-
-  const pantryRows = pantryItems.map((ingredient) => ({
-    ingredient_name: ingredient,
-    is_owned: true,
-    user_id: userId,
-  }));
-
-  const { error: insertPantryError } = await supabase
-    .from("pantry_inventory")
-    .insert(pantryRows);
-
-  if (insertPantryError) {
-    throw insertPantryError;
-  }
+  const { error } = await supabase.rpc("save_mealcaddie_week", {
+    meals: weeklyMenuRows,
+    pantry: pantryItems,
+  });
+  if (error) throw error;
 }

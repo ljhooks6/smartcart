@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useId, useRef } from "react";
+
 type MealPlanItem = {
   name: string;
 };
@@ -28,13 +30,31 @@ export function SmartCartRecipeModal({
   recipeError,
   recipeLoadingMeal,
 }: SmartCartRecipeModalProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const isOpen = Boolean(activeRecipeMeal);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!isOpen || !dialog) return;
+    const previousOverflow = document.body.style.overflow;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      opener?.focus({ preventScroll: true });
+      window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
+    };
+  }, [isOpen]);
   if (!activeRecipeMeal) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4 py-8 backdrop-blur-sm">
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-stone-200 bg-white p-6 shadow-xl sm:p-8">
+    <dialog ref={dialogRef} aria-labelledby={titleId} onCancel={(event) => { event.preventDefault(); onClose(); }} className="relative m-auto max-h-[90vh] w-[calc(100%_-_2rem)] max-w-2xl overflow-y-auto overscroll-contain rounded-[2rem] border border-stone-200 bg-white p-6 shadow-xl backdrop:bg-ink/55 backdrop:backdrop-blur-sm sm:p-8">
         <button
           aria-label="Close recipe"
           className="absolute right-4 top-4 rounded-full border border-ink/10 bg-white px-3 py-2 text-sm font-semibold text-ink transition hover:bg-cream"
@@ -47,7 +67,7 @@ export function SmartCartRecipeModal({
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
           Recipe detail
         </p>
-        <h3 className="mt-3 max-w-xl font-display text-3xl text-ink">
+        <h3 id={titleId} className="mt-3 max-w-xl pr-16 font-display text-3xl text-ink">
           {activeRecipeMeal.name}
         </h3>
 
@@ -108,7 +128,6 @@ export function SmartCartRecipeModal({
             </div>
           </div>
         ) : null}
-      </div>
-    </div>
+    </dialog>
   );
 }

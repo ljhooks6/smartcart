@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { getRecipeSourceKey } from "../lib/recipe-ingredients";
 
 type IngredientItem = {
@@ -49,22 +49,6 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
   const [expandedIngredientsMeals, setExpandedIngredientsMeals] = useState<Set<string>>(
     new Set(),
   );
-
-  useEffect(() => {
-    if (!activeRecipeMeal) {
-      return;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setActiveRecipeMeal(null);
-        setRecipeError(null);
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeRecipeMeal]);
 
   const activeRecipe = useMemo(
     () => (activeRecipeMeal && recipeSources.current[activeRecipeMeal.name] === getRecipeSourceKey(activeRecipeMeal)
