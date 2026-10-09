@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { SmartCartContextForm } from "./smart-cart-context-form";
+import { SmartCartStoreMode } from "./smart-cart-store-mode";
 import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
 import { deriveGroceryLists } from "../lib/grocery-list";
 import { countCookedThisWeek } from "../lib/week-progress";
@@ -629,6 +630,7 @@ export function SmartCartApp() {
   );
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("week");
+  const [isStoreMode, setIsStoreMode] = useState(false);
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
   const [cookedHistory, setCookedHistory] = useState<{ key: string; entries: Array<{ name: string; cookedAt: string }> }>({ key: "", entries: [] });
   const cookedStorageKey = `mealcaddie-cooked-${user?.id || "guest"}`;
@@ -989,7 +991,10 @@ export function SmartCartApp() {
     removeGroceryItem,
     removeRestoredItem,
     restoreSkippedItem,
+    undoMessage,
+    undoLastGroceryAction,
   } = useSmartCartGrocery({
+    userId: safeTrim(user?.id),
     formatCurrency,
     fullyStocked,
     pantryItems: combinedPantryItems,
@@ -1086,6 +1091,9 @@ export function SmartCartApp() {
   }
   const grocerySidebar = (
     <SmartCartGrocerySidebar
+                onEnterStoreMode={() => setIsStoreMode(true)}
+                undoMessage={undoMessage}
+                onUndo={undoLastGroceryAction}
                 budgetPercentage={budgetPercentage}
                 budgetProgressBarClass={budgetProgressBarClass}
                 budgetStatusLabel={budgetStatusLabel}
@@ -1204,6 +1212,7 @@ export function SmartCartApp() {
       setGeneratedPlan(data);
       persistGeneratedPlan(data);
       resetGroceryState();
+      setIsStoreMode(false);
       resetRecipeState();
       setHasAppliedUpgrades(applyUpgrades);
       setSavedDesserts([]);
@@ -1775,6 +1784,7 @@ export function SmartCartApp() {
     setRestock(new Set());
     setHasAppliedUpgrades(false);
     resetGroceryState();
+    setIsStoreMode(false);
     resetRecipeState();
     setWeeklyMenu([]);
     setSavedDesserts([]);
@@ -2423,6 +2433,13 @@ export function SmartCartApp() {
 
   return (
       <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-[12.5rem] pt-4 md:pb-12 md:pt-8">
+        <SmartCartStoreMode
+          open={isStoreMode} onClose={() => setIsStoreMode(false)}
+          groups={displayGroceriesByCategory} checkedItems={checkedItems} customItems={customItems}
+          onToggleItem={toggleCheckedItem} onRemoveItem={removeGroceryItem}
+          onCheckCustom={setCustomItemChecked} onRemoveCustom={removeCustomItem}
+          undoMessage={undoMessage} onUndo={undoLastGroceryAction}
+        />
         {showLaunchAnimation ? (
           <div
             aria-label="MealCaddie is opening"

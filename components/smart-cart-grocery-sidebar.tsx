@@ -21,6 +21,9 @@ type CustomItem = {
 };
 
 type SmartCartGrocerySidebarProps = {
+  onEnterStoreMode: () => void;
+  undoMessage: string | null;
+  onUndo: () => void;
   budgetPercentage: number;
   budgetProgressBarClass: string;
   budgetStatusLabel: string;
@@ -60,6 +63,9 @@ function formatMealCount(item: GroceryListItem) {
 }
 
 export function SmartCartGrocerySidebar({
+  onEnterStoreMode,
+  undoMessage,
+  onUndo,
   budgetPercentage,
   budgetProgressBarClass,
   budgetStatusLabel,
@@ -114,6 +120,13 @@ export function SmartCartGrocerySidebar({
             <span>{isGroceryOpen ? "▲" : "▼"}</span>
           </span>
         </button>
+
+        <button type="button" onClick={onEnterStoreMode}
+          disabled={!displayGroceriesByCategory.length && !customItems.length}
+          className="mt-4 min-h-12 w-full rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">
+          Enter Store Mode
+        </button>
+        {undoMessage ? <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white p-3"><p role="status" className="text-sm text-ink/70">{undoMessage}</p><button type="button" onClick={onUndo} className="min-h-11 px-3 font-semibold text-pine underline underline-offset-4">Undo</button></div> : null}
 
         {isGroceryOpen && (
           <>

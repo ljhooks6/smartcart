@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { deriveGroceryLists, getIngredientKey, sortGroceryGroups, type GroceryListItem } from "../lib/grocery-list";
+
+import { emptyShoppingState, parseShoppingProgress, shoppingReducer } from "../lib/shopping-progress";
 
 type IngredientItem = {
   name: string;
@@ -15,13 +17,8 @@ type MealPlanItem = {
   name?: string;
 };
 
-type CustomItem = {
-  id: string;
-  name: string;
-  isChecked: boolean;
-};
-
 type UseSmartCartGroceryArgs = {
+  userId: string;
   formatCurrency: (value: number) => string;
   fullyStocked: Set<string>;
   onCopyError: (message: string) => void;
@@ -35,6 +32,7 @@ type UseSmartCartGroceryArgs = {
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
 export function useSmartCartGrocery({
+  userId,
   formatCurrency,
   fullyStocked,
   onCopyError,
@@ -44,12 +42,26 @@ export function useSmartCartGrocery({
   savedDesserts,
   weeklyMenu,
 }: UseSmartCartGroceryArgs) {
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [shopping, dispatchShopping] = useReducer(shoppingReducer, undefined, emptyShoppingState);
+  const storageKey = `mealcaddie-shopping-v1-${userId || "guest"}`;
+  const [loadedStorageKey, setLoadedStorageKey] = useState("");
+  useEffect(() => {
+    let stored: unknown = null;
+    try { stored = JSON.parse(window.localStorage.getItem(storageKey) || "null"); } catch { /* Shopping still works when storage is unavailable. */ }
+    dispatchShopping({ type: "load", progress: parseShoppingProgress(stored) });
+    setLoadedStorageKey(storageKey);
+  }, [storageKey]);
+  useEffect(() => {
+    if (loadedStorageKey !== storageKey) return;
+    const { undo: _undo, ...progress } = shopping;
+    try { window.localStorage.setItem(storageKey, JSON.stringify(progress)); } catch { /* Keep this visit usable. */ }
+  }, [shopping, loadedStorageKey, storageKey]);
+  const checkedItems = useMemo(() => new Set(shopping.checked), [shopping.checked]);
+  const restoredItems = shopping.restored;
+  const removedGroceryItems = shopping.removed;
+  const customItems = shopping.custom;
   const [copied, setCopied] = useState(false);
   const [isGroceryOpen, setIsGroceryOpen] = useState(false);
-  const [restoredItems, setRestoredItems] = useState<string[]>([]);
-  const [removedGroceryItems, setRemovedGroceryItems] = useState<string[]>([]);
-  const [customItems, setCustomItems] = useState<CustomItem[]>([]);
   const [newCustomItem, setNewCustomItem] = useState("");
 
   const { derivedGroceryList, skippedGroceryList } = useMemo(() => deriveGroceryLists({
@@ -125,15 +137,7 @@ export function useSmartCartGrocery({
   );
 
   function toggleCheckedItem(itemKey: string) {
-    setCheckedItems((current) => {
-      const next = new Set(current);
-      if (next.has(itemKey)) {
-        next.delete(itemKey);
-      } else {
-        next.add(itemKey);
-      }
-      return next;
-    });
+    dispatchShopping({ type: "check", key: itemKey, name: derivedGroceryList.find(item => item.item_key === itemKey)?.name || "Item" });
   }
 
   async function handleCopyShoppingList() {
@@ -151,24 +155,17 @@ export function useSmartCartGrocery({
       return;
     }
 
-    setCustomItems((current) => [
-      ...current,
-      {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        name: safeTrim(newCustomItem),
-        isChecked: false,
-      },
-    ]);
+    dispatchShopping({ type: "custom-add", item: {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: safeTrim(newCustomItem), isChecked: false,
+    } });
     setNewCustomItem("");
   }
 
   function resetGroceryState() {
-    setCheckedItems(new Set());
+    dispatchShopping({ type: "reset" });
     setCopied(false);
     setIsGroceryOpen(false);
-    setRestoredItems([]);
-    setRemovedGroceryItems([]);
-    setCustomItems([]);
     setNewCustomItem("");
   }
 
@@ -183,31 +180,17 @@ export function useSmartCartGrocery({
     newCustomItem,
     resetGroceryState,
     restoredItems,
-    setCustomItemChecked: (id: string, isChecked: boolean) =>
-      setCustomItems((current) =>
-        current.map((item) => (item.id === id ? { ...item, isChecked } : item)),
-      ),
+    setCustomItemChecked: (id: string, isChecked: boolean) => dispatchShopping({ type: "custom-check", id, checked: isChecked }),
+    undoMessage: shopping.undo?.message ?? null,
+    undoLastGroceryAction: () => dispatchShopping({ type: "undo" }),
     setGroceryOpen: setIsGroceryOpen,
     setNewCustomItem,
     skippedGroceriesByCategory,
     toggleCheckedItem,
     totalCost,
-    removeCustomItem: (id: string) =>
-      setCustomItems((current) => current.filter((item) => item.id !== id)),
-    removeGroceryItem: (itemKey: string) =>
-      setRemovedGroceryItems((current) =>
-        current.includes(itemKey) ? current : [...current, itemKey],
-      ),
-    removeRestoredItem: (name: string) =>
-      setRestoredItems((current) =>
-        current.filter(
-          (currentName) => currentName !== getIngredientKey(name),
-        ),
-      ),
-    restoreSkippedItem: (name: string) =>
-      setRestoredItems((current) => {
-        const normalizedName = getIngredientKey(name);
-        return current.includes(normalizedName) ? current : [...current, normalizedName];
-      }),
+    removeCustomItem: (id: string) => dispatchShopping({ type: "custom-remove", id }),
+    removeGroceryItem: (itemKey: string) => dispatchShopping({ type: "remove", key: itemKey, name: derivedGroceryList.find(item => item.item_key === itemKey)?.name || "Item" }),
+    removeRestoredItem: (name: string) => dispatchShopping({ type: "unrestore", key: getIngredientKey(name), name }),
+    restoreSkippedItem: (name: string) => dispatchShopping({ type: "restore", key: getIngredientKey(name), name }),
   };
 }
