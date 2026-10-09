@@ -11,6 +11,8 @@ type GeneratePromptArgs = {
   fullyStocked: string[];
   householdSize: number;
   includeDessert: boolean;
+  includeBreakfast?: boolean;
+  includeLunch?: boolean;
   mealSourceMode: "pantry-and-store" | "pantry-only";
   mustHavePromptBlock: string;
   prepTime?: string;
@@ -34,6 +36,7 @@ type ReplacePromptArgs = {
   avoidancePromptBlock: string;
   prepTime?: string;
   rejectedMealTitle: string;
+  mealType?: string;
   selectedEquipment: string;
 };
 
@@ -54,6 +57,8 @@ const GENERATE_JSON_SHAPE = `{
     }
   ],
   "estimated_total_cost": number,
+  "breakfasts": [{ "day": "Breakfast 1", "name": "string", "servings": number, "notes": "string", "ingredients": [{ "name": "string", "amount": "string", "price": number }] }],
+  "lunches": [{ "day": "Lunch 1", "name": "string", "servings": number, "notes": "string", "ingredients": [{ "name": "string", "amount": "string", "price": number }] }],
   "budget_summary": "string",
   "upgrade_available": boolean,
   "desserts": [
@@ -130,6 +135,8 @@ export function buildGenerateListPrompts({
   fullyStocked,
   householdSize,
   includeDessert,
+  includeBreakfast = false,
+  includeLunch = false,
   mealSourceMode,
   mustHavePromptBlock,
   prepTime,
@@ -150,6 +157,9 @@ export function buildGenerateListPrompts({
   const corePlanningRules = [
     "- Always generate a lean, frugal list first unless the user explicitly asks to apply upgrades.",
     "- Return exactly 7 dinner meals.",
+    includeBreakfast ? "- Also return exactly 3 practical breakfast options in breakfasts. These are choices, not an automatic seven-day breakfast schedule. Favor quick meals with protein/fiber, realistic household portions, and affordable ingredients." : "- Breakfast is not selected: return an empty breakfasts array.",
+    includeLunch ? "- Also return exactly 3 practical lunch options in lunches. These are choices, not an automatic seven-day lunch schedule. Favor balanced, easy lunches with realistic household portions. Any leftover ingredient must also be listed with the amount required; never assume an unchosen dinner will supply it." : "- Lunch is not selected: return an empty lunches array.",
+    "- Apply the user's diet, avoidance, pantry-only, equipment, prep-time, and budget constraints to breakfast and lunch too. Include their ingredients in the overall budget. Reuse identical ingredients where practical. Breakfast and lunch may use simple seasonings; do not force dinner-style side dishes, dinner protein-variety rules, or three aromatics into them.",
     "- Respect the budget strictly.",
     "- Respect the diet exactly.",
     `- Respect the user's prep-time preference: ${prepTime || "No preference provided"}.`,
@@ -284,6 +294,8 @@ export function buildGenerateListPrompts({
     `Running Low Pantry Items: ${runningLow.length > 0 ? runningLow.join(", ") : "None provided"}`,
     `Restock Pantry Items: ${restock.length > 0 ? restock.join(", ") : "None provided"}`,
     `Include Dessert: ${includeDessert ? "Yes" : "No"}`,
+    `Include Breakfast Options: ${includeBreakfast ? "Yes, exactly 3" : "No"}`,
+    `Include Lunch Options: ${includeLunch ? "Yes, exactly 3" : "No"}`,
     `Adventure Level: ${adventureLevel || "No preference provided"}`,
     `Cuisine Preference: ${cuisinePromptBlock.replace("Cuisine preference: ", "")}`,
     `Prep Time Preference: ${prepTime || "No preference provided"}`,
@@ -321,17 +333,19 @@ export function buildReplaceMealPrompts({
   mustHavePromptBlock,
   prepTime,
   rejectedMealTitle,
+  mealType = "dinner",
   selectedEquipment,
 }: ReplacePromptArgs) {
   const systemPrompt = joinPromptSections([
-    "You are an expert budget-conscious meal planner helping replace a single rejected dinner.",
+    `You are an expert budget-conscious meal planner helping replace a single rejected ${mealType}.`,
     "",
     "Rules:",
     [
       "- Generate exactly ONE replacement meal.",
+      `- The replacement MUST be a ${mealType} suitable for that time of day. Keep breakfast quick and practical, lunch balanced and easy, and dinner a complete plate.`,
       "- The replacement must feel clearly different from the rejected meal title in flavor profile, format, and primary ingredients.",
       `- CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals || "None provided"}.`,
-      `- CURRENT MENU CONTEXT: The user already has these meals: ${currentMealsContext || "None provided"}. STRICT RULE: Provide a completely different main protein and flavor profile from the majority of the current menu.`,
+      `- CURRENT MENU CONTEXT: The user already has these meals: ${currentMealsContext || "None provided"}. ${mealType === "dinner" ? "Provide a different main protein and flavor profile from the majority of the dinner menu." : "Avoid duplicating those titles, but keep this replacement appropriate for breakfast or lunch; simple recurring proteins are allowed."}`,
       `- RECENTLY REJECTED OR BLOCKED TITLES: ${blockedTitles.join(", ") || "None provided"}.`,
       `- CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.`,
       "- Respect the user's budget, diet, household size, pantry items, and prep-time preference.",

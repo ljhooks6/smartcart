@@ -59,7 +59,7 @@ Resume this roadmap after the move to Dallas, getting settled, and moving develo
 
 ## Future Features Already Discussed
 
-- Breakfast and lunch planning with user-selected meal types.
+- Automatic full-week scheduling and leftover lunch planning for Plus. Optional breakfast and lunch picks are now available on every plan.
 - Saving personal recipes and importing recipes from websites or social media.
 - Continue refining meaningful Free and Plus distinctions without weakening the core Free experience.
 

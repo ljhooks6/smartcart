@@ -13,6 +13,8 @@ type SmartCartFormState = {
   mustHaveIngredient: string;
   avoidIngredients: string;
   includeDessert: boolean;
+  includeBreakfast: boolean;
+  includeLunch: boolean;
   prepTime: string;
   adventureLevel: string;
   availableEquipment: string[];
@@ -36,6 +38,8 @@ type SmartCartContextFormProps = {
   onDietChange: (value: string) => void;
   onHouseholdSizeChange: (value: string) => void;
   onIncludeDessertChange: (checked: boolean) => void;
+  onIncludeBreakfastChange: (checked: boolean) => void;
+  onIncludeLunchChange: (checked: boolean) => void;
   onMealSourceModeChange: (value: SmartCartFormState["mealSourceMode"]) => void;
   onMustHaveIngredientChange: (value: string) => void;
   onAvoidIngredientsChange: (value: string) => void;
@@ -73,6 +77,8 @@ export function SmartCartContextForm({
   onDietChange,
   onHouseholdSizeChange,
   onIncludeDessertChange,
+  onIncludeBreakfastChange,
+  onIncludeLunchChange,
   onMealSourceModeChange,
   onMustHaveIngredientChange,
   onAvoidIngredientsChange,
@@ -111,11 +117,11 @@ export function SmartCartContextForm({
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
-            ["Dinner", "Ready today"],
-            ["Breakfast", "Coming soon"],
-            ["Lunch", "Coming soon"],
+            ["Dinner", "Included"],
+            ["Breakfast", "Optional · everyone"],
+            ["Lunch", "Optional · everyone"],
           ].map(([mealType, status]) => {
-            const isReady = status === "Ready today";
+            const isReady = mealType === "Dinner";
 
             return (
               <div
@@ -151,8 +157,8 @@ export function SmartCartContextForm({
           })}
         </div>
         <p className="mt-4 text-sm leading-6 text-ink/70">
-          Dinner planning is live now. Breakfast and lunch support are on the way so MealCaddie can
-          help carry more of the weekly meal load.
+          Start with dinner, then add optional breakfast and lunch picks to carry more of the week.
+          Available on every plan.
         </p>
       </div>
 
@@ -582,6 +588,16 @@ export function SmartCartContextForm({
             value={formState.pantryItems}
           />
         </label>
+
+        <fieldset className="rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
+          <legend className="px-2 text-sm font-semibold text-ink">Meals to plan</legend>
+          <p className="text-sm leading-6 text-ink/70">Dinner is included. Add breakfast or lunch options for your household—available on every plan.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" checked={formState.includeBreakfast} onChange={(event) => onIncludeBreakfastChange(event.target.checked)} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Include breakfast · 3 options</span></label>
+            <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" checked={formState.includeLunch} onChange={(event) => onIncludeLunchChange(event.target.checked)} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Include lunch · 3 options</span></label>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-ink/60">Only meals you add to This Week go onto your shopping list. The budget covers all selected meal types.</p>
+        </fieldset>
 
         <label className="flex items-center gap-3 rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
           <input

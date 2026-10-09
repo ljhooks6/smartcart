@@ -1,6 +1,7 @@
 "use client";
 
 import { SmartCartMealActions } from "./smart-cart-meal-actions";
+import { getMealKind, mealKindLabel, hasRoomForMeal } from "../lib/meal-types";
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 import { mealMatchesCuisinePreference } from "@/lib/meal-request-normalization";
 
@@ -61,7 +62,7 @@ type SmartCartMealSectionsProps = {
   savedMealKeys: Set<string>;
   userPlan: SmartCartPlan;
   userId: string;
-  weeklyMenuCount: number;
+  weeklyMenu: MealPlanItem[];
 };
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
@@ -90,7 +91,7 @@ export function SmartCartMealSections({
   savedMealKeys,
   userPlan,
   userId,
-  weeklyMenuCount,
+  weeklyMenu,
 }: SmartCartMealSectionsProps) {
   return (
     <div className="lg:col-span-8 flex flex-col gap-6">
@@ -100,7 +101,7 @@ export function SmartCartMealSections({
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
               Meals
             </p>
-            <p className="font-display text-3xl text-ink">Your 7 dinner picks</p>
+            <p className="font-display text-3xl text-ink">Your meal options</p>
           </div>
         </div>
 
@@ -121,8 +122,14 @@ export function SmartCartMealSections({
           ) : null}
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {generatedPlan.meals.map((meal, index) => {
+        <div className="mt-6 space-y-6">
+          {(["dinner", "breakfast", "lunch"] as const).map((kind) => {
+            const options = generatedPlan.meals.map((meal, index) => ({ meal, index })).filter(({ meal }) => getMealKind(meal) === kind);
+            if (!options.length) return null;
+            return <section key={kind} aria-label={`${mealKindLabel(kind)} options`}>
+              <h2 className="mb-4 font-display text-2xl text-ink">{mealKindLabel(kind)} · {options.length} options</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+          {options.map(({ meal, index }) => {
             const mealCardKey = `generated-${meal.day}::${meal.name}`;
             const mealEyebrow = formatCardEyebrow(meal.day);
             const matchesCuisinePreference = mealMatchesCuisinePreference(cuisinePreference, meal);
@@ -163,7 +170,7 @@ export function SmartCartMealSections({
                   </button>
                   <SmartCartMealActions
                     inThisWeek={savedMealKeys.has(`${meal.day}::${meal.name}`)}
-                    weekFull={weeklyMenuCount >= 5}
+                    weekFull={!hasRoomForMeal(weeklyMenu, meal)}
                     recipeLoading={recipeLoadingMeal === meal.name}
                     busy={replacingMealKey === `${meal.day}::${meal.name}`}
                     onViewRecipe={() => void onGetRecipe(meal)}
@@ -176,6 +183,9 @@ export function SmartCartMealSections({
                 </div>
               </article>
             );
+          })}
+              </div>
+            </section>;
           })}
         </div>
       </div>

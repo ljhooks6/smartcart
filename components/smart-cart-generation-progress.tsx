@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 export type GenerationPhase = "building" | "organizing";
 
-export function SmartCartGenerationProgress({ phase, includeDessert }: { phase: GenerationPhase | null; includeDessert: boolean }) {
+export function SmartCartGenerationProgress({ phase, includeDessert, includeBreakfast = false, includeLunch = false }: { phase: GenerationPhase | null; includeDessert: boolean; includeBreakfast?: boolean; includeLunch?: boolean }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -36,7 +36,7 @@ export function SmartCartGenerationProgress({ phase, includeDessert }: { phase: 
         <p id={descriptionId} className="mt-3 text-sm leading-6 text-ink/70">
           {phase === "organizing"
             ? "Your meal options are ready. We are preparing the ingredients and pantry checks."
-            : `Using your pantry, budget, and kitchen equipment to build dinner options${includeDessert ? " and Sweet Treats" : ""}.`}
+            : `Using your pantry, budget, and kitchen equipment to build ${["dinner", includeBreakfast ? "breakfast" : "", includeLunch ? "lunch" : ""].filter(Boolean).join(", ")} options${includeDessert ? " and Sweet Treats" : ""}.`}
         </p>
         {takingLonger && phase === "building" ? <p className="mt-3 text-sm leading-6 text-pine">Still working on your plan. Some requests take longer. You do not need to press Generate again.</p> : null}
       </div>

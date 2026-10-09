@@ -2,7 +2,7 @@
 
 MealCaddie is a Next.js meal and grocery planning helper built around a calmer weekly food flow: plan meals, organize groceries, and shop with less guesswork.
 
-Dinner planning is live today. Breakfast and lunch planning are part of the roadmap so users can eventually choose exactly which meals they want help carrying through the week.
+Dinner planning includes seven options. Everyone can optionally add three breakfast options and three lunch options, then choose which meals go into This Week and their shopping list. Automatic full-week scheduling and leftover lunch planning remain planned Plus features.
 
 ## Stack
 

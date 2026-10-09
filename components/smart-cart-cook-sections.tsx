@@ -3,6 +3,7 @@
 import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart-first-use-guide";
 
 import { SmartCartMealActions } from "./smart-cart-meal-actions";
+import { getMealKind, mealKindLabel } from "../lib/meal-types";
 
 type IngredientItem = {
   name: string;
@@ -98,7 +99,7 @@ export function SmartCartCookSections({
                 className="rounded-3xl border border-stone-200 bg-white px-4 py-4 shadow-lg"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                  {index < 7 ? `DAY ${index + 1}` : "BONUS MEAL"}
+                  {mealKindLabel(getMealKind(meal))} · {formatCardEyebrow(meal.day)}
                 </p>
                 <h3 className="mt-2 font-display text-xl text-ink">{safeTrim(meal.name)}</h3>
                 <div className="mt-2 flex items-center justify-between gap-3">

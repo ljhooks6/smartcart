@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { getMealKind, mealKindLabel } from "../lib/meal-types";
 
 type WeekMeal = { day: string; name: string };
 type Props = {
@@ -22,6 +23,10 @@ type Props = {
 export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, groceryCount, collectedCount, pantryCount, estimatedCost, budget, overBudget, hasIngredients, hasOptions, vaultCount, onNavigate }: Props) {
   const titleId = useId();
   const readyCount = dinners.length + desserts.length;
+  const chosenSummary = (["breakfast", "lunch", "dinner"] as const).map((kind) => {
+    const count = dinners.filter((meal) => getMealKind(meal) === kind).length;
+    return count ? `${count} ${kind}${count === 1 ? "" : "s"}` : "";
+  }).filter(Boolean).concat(desserts.length ? [`${desserts.length} sweet treat${desserts.length === 1 ? "" : "s"}`] : []).join(", ");
   const remaining = groceryCount - collectedCount;
   const nextStage = readyCount ? (remaining > 0 ? "shop" : "cook") : hasOptions ? "meals" : "plan";
   const nextLabel = nextStage === "shop" ? "Open shopping list" : nextStage === "cook" ? "Choose a meal to cook" : nextStage === "meals" ? "Choose your meals" : "Plan your week";
@@ -31,13 +36,13 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-pine/70">A calmer way to feed your week</p>
           <h1 id={titleId} className="mt-2 font-display text-4xl text-ink">Your Week</h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">{readyCount ? `${dinners.length} dinner${dinners.length === 1 ? "" : "s"} and ${desserts.length} sweet treat${desserts.length === 1 ? "" : "s"} chosen. Your next step is ready below.` : hasOptions ? "Your meal options are ready. Choose what you want to cook to build your shopping list." : "Start with your pantry and preferences. Your meals, shopping, and cooking progress will come together here."}</p>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">{readyCount ? `${chosenSummary} chosen. Your next step is ready below.` : hasOptions ? "Your meal options are ready. Choose what you want to cook to build your shopping list." : "Start with your pantry and preferences. Your meals, shopping, and cooking progress will come together here."}</p>
         </div>
         <button type="button" onClick={() => onNavigate(nextStage)} className="rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white hover:bg-pine/90">{nextLabel}</button>
       </div>
       <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          ["Ready to cook", String(readyCount), "Chosen dinners + sweet treats"],
+          ["Ready to cook", String(readyCount), "Chosen meals + sweet treats"],
           ["Groceries collected", `${collectedCount} / ${groceryCount}`, groceryCount ? `${remaining} items still to collect` : readyCount ? "No items on your list" : "Choose meals to build your list"],
           ["Pantry ingredients used", String(pantryCount), "Already owned and skipped"],
           ["Cooked this week", String(cookedCount), "Marked Cooked It on this device"],
@@ -52,7 +57,7 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <div className="rounded-2xl bg-[#f3f5eb] p-5">
           <h2 className="font-display text-2xl text-ink">On the menu</h2>
-          {readyCount ? <ul className="mt-4 space-y-3">{[...dinners.map(meal => ({ ...meal, kind: "Dinner" })), ...desserts.map(meal => ({ ...meal, kind: "Sweet treat" }))].map((meal, index) => <li key={`${meal.kind}-${meal.day}-${meal.name}-${index}`}><p className="text-xs font-semibold uppercase tracking-wider text-pine/65">{meal.kind}</p><p className="mt-1 text-sm text-ink">{meal.name}</p></li>)}</ul> : <p className="mt-3 text-sm leading-6 text-ink/65">No meals chosen yet. Save dinner and dessert picks to your Cook Lineup.</p>}
+          {readyCount ? <ul className="mt-4 space-y-3">{[...dinners.map(meal => ({ ...meal, kind: mealKindLabel(getMealKind(meal)) })), ...desserts.map(meal => ({ ...meal, kind: "Sweet treat" }))].map((meal, index) => <li key={`${meal.kind}-${meal.day}-${meal.name}-${index}`}><p className="text-xs font-semibold uppercase tracking-wider text-pine/65">{meal.kind}</p><p className="mt-1 text-sm text-ink">{meal.name}</p></li>)}</ul> : <p className="mt-3 text-sm leading-6 text-ink/65">No meals chosen yet. Add breakfast, lunch, dinner, or Sweet Treat picks to This Week.</p>}
           <button type="button" onClick={() => onNavigate(hasOptions ? "meals" : "plan")} className="mt-5 text-sm font-semibold text-pine underline underline-offset-4">{hasOptions ? "Review meal options" : "Adjust your plan"}</button>
         </div>
         <div className="rounded-2xl border border-stone-200 bg-white p-5">

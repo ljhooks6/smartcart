@@ -19,6 +19,7 @@ type ReplaceMealRequest = {
   householdSize: number;
   combinedPantryItems: string;
   rejectedMealTitle: string;
+  mealType?: "breakfast" | "lunch" | "dinner";
   replacementQuality?: "free" | "plus";
   prepTime?: string;
   adventureLevel?: string;
@@ -200,6 +201,7 @@ export async function POST(request: Request) {
     householdSize,
     combinedPantryItems,
     rejectedMealTitle,
+    mealType,
     replacementQuality,
     prepTime,
     adventureLevel,
@@ -276,6 +278,7 @@ export async function POST(request: Request) {
     mustHavePromptBlock: mustHaveGuidance.promptBlock,
     prepTime,
     rejectedMealTitle,
+    mealType: mealType === "breakfast" || mealType === "lunch" ? mealType : "dinner",
     selectedEquipment,
   });
 

@@ -10,7 +10,7 @@ Thanks for signing up for MealCaddie.
 
 MealCaddie is a mobile-first app I am building to make weekly meals feel calmer. It helps people turn pantry items, budget limits, and real-life schedules into practical dinner plans and grocery lists.
 
-Dinner planning is live now, and I am building toward breakfast and lunch support so people can choose exactly which meals they want help with.
+Dinner, optional breakfast, and optional lunch planning are available on every plan so people can choose which meals they want help with.
 
 I am opening a small early tester group and wanted to reach out first in case you would like to try it.
 
@@ -38,7 +38,7 @@ Best,
 
 I have been building an app called MealCaddie that helps people plan affordable weekly meals using what they already have at home, while keeping grocery costs and real-life schedules in mind.
 
-The goal is simple: a calmer way to feed your week. Dinner planning is live now, and I am building toward breakfast and lunch support so people can pick the meals they want help with.
+The goal is simple: a calmer way to feed your week. Dinner, optional breakfast, and optional lunch planning are available on every plan so people can pick the meals they want help with.
 
 I am looking for a small group of honest beta testers who are willing to try it and give real feedback. If you cook regularly, plan meals for yourself or your household, or just want help figuring out what to make without overspending, I would love to have you try it.
 
@@ -48,7 +48,7 @@ If you are interested, comment below or message me and I will send the link.
 
 I have been building MealCaddie, a mobile-first app designed to make weekly meal planning feel calmer.
 
-It helps turn pantry items, budget limits, and real-life schedules into practical dinner plans and grocery lists, with breakfast and lunch support on the roadmap.
+It helps turn pantry items, budget limits, and real-life schedules into practical dinner, breakfast, and lunch options with grocery lists for the meals they choose.
 
 If you want a calmer way to feed your week, send me a DM and I will share the link.
 
@@ -56,7 +56,7 @@ If you want a calmer way to feed your week, send me a DM and I will share the li
 
 ## Direct Message
 
-I am testing a mobile-first app called MealCaddie that helps people turn pantry items, budget limits, and real-life schedules into weekly dinner plans and grocery lists. Dinner is live now, and I am building toward breakfast and lunch support. I am looking for a few honest testers who would be willing to try it and tell me what feels useful, confusing, or unrealistic. If you are open to it, I would love to send you the link.
+I am testing a mobile-first app called MealCaddie that helps people turn pantry items, budget limits, and real-life schedules into weekly dinner plans and grocery lists. Dinner, optional breakfast, and optional lunch planning are available on every plan. I am looking for a few honest testers who would be willing to try it and tell me what feels useful, confusing, or unrealistic. If you are open to it, I would love to send you the link.
 
 ## Founding User Invite
 

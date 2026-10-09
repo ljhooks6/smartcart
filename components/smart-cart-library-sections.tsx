@@ -98,7 +98,7 @@ export function SmartCartLibrarySections({
               </p>
               <p className="mt-1 text-sm font-semibold text-ink">Save your current week</p>
               <p className="text-sm leading-6 text-ink/65">
-                Save dinners and Sweet Treats across devices. Plus also saves your pantry. Vault recipes save when you add them.
+                Save your chosen meals and Sweet Treats across devices. Plus also saves your pantry. Vault recipes save when you add them.
               </p>
               {userPlan === "free" ? (
                 <p className="mt-2 text-sm leading-6 text-ink/70">
@@ -280,7 +280,7 @@ export function SmartCartLibrarySections({
             <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-ink/70 sm:text-base">
               Free helps you plan this week. Plus is being shaped for the households that want
               MealCaddie to carry more of the routine: remembering pantry habits, tuning meals to
-              your taste, saving more favorites, and expanding beyond dinner.
+              your taste, saving more favorites, and automating a full week of meals.
             </p>
           </div>
 
@@ -300,7 +300,7 @@ export function SmartCartLibrarySections({
               },
               {
                 title: "Plan more of the day",
-                copy: "Breakfast and lunch planning are on the roadmap so MealCaddie can help beyond dinner.",
+                copy: "Breakfast and lunch options are available on every plan. Automatic full-week scheduling and leftover lunch planning are planned for Plus.",
               },
             ].map((feature) => (
               <div

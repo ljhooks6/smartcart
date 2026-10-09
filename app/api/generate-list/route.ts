@@ -11,6 +11,7 @@ import {
   normalizeDietaryPreferences,
 } from "@/lib/meal-request-normalization";
 import { buildGenerateListPrompts } from "@/lib/meal-prompt-builders";
+import { normalizeOptionalMeals } from "@/lib/meal-types";
 
 type GenerateListRequest = {
   budget: number;
@@ -23,6 +24,8 @@ type GenerateListRequest = {
   mustHaveIngredient?: string;
   avoidIngredients?: string;
   includeDessert?: boolean;
+  includeBreakfast?: boolean;
+  includeLunch?: boolean;
   adventureLevel?: string;
   cuisinePreference?: string;
   apply_upgrades?: boolean;
@@ -63,6 +66,8 @@ const dessertSchema = z.object({
 
 const aiGenerateListResponseSchema = z.object({
   meals: z.array(mealSchema).length(7),
+  breakfasts: z.array(mealSchema).max(3).default([]),
+  lunches: z.array(mealSchema).max(3).default([]),
   estimated_total_cost: z.number().nonnegative(),
   budget_summary: z.string().min(1),
   upgrade_available: z.boolean(),
@@ -410,6 +415,8 @@ export async function POST(request: Request) {
     mustHaveIngredient,
     avoidIngredients,
     includeDessert,
+    includeBreakfast,
+    includeLunch,
     adventureLevel,
     cuisinePreference,
     apply_upgrades,
@@ -471,6 +478,8 @@ export async function POST(request: Request) {
     fullyStocked: Array.isArray(fullyStocked) ? fullyStocked : [],
     householdSize,
     includeDessert: Boolean(includeDessert),
+    includeBreakfast: Boolean(includeBreakfast),
+    includeLunch: Boolean(includeLunch),
     mustHavePromptBlock: mustHaveGuidance.promptBlock,
     prepTime,
     restock:
@@ -511,23 +520,25 @@ export async function POST(request: Request) {
 
     let rawPlan = await requestMealPlan();
 
-    if (!Array.isArray(rawPlan.meals) || rawPlan.meals.length !== 7) {
+    if (!Array.isArray(rawPlan.meals) || rawPlan.meals.length !== 7 ||
+        (includeBreakfast && rawPlan.breakfasts?.length !== 3) ||
+        (includeLunch && rawPlan.lunches?.length !== 3)) {
       rawPlan = await requestMealPlan(
-        "CRITICAL RETRY: Your last response did not return exactly 7 dinner meals. Return valid JSON with exactly 7 meal objects and the required shape. Desserts are optional and may be 0, 1, or 2 items.",
+        `CRITICAL RETRY: Return exactly 7 dinner meals in meals, ${includeBreakfast ? "3" : "0"} breakfasts in breakfasts, and ${includeLunch ? "3" : "0"} lunches in lunches. Desserts are optional and may be 0, 1, or 2 items. Keep all requested constraints.`,
       );
     }
 
-    let parsed = aiGenerateListResponseSchema.parse(rawPlan);
+    let parsed = aiGenerateListResponseSchema.parse({ ...rawPlan, breakfasts: includeBreakfast ? rawPlan.breakfasts : [], lunches: includeLunch ? rawPlan.lunches : [] });
     parsed = {
       ...parsed,
       meals: normalizeGeneratedMeals(parsed.meals, householdSize),
     };
     let blockedMatches = findBlockedContentMatches(
-      parsed.meals,
+      [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
       [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
     );
     let repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
-    let equipmentViolations = findEquipmentViolations(parsed.meals, selectedEquipmentSet);
+    let equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
     let missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
       parsed.meals,
       selectedEquipmentSet,
@@ -544,17 +555,17 @@ export async function POST(request: Request) {
       rawPlan = await requestMealPlan(
         `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
       );
-      parsed = aiGenerateListResponseSchema.parse(rawPlan);
+      parsed = aiGenerateListResponseSchema.parse({ ...rawPlan, breakfasts: includeBreakfast ? rawPlan.breakfasts : [], lunches: includeLunch ? rawPlan.lunches : [] });
       parsed = {
         ...parsed,
         meals: normalizeGeneratedMeals(parsed.meals, householdSize),
       };
       blockedMatches = findBlockedContentMatches(
-        parsed.meals,
+        [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
         [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
       );
       repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
-      equipmentViolations = findEquipmentViolations(parsed.meals, selectedEquipmentSet);
+      equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
       missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
         parsed.meals,
         selectedEquipmentSet,
@@ -576,17 +587,17 @@ export async function POST(request: Request) {
       rawPlan = await requestMealPlan(
         `PLUS REFINEMENT RETRY: Keep the same budget, diet, pantry, and prep-time constraints, but improve the weekly plan quality. Fix these soft-quality issues: missing selected special equipment usage: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Overused proteins: ${overusedProteins.join(", ") || "none"}. Repeated meal families: ${repeatedMealFamilies.join(", ") || "none"}. Cuisine alignment count for the requested cuisine vibe is currently ${cuisineAlignedMeals} out of 7 and should be at least 3 when a cuisine preference is provided. Return a noticeably more varied, balanced weekly plan with exactly 7 dinner meals and valid JSON only. Desserts may be 0, 1, or 2 items.`,
       );
-      parsed = aiGenerateListResponseSchema.parse(rawPlan);
+      parsed = aiGenerateListResponseSchema.parse({ ...rawPlan, breakfasts: includeBreakfast ? rawPlan.breakfasts : [], lunches: includeLunch ? rawPlan.lunches : [] });
       parsed = {
         ...parsed,
         meals: normalizeGeneratedMeals(parsed.meals, householdSize),
       };
       blockedMatches = findBlockedContentMatches(
-        parsed.meals,
+        [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
         [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
       );
       repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
-      equipmentViolations = findEquipmentViolations(parsed.meals, selectedEquipmentSet);
+      equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
       missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
         parsed.meals,
         selectedEquipmentSet,
@@ -623,6 +634,20 @@ export async function POST(request: Request) {
       );
     }
 
+    const optionalMeals = [
+      ...normalizeOptionalMeals(includeBreakfast ? parsed.breakfasts : [], "breakfast", householdSize),
+      ...normalizeOptionalMeals(includeLunch ? parsed.lunches : [], "lunch", householdSize),
+    ];
+    if ((includeBreakfast && parsed.breakfasts.length !== 3) || (includeLunch && parsed.lunches.length !== 3)) {
+      throw new Error("The plan did not include all requested breakfast or lunch options. Please try again.");
+    }
+    const optionalBlocked = findBlockedContentMatches(optionalMeals, [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems]);
+    const optionalEquipment = findEquipmentViolations(optionalMeals, selectedEquipmentSet);
+    if (optionalBlocked.length || optionalEquipment.length) {
+      throw new Error("Breakfast or lunch options did not meet your dietary, avoidance, or equipment settings. Please try again.");
+    }
+    const allMeals = [...parsed.meals, ...optionalMeals];
+
     const deterministicRestockItems = (
       normalizedMealSourceMode === "pantry-only"
         ? []
@@ -639,7 +664,7 @@ export async function POST(request: Request) {
       }));
 
     const recalculatedTotal =
-      parsed.meals.reduce(
+      allMeals.reduce(
         (sum, meal) =>
           sum +
           meal.ingredients.reduce(
@@ -656,7 +681,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ...parsed,
-      meals: parsed.meals,
+      meals: allMeals,
+      breakfasts: includeBreakfast ? parsed.breakfasts : [],
+      lunches: includeLunch ? parsed.lunches : [],
       restock_items: deterministicRestockItems,
       estimated_total_cost: recalculatedTotal,
       desserts: parsed.desserts,

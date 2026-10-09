@@ -10,6 +10,7 @@ import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
 import { deriveGroceryLists } from "../lib/grocery-list";
 import { restoreMealAtPosition, undoCookedEntry } from "../lib/meal-recovery";
 import { countCookedThisWeek } from "../lib/week-progress";
+import { getMealKind, mealKindLabel, hasRoomForMeal } from "../lib/meal-types";
 import { recoverWeekDraft, weekDraftKey, weekSnapshot, saveErrorMessage } from "../lib/save-recovery";
 import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
@@ -117,6 +118,8 @@ type FormState = {
   mustHaveIngredient: string;
   avoidIngredients: string;
   includeDessert: boolean;
+  includeBreakfast: boolean;
+  includeLunch: boolean;
   prepTime: string;
   adventureLevel: string;
   isBudgetTight: boolean;
@@ -133,6 +136,8 @@ const initialFormState: FormState = {
   mustHaveIngredient: "",
   avoidIngredients: "",
   includeDessert: false,
+  includeBreakfast: false,
+  includeLunch: false,
   prepTime: "Under 30 mins",
   adventureLevel: "Mix it up",
   isBudgetTight: true,
@@ -149,6 +154,8 @@ const clearedFormState: FormState = {
   mustHaveIngredient: "",
   avoidIngredients: "",
   includeDessert: false,
+  includeBreakfast: false,
+  includeLunch: false,
   prepTime: "Under 30 mins",
   adventureLevel: "Stick to basics",
   isBudgetTight: true,
@@ -363,7 +370,7 @@ const mobileTabs: Array<{
     label: "Meals",
     shortLabel: "Meals",
     eyebrow: "Dinner flow",
-    description: "Review generated dinners, desserts, swaps, and saves.",
+    description: "Review breakfast, lunch, dinner, Sweet Treats, and swaps.",
     accentClass: "text-berry",
     badgeClass: "bg-rose-100 text-berry",
     panelClass: "border-rose-200 bg-[#fff8fb]",
@@ -811,6 +818,8 @@ export function SmartCartApp() {
         avoidIngredients:
           parsed.avoidIngredients ?? current.avoidIngredients,
         includeDessert: parsed.includeDessert ?? current.includeDessert,
+        includeBreakfast: parsed.includeBreakfast ?? false,
+        includeLunch: parsed.includeLunch ?? false,
         prepTime: parsed.prepTime ?? current.prepTime,
         adventureLevel: parsed.adventureLevel ?? current.adventureLevel,
         isBudgetTight: parsed.isBudgetTight ?? current.isBudgetTight,
@@ -1187,7 +1196,7 @@ export function SmartCartApp() {
     savedDesserts: [...savedDesserts, ...(generatedPlan?.desserts ?? []).map(dessert => ({ name: dessert.title, ingredients: dessert.ingredients }))],
   }), [fullyStocked, runningLow, restock, combinedPantryItems, weeklyMenu, savedDesserts, generatedPlan]);
   const generationHandoff = generatedPlan ? <div className="mb-5 rounded-2xl border border-pine/20 bg-white p-5 lg:col-span-12" role="status">
-    <p className="text-sm font-semibold text-pine">{generatedPlan.meals.length + weeklyMenu.length} dinner options · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
+    <p className="text-sm font-semibold text-pine">{(["dinner", "breakfast", "lunch"] as const).map((kind) => { const count = [...generatedPlan.meals, ...weeklyMenu].filter((meal) => getMealKind(meal) === kind).length; return count ? `${count} ${kind} options` : null; }).filter(Boolean).join(" · ")} · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
     <p className="mt-2 text-sm leading-6 text-ink/65">{candidatePlan.derivedGroceryList.length} grocery items across all options. Choose the meals you want to cook. Your Week tracks your chosen meals and the groceries they need.</p>
     <button type="button" onClick={() => navigateToStage("week")} className="mt-4 rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white">Review Your Week</button>
   </div> : null;
@@ -1247,6 +1256,8 @@ export function SmartCartApp() {
           mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
           avoidIngredients: safeTrim(formState.avoidIngredients),
           includeDessert: formState.includeDessert,
+          includeBreakfast: formState.includeBreakfast,
+          includeLunch: formState.includeLunch,
           adventureLevel: formState.adventureLevel,
           prepTime: formState.prepTime,
           availableEquipment: formState.availableEquipment,
@@ -1429,8 +1440,8 @@ export function SmartCartApp() {
     const sweetTreat = isSweetTreatMeal(meal);
     const currentLineup = sweetTreat ? savedDesserts : weeklyMenu;
     if (currentLineup.some((item) => `${item.day}::${item.name}` === mealKey)) return;
-    if (!sweetTreat && weeklyMenu.length >= 5) {
-      showToast("This Week has five dinners. Cook a meal before adding another.", "info");
+    if (!sweetTreat && !hasRoomForMeal(weeklyMenu, meal)) {
+      showToast(`This Week has five ${mealKindLabel(getMealKind(meal)).toLowerCase()} meals. Cook one before adding another.`, "info");
       return;
     }
 
@@ -1483,7 +1494,11 @@ export function SmartCartApp() {
   function handleUndoCookedMeal() {
     if (!mealUndo || mealUndo.storageKey !== cookedStorageKey) return;
     const lineup = mealUndo.sweetTreat ? savedDesserts : weeklyMenu;
-    const restored = restoreMealAtPosition(lineup, mealUndo.meal, mealUndo.position, mealUndo.sweetTreat ? Infinity : 5);
+    if (!mealUndo.sweetTreat && !hasRoomForMeal(lineup, mealUndo.meal) && !lineup.some((meal) => meal.day === mealUndo.meal.day && meal.name === mealUndo.meal.name)) {
+      setToastTone("info");
+      return;
+    }
+    const restored = restoreMealAtPosition(lineup, mealUndo.meal, mealUndo.position);
     if (!restored) {
       setToastTone("info");
       return;
@@ -1546,7 +1561,7 @@ export function SmartCartApp() {
       ingredients: meal.ingredients ?? [],
       instructions: meal.instructions ?? [],
       recipe_data: meal,
-      type: isSweetTreatMeal(meal) ? "sweet_treat" : "dinner",
+      type: getMealKind(meal),
     };
 
     const { data, error } = await supabase
@@ -1616,8 +1631,8 @@ export function SmartCartApp() {
   }
 
   function handleRestoreMeal(meal: MealPlanItem) {
-    if (!isSweetTreatMeal(meal) && weeklyMenu.length >= 5) {
-      showToast("This Week has five dinners. Cook a meal before adding another.", "info");
+    if (!hasRoomForMeal(weeklyMenu, meal)) {
+      showToast(`This Week has five ${mealKindLabel(getMealKind(meal)).toLowerCase()} meals. Cook one before adding another.`, "info");
       return;
     }
 
@@ -1643,7 +1658,7 @@ export function SmartCartApp() {
         return current;
       }
 
-      if (current.length >= 5) {
+      if (!hasRoomForMeal(current, meal)) {
         return current;
       }
 
@@ -2125,11 +2140,12 @@ export function SmartCartApp() {
     }));
 
     const dinners = sanitized
-      .filter((row) => row.type === "dinner")
+      .filter((row) => row.type === "dinner" || row.type === "breakfast" || row.type === "lunch")
       .map((row) =>
         rehydrateMealRecord((row.recipe_data ?? { ...row, name: row.meal_title }) as Partial<MealPlanItem> | null, {
           dbId: row.id ?? undefined,
           user_id: safeTrim(row.user_id),
+          day: row.type === "breakfast" ? "Breakfast" : row.type === "lunch" ? "Lunch" : "",
         }),
       )
       .filter((meal): meal is MealPlanItem => Boolean(meal));
@@ -2231,7 +2247,7 @@ export function SmartCartApp() {
                 safeTrim((row as { type?: string | null }).type).toLowerCase() ===
                 "sweet_treat"
                   ? "Sweet Treat"
-                  : "",
+                  : row.type === "breakfast" ? "Breakfast" : row.type === "lunch" ? "Lunch" : "",
               servings: Number(formState.householdSize) || 2,
             },
           ),
@@ -2294,7 +2310,7 @@ export function SmartCartApp() {
         ...weeklyMenu.map((meal) => ({
           meal_title: meal.name,
           recipe_data: meal,
-          type: "dinner",
+          type: getMealKind(meal),
           status: "active_week",
           user_id: userId,
         })),
@@ -2403,6 +2419,7 @@ export function SmartCartApp() {
             householdSize,
             combinedPantryItems: combinedPantryItems.join(", "),
             rejectedMealTitle: meal.name,
+            mealType: getMealKind(meal),
             replacementQuality: isPlusMember ? "plus" : "free",
             prepTime: formState.prepTime,
             adventureLevel: formState.adventureLevel,
@@ -2545,10 +2562,10 @@ export function SmartCartApp() {
             </div>
           </div>
         ) : null}
-        <SmartCartGenerationProgress phase={generationPhase} includeDessert={formState.includeDessert} />
+        <SmartCartGenerationProgress phase={generationPhase} includeDessert={formState.includeDessert} includeBreakfast={formState.includeBreakfast} includeLunch={formState.includeLunch} />
         <SmartCartFeedback
           undoMessage={mealUndo?.storageKey === cookedStorageKey
-            ? !mealUndo.sweetTreat && weeklyMenu.length >= 5 && !weeklyMenu.some((item) => item.day === mealUndo.meal.day && item.name === mealUndo.meal.name)
+            ? !mealUndo.sweetTreat && !hasRoomForMeal(weeklyMenu, mealUndo.meal) && !weeklyMenu.some((item) => item.day === mealUndo.meal.day && item.name === mealUndo.meal.name)
               ? `This Week is full. Make room to restore ${mealUndo.meal.name}, then use Undo.`
               : `${mealUndo.meal.name} marked cooked. Undo to put it back in This Week.`
             : null}
@@ -2668,6 +2685,8 @@ export function SmartCartApp() {
                   includeDessert: checked,
                 }))
               }
+              onIncludeBreakfastChange={(checked) => setFormState((current) => ({ ...current, includeBreakfast: checked }))}
+              onIncludeLunchChange={(checked) => setFormState((current) => ({ ...current, includeLunch: checked }))}
               onMustHaveIngredientChange={(value) =>
                 setFormState((current) => ({
                   ...current,
@@ -2755,14 +2774,14 @@ export function SmartCartApp() {
                 savedMealKeys={savedMealKeys}
                 userPlan={userPlan}
                 userId={safeTrim(user?.id)}
-                weeklyMenuCount={weeklyMenu.length}
+                weeklyMenu={weeklyMenu}
               />
               </>
             ) : (
               <div className="rounded-[1.5rem] border border-dashed border-rose-200 bg-rose-50 px-4 py-10 text-center text-ink/60">
                 <p className="font-display text-2xl text-ink">Meals will land here</p>
                 <p className="mt-3 text-sm leading-7">
-                  Build your plan first, then flip back here to review dinners and desserts.
+                  Build your plan first, then return here to choose your meals and Sweet Treats.
                 </p>
               </div>
             )}
@@ -2898,6 +2917,8 @@ export function SmartCartApp() {
                 includeDessert: checked,
               }))
             }
+            onIncludeBreakfastChange={(checked) => setFormState((current) => ({ ...current, includeBreakfast: checked }))}
+            onIncludeLunchChange={(checked) => setFormState((current) => ({ ...current, includeLunch: checked }))}
             onMustHaveIngredientChange={(value) =>
               setFormState((current) => ({
                 ...current,
@@ -2979,7 +3000,7 @@ export function SmartCartApp() {
                   savedMealKeys={savedMealKeys}
                   userPlan={userPlan}
                   userId={safeTrim(user?.id)}
-                  weeklyMenuCount={weeklyMenu.length}
+                  weeklyMenu={weeklyMenu}
                 />
                 <div id="desktop-shop" className="scroll-mt-8 lg:col-span-4">
                 {grocerySidebar}

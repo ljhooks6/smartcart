@@ -78,7 +78,7 @@ Thanks for trying MealCaddie. I am using this feedback to improve the product an
     - Maybe
     - No
 
-15. MealCaddie may eventually help with breakfast and lunch too. Which meals would you want help planning?
+15. MealCaddie includes optional breakfast and lunch picks. Which meal types did you try, and which would you use most?
     - Checkboxes
     - Dinner
     - Breakfast
