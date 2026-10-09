@@ -4,6 +4,9 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { SmartCartContextForm } from "./smart-cart-context-form";
+import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
+import { deriveGroceryLists } from "../lib/grocery-list";
+import { countCookedThisWeek } from "../lib/week-progress";
 import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
 import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
@@ -92,7 +95,7 @@ type ReplaceDessertResponse = {
 };
 
 type ToastTone = "success" | "error" | "info";
-type MobileTab = "plan" | "meals" | "shop" | "cook" | "vault";
+type MobileTab = "week" | "plan" | "meals" | "shop" | "cook" | "vault";
 type ActionGuidancePreferences = {
   skipPermanentDeleteConfirm: boolean;
   skipRemoveFromMenuConfirm: boolean;
@@ -403,6 +406,13 @@ const mobileTabs: Array<{
     headerClass: "border-amber-200 bg-gradient-to-r from-amber-100 via-yellow-50 to-white",
     statusClass: "bg-white text-amber-800 shadow-sm",
   },
+  {
+    id: "week", label: "Your Week", shortLabel: "Week", eyebrow: "Weekly overview",
+    description: "Your meals, shopping progress, and next step in one place.",
+    accentClass: "text-pine", badgeClass: "bg-green-100 text-pine",
+    panelClass: "border-pine/20 bg-[#fffdf8]", shellClass: "border-pine/20 bg-[#fffdf8]/95",
+    headerClass: "border-pine/20 bg-white", statusClass: "bg-white text-pine shadow-sm",
+  },
 ];
 
 function MobileTabIcon({
@@ -412,7 +422,7 @@ function MobileTabIcon({
   tab: MobileTab;
   className?: string;
 }) {
-  if (tab === "plan") {
+  if (tab === "plan" || tab === "week") {
     return (
       <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
         <path
@@ -618,8 +628,17 @@ export function SmartCartApp() {
     new Set(),
   );
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
-  const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("plan");
+  const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("week");
   const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
+  const [cookedHistory, setCookedHistory] = useState<{ key: string; entries: Array<{ name: string; cookedAt: string }> }>({ key: "", entries: [] });
+  const cookedStorageKey = `mealcaddie-cooked-${user?.id || "guest"}`;
+  useEffect(() => {
+    const stored = loadStoredJson<Array<{ name: string; cookedAt: string }>>(cookedStorageKey);
+    setCookedHistory({ key: cookedStorageKey, entries: Array.isArray(stored) ? stored.filter(entry => typeof entry?.name === "string" && typeof entry?.cookedAt === "string") : [] });
+  }, [cookedStorageKey]);
+  useEffect(() => {
+    if (cookedHistory.key === cookedStorageKey) saveStoredJson(cookedStorageKey, cookedHistory.entries);
+  }, [cookedHistory, cookedStorageKey]);
   const lastScrollYRef = useRef(0);
   const [actionGuidance, setActionGuidance] = useState<ActionGuidancePreferences>({
     skipPermanentDeleteConfirm: false,
@@ -915,7 +934,7 @@ export function SmartCartApp() {
       return;
     }
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "instant" });
   }, [activeMobileTab]);
 
   useEffect(() => {
@@ -1049,6 +1068,70 @@ export function SmartCartApp() {
   const hasCookSurfaceContent = weeklyMenu.length > 0 || savedDesserts.length > 0;
   const hasVaultSurfaceContent = archivedMeals.length > 0 || Boolean(user);
 
+  const activeGroceries = displayGroceriesByCategory.flatMap(([, items]) => items);
+  const groceryCount = activeGroceries.length + customItems.length;
+  const collectedCount = activeGroceries.filter(item => checkedItems.has(item.item_key)).length + customItems.filter(item => item.isChecked).length;
+  const pantryCount = skippedGroceriesByCategory.reduce((count, [, items]) => count + items.length, 0);
+  const hasShoppingSurfaceContent = Boolean(generatedPlan) || hasCookSurfaceContent || groceryCount > 0;
+  const cookedCount = cookedHistory.key === cookedStorageKey
+    ? countCookedThisWeek(cookedHistory.entries) : 0;
+  function navigateToStage(stage: MobileTab) {
+    setActiveMobileTab(stage);
+    if (stage === "vault") setIsVaultOpen(true);
+    if (stage === "shop") setGroceryOpen(true);
+    window.requestAnimationFrame(() => {
+      if (window.innerWidth < 768) window.scrollTo({ top: 0, behavior: "instant" });
+      else (document.getElementById(`desktop-${stage}`) ?? document.getElementById("desktop-meals"))?.scrollIntoView({ block: "start", behavior: "instant" });
+    });
+  }
+  const grocerySidebar = (
+    <SmartCartGrocerySidebar
+                budgetPercentage={budgetPercentage}
+                budgetProgressBarClass={budgetProgressBarClass}
+                budgetStatusLabel={budgetStatusLabel}
+                budgetStatusTextClass={budgetStatusTextClass}
+                checkedItems={checkedItems}
+                copied={copied}
+                customItems={customItems}
+                displayGroceriesByCategory={displayGroceriesByCategory}
+                formatCurrency={formatCurrency}
+                isGroceryOpen={isGroceryOpen}
+                newCustomItem={newCustomItem}
+                onAddCustomItem={handleAddCustomItem}
+                onChangeCustomItem={setNewCustomItem}
+                onCopyShoppingList={handleCopyShoppingList}
+                onRemoveCustomItem={removeCustomItem}
+                onRemoveGroceryItem={removeGroceryItem}
+                onRemoveRestoredItem={removeRestoredItem}
+                onRestoreSkippedItem={restoreSkippedItem}
+                onSetCustomItemChecked={setCustomItemChecked}
+                onToggleCheckedItem={toggleCheckedItem}
+                onToggleGroceryOpen={() => setGroceryOpen(!isGroceryOpen)}
+                parsedBudget={parsedBudget}
+                rawBudgetPercentage={rawBudgetPercentage}
+                restoredItems={restoredItems}
+                skippedGroceriesByCategory={skippedGroceriesByCategory}
+                totalCost={totalCost}
+              />
+  );
+  const weekDashboard = <SmartCartWeekDashboard
+    dinners={weeklyMenu} desserts={savedDesserts} cookedCount={cookedCount}
+    groceryCount={groceryCount} collectedCount={collectedCount} pantryCount={pantryCount}
+    estimatedCost={formatCurrency(totalCost)} budget={formatCurrency(parsedBudget || 0)}
+    overBudget={totalCost > (parsedBudget || 0)}
+    hasIngredients={[...weeklyMenu, ...savedDesserts].every(meal => Boolean(meal.ingredients?.length))}
+    hasOptions={hasMealSurfaceContent} vaultCount={archivedMeals.length} onNavigate={navigateToStage}
+  />;
+  const candidatePlan = useMemo(() => deriveGroceryLists({ fullyStocked, runningLow, restock, pantryItems: combinedPantryItems,
+    weeklyMenu: [...weeklyMenu, ...(generatedPlan?.meals ?? [])],
+    savedDesserts: [...savedDesserts, ...(generatedPlan?.desserts ?? []).map(dessert => ({ name: dessert.title, ingredients: dessert.ingredients }))],
+  }), [fullyStocked, runningLow, restock, combinedPantryItems, weeklyMenu, savedDesserts, generatedPlan]);
+  const generationHandoff = generatedPlan ? <div className="mb-5 rounded-2xl border border-pine/20 bg-white p-5 lg:col-span-12" role="status">
+    <p className="text-sm font-semibold text-pine">{generatedPlan.meals.length + weeklyMenu.length} dinner options · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
+    <p className="mt-2 text-sm leading-6 text-ink/65">{candidatePlan.derivedGroceryList.length} grocery items across all options. Choose the meals you want to cook. Your Week tracks your chosen meals and the groceries they need.</p>
+    <button type="button" onClick={() => navigateToStage("week")} className="mt-4 rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white">Review Your Week</button>
+  </div> : null;
+
   async function submitPlan(applyUpgrades = false) {
     setValidationError(null);
     setRequestError(null);
@@ -1150,7 +1233,7 @@ export function SmartCartApp() {
     const didStartPlan = await submitPlan(false);
     if (didStartPlan) {
       setIsMobileDockExpanded(false);
-      setActiveMobileTab("meals");
+      navigateToStage("meals");
     } else {
       setIsMobileDockExpanded(false);
       setActiveMobileTab("plan");
@@ -1367,6 +1450,8 @@ export function SmartCartApp() {
 
   function performRemoveFromWeeklyMenu(meal: MealPlanItem) {
     const mealKey = `${meal.day}::${meal.name}`;
+    if (![...weeklyMenu, ...savedDesserts].some(item => `${item.day}::${item.name}` === mealKey)) return;
+    setCookedHistory(current => ({ key: cookedStorageKey, entries: [...(current.key === cookedStorageKey ? current.entries : []), { name: meal.name, cookedAt: new Date().toISOString() }] }));
 
     if (isSweetTreatMeal(meal)) {
       setSavedDesserts((current) =>
@@ -1799,7 +1884,7 @@ export function SmartCartApp() {
     confirmDialog?.kind === "permanentDelete"
       ? `This will permanently delete ${confirmDialog.meal.name}. It will not stay in your weekly lineup or your vault.`
       : confirmDialog?.kind === "removeFromMenu"
-        ? `If you already cooked ${confirmDialog.meal.name}, you can safely remove it from this week’s Cook lineup. It will no longer help drive your shopping list after this.`
+        ? `Mark ${confirmDialog.meal.name} as cooked and remove it from your Cook Lineup and shopping list. Your Week will record it as cooked on this device.`
       : confirmDialog?.kind === "saveToMenu"
       ? `This will move ${confirmDialog.meal.name} into your Cook lineup for this week and use it to help build your shopping list.`
       : confirmDialog?.kind === "stashToVault"
@@ -2587,6 +2672,8 @@ export function SmartCartApp() {
               }`}
             >
             {generatedPlan ? (
+              <>
+              {generationHandoff}
               <SmartCartMealSections
                 cuisinePreference={formState.cuisinePreference}
                 expandedDetailCards={expandedDetailCards}
@@ -2613,6 +2700,7 @@ export function SmartCartApp() {
                 userId={safeTrim(user?.id)}
                 weeklyMenuCount={weeklyMenu.length}
               />
+              </>
             ) : (
               <div className="rounded-[1.5rem] border border-dashed border-rose-200 bg-rose-50 px-4 py-10 text-center text-ink/60">
                 <p className="font-display text-2xl text-ink">Meals will land here</p>
@@ -2628,35 +2716,8 @@ export function SmartCartApp() {
                 activeMobileTab === "shop" ? `block ${mobileTabs[2].panelClass}` : "hidden"
               }`}
             >
-            {generatedPlan ? (
-              <SmartCartGrocerySidebar
-                budgetPercentage={budgetPercentage}
-                budgetProgressBarClass={budgetProgressBarClass}
-                budgetStatusLabel={budgetStatusLabel}
-                budgetStatusTextClass={budgetStatusTextClass}
-                checkedItems={checkedItems}
-                copied={copied}
-                customItems={customItems}
-                displayGroceriesByCategory={displayGroceriesByCategory}
-                formatCurrency={formatCurrency}
-                isGroceryOpen={isGroceryOpen}
-                newCustomItem={newCustomItem}
-                onAddCustomItem={handleAddCustomItem}
-                onChangeCustomItem={setNewCustomItem}
-                onCopyShoppingList={handleCopyShoppingList}
-                onRemoveCustomItem={removeCustomItem}
-                onRemoveGroceryItem={removeGroceryItem}
-                onRemoveRestoredItem={removeRestoredItem}
-                onRestoreSkippedItem={restoreSkippedItem}
-                onSetCustomItemChecked={setCustomItemChecked}
-                onToggleCheckedItem={toggleCheckedItem}
-                onToggleGroceryOpen={() => setGroceryOpen(!isGroceryOpen)}
-                parsedBudget={parsedBudget}
-                rawBudgetPercentage={rawBudgetPercentage}
-                restoredItems={restoredItems}
-                skippedGroceriesByCategory={skippedGroceriesByCategory}
-                totalCost={totalCost}
-              />
+            {hasShoppingSurfaceContent ? (
+              grocerySidebar
             ) : (
               <div className="rounded-[1.5rem] border border-dashed border-emerald-200 bg-white px-4 py-10 text-center text-ink/60">
                 <p className="font-display text-2xl text-ink">Your grocery list will appear here</p>
@@ -2722,7 +2783,10 @@ export function SmartCartApp() {
           </section>
         </div>
 
+        <div className={activeMobileTab === "week" ? "block pb-36 md:hidden" : "hidden"}>{weekDashboard}</div>
         <div className="hidden md:block">
+          <div id="desktop-week" className="mb-8 scroll-mt-8">{weekDashboard}</div>
+          <div id="desktop-plan" className="scroll-mt-8" />
           <SmartCartContextForm
             adventureLevelOptions={adventureLevelOptions}
             combinedPantryItems={combinedPantryItems}
@@ -2827,7 +2891,8 @@ export function SmartCartApp() {
           />
           <section className="mt-10 pb-16">
             {generatedPlan ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div id="desktop-meals" className="grid scroll-mt-8 grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {generationHandoff}
                 <SmartCartMealSections
                   cuisinePreference={formState.cuisinePreference}
                   expandedDetailCards={expandedDetailCards}
@@ -2854,44 +2919,20 @@ export function SmartCartApp() {
                   userId={safeTrim(user?.id)}
                   weeklyMenuCount={weeklyMenu.length}
                 />
-                <SmartCartGrocerySidebar
-                  budgetPercentage={budgetPercentage}
-                  budgetProgressBarClass={budgetProgressBarClass}
-                  budgetStatusLabel={budgetStatusLabel}
-                  budgetStatusTextClass={budgetStatusTextClass}
-                  checkedItems={checkedItems}
-                  copied={copied}
-                  customItems={customItems}
-                  displayGroceriesByCategory={displayGroceriesByCategory}
-                  formatCurrency={formatCurrency}
-                  isGroceryOpen={isGroceryOpen}
-                  newCustomItem={newCustomItem}
-                  onAddCustomItem={handleAddCustomItem}
-                  onChangeCustomItem={setNewCustomItem}
-                  onCopyShoppingList={handleCopyShoppingList}
-                  onRemoveCustomItem={removeCustomItem}
-                  onRemoveGroceryItem={removeGroceryItem}
-                  onRemoveRestoredItem={removeRestoredItem}
-                  onRestoreSkippedItem={restoreSkippedItem}
-                  onSetCustomItemChecked={setCustomItemChecked}
-                  onToggleCheckedItem={toggleCheckedItem}
-                  onToggleGroceryOpen={() => setGroceryOpen(!isGroceryOpen)}
-                  parsedBudget={parsedBudget}
-                  rawBudgetPercentage={rawBudgetPercentage}
-                  restoredItems={restoredItems}
-                  skippedGroceriesByCategory={skippedGroceriesByCategory}
-                  totalCost={totalCost}
-                />
+                <div id="desktop-shop" className="scroll-mt-8 lg:col-span-4">
+                {grocerySidebar}
+                </div>
               </div>
             ) : (
-              <div className="rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
+              <div id="desktop-meals" className="scroll-mt-8 rounded-[2rem] border border-dashed border-pine/20 bg-white/40 p-10 text-center text-ink/60">
                 <p className="font-display text-2xl text-ink">Your generated plan will appear here</p>
                 <p className="mt-3 text-sm leading-7">
                   Select your preferences and pantry items above to get started.
                 </p>
               </div>
             )}
-            <div className="mt-8">
+            {!generatedPlan && hasShoppingSurfaceContent ? <div id="desktop-shop" className="mt-8 scroll-mt-8">{grocerySidebar}</div> : null}
+            <div id="desktop-cook" className="mt-8 scroll-mt-8">
               <SmartCartCookSections
                 expandedDetailCards={expandedDetailCards}
                 expandedIngredientsMeals={expandedIngredientsMeals}
@@ -2907,6 +2948,7 @@ export function SmartCartApp() {
                 weeklyMenu={weeklyMenu}
               />
             </div>
+            <div id="desktop-vault" className="scroll-mt-8" />
             <SmartCartLibrarySections
               archivedMeals={archivedMeals}
               cloudSyncMessage={cloudSyncMessage}
@@ -2991,10 +3033,10 @@ export function SmartCartApp() {
                       <button
                         className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={!generatedPlan}
-                        onClick={() => setActiveMobileTab("shop")}
+                        onClick={() => navigateToStage("week")}
                         type="button"
                       >
-                        Open Shop
+                        Review Your Week
                       </button>
                       <button
                         className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
@@ -3009,7 +3051,7 @@ export function SmartCartApp() {
                     <>
                       <button
                         className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={!generatedPlan}
+                        disabled={!hasShoppingSurfaceContent}
                         onClick={handleCopyShoppingList}
                         type="button"
                       >
@@ -3080,7 +3122,7 @@ export function SmartCartApp() {
               </div>
 
             <nav className="p-2">
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {mobileTabs.map((tab) => {
                   const isActive = activeMobileTab === tab.id;
                   return (
@@ -3091,7 +3133,7 @@ export function SmartCartApp() {
                           ? "bg-pine text-white shadow-md"
                           : "bg-transparent text-ink/55 hover:bg-stone-100"
                       }`}
-                      onClick={() => setActiveMobileTab(tab.id)}
+                      onClick={() => navigateToStage(tab.id)}
                       type="button"
                     >
                       <span className="mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-2xl bg-black/5">

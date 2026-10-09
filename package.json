@@ -10,7 +10,8 @@
     "build": "set NEXT_TEST_WASM_DIR=.\\node_modules\\@next\\swc-wasm-nodejs&& next build",
     "start": "set NEXT_TEST_WASM_DIR=.\\node_modules\\@next\\swc-wasm-nodejs&& next start",
     "lint": "next lint",
-    "test:grocery": "node --experimental-strip-types --test tests/grocery-reliability.test.mjs"
+    "test:grocery": "node --experimental-strip-types --test tests/grocery-reliability.test.mjs",
+    "test:week": "node --experimental-strip-types --test tests/week-progress.test.mjs"
   },
   "dependencies": {
     "@next/swc-wasm-nodejs": "^15.5.14",
