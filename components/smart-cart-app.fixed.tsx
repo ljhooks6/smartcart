@@ -16,6 +16,7 @@ import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
 import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
 import { SmartCartHeroHeader } from "./smart-cart-hero-header";
+import { SmartCartWelcome } from "./smart-cart-welcome";
 import { SmartCartLibrarySections } from "./smart-cart-library-sections";
 import { SmartCartMealSections } from "./smart-cart-meal-sections";
 import { SmartCartRecipeModal } from "./smart-cart-recipe-modal";
@@ -602,6 +603,7 @@ export function SmartCartApp() {
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [hasResolvedAuthSession, setHasResolvedAuthSession] = useState(false);
+  const [hasContinuedAsGuest, setHasContinuedAsGuest] = useState(false);
   const [showLaunchAnimation, setShowLaunchAnimation] = useState(false);
   const [email, setEmail] = useState("");
   const [authMessage, setAuthMessage] = useState("");
@@ -742,11 +744,15 @@ export function SmartCartApp() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       const nextUser = session?.user ?? null;
       setUser(nextUser);
       setHasResolvedAuthSession(true);
+      if (error) setAuthMessage("We couldn’t restore your sign-in. Please sign in again or continue as guest.");
       void loadMembershipProfile(nextUser);
+    }).catch(() => {
+      setHasResolvedAuthSession(true);
+      setAuthMessage("We couldn’t restore your sign-in. Please sign in again or continue as guest.");
     });
 
     const {
@@ -756,6 +762,10 @@ export function SmartCartApp() {
         const nextUser = session?.user ?? null;
         setUser(nextUser);
         setHasResolvedAuthSession(true);
+        if (event === "SIGNED_OUT" || currentUserId.current !== nextUser?.id) {
+          setHasContinuedAsGuest(false);
+          setActiveMobileTab("week");
+        }
         void loadMembershipProfile(nextUser);
       }
     });
@@ -2461,6 +2471,23 @@ export function SmartCartApp() {
     } finally {
       setReplacingMealKey(null);
     }
+  }
+
+  if (!hasResolvedAuthSession || (!user && !hasContinuedAsGuest)) {
+    return <SmartCartWelcome
+      ready={hasResolvedAuthSession}
+      busy={isAuthLoading}
+      email={email}
+      message={authMessage}
+      onEmailChange={setEmail}
+      onGoogleLogin={handleGoogleLogin}
+      onEmailLogin={handleLogin}
+      onContinueAsGuest={() => {
+        setHasContinuedAsGuest(true);
+        setActiveMobileTab(weeklyMenu.length || savedDesserts.length ? "week" : "plan");
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }}
+    />;
   }
 
   return (
