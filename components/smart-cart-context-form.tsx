@@ -607,11 +607,12 @@ export function SmartCartContextForm({
             disabled={isLoading || !isBudgetValid}
             type="submit"
           >
-            {isLoading ? "Cooking up your plan..." : "Generate"}
+            {isLoading ? "Building your meals..." : "Generate"}
           </button>
           <button
             className="shrink-0 text-sm text-gray-500 underline decoration-gray-300 underline-offset-4 transition hover:text-red-500"
             onClick={onClearForm}
+            disabled={isLoading}
             type="button"
           >
             Clear Form

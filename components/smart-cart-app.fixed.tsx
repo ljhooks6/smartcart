@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { SmartCartGenerationProgress, type GenerationPhase } from "./smart-cart-generation-progress";
 import { SmartCartContextForm } from "./smart-cart-context-form";
 import { SmartCartStoreMode } from "./smart-cart-store-mode";
 import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
@@ -604,6 +605,8 @@ export function SmartCartApp() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [generationPhase, setGenerationPhase] = useState<GenerationPhase | null>(null);
+  const generationInFlight = useRef(false);
   const [generatedPlan, setGeneratedPlan] =
     useState<GenerateListResponse | null>(null);
   const [fullyStocked, setFullyStocked] = useState<Set<string>>(new Set());
@@ -1153,6 +1156,7 @@ export function SmartCartApp() {
   </div> : null;
 
   async function submitPlan(applyUpgrades = false) {
+    if (generationInFlight.current) return false;
     setValidationError(null);
     setRequestError(null);
 
@@ -1174,7 +1178,9 @@ export function SmartCartApp() {
       return false;
     }
 
+    generationInFlight.current = true;
     setIsLoading(true);
+    setGenerationPhase("building");
 
     let timeoutId: number | undefined;
 
@@ -1216,11 +1222,16 @@ export function SmartCartApp() {
       };
 
       if (!response.ok) {
-        setGeneratedPlan(null);
-        persistGeneratedPlan(null);
         setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
         return false;
       }
+      setGenerationPhase("organizing");
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+      deriveGroceryLists({
+        fullyStocked, runningLow, restock, pantryItems: combinedPantryItems,
+        weeklyMenu: data.meals,
+        savedDesserts: data.desserts.map((dessert) => ({ name: dessert.title, ingredients: dessert.ingredients })),
+      });
       setGeneratedPlan(data);
       persistGeneratedPlan(data);
       resetGroceryState();
@@ -1232,8 +1243,6 @@ export function SmartCartApp() {
       setExpandedDetailCards(new Set());
       return true;
     } catch (error) {
-      setGeneratedPlan(null);
-      persistGeneratedPlan(null);
       setRequestError(
         error instanceof DOMException && error.name === "AbortError"
           ? "Meal generation timed out. Please try again."
@@ -1246,12 +1255,15 @@ export function SmartCartApp() {
       if (typeof timeoutId === "number") {
         window.clearTimeout(timeoutId);
       }
+      generationInFlight.current = false;
+      setGenerationPhase(null);
       setIsLoading(false);
     }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (generationInFlight.current) return;
     const didStartPlan = await submitPlan(false);
     if (didStartPlan) {
       setIsMobileDockExpanded(false);
@@ -1803,6 +1815,7 @@ export function SmartCartApp() {
   }
 
   function handleClearForm() {
+    if (generationInFlight.current) return;
     setConfirmDontShowAgain(false);
     setConfirmDialog({ kind: "clear" });
   }
@@ -2476,24 +2489,7 @@ export function SmartCartApp() {
             </div>
           </div>
         ) : null}
-        {isLoading ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-6">
-            <div className="w-full max-w-md rounded-[2rem] border border-stone-200 bg-white px-6 py-7 text-center shadow-2xl">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-                <svg aria-hidden="true" className="h-7 w-7 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <path d="M12 3v3m0 12v3m9-9h-3M6 12H3m15.364 6.364-2.121-2.121M8.757 8.757 6.636 6.636m11.728 0-2.121 2.121M8.757 15.243l-2.121 2.121" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-                </svg>
-              </div>
-              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.28em] text-orange-500">
-                MealCaddie is planning
-              </p>
-              <p className="mt-2 font-display text-3xl text-ink">Building your week</p>
-              <p className="mt-3 text-sm leading-7 text-ink/70">
-                We are balancing pantry items, variety, prep time, and budget so your meals are worth the wait.
-              </p>
-            </div>
-          </div>
-        ) : null}
+        <SmartCartGenerationProgress phase={generationPhase} includeDessert={formState.includeDessert} />
         <SmartCartFeedback
           undoMessage={mealUndo?.storageKey === cookedStorageKey
             ? !mealUndo.sweetTreat && weeklyMenu.length >= 5 && !weeklyMenu.some((item) => item.day === mealUndo.meal.day && item.name === mealUndo.meal.name)
@@ -3026,11 +3022,12 @@ export function SmartCartApp() {
                         form="smart-cart-context-form"
                         type="submit"
                       >
-                        {isLoading ? "Generating..." : "Generate"}
+                        {isLoading ? "Building your meals..." : "Generate"}
                       </button>
                       <button
                         className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
                         onClick={handleClearForm}
+                        disabled={isLoading}
                         type="button"
                       >
                         Clear
