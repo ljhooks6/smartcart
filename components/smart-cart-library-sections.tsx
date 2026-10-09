@@ -1,5 +1,7 @@
 "use client";
 
+import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart-first-use-guide";
+
 import { FormEvent } from "react";
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 
@@ -22,7 +24,7 @@ type MealPlanItem = {
 type WaitlistStatus = "idle" | "submitting" | "success" | "error";
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-type SmartCartLibrarySectionsProps = {
+type SmartCartLibrarySectionsProps = FirstUseGuidanceProps & {
   archivedMeals: MealPlanItem[];
   cloudSyncMessage: string | null;
   expandedDetailCards: Set<string>;
@@ -52,6 +54,8 @@ type SmartCartLibrarySectionsProps = {
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
 export function SmartCartLibrarySections({
+  showGuidance,
+  onDismissGuidance,
   archivedMeals,
   cloudSyncMessage,
   expandedDetailCards,
@@ -135,21 +139,12 @@ export function SmartCartLibrarySections({
         </div>
       ) : null}
 
-      <div className="mt-6 rounded-[1.5rem] border border-amber-200 bg-gradient-to-r from-amber-50 to-white px-4 py-4 text-sm leading-6 text-amber-900">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-800">
-          Vault flow
+      <SmartCartFirstUseGuide area="vault" showGuidance={showGuidance} onDismissGuidance={onDismissGuidance} />
+      {userPlan === "free" ? (
+        <p className="text-sm leading-6 text-ink/70">
+          Free plans can save up to <strong>{vaultLimit}</strong> recipes. MealCaddie Plus gives your saved library more room to grow.
         </p>
-        <p className="mt-2">
-          Tap <strong>Save to Vault</strong> on a dinner or Sweet Treat to move it out of This Week
-          and keep it for a future week. Use <strong>Add to This Week</strong> to bring it back.
-        </p>
-        {userPlan === "free" ? (
-          <p className="mt-2 text-sm leading-6 text-amber-900/80">
-            Free plans can save up to <strong>{vaultLimit}</strong> recipes. MealCaddie Plus gives
-            your saved library more room to grow.
-          </p>
-        ) : null}
-      </div>
+      ) : null}
       <button
         className="mt-6 inline-flex items-center justify-center rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
         onClick={onToggleVaultOpen}

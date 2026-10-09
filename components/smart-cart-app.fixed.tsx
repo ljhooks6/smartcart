@@ -15,6 +15,7 @@ import { SmartCartHeroHeader } from "./smart-cart-hero-header";
 import { SmartCartLibrarySections } from "./smart-cart-library-sections";
 import { SmartCartMealSections } from "./smart-cart-meal-sections";
 import { SmartCartRecipeModal } from "./smart-cart-recipe-modal";
+import { useFirstUseGuidance } from "../hooks/use-first-use-guidance";
 import { useSmartCartGrocery } from "../hooks/use-smart-cart-grocery";
 import { useSmartCartRecipe } from "../hooks/use-smart-cart-recipe";
 import {
@@ -578,6 +579,7 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
 }
 
 export function SmartCartApp() {
+  const firstUseGuidance = useFirstUseGuidance();
   type SaveStatus = "idle" | "saving" | "saved" | "error";
   type ConfirmDialog =
     | { kind: "clear" }
@@ -1091,6 +1093,7 @@ export function SmartCartApp() {
   }
   const grocerySidebar = (
     <SmartCartGrocerySidebar
+                {...firstUseGuidance.propsFor("shop")}
                 onEnterStoreMode={() => setIsStoreMode(true)}
                 undoMessage={undoMessage}
                 onUndo={undoLastGroceryAction}
@@ -2704,6 +2707,7 @@ export function SmartCartApp() {
               }`}
             >
               <SmartCartCookSections
+                {...firstUseGuidance.propsFor("cook")}
                 expandedDetailCards={expandedDetailCards}
                 expandedIngredientsMeals={expandedIngredientsMeals}
                 formatCardEyebrow={formatCardEyebrow}
@@ -2725,6 +2729,7 @@ export function SmartCartApp() {
               }`}
             >
             <SmartCartLibrarySections
+                {...firstUseGuidance.propsFor("vault")}
               archivedMeals={archivedMeals}
               cloudSyncMessage={cloudSyncMessage}
               expandedDetailCards={expandedDetailCards}
@@ -2904,6 +2909,7 @@ export function SmartCartApp() {
             {!generatedPlan && hasShoppingSurfaceContent ? <div id="desktop-shop" className="mt-8 scroll-mt-8">{grocerySidebar}</div> : null}
             <div id="desktop-cook" className="mt-8 scroll-mt-8">
               <SmartCartCookSections
+                {...firstUseGuidance.propsFor("cook")}
                 expandedDetailCards={expandedDetailCards}
                 expandedIngredientsMeals={expandedIngredientsMeals}
                 formatCardEyebrow={formatCardEyebrow}
@@ -2920,6 +2926,7 @@ export function SmartCartApp() {
             </div>
             <div id="desktop-vault" className="scroll-mt-8" />
             <SmartCartLibrarySections
+                {...firstUseGuidance.propsFor("vault")}
               archivedMeals={archivedMeals}
               cloudSyncMessage={cloudSyncMessage}
               expandedDetailCards={expandedDetailCards}

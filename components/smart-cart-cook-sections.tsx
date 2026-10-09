@@ -1,5 +1,7 @@
 "use client";
 
+import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart-first-use-guide";
+
 import { SmartCartMealActions } from "./smart-cart-meal-actions";
 
 type IngredientItem = {
@@ -22,7 +24,7 @@ type RecipeCacheEntry = {
   ingredients: string[];
 };
 
-type SmartCartCookSectionsProps = {
+type SmartCartCookSectionsProps = FirstUseGuidanceProps & {
   expandedDetailCards: Set<string>;
   expandedIngredientsMeals: Set<string>;
   formatCardEyebrow: (day: string) => string;
@@ -40,6 +42,8 @@ type SmartCartCookSectionsProps = {
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
 export function SmartCartCookSections({
+  showGuidance,
+  onDismissGuidance,
   expandedDetailCards,
   expandedIngredientsMeals,
   formatCardEyebrow,
@@ -73,6 +77,8 @@ export function SmartCartCookSections({
             {weeklyMenu.length + savedDesserts.length} ready
           </span>
         </div>
+
+        <SmartCartFirstUseGuide area="cook" showGuidance={showGuidance} onDismissGuidance={onDismissGuidance} />
 
         {!hasCookPlan ? (
           <div className="mt-5 rounded-[1.5rem] border border-dashed border-pine/20 bg-white px-4 py-10 text-center text-ink/60">

@@ -1,5 +1,7 @@
 "use client";
 
+import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart-first-use-guide";
+
 import { useState } from "react";
 
 type GroceryListItem = {
@@ -20,7 +22,7 @@ type CustomItem = {
   isChecked: boolean;
 };
 
-type SmartCartGrocerySidebarProps = {
+type SmartCartGrocerySidebarProps = FirstUseGuidanceProps & {
   onEnterStoreMode: () => void;
   undoMessage: string | null;
   onUndo: () => void;
@@ -63,6 +65,8 @@ function formatMealCount(item: GroceryListItem) {
 }
 
 export function SmartCartGrocerySidebar({
+  showGuidance,
+  onDismissGuidance,
   onEnterStoreMode,
   undoMessage,
   onUndo,
@@ -120,6 +124,8 @@ export function SmartCartGrocerySidebar({
             <span>{isGroceryOpen ? "▲" : "▼"}</span>
           </span>
         </button>
+
+        <SmartCartFirstUseGuide area="shop" showGuidance={showGuidance} onDismissGuidance={onDismissGuidance} />
 
         <button type="button" onClick={onEnterStoreMode}
           disabled={!displayGroceriesByCategory.length && !customItems.length}
