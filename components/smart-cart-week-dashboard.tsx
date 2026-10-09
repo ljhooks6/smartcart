@@ -30,45 +30,59 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
   const remaining = groceryCount - collectedCount;
   const nextStage = readyCount ? (remaining > 0 ? "shop" : "cook") : hasOptions ? "meals" : "plan";
   const nextLabel = nextStage === "shop" ? "Open shopping list" : nextStage === "cook" ? "Choose a meal to cook" : nextStage === "meals" ? "Choose your meals" : "Plan your week";
+  const nextTitle = nextStage === "shop" ? "Your shopping list is ready." : nextStage === "cook" ? "Ready when you are." : nextStage === "meals" ? "Your meal picks are ready." : "Let’s plan your week.";
+  const nextDescription = nextStage === "shop" ? `${readyCount} meals chosen · ${remaining} items left to collect.` : nextStage === "cook" ? `${readyCount} meals ready for you to cook.` : nextStage === "meals" ? "Choose what you want to cook. We’ll build the list around your picks." : "Start with what’s in your kitchen, your budget, and a little inspiration.";
+  const menu = [...dinners.map(meal => ({ ...meal, kind: mealKindLabel(getMealKind(meal)) })), ...desserts.map(meal => ({ ...meal, kind: "Sweet Treat" }))];
+
   return (
     <section aria-labelledby={titleId} className="md:rounded-[2rem] md:border md:border-pine/15 md:bg-[#fffdf8] md:p-8 md:shadow-xl">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="hidden md:block text-xs font-semibold uppercase tracking-[0.22em] text-pine/70">A calmer way to feed your week</p>
-          <h1 id={titleId} className="sr-only md:not-sr-only md:mt-2 md:font-display md:text-4xl md:text-ink">Your Week</h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">{readyCount ? `${chosenSummary} chosen. Your next step is ready below.` : hasOptions ? "Your meal options are ready. Choose what you want to cook to build your shopping list." : "Start with your pantry and preferences. Your meals, shopping, and cooking progress will come together here."}</p>
-        </div>
-        <button type="button" onClick={() => onNavigate(nextStage)} className="rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white hover:bg-pine/90">{nextLabel}</button>
+      <h1 id={titleId} className="sr-only md:not-sr-only md:mb-6 md:font-display md:text-4xl md:text-ink">Your Week</h1>
+      <div className="rounded-3xl bg-pine p-5 text-white sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Next up</p>
+        <h2 className="mt-3 font-display text-3xl leading-tight">{nextTitle}</h2>
+        <p className="mt-3 text-sm leading-6 text-white/80">{nextDescription}</p>
+        <button type="button" onClick={() => onNavigate(nextStage)} className="mt-5 min-h-12 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-pine hover:bg-cream sm:w-auto">{nextLabel}</button>
       </div>
-      <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          ["Ready to cook", String(readyCount), "Chosen meals + sweet treats"],
-          ["Groceries collected", `${collectedCount} / ${groceryCount}`, groceryCount ? `${remaining} items still to collect` : readyCount ? "No items on your list" : "Choose meals to build your list"],
-          ["Pantry ingredients used", String(pantryCount), "Already owned and skipped"],
-          ["Cooked this week", String(cookedCount), "Marked Cooked It on this device"],
-        ].map(([label, value, detail]) => <div key={label} className="rounded-2xl border border-stone-200 bg-white p-4"><dt className="text-xs font-semibold text-ink/65">{label}</dt><dd className="mt-2 font-display text-3xl text-pine">{value}</dd><p className="mt-2 text-xs leading-5 text-ink/60">{detail}</p></div>)}
-      </dl>
-      {groceryCount > 0 ? <progress aria-label="Grocery collection progress" value={collectedCount} max={groceryCount} className="mt-5 h-3 w-full accent-pine" /> : null}
-      <div className="mt-5 rounded-2xl border border-stone-200 bg-white p-4">
-        <p className="text-sm font-semibold text-ink">Estimated groceries: {estimatedCost} <span className="font-normal text-ink/60">of {budget} budget</span></p>
-        <p className={`mt-2 text-xs leading-5 ${overBudget ? "text-red-700" : "text-ink/60"}`}>{overBudget ? "Above your budget. Review your meals or shopping list." : "Approximate grocery prices; extras and household items are not priced."}</p>
-        {!hasIngredients && readyCount > 0 ? <p className="mt-2 text-xs text-amber-800">Some saved meals have no stored ingredients. Their shopping requirements are not included.</p> : null}
-      </div>
-      <div className="mt-6 grid gap-5 lg:grid-cols-2">
-        <div className="rounded-2xl bg-[#f3f5eb] p-5">
-          <h2 className="font-display text-2xl text-ink">On the menu</h2>
-          {readyCount ? <ul className="mt-4 space-y-3">{[...dinners.map(meal => ({ ...meal, kind: mealKindLabel(getMealKind(meal)) })), ...desserts.map(meal => ({ ...meal, kind: "Sweet treat" }))].map((meal, index) => <li key={`${meal.kind}-${meal.day}-${meal.name}-${index}`}><p className="text-xs font-semibold uppercase tracking-wider text-pine/65">{meal.kind}</p><p className="mt-1 text-sm text-ink">{meal.name}</p></li>)}</ul> : <p className="mt-3 text-sm leading-6 text-ink/65">No meals chosen yet. Add breakfast, lunch, dinner, or Sweet Treat picks to This Week.</p>}
-          <button type="button" onClick={() => onNavigate(hasOptions ? "meals" : "plan")} className="mt-5 text-sm font-semibold text-pine underline underline-offset-4">{hasOptions ? "Review meal options" : "Adjust your plan"}</button>
+
+      {!hasIngredients && readyCount > 0 ? <p role="status" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-800">Some saved meals have no stored ingredients. Their shopping requirements are not included.</p> : null}
+
+      {groceryCount > 0 || readyCount > 0 ? <div className="mt-5 border-b border-stone-200 pb-5">
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <p className="font-semibold text-ink">Shopping progress</p>
+          <p className="text-ink/65">{collectedCount} of {groceryCount} collected</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-5">
-          <h2 className="font-display text-2xl text-ink">Carry the week forward</h2>
-          <div className="mt-4 flex flex-col gap-3">
-            <button type="button" onClick={() => onNavigate("shop")} className="rounded-xl border border-stone-200 px-4 py-3 text-left text-sm font-semibold text-pine">Shop · {remaining} items remaining</button>
-            <button type="button" onClick={() => onNavigate("cook")} className="rounded-xl border border-stone-200 px-4 py-3 text-left text-sm font-semibold text-pine">Cook · {readyCount} meals ready</button>
-            <button type="button" onClick={() => onNavigate("vault")} className="rounded-xl border border-stone-200 px-4 py-3 text-left text-sm font-semibold text-pine">Recipe Vault · {vaultCount} favorites</button>
-          </div>
+        {groceryCount > 0 ? <progress aria-label="Grocery collection progress" value={collectedCount} max={groceryCount} className="mt-3 h-2 w-full accent-pine" /> : null}
+        <p className="mt-3 text-sm text-ink/65">Estimated groceries <strong className="text-ink">{estimatedCost}</strong> · {budget} budget</p>
+        <p className={`mt-1 text-xs leading-5 ${overBudget ? "font-semibold text-red-700" : "text-ink/50"}`}>{overBudget ? "Above your budget. Review your meals or shopping list." : "Approximate prices; household extras are excluded."}</p>
+      </div> : null}
+
+      {readyCount > 0 ? <div className="mt-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl text-ink">This week’s meals</h2>
+          <button type="button" onClick={() => onNavigate("cook")} className="min-h-11 shrink-0 text-sm font-semibold text-pine underline underline-offset-4">View all {readyCount}</button>
         </div>
-      </div>
+        <ul className="mt-2 divide-y divide-stone-200">
+          {menu.slice(0, 2).map((meal, index) => <li key={`${meal.kind}-${meal.day}-${meal.name}-${index}`} className="py-3">
+            <p className="text-xs font-semibold text-pine/65">{meal.kind}</p>
+            <p className="mt-1 text-sm leading-6 text-ink">{meal.name}</p>
+          </li>)}
+        </ul>
+      </div> : null}
+
+      <button type="button" onClick={() => onNavigate("vault")} className="mt-4 flex min-h-14 w-full items-center justify-between gap-3 border-y border-stone-200 py-3 text-left text-sm text-ink">
+        <span className="font-semibold">Your saved favorites</span><span className="text-pine">{vaultCount} recipes <span aria-hidden="true">→</span></span>
+      </button>
+
+      {readyCount > 0 || groceryCount > 0 || cookedCount > 0 ? <details className="mt-4 text-sm text-ink/65">
+        <summary className="min-h-11 cursor-pointer py-3 font-semibold">Week details</summary>
+        <p className="mt-2 leading-6">{chosenSummary ? `${chosenSummary} chosen.` : "No meals chosen yet."}</p>
+        <dl className="mt-3 space-y-2">
+          <div className="flex justify-between gap-4"><dt>Pantry ingredients used</dt><dd className="font-semibold text-ink">{pantryCount}</dd></div>
+          <div className="flex justify-between gap-4"><dt>Cooked this week</dt><dd className="font-semibold text-ink">{cookedCount}</dd></div>
+        </dl>
+        <p className="mt-3 text-xs leading-5">Cooking history and shopping progress stay on this device.</p>
+        <button type="button" onClick={() => onNavigate(hasOptions ? "meals" : "plan")} className="mt-2 min-h-11 font-semibold text-pine underline underline-offset-4">{hasOptions ? "Review meal options" : "Adjust your plan"}</button>
+      </details> : null}
     </section>
   );
 }

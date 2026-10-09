@@ -1,6 +1,8 @@
 # Your Week
 
-Your Week connects chosen dinners and sweet treats, their active shopping list, pantry exclusions, approximate grocery cost, and cooking progress. It is the opening view on mobile and appears above the planner on desktop. Generated options stay distinct from chosen meals; the post-generation handoff offers Review Your Week.
+Your Week is the home screen for chosen breakfasts, lunches, dinners, and sweet treats. One Next up card points to planning, choosing meals, shopping, or cooking based on the current week. It is the opening view on mobile and appears above the planner on desktop. Generated options stay distinct from chosen meals; the post-generation handoff offers Review Your Week.
+
+The home screen shows compact shopping progress and approximate grocery cost, a two-meal preview with View all, and a saved-favorites shortcut. Week details starts collapsed and contains the category totals, pantry exclusions, cooking count, and a link to adjust the plan or review options. Missing-ingredient and over-budget notices remain visible outside the collapsed section.
 
 Shopping progress includes only active recipe/restock rows and household extras. Checked rows that have left the active list cannot inflate the collected count. Extras are included in progress but excluded from the budget estimate. Saved Cook Lineup ingredients can build a shopping list even without a generated plan. Older meals without stored ingredients show a notice that their shopping requirements are missing.
 
