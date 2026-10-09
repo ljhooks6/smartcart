@@ -62,14 +62,14 @@ export function SmartCartCookSections({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-[2.25rem] border border-pine/15 bg-[#f8f4ec] p-5 shadow-xl">
+      <section className="md:rounded-[2.25rem] md:border md:border-pine/15 md:bg-[#f8f4ec] md:p-5 md:shadow-xl">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine/65">
+            <p className="hidden md:block text-xs font-semibold uppercase tracking-[0.25em] text-pine/65">
               Cook
             </p>
             <p className="font-display text-2xl text-ink">Your cook-ready lineup</p>
-            <p className="mt-1 text-sm leading-6 text-ink/70">
+            <p className="hidden md:block mt-1 text-sm leading-6 text-ink/70">
               Meals and sweet treats you add to This Week land here so your recipes are ready when it is time
               to cook.
             </p>

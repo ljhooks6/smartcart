@@ -95,8 +95,8 @@ export function SmartCartMealSections({
 }: SmartCartMealSectionsProps) {
   return (
     <div className="lg:col-span-8 flex flex-col gap-6">
-      <div className="rounded-[2.25rem] border border-stone-200 bg-white/85 p-6 shadow-xl backdrop-blur">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="md:rounded-[2.25rem] md:border md:border-stone-200 md:bg-white/85 md:p-6 md:shadow-xl md:backdrop-blur">
+        <div className="hidden md:flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
               Meals
@@ -105,7 +105,7 @@ export function SmartCartMealSections({
           </div>
         </div>
 
-        <div className="mt-5 rounded-[1.5rem] border border-sky-200 bg-gradient-to-r from-sky-50 to-white px-4 py-4 text-sm text-sky-900 shadow-sm">
+        <div className="hidden md:block mt-5 rounded-[1.5rem] border border-sky-200 bg-gradient-to-r from-sky-50 to-white px-4 py-4 text-sm text-sky-900 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
             Cook lineup flow
           </p>
@@ -122,7 +122,8 @@ export function SmartCartMealSections({
           ) : null}
         </div>
 
-        <div className="mt-6 space-y-6">
+        <p className="mb-4 text-sm text-ink/60 md:hidden">Choose meals for This Week to build your shopping list.</p>
+        <div className="md:mt-6 space-y-6">
           {(["dinner", "breakfast", "lunch"] as const).map((kind) => {
             const options = generatedPlan.meals.map((meal, index) => ({ meal, index })).filter(({ meal }) => getMealKind(meal) === kind);
             if (!options.length) return null;

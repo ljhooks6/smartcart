@@ -136,6 +136,8 @@ export function SmartCartGrocerySidebar({
 
         {isGroceryOpen && (
           <>
+            <details className="mt-2 text-sm text-ink/60">
+            <summary className="min-h-11 cursor-pointer py-2">About quantities & price estimates</summary>
             <p className="mt-2 text-sm italic leading-6 text-gray-500">
               Prices reflect estimated standard package costs, not exact recipe-use cost.
               Actual totals may still vary by store and location.
@@ -145,6 +147,7 @@ export function SmartCartGrocerySidebar({
               would grab at the store when the quantity is known. Check package sizes
               against the full amount needed for your week.*
             </p>
+            </details>
 
             <div className="mt-6 space-y-5">
               <section className="rounded-3xl border border-stone-200 bg-white p-4 shadow-lg">

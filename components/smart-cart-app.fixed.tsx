@@ -657,7 +657,6 @@ export function SmartCartApp() {
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("week");
   const mobileScrollPositions = useRef<Partial<Record<MobileTab, number>>>({});
   const [isStoreMode, setIsStoreMode] = useState(false);
-  const [isMobileDockExpanded, setIsMobileDockExpanded] = useState(false);
   const [cookedHistory, setCookedHistory] = useState<{ key: string; entries: Array<{ name: string; cookedAt: string }> }>({ key: "", entries: [] });
   const [mealUndo, setMealUndo] = useState<{
     meal: MealPlanItem;
@@ -675,7 +674,6 @@ export function SmartCartApp() {
   useEffect(() => {
     if (cookedHistory.key === cookedStorageKey) saveStoredJson(cookedStorageKey, cookedHistory.entries);
   }, [cookedHistory, cookedStorageKey]);
-  const lastScrollYRef = useRef(0);
   const [actionGuidance, setActionGuidance] = useState<ActionGuidancePreferences>({
     skipPermanentDeleteConfirm: false,
     skipRemoveFromMenuConfirm: false,
@@ -932,38 +930,7 @@ export function SmartCartApp() {
     persistGeneratedPlan(generatedPlan);
   }, [generatedPlan, hasLoadedGeneratedPlan, persistGeneratedPlan]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
 
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollPosition = window.innerHeight + window.scrollY;
-      const nearBottom = scrollPosition >= document.documentElement.scrollHeight - 180;
-      const isScrollingUp = currentScrollY < lastScrollYRef.current - 12;
-
-      setIsMobileDockExpanded((current) => {
-        if (nearBottom) {
-          return true;
-        }
-
-        if (isScrollingUp) {
-          return false;
-        }
-
-        return current;
-      });
-
-      lastScrollYRef.current = currentScrollY;
-    };
-
-    lastScrollYRef.current = window.scrollY;
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || window.innerWidth >= 768) {
@@ -1196,8 +1163,9 @@ export function SmartCartApp() {
     savedDesserts: [...savedDesserts, ...(generatedPlan?.desserts ?? []).map(dessert => ({ name: dessert.title, ingredients: dessert.ingredients }))],
   }), [fullyStocked, runningLow, restock, combinedPantryItems, weeklyMenu, savedDesserts, generatedPlan]);
   const generationHandoff = generatedPlan ? <div className="mb-5 rounded-2xl border border-pine/20 bg-white p-5 lg:col-span-12" role="status">
-    <p className="text-sm font-semibold text-pine">{(["dinner", "breakfast", "lunch"] as const).map((kind) => { const count = [...generatedPlan.meals, ...weeklyMenu].filter((meal) => getMealKind(meal) === kind).length; return count ? `${count} ${kind} options` : null; }).filter(Boolean).join(" · ")} · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
-    <p className="mt-2 text-sm leading-6 text-ink/65">{candidatePlan.derivedGroceryList.length} grocery items across all options. Choose the meals you want to cook. Your Week tracks your chosen meals and the groceries they need.</p>
+    <p className="hidden md:block text-sm font-semibold text-pine">{(["dinner", "breakfast", "lunch"] as const).map((kind) => { const count = [...generatedPlan.meals, ...weeklyMenu].filter((meal) => getMealKind(meal) === kind).length; return count ? `${count} ${kind} options` : null; }).filter(Boolean).join(" · ")} · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
+    <p className="text-sm font-semibold text-pine md:hidden">Your meal options are ready.</p>
+    <p className="hidden md:block mt-2 text-sm leading-6 text-ink/65">{candidatePlan.derivedGroceryList.length} grocery items across all options. Choose the meals you want to cook. Your Week tracks your chosen meals and the groceries they need.</p>
     <button type="button" onClick={() => navigateToStage("week")} className="mt-4 rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white">Review Your Week</button>
   </div> : null;
 
@@ -1314,10 +1282,8 @@ export function SmartCartApp() {
     if (generationInFlight.current) return;
     const didStartPlan = await submitPlan(false);
     if (didStartPlan) {
-      setIsMobileDockExpanded(false);
       navigateToStage("meals");
     } else {
-      setIsMobileDockExpanded(false);
       setActiveMobileTab("plan");
     }
   }
@@ -1847,7 +1813,6 @@ export function SmartCartApp() {
     setIsEquipmentSheetOpen(false);
     setIsPantryOpen(false);
     setIsPantrySelectionOpen(false);
-    setIsMobileDockExpanded(false);
     setActiveMobileTab("plan");
 
     clearStoredJson(
@@ -2499,7 +2464,7 @@ export function SmartCartApp() {
   }
 
   return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-[12.5rem] pt-4 md:pb-12 md:pt-8">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-12 md:pt-8">
         <SmartCartStoreMode
           open={isStoreMode} onClose={() => setIsStoreMode(false)}
           groups={displayGroceriesByCategory} checkedItems={checkedItems} customItems={customItems}
@@ -2589,28 +2554,11 @@ export function SmartCartApp() {
         toastMessage={toastMessage}
         toastTone={toastTone}
       />
-      <div className="sticky top-0 z-40 w-full max-w-7xl md:hidden">
-        <div className={`rounded-[1.75rem] border px-4 py-3 shadow-lg backdrop-blur ${activeTabMeta.shellClass}`}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-3">
-              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${activeTabMeta.badgeClass}`}>
-                <MobileTabIcon tab={activeTabMeta.id} className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className={`text-xs font-semibold uppercase tracking-[0.25em] ${activeTabMeta.accentClass}`}>
-                  {activeTabMeta.eyebrow}
-                </p>
-                <p className="font-display text-2xl text-ink">{activeTabMeta.label}</p>
-                <p className="mt-1 text-xs leading-5 text-ink/60">{activeTabMeta.description}</p>
-              </div>
-            </div>
-            <div className="shrink-0 pt-1 text-right text-xs font-semibold uppercase tracking-[0.2em] text-ink/50">
-              {user ? "Signed In" : "Guest"}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="w-full max-w-7xl mx-auto flex flex-col gap-8 font-body">
+      <header className="flex w-full max-w-7xl items-center justify-between border-b border-stone-200 pb-3 md:hidden">
+        <h1 className="font-display text-2xl text-ink">{activeTabMeta.label}</h1>
+        <span className="text-sm font-semibold text-pine">MealCaddie</span>
+      </header>
+      <div className="w-full max-w-7xl mx-auto flex flex-col gap-4 md:gap-8 font-body">
         <div className={activeMobileTab === "plan" ? "block md:block" : "hidden md:block"}>
             <SmartCartHeroHeader
               authMessage={authMessage}
@@ -2630,9 +2578,9 @@ export function SmartCartApp() {
             />
         </div>
 
-        <div className="grid gap-8 md:hidden">
+        <div className="grid gap-4 md:hidden">
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`min-w-0 py-4 ${
                 activeMobileTab === "plan" ? `block ${activeTabMeta.panelClass}` : "hidden"
               }`}
             >
@@ -2743,7 +2691,7 @@ export function SmartCartApp() {
           </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`min-w-0 py-4 ${
                 activeMobileTab === "meals" ? `block ${mobileTabs[1].panelClass}` : "hidden"
               }`}
             >
@@ -2788,7 +2736,7 @@ export function SmartCartApp() {
             </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`min-w-0 py-4 ${
                 activeMobileTab === "shop" ? `block ${mobileTabs[2].panelClass}` : "hidden"
               }`}
             >
@@ -2805,10 +2753,16 @@ export function SmartCartApp() {
           </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`min-w-0 py-4 ${
                 activeMobileTab === "cook" ? `block ${mobileTabs[3].panelClass}` : "hidden"
               }`}
             >
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="text-sm text-ink/60">{cloudSyncMessage || "Keep this week ready across devices."}</p>
+                <button type="button" disabled={isSaving || cloudLoadingUser === user?.id || !user} onClick={() => void saveSessionToCloud()} className="min-h-11 shrink-0 rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+                  {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Retry Save" : "Save Week"}
+                </button>
+              </div>
               <SmartCartCookSections
                 {...firstUseGuidance.propsFor("cook")}
                 expandedDetailCards={expandedDetailCards}
@@ -2827,7 +2781,7 @@ export function SmartCartApp() {
             </section>
 
             <section
-              className={`overflow-hidden rounded-[2rem] border px-4 pb-36 pt-5 shadow-xl ring-1 ring-white/60 ${
+              className={`min-w-0 py-4 ${
                 activeMobileTab === "vault" ? `block ${mobileTabs[4].panelClass}` : "hidden"
               }`}
             >
@@ -2864,7 +2818,7 @@ export function SmartCartApp() {
           </section>
         </div>
 
-        <div className={activeMobileTab === "week" ? "block pb-36 md:hidden" : "hidden"}>{weekDashboard}</div>
+        <div className={activeMobileTab === "week" ? "block py-4 md:hidden" : "hidden"}>{weekDashboard}</div>
         <div className="hidden md:block">
           <div id="desktop-week" className="mb-8 scroll-mt-8">{weekDashboard}</div>
           <div id="desktop-plan" className="scroll-mt-8" />
@@ -3067,182 +3021,23 @@ export function SmartCartApp() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 md:hidden">
-        <div className="mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-stone-200 bg-white/95 shadow-[0_-14px_36px_rgba(15,23,42,0.12)] backdrop-blur">
-          <button
-            className="flex w-full items-center justify-between gap-3 border-b border-stone-200/80 px-4 py-3"
-            onClick={() => setIsMobileDockExpanded((current) => !current)}
-            type="button"
-          >
-            <div className="flex items-center gap-3">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-2xl ${activeTabMeta.badgeClass}`}>
-                <MobileTabIcon tab={activeMobileTab} className="h-4 w-4" />
-              </div>
-              <div className="text-left">
-                <p className={`text-[0.65rem] font-semibold uppercase tracking-[0.2em] ${activeTabMeta.accentClass}`}>
-                  {activeTabMeta.eyebrow}
-                </p>
-                <p className="text-sm font-semibold text-ink">{activeTabMeta.label}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="h-1.5 w-10 rounded-full bg-stone-300" />
-              <span className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-ink/50">
-                {isMobileDockExpanded ? "Hide" : "Reveal"}
-              </span>
-            </div>
-          </button>
-
-          {isMobileDockExpanded ? (
-            <>
-              <div className="border-b border-stone-200/70 p-2">
-                <div className="flex items-center gap-2 rounded-[1.4rem] bg-stone-50/90 p-1.5">
-                  {activeMobileTab === "plan" ? (
-                    <>
-                      <button
-                        className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={isLoading || !isBudgetValid}
-                        form="smart-cart-context-form"
-                        type="submit"
-                      >
-                        {isLoading ? "Building your meals..." : "Generate"}
-                      </button>
-                      <button
-                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                        onClick={handleClearForm}
-                        disabled={isLoading}
-                        type="button"
-                      >
-                        Clear
-                      </button>
-                    </>
-                  ) : null}
-                  {activeMobileTab === "meals" ? (
-                    <>
-                      <button
-                        className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={!generatedPlan}
-                        onClick={() => navigateToStage("week")}
-                        type="button"
-                      >
-                        Review Your Week
-                      </button>
-                      <button
-                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                        onClick={() => navigateToStage("cook")}
-                        type="button"
-                      >
-                        Cook
-                      </button>
-                    </>
-                  ) : null}
-                  {activeMobileTab === "shop" ? (
-                    <>
-                      <button
-                        className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={!hasShoppingSurfaceContent}
-                        onClick={handleCopyShoppingList}
-                        type="button"
-                      >
-                        {copied ? "Copied" : "Copy List"}
-                      </button>
-                      <button
-                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                        onClick={() => navigateToStage("cook")}
-                        type="button"
-                      >
-                        Cook
-                      </button>
-                    </>
-                  ) : null}
-                  {activeMobileTab === "cook" ? (
-                    <>
-                      <button
-                        className="flex-1 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={isSaving || cloudLoadingUser === user?.id || !Boolean(user)}
-                        onClick={() => void saveSessionToCloud()}
-                        type="button"
-                      >
-                        {saveStatus === "saving"
-                          ? "Saving..."
-                          : saveStatus === "saved"
-                            ? "Saved"
-                            : saveStatus === "error"
-                              ? "Retry Save"
-                              : "Save Week"}
-                      </button>
-                      <button
-                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100"
-                        onClick={() => navigateToStage("vault")}
-                        type="button"
-                      >
-                        Vault
-                      </button>
-                    </>
-                  ) : null}
-                  {activeMobileTab === "vault" ? (
-                    <>
-                      <button
-                        className="flex-1 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90"
-                        onClick={() => setIsVaultOpen((current) => !current)}
-                        type="button"
-                      >
-                        {isVaultOpen ? "Close Vault" : "Open Vault"}
-                      </button>
-                      {Boolean(user) ? (
-                        <button
-                          className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          disabled={isSaving || cloudLoadingUser === user?.id}
-                          onClick={() => void saveSessionToCloud()}
-                          type="button"
-                        >
-                          {saveStatus === "saving"
-                            ? "Saving..."
-                            : saveStatus === "saved"
-                              ? "Saved"
-                              : saveStatus === "error"
-                                ? "Retry Save"
-                                : "Save"}
-                        </button>
-                      ) : null}
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-            <nav className="p-2">
-              <div className="grid grid-cols-3 gap-2">
-                {mobileTabs.map((tab) => {
-                  const isActive = activeMobileTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      className={`rounded-[1.25rem] px-3 py-3 text-center text-[0.7rem] font-semibold uppercase tracking-[0.18em] transition ${
-                        isActive
-                          ? "bg-pine text-white shadow-md"
-                          : "bg-transparent text-ink/55 hover:bg-stone-100"
-                      }`}
-                      onClick={() => navigateToStage(tab.id)}
-                      type="button"
-                    >
-                      <span className="mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-2xl bg-black/5">
-                        <MobileTabIcon tab={tab.id} className="h-4 w-4" />
-                      </span>
-                      <span className="block">{tab.shortLabel}</span>
-                      <span
-                        className={`mx-auto mt-1 block h-1.5 w-8 rounded-full ${
-                          isActive ? "bg-white/80" : "bg-stone-200"
-                        }`}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </nav>
-            </>
-          ) : null}
+      <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+        <div className="mx-auto grid max-w-2xl grid-cols-6 px-1">
+          {[mobileTabs[5], ...mobileTabs.slice(0, 5)].map((tab) => {
+            const isActive = activeMobileTab === tab.id;
+            return <button
+              key={tab.id}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-[0.7rem] font-semibold ${isActive ? "text-pine" : "text-ink/55"}`}
+              onClick={() => navigateToStage(tab.id)}
+              type="button"
+            >
+              <span className={`flex h-7 w-10 items-center justify-center rounded-full ${isActive ? "bg-sage/20" : ""}`}><MobileTabIcon tab={tab.id} className="h-4 w-4" /></span>
+              <span>{tab.shortLabel}</span>
+            </button>;
+          })}
         </div>
-      </div>
+      </nav>
 
       <SmartCartRecipeModal
         activeRecipe={activeRecipe}

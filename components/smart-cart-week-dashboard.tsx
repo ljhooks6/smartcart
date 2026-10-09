@@ -31,11 +31,11 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
   const nextStage = readyCount ? (remaining > 0 ? "shop" : "cook") : hasOptions ? "meals" : "plan";
   const nextLabel = nextStage === "shop" ? "Open shopping list" : nextStage === "cook" ? "Choose a meal to cook" : nextStage === "meals" ? "Choose your meals" : "Plan your week";
   return (
-    <section aria-labelledby={titleId} className="rounded-[2rem] border border-pine/15 bg-[#fffdf8] p-5 shadow-xl sm:p-8">
+    <section aria-labelledby={titleId} className="md:rounded-[2rem] md:border md:border-pine/15 md:bg-[#fffdf8] md:p-8 md:shadow-xl">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-pine/70">A calmer way to feed your week</p>
-          <h1 id={titleId} className="mt-2 font-display text-4xl text-ink">Your Week</h1>
+          <p className="hidden md:block text-xs font-semibold uppercase tracking-[0.22em] text-pine/70">A calmer way to feed your week</p>
+          <h1 id={titleId} className="sr-only md:not-sr-only md:mt-2 md:font-display md:text-4xl md:text-ink">Your Week</h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">{readyCount ? `${chosenSummary} chosen. Your next step is ready below.` : hasOptions ? "Your meal options are ready. Choose what you want to cook to build your shopping list." : "Start with your pantry and preferences. Your meals, shopping, and cooking progress will come together here."}</p>
         </div>
         <button type="button" onClick={() => onNavigate(nextStage)} className="rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white hover:bg-pine/90">{nextLabel}</button>

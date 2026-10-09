@@ -36,6 +36,7 @@ export function SmartCartHeroHeader({
 }: SmartCartHeroHeaderProps) {
   const isSignedIn = Boolean(safeTrim(userEmail));
   const initial = safeTrim(userEmail[0] ?? "U").toUpperCase();
+  const [isMobileSettingsOpen, setIsMobileSettingsOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isInstallHelpOpen, setIsInstallHelpOpen] = useState(false);
   const planLabel = isProfileLoading ? "Loading" : userPlan === "plus" ? "Plus" : "Free";
@@ -46,7 +47,11 @@ export function SmartCartHeroHeader({
       : "Free plan";
 
   return (
-    <div className="space-y-8 rounded-[2.25rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl backdrop-blur xl:p-10">
+    <div className="md:space-y-8 md:rounded-[2.25rem] md:border md:border-stone-200/80 md:bg-white/85 md:p-6 md:shadow-xl md:backdrop-blur xl:p-10">
+      <button type="button" aria-expanded={isMobileSettingsOpen} onClick={() => setIsMobileSettingsOpen((open) => !open)} className="flex min-h-11 w-full items-center justify-between py-2 text-sm font-semibold text-ink/65 md:hidden">
+        <span>{isSignedIn ? "Account & app settings" : "Sign in & app settings"}</span><span aria-hidden="true">{isMobileSettingsOpen ? "−" : "+"}</span>
+      </button>
+      <div className={`${isMobileSettingsOpen ? "block" : "hidden"} space-y-5 md:block md:space-y-8`}>
       <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
           MealCaddie
@@ -162,7 +167,7 @@ export function SmartCartHeroHeader({
         )}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
+      <div className="hidden gap-5 md:grid lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
         <div className="rounded-[2rem] border border-pine/10 bg-gradient-to-br from-cream via-white to-sage/10 p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-berry/75">
             Meal planning without the mental load
@@ -276,6 +281,7 @@ export function SmartCartHeroHeader({
             </p>
           </div>
         ) : null}
+      </div>
       </div>
     </div>
   );

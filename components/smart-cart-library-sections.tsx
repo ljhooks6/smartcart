@@ -90,7 +90,7 @@ export function SmartCartLibrarySections({
   return (
     <section className="mt-6 flex flex-col gap-6">
       {userSignedIn ? (
-        <div className="mt-6 rounded-[1.75rem] border border-stone-200 bg-gradient-to-r from-white to-cream px-5 py-5 shadow-sm">
+        <div className="hidden md:block mt-6 rounded-[1.75rem] border border-stone-200 bg-gradient-to-r from-white to-cream px-5 py-5 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-800/70">
@@ -268,7 +268,8 @@ export function SmartCartLibrarySections({
       ) : null}
 
       {userPlan === "free" ? (
-      <section className="mt-6 overflow-hidden rounded-[2.25rem] border border-orange-200 bg-gradient-to-br from-white via-orange-50/80 to-cream p-6 shadow-xl backdrop-blur xl:p-8">
+      <details className="mt-6 rounded-2xl border border-orange-200 bg-orange-50/60 p-4 md:p-6">
+        <summary className="min-h-11 cursor-pointer py-2 font-semibold text-ink">Explore MealCaddie Plus</summary>
         <div className="mx-auto max-w-4xl">
           <div className="text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-700/80">
@@ -346,7 +347,7 @@ export function SmartCartLibrarySections({
             </form>
           )}
         </div>
-      </section>
+      </details>
       ) : null}
     </section>
   );

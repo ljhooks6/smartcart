@@ -100,8 +100,8 @@ export function SmartCartContextForm({
   const isPlusMember = userPlan === "plus";
 
   return (
-    <div className="rounded-[2.25rem] border border-stone-200 bg-[#fcfaf6]/95 p-6 shadow-xl backdrop-blur xl:p-8">
-      <div className="mb-6 rounded-[1.75rem] border border-stone-200/80 bg-white/75 px-5 py-5 shadow-sm">
+    <div className="md:rounded-[2.25rem] md:border md:border-stone-200 md:bg-[#fcfaf6]/95 md:p-6 md:shadow-xl md:backdrop-blur xl:p-8">
+      <div className="hidden md:block mb-6 rounded-[1.75rem] border border-stone-200/80 bg-white/75 px-5 py-5 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
           Planner
         </p>
@@ -111,7 +111,7 @@ export function SmartCartContextForm({
         </p>
       </div>
 
-      <div className="mb-6 rounded-[1.75rem] border border-pine/10 bg-gradient-to-r from-sage/10 via-white to-cream px-5 py-5 shadow-sm">
+      <div className="hidden md:block mb-6 rounded-[1.75rem] border border-pine/10 bg-gradient-to-r from-sage/10 via-white to-cream px-5 py-5 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine/60">
           Choose what MealCaddie helps with
         </p>
@@ -163,7 +163,7 @@ export function SmartCartContextForm({
       </div>
 
       <form className="space-y-5" id="smart-cart-context-form" onSubmit={onSubmit}>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-4">
           <label className="space-y-2">
             <span className="text-sm font-semibold text-ink">Weekly Budget</span>
             <div className="relative">
@@ -200,11 +200,11 @@ export function SmartCartContextForm({
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-700/80">
             Meal source
           </p>
-          <p className="mt-2 text-sm leading-6 text-ink/70">
+          <p className="hidden md:block mt-2 text-sm leading-6 text-ink/70">
             Choose whether MealCaddie can plan around a store trip or should only use what is
             already in your kitchen.
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             {[
               {
                 value: "pantry-and-store" as const,
@@ -222,7 +222,7 @@ export function SmartCartContextForm({
               return (
                 <button
                   aria-pressed={isSelected}
-                  className={`rounded-2xl border px-4 py-4 text-left transition ${
+                  className={`min-h-11 rounded-2xl border px-3 py-3 text-sm text-left transition ${
                     isSelected
                       ? "border-orange-400 bg-white text-ink shadow-md ring-2 ring-orange-200"
                       : "border-stone-200 bg-white/60 text-ink/65 hover:border-orange-200 hover:bg-white"
@@ -232,7 +232,7 @@ export function SmartCartContextForm({
                   type="button"
                 >
                   <span className="block font-semibold">{option.title}</span>
-                  <span className="mt-2 block text-sm leading-6">{option.copy}</span>
+                  <span className="hidden md:block mt-2 text-sm leading-6">{option.copy}</span>
                 </button>
               );
             })}
@@ -451,7 +451,7 @@ export function SmartCartContextForm({
         </div>
 
         {isEquipmentSheetOpen ? (
-          <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-44 pt-10 md:hidden">
+          <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-10 md:hidden">
             <div className="mx-auto flex max-h-[72vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
               <div className="flex justify-center pt-3">
                 <span className="h-1.5 w-12 rounded-full bg-stone-300" />
@@ -591,12 +591,12 @@ export function SmartCartContextForm({
 
         <fieldset className="rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
           <legend className="px-2 text-sm font-semibold text-ink">Meals to plan</legend>
-          <p className="text-sm leading-6 text-ink/70">Dinner is included. Add breakfast or lunch options for your household—available on every plan.</p>
+          <p className="text-sm leading-6 text-ink/70">Seven dinner picks included. Optional breakfast and lunch are available to everyone.</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" checked={formState.includeBreakfast} onChange={(event) => onIncludeBreakfastChange(event.target.checked)} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Include breakfast · 3 options</span></label>
             <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" checked={formState.includeLunch} onChange={(event) => onIncludeLunchChange(event.target.checked)} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Include lunch · 3 options</span></label>
           </div>
-          <p className="mt-3 text-xs leading-5 text-ink/60">Only meals you add to This Week go onto your shopping list. The budget covers all selected meal types.</p>
+          <p className="hidden md:block mt-3 text-xs leading-5 text-ink/60">Only meals you add to This Week go onto your shopping list. The budget covers all selected meal types.</p>
         </fieldset>
 
         <label className="flex items-center gap-3 rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
@@ -617,7 +617,7 @@ export function SmartCartContextForm({
           </div>
         ) : null}
 
-        <div className="hidden items-center justify-between gap-4 md:flex">
+        <div className="flex items-center justify-between gap-4">
           <button
             className="flex-1 rounded-full bg-orange-500 px-6 py-4 font-display text-lg text-white transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isLoading || !isBudgetValid}
@@ -637,7 +637,7 @@ export function SmartCartContextForm({
       </form>
 
         {isPantrySelectionOpen ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-44 pt-10 md:hidden">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-10 md:hidden">
           <div className="mx-auto flex max-h-[72vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
             <div className="flex justify-center pt-3">
               <span className="h-1.5 w-12 rounded-full bg-stone-300" />

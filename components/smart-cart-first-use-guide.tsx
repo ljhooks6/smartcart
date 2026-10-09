@@ -29,8 +29,8 @@ export function SmartCartFirstUseGuide({ area, showGuidance, onDismissGuidance }
   if (!showGuidance) return null;
 
   return (
-    <aside aria-labelledby={titleId} className="my-4 rounded-2xl border border-pine/20 bg-white/90 p-4 text-ink shadow-sm">
-      <h3 id={titleId} className="font-semibold text-pine">{guidance[area].title}</h3>
+    <aside aria-labelledby={titleId} className="my-4 rounded-2xl border border-pine/20 bg-white/90 px-4 py-2 text-ink">
+      <details><summary id={titleId} className="cursor-pointer min-h-11 py-2 font-semibold text-pine">{guidance[area].title}</summary>
       <p className="mt-2 text-sm leading-6 text-ink/75">{guidance[area].body}</p>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink/70">
@@ -39,6 +39,7 @@ export function SmartCartFirstUseGuide({ area, showGuidance, onDismissGuidance }
         </label>
         <button type="button" onClick={() => onDismissGuidance(remember)} className="min-h-11 rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white hover:bg-pine/90">Got it</button>
       </div>
+      </details>
     </aside>
   );
 }
