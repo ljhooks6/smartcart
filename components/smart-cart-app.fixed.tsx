@@ -973,6 +973,7 @@ export function SmartCartApp() {
   } = useSmartCartGrocery({
     formatCurrency,
     fullyStocked,
+    pantryItems: combinedPantryItems,
     onCopyError: (message) => setRequestError(message),
     restock,
     runningLow,

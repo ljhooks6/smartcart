@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getRecipeSourceKey } from "../lib/recipe-ingredients";
 
 type IngredientItem = {
   name: string;
@@ -41,6 +42,7 @@ const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() :
 
 export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipeArgs) {
   const [recipeCache, setRecipeCache] = useState<Record<string, RecipeResponse>>({});
+  const recipeSources = useRef<Record<string, string>>({});
   const [activeRecipeMeal, setActiveRecipeMeal] = useState<MealPlanItem | null>(null);
   const [recipeError, setRecipeError] = useState<string | null>(null);
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
@@ -65,12 +67,15 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
   }, [activeRecipeMeal]);
 
   const activeRecipe = useMemo(
-    () => (activeRecipeMeal ? recipeCache[activeRecipeMeal.name] : undefined),
+    () => (activeRecipeMeal && recipeSources.current[activeRecipeMeal.name] === getRecipeSourceKey(activeRecipeMeal)
+      ? recipeCache[activeRecipeMeal.name]
+      : undefined),
     [activeRecipeMeal, recipeCache],
   );
 
   async function fetchRecipeForMeal(meal: MealPlanItem) {
-    if (recipeCache[meal.name]) {
+    const sourceKey = getRecipeSourceKey(meal);
+    if (recipeCache[meal.name] && recipeSources.current[meal.name] === sourceKey) {
       return recipeCache[meal.name];
     }
 
@@ -87,6 +92,7 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
           mealTitle: meal.name,
           mealNotes: meal.notes,
           servings: meal.servings,
+          ingredients: meal.ingredients?.length ? meal.ingredients : undefined,
         }),
       });
 
@@ -104,6 +110,7 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
         steps: data.steps,
       };
 
+      recipeSources.current[meal.name] = sourceKey;
       setRecipeCache((current) => ({
         ...current,
         [meal.name]: recipeData,
@@ -167,6 +174,7 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
   }
 
   function resetRecipeState() {
+    recipeSources.current = {};
     setRecipeCache({});
     setActiveRecipeMeal(null);
     setRecipeError(null);

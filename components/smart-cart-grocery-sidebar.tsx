@@ -59,110 +59,6 @@ function formatMealCount(item: GroceryListItem) {
   return count === 1 ? "Used in 1 meal" : `Used in ${count} meals`;
 }
 
-function normalizeRestoreKey(name: string) {
-  const trimmed = safeTrim(name).toLowerCase();
-
-  if (
-    trimmed.includes("jasmine rice") ||
-    trimmed.includes("basmati rice") ||
-    trimmed === "white rice" ||
-    trimmed === "rice"
-  ) {
-    return "flexible-rice";
-  }
-
-  if (
-    trimmed === "whole milk" ||
-    trimmed === "2% milk" ||
-    trimmed === "skim milk" ||
-    trimmed === "milk"
-  ) {
-    return "flexible-milk";
-  }
-
-  if (
-    trimmed === "pasta" ||
-    trimmed.includes("spaghetti") ||
-    trimmed.includes("penne") ||
-    trimmed.includes("rigatoni") ||
-    trimmed.includes("rotini") ||
-    trimmed.includes("fettuccine") ||
-    trimmed.includes("linguine") ||
-    trimmed.includes("macaroni") ||
-    trimmed.includes("farfalle") ||
-    trimmed.includes("angel hair")
-  ) {
-    return "flexible-pasta";
-  }
-
-  if (
-    trimmed.includes("russet potato") ||
-    trimmed.includes("yukon gold potato") ||
-    trimmed.includes("red potato") ||
-    trimmed === "potatoes" ||
-    trimmed === "potato"
-  ) {
-    return "flexible-potatoes";
-  }
-
-  if (
-    trimmed === "yellow onion" ||
-    trimmed === "white onion" ||
-    trimmed === "red onion" ||
-    trimmed === "sweet onion" ||
-    trimmed === "onion" ||
-    trimmed === "onions"
-  ) {
-    return "flexible-onions";
-  }
-
-  if (
-    trimmed.includes("flour tortilla") ||
-    trimmed.includes("corn tortilla") ||
-    trimmed.includes("wrap") ||
-    trimmed.includes("burrito tortilla")
-  ) {
-    return "flexible-tortillas";
-  }
-
-  if (trimmed.includes("chicken broth") || trimmed.includes("chicken stock")) {
-    return "flexible-chicken-broth";
-  }
-
-  if (trimmed.includes("vegetable broth") || trimmed.includes("vegetable stock")) {
-    return "flexible-vegetable-broth";
-  }
-
-  if (trimmed.includes("beef broth") || trimmed.includes("beef stock")) {
-    return "flexible-beef-broth";
-  }
-
-  if (
-    trimmed.includes("diced tomatoes") ||
-    trimmed.includes("crushed tomatoes") ||
-    trimmed === "canned tomatoes"
-  ) {
-    return "flexible-canned-tomatoes";
-  }
-
-  if (trimmed.includes("parmesan") || trimmed.includes("pecorino")) {
-    return "flexible-grated-cheese";
-  }
-
-  if (
-    trimmed.includes("cheddar") ||
-    trimmed.includes("mozzarella") ||
-    trimmed.includes("monterey jack") ||
-    trimmed.includes("colby jack") ||
-    trimmed.includes("mexican blend") ||
-    trimmed.includes("shredded cheese")
-  ) {
-    return "flexible-shredded-cheese";
-  }
-
-  return trimmed;
-}
-
 export function SmartCartGrocerySidebar({
   budgetPercentage,
   budgetProgressBarClass,
@@ -227,8 +123,8 @@ export function SmartCartGrocerySidebar({
             </p>
             <p className="mb-4 mt-2 text-xs italic text-gray-500">
               *Need shows what your selected meals use. Buy shows the likely package you
-              would grab at the store. When MealCaddie groups flexible staples like rice,
-              pasta, potatoes, onions, or tortillas, one practical package will usually do.*
+              would grab at the store when the quantity is known. Check package sizes
+              against the full amount needed for your week.*
             </p>
 
             <div className="mt-6 space-y-5">
@@ -250,8 +146,6 @@ export function SmartCartGrocerySidebar({
                           const trimmedName = safeTrim(item.name);
                           const isRestoredItem = restoredItems.includes(
                             item.item_key,
-                          ) || restoredItems.includes(
-                            normalizeRestoreKey(trimmedName),
                           );
                           const displayName =
                             bellPepperPattern.test(trimmedName) &&
