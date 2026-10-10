@@ -1,5 +1,7 @@
 "use client";
 
+import { SmartCartMealActions } from "./smart-cart-meal-actions";
+
 import { SmartCartMealDetails } from "./smart-cart-meal-details";
 
 import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart-first-use-guide";
@@ -30,7 +32,6 @@ type SmartCartLibrarySectionsProps = FirstUseGuidanceProps & {
   archivedMeals: MealPlanItem[];
   cloudSyncMessage: string | null;
   expandedDetailCards: Set<string>;
-  expandedIngredientsMeals: Set<string>;
   formatCardEyebrow: (day: string) => string;
   isSaving: boolean;
   isVaultOpen: boolean;
@@ -43,11 +44,9 @@ type SmartCartLibrarySectionsProps = FirstUseGuidanceProps & {
   onRestoreMeal: (meal: MealPlanItem) => void | Promise<void>;
   onSaveSession: () => void | Promise<void>;
   onToggleCardDetails: (cardKey: string) => void;
-  onToggleIngredients: (meal: MealPlanItem) => void | Promise<void>;
   onToggleVaultOpen: () => void;
   onWaitlistEmailChange: (value: string) => void;
   onWaitlistSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
-  recipeCache: Record<string, { ingredients: string[] }>;
   recipeLoadingMeal: string | null;
   userPlan: SmartCartPlan;
   userSignedIn: boolean;
@@ -64,7 +63,6 @@ export function SmartCartLibrarySections({
   archivedMeals,
   cloudSyncMessage,
   expandedDetailCards,
-  expandedIngredientsMeals,
   formatCardEyebrow,
   isSaving,
   isVaultOpen,
@@ -77,11 +75,9 @@ export function SmartCartLibrarySections({
   onRestoreMeal,
   onSaveSession,
   onToggleCardDetails,
-  onToggleIngredients,
   onToggleVaultOpen,
   onWaitlistEmailChange,
   onWaitlistSubmit,
-  recipeCache,
   recipeLoadingMeal,
   userPlan,
   userSignedIn,
@@ -177,76 +173,10 @@ export function SmartCartLibrarySections({
                   <h3 className="mt-2 font-display text-xl text-ink">{safeTrim(meal.name)}</h3>
                   <p className="mt-2 text-sm leading-6 text-ink/70">Serves {meal.servings}</p>
                   <p className="mt-2 text-xs font-semibold text-pine">Saved to Vault</p>
-                  <SmartCartMealDetails expanded={expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)} onToggle={() => onToggleCardDetails(`vault-${meal.day}::${meal.name}`)} notes={safeTrim(meal.notes)} />
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={recipeLoadingMeal === meal.name}
-                      onClick={() => onGetRecipe(meal)}
-                      type="button"
-                    >
-                      {recipeLoadingMeal === meal.name ? "Loading recipe..." : "View Recipe"}
-                    </button>
-                    <button
-                      className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={recipeLoadingMeal === meal.name}
-                      onClick={() => onToggleIngredients(meal)}
-                      type="button"
-                    >
-                      {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
-                        ? "Hide Ingredients"
-                        : "View Ingredients"}
-                    </button>
-                    <button
-                      className="inline-flex items-center justify-center rounded-full bg-pine px-3 py-2 text-sm font-semibold text-white transition hover:bg-pine/90"
-                      onClick={() => void onRestoreMeal(meal)}
-                      type="button"
-                    >
-                      Add to This Week
-                    </button>
-                    <button
-                      className="inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                      onClick={() => void onPermanentDelete(meal)}
-                      type="button"
-                    >
-                      Permanent Delete
-                    </button>
-                  </div>
-                  {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
-                    ((meal.ingredients && meal.ingredients.length > 0) ||
-                      recipeCache[meal.name]) && (
-                      <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                          Ingredients
-                        </p>
-                        <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                          {(meal.ingredients && meal.ingredients.length > 0
-                            ? meal.ingredients
-                                .filter(
-                                  (ingredient) =>
-                                    ingredient &&
-                                    typeof ingredient.name === "string" &&
-                                    typeof ingredient.amount === "string",
-                                )
-                                .map(
-                                  (ingredient) =>
-                                    `${safeTrim(ingredient.amount)} ${safeTrim(ingredient.name)}`,
-                                )
-                            : (recipeCache[meal.name]?.ingredients ?? []).filter(
-                                (ingredient) => typeof ingredient === "string",
-                              )
-                          )
-                            .map((ingredient) => safeTrim(ingredient))
-                            .filter(Boolean)
-                            .map((ingredient) => (
-                              <li key={`${meal.name}-${ingredient}`} className="flex gap-2">
-                                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                                <span>{ingredient}</span>
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
+                  <div className="mt-4"><SmartCartMealActions inThisWeek={false} recipeLoading={recipeLoadingMeal === meal.name} onViewRecipe={() => void onGetRecipe(meal)} onAddToWeek={() => void onRestoreMeal(meal)} more={<>
+                    <SmartCartMealDetails expanded={expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)} onToggle={() => onToggleCardDetails(`vault-${meal.day}::${meal.name}`)} notes={safeTrim(meal.notes)} />
+                    <button type="button" onClick={() => void onPermanentDelete(meal)} className="min-h-11 w-full rounded-xl border border-red-200 px-3 py-3 text-left text-sm font-semibold text-red-700">Permanent Delete</button>
+                  </>} /></div>
                 </article>
               ))}
             </div>

@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getRecipeSourceKey } from "../lib/recipe-ingredients";
+import { normalizeRecipe, normalizeSavedRecipes, recipeStorageKey, rememberRecipe } from "../lib/recipe-progress";
+import { loadStoredJson, saveStoredJson } from "../lib/smart-cart-persistence";
 
 type IngredientItem = {
   name: string;
@@ -46,9 +48,6 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
   const [activeRecipeMeal, setActiveRecipeMeal] = useState<MealPlanItem | null>(null);
   const [recipeError, setRecipeError] = useState<string | null>(null);
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
-  const [expandedIngredientsMeals, setExpandedIngredientsMeals] = useState<Set<string>>(
-    new Set(),
-  );
 
   const activeRecipe = useMemo(
     () => (activeRecipeMeal && recipeSources.current[activeRecipeMeal.name] === getRecipeSourceKey(activeRecipeMeal)
@@ -60,9 +59,22 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
   async function fetchRecipeForMeal(meal: MealPlanItem) {
     const sourceKey = getRecipeSourceKey(meal);
     if (recipeCache[meal.name] && recipeSources.current[meal.name] === sourceKey) {
+      setRecipeError(null);
+      setRecipeLoadingMeal(null);
       return recipeCache[meal.name];
     }
 
+    const storageKey = recipeStorageKey(userId);
+    const remembered = normalizeSavedRecipes(loadStoredJson(storageKey)).find(item => item.source === sourceKey);
+    if (remembered) {
+      setRecipeError(null);
+      setRecipeLoadingMeal(null);
+      recipeSources.current[meal.name] = sourceKey;
+      setRecipeCache(current => ({ ...current, [meal.name]: remembered.recipe }));
+      return remembered.recipe;
+    }
+
+    const version = ++requestVersion.current;
     setRecipeError(null);
     setRecipeLoadingMeal(meal.name);
 
@@ -81,18 +93,22 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
       });
 
       const data = (await response.json()) as RecipeResponse & { error?: string };
+      if (version !== requestVersion.current) return null;
 
       if (!response.ok) {
         setRecipeError(`Error ${response.status}: ${data.error || "Request failed."}`);
         return null;
       }
 
-      const recipeData = {
+      const recipeData = normalizeRecipe({
         title: data.title,
         prep_time_minutes: data.prep_time_minutes,
         ingredients: data.ingredients,
         steps: data.steps,
-      };
+      });
+      if (!recipeData) { setRecipeError("This recipe was incomplete. Please close it and try again."); return null; }
+
+      saveStoredJson(storageKey, rememberRecipe(normalizeSavedRecipes(loadStoredJson(storageKey)), { source: sourceKey, recipe: recipeData, progress: { ingredients: [], steps: [] } }));
 
       recipeSources.current[meal.name] = sourceKey;
       setRecipeCache((current) => ({
@@ -102,14 +118,15 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
 
       return recipeData;
     } catch (error) {
-      setRecipeError(error instanceof Error ? error.message : "Failed to fetch recipe.");
+      if (version === requestVersion.current) setRecipeError(error instanceof Error ? error.message : "Failed to fetch recipe.");
       return null;
     } finally {
-      setRecipeLoadingMeal(null);
+      if (version === requestVersion.current) setRecipeLoadingMeal(null);
     }
   }
 
   async function handleGetRecipe(meal: MealPlanItem) {
+    requestVersion.current += 1;
     setActiveRecipeMeal(meal);
     await fetchRecipeForMeal(meal);
   }
@@ -128,52 +145,29 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
     await handleGetRecipe(dessertMeal);
   }
 
-  async function handleToggleIngredients(meal: MealPlanItem) {
-    const mealKey = `${meal.day}::${meal.name}`;
-
-    if (expandedIngredientsMeals.has(mealKey)) {
-      setExpandedIngredientsMeals((current) => {
-        const next = new Set(current);
-        next.delete(mealKey);
-        return next;
-      });
-      return;
-    }
-
-    const recipe = await fetchRecipeForMeal(meal);
-    if (!recipe) {
-      return;
-    }
-
-    setExpandedIngredientsMeals((current) => {
-      const next = new Set(current);
-      next.add(mealKey);
-      return next;
-    });
-  }
-
   function closeRecipeModal() {
     setActiveRecipeMeal(null);
     setRecipeError(null);
   }
 
-  function resetRecipeState() {
+  const requestVersion = useRef(0);
+  const resetRecipeState = useCallback(() => {
+    requestVersion.current += 1;
     recipeSources.current = {};
     setRecipeCache({});
     setActiveRecipeMeal(null);
     setRecipeError(null);
     setRecipeLoadingMeal(null);
-    setExpandedIngredientsMeals(new Set());
-  }
+  }, []);
+
+  useEffect(() => { resetRecipeState(); return () => { requestVersion.current += 1; }; }, [userId, resetRecipeState]);
 
   return {
     activeRecipe,
     activeRecipeMeal,
     closeRecipeModal,
-    expandedIngredientsMeals,
     handleGetDessertRecipe,
     handleGetRecipe,
-    handleToggleIngredients,
     recipeCache,
     recipeError,
     recipeLoadingMeal,

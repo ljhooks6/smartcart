@@ -17,6 +17,8 @@ import { SmartCartFeedback } from "./smart-cart-feedback";
 import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
 import { SmartCartHeroHeader } from "./smart-cart-hero-header";
 import { SmartCartAccountDialog } from "./smart-cart-account-dialog";
+import { SmartCartScheduleDialog } from "./smart-cart-schedule-dialog";
+import { normalizeCookingDay, setCookingDay, type CookingDay } from "../lib/meal-schedule";
 import { SmartCartWelcome } from "./smart-cart-welcome";
 import { SmartCartLibrarySections } from "./smart-cart-library-sections";
 import { SmartCartMealSections } from "./smart-cart-meal-sections";
@@ -61,6 +63,7 @@ type MealPlanItem = {
   name: string;
   servings: number;
   notes: string;
+  scheduledDay?: CookingDay;
   ingredients?: IngredientItem[];
   instructions?: string[];
   imageUrl?: string;
@@ -659,6 +662,8 @@ export function SmartCartApp() {
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("week");
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [mealToSchedule, setMealToSchedule] = useState<{ meal: MealPlanItem; fromVault: boolean } | null>(null);
+  useEffect(() => { setMealToSchedule(null); }, [user?.id]);
   const mobileScrollPositions = useRef<Partial<Record<MobileTab, number>>>({});
   const [isStoreMode, setIsStoreMode] = useState(false);
   const [cookedHistory, setCookedHistory] = useState<{ key: string; entries: Array<{ name: string; cookedAt: string }> }>({ key: "", entries: [] });
@@ -1047,11 +1052,8 @@ export function SmartCartApp() {
     activeRecipe,
     activeRecipeMeal,
     closeRecipeModal,
-    expandedIngredientsMeals,
     handleGetDessertRecipe,
     handleGetRecipe,
-    handleToggleIngredients,
-    recipeCache,
     recipeError,
     recipeLoadingMeal,
     resetRecipeState,
@@ -1444,13 +1446,13 @@ export function SmartCartApp() {
   }
 
   function handleSaveToWeeklyMenu(meal: MealPlanItem) {
-    if (!actionGuidance.skipSaveToMenuConfirm) {
-      setConfirmDontShowAgain(false);
-      setConfirmDialog({ kind: "saveToMenu", meal });
-      return;
-    }
+    setMealToSchedule({ meal, fromVault: false });
+  }
 
-    performSaveToWeeklyMenu(meal);
+  function handleScheduleMeal(meal: MealPlanItem, day: CookingDay | undefined) {
+    const update = (current: MealPlanItem[]) => current.map(item => item.day === meal.day && item.name === meal.name ? setCookingDay(item, day) : item);
+    if (isSweetTreatMeal(meal)) setSavedDesserts(update);
+    else setWeeklyMenu(update);
   }
 
   function performRemoveFromWeeklyMenu(meal: MealPlanItem) {
@@ -1609,6 +1611,10 @@ export function SmartCartApp() {
   }
 
   function handleRestoreMeal(meal: MealPlanItem) {
+    setMealToSchedule({ meal, fromVault: true });
+  }
+
+  function performRestoreMeal(meal: MealPlanItem) {
     if (!hasRoomForMeal(weeklyMenu, meal)) {
       showToast(`This Week has five ${mealKindLabel(getMealKind(meal)).toLowerCase()} meals. Cook one before adding another.`, "info");
       return;
@@ -2087,6 +2093,7 @@ export function SmartCartApp() {
             : undefined) ?? fallback.servings,
         ) || 2,
       notes: resolvedNotes,
+      scheduledDay: normalizeCookingDay(record && "scheduledDay" in record ? record.scheduledDay : undefined),
       ingredients: hydratedIngredients,
       instructions: (rawInstructions || []).filter(
         (instruction): instruction is string => typeof instruction === "string",
@@ -2583,6 +2590,12 @@ export function SmartCartApp() {
         toastMessage={toastMessage}
         toastTone={toastTone}
       />
+      {mealToSchedule ? <SmartCartScheduleDialog key={`${mealToSchedule.meal.day}::${mealToSchedule.meal.name}`} meal={mealToSchedule.meal} onClose={() => setMealToSchedule(null)} onAdd={(day) => {
+        const meal = setCookingDay(mealToSchedule.meal, day);
+        const fromVault = mealToSchedule.fromVault;
+        setMealToSchedule(null);
+        if (fromVault) performRestoreMeal(meal); else performSaveToWeeklyMenu(meal);
+      }} /> : null}
       <SmartCartAccountDialog open={isAccountOpen} onClose={() => setIsAccountOpen(false)}
         authMessage={authMessage} email={email} isAuthLoading={isAuthLoading} isProfileLoading={isProfileLoading}
         onEmailChange={setEmail} onGoogleLogin={handleGoogleLogin} onSwitchGoogleAccount={handleSwitchGoogleAccount}
@@ -2738,8 +2751,6 @@ export function SmartCartApp() {
               <SmartCartMealSections
                 cuisinePreference={formState.cuisinePreference}
                 expandedDetailCards={expandedDetailCards}
-                expandedIngredientsMeals={expandedIngredientsMeals}
-                formatCardEyebrow={formatCardEyebrow}
                 generatedPlan={generatedPlan}
                 householdSize={Number(formState.householdSize) || 2}
                 onArchiveMeal={handleArchiveMeal}
@@ -2750,8 +2761,6 @@ export function SmartCartApp() {
                 onSaveToWeeklyMenu={handleSaveToWeeklyMenu}
                 onToggleCardDetails={handleToggleCardDetails}
                 onToggleDessertSave={handleToggleDessertSave}
-                onToggleIngredients={handleToggleIngredients}
-                recipeCache={recipeCache}
                 recipeLoadingMeal={recipeLoadingMeal}
                 replacingDessertKey={replacingDessertKey}
                 replacingMealKey={replacingMealKey}
@@ -2803,17 +2812,14 @@ export function SmartCartApp() {
               <SmartCartCookSections
                 {...firstUseGuidance.propsFor("cook")}
                 expandedDetailCards={expandedDetailCards}
-                expandedIngredientsMeals={expandedIngredientsMeals}
-                formatCardEyebrow={formatCardEyebrow}
                 onArchiveMeal={handleArchiveMeal}
                 onGetRecipe={handleGetRecipe}
                 onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
                 onToggleCardDetails={handleToggleCardDetails}
-                onToggleIngredients={handleToggleIngredients}
-                recipeCache={recipeCache}
                 recipeLoadingMeal={recipeLoadingMeal}
                 savedDesserts={savedDesserts}
                 weeklyMenu={weeklyMenu}
+                onScheduleMeal={handleScheduleMeal}
               />
             </section>
 
@@ -2827,7 +2833,6 @@ export function SmartCartApp() {
               archivedMeals={archivedMeals}
               cloudSyncMessage={cloudSyncMessage}
               expandedDetailCards={expandedDetailCards}
-              expandedIngredientsMeals={expandedIngredientsMeals}
               formatCardEyebrow={formatCardEyebrow}
               isSaving={isSaving || cloudLoadingUser === user?.id}
               saveStatus={saveStatus}
@@ -2840,11 +2845,9 @@ export function SmartCartApp() {
               onRestoreMeal={handleRestoreMeal}
               onSaveSession={saveSessionToCloud}
               onToggleCardDetails={handleToggleCardDetails}
-              onToggleIngredients={handleToggleIngredients}
               onToggleVaultOpen={() => setIsVaultOpen(!isVaultOpen)}
               onWaitlistEmailChange={setWaitlistEmail}
               onWaitlistSubmit={handleWaitlistSubmit}
-              recipeCache={recipeCache}
               recipeLoadingMeal={recipeLoadingMeal}
               userPlan={userPlan}
               userSignedIn={Boolean(user)}
@@ -2970,8 +2973,6 @@ export function SmartCartApp() {
                 <SmartCartMealSections
                   cuisinePreference={formState.cuisinePreference}
                   expandedDetailCards={expandedDetailCards}
-                  expandedIngredientsMeals={expandedIngredientsMeals}
-                  formatCardEyebrow={formatCardEyebrow}
                   generatedPlan={generatedPlan}
                   householdSize={Number(formState.householdSize) || 2}
                   onArchiveMeal={handleArchiveMeal}
@@ -2982,8 +2983,6 @@ export function SmartCartApp() {
                   onSaveToWeeklyMenu={handleSaveToWeeklyMenu}
                   onToggleCardDetails={handleToggleCardDetails}
                   onToggleDessertSave={handleToggleDessertSave}
-                  onToggleIngredients={handleToggleIngredients}
-                  recipeCache={recipeCache}
                   recipeLoadingMeal={recipeLoadingMeal}
                   replacingDessertKey={replacingDessertKey}
                   replacingMealKey={replacingMealKey}
@@ -3010,17 +3009,14 @@ export function SmartCartApp() {
               <SmartCartCookSections
                 {...firstUseGuidance.propsFor("cook")}
                 expandedDetailCards={expandedDetailCards}
-                expandedIngredientsMeals={expandedIngredientsMeals}
-                formatCardEyebrow={formatCardEyebrow}
                 onArchiveMeal={handleArchiveMeal}
                 onGetRecipe={handleGetRecipe}
                 onRemoveFromWeeklyMenu={handleRemoveFromWeeklyMenu}
                 onToggleCardDetails={handleToggleCardDetails}
-                onToggleIngredients={handleToggleIngredients}
-                recipeCache={recipeCache}
                 recipeLoadingMeal={recipeLoadingMeal}
                 savedDesserts={savedDesserts}
                 weeklyMenu={weeklyMenu}
+                onScheduleMeal={handleScheduleMeal}
               />
             </div>
             <div id="desktop-vault" className="scroll-mt-8" />
@@ -3029,7 +3025,6 @@ export function SmartCartApp() {
               archivedMeals={archivedMeals}
               cloudSyncMessage={cloudSyncMessage}
               expandedDetailCards={expandedDetailCards}
-              expandedIngredientsMeals={expandedIngredientsMeals}
               formatCardEyebrow={formatCardEyebrow}
               isSaving={isSaving || cloudLoadingUser === user?.id}
               saveStatus={saveStatus}
@@ -3042,11 +3037,9 @@ export function SmartCartApp() {
               onRestoreMeal={handleRestoreMeal}
               onSaveSession={saveSessionToCloud}
               onToggleCardDetails={handleToggleCardDetails}
-              onToggleIngredients={handleToggleIngredients}
               onToggleVaultOpen={() => setIsVaultOpen(!isVaultOpen)}
               onWaitlistEmailChange={setWaitlistEmail}
               onWaitlistSubmit={handleWaitlistSubmit}
-              recipeCache={recipeCache}
               recipeLoadingMeal={recipeLoadingMeal}
               userPlan={userPlan}
               userSignedIn={Boolean(user)}
@@ -3077,6 +3070,8 @@ export function SmartCartApp() {
       </nav>
 
       <SmartCartRecipeModal
+        userId={safeTrim(user?.id)}
+        onCooked={activeRecipeMeal && [...weeklyMenu, ...savedDesserts].some(meal => meal.day === activeRecipeMeal.day && meal.name === activeRecipeMeal.name) ? () => { closeRecipeModal(); void handleRemoveFromWeeklyMenu(activeRecipeMeal); } : undefined}
         activeRecipe={activeRecipe}
         activeRecipeMeal={activeRecipeMeal}
         onClose={closeRecipeModal}

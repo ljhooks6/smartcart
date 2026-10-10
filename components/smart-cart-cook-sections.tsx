@@ -1,279 +1,52 @@
 "use client";
 
 import { SmartCartMealDetails } from "./smart-cart-meal-details";
-
 import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart-first-use-guide";
-
 import { SmartCartMealActions } from "./smart-cart-meal-actions";
+import { SmartCartDayPicker } from "./smart-cart-day-picker";
 import { getMealKind, mealKindLabel } from "../lib/meal-types";
-
-type IngredientItem = {
-  name: string;
-  amount: string;
-  price?: number;
-};
+import { sortScheduledMeals, type CookingDay } from "../lib/meal-schedule";
 
 type MealPlanItem = {
-  dbId?: number | string;
-  user_id: string;
-  day: string;
-  name: string;
-  servings: number;
-  notes: string;
-  ingredients?: IngredientItem[];
+  dbId?: number | string; user_id: string; day: string; name: string; servings: number; notes: string;
+  scheduledDay?: CookingDay;
+  ingredients?: { name: string; amount: string; price?: number }[];
 };
-
-type RecipeCacheEntry = {
-  ingredients: string[];
-};
-
-type SmartCartCookSectionsProps = FirstUseGuidanceProps & {
+type Props = FirstUseGuidanceProps & {
   expandedDetailCards: Set<string>;
-  expandedIngredientsMeals: Set<string>;
-  formatCardEyebrow: (day: string) => string;
   onArchiveMeal: (meal: MealPlanItem) => void | Promise<void>;
   onGetRecipe: (meal: MealPlanItem) => void | Promise<void>;
   onRemoveFromWeeklyMenu: (meal: MealPlanItem) => void | Promise<void>;
-  onToggleCardDetails: (cardKey: string) => void;
-  onToggleIngredients: (meal: MealPlanItem) => void | Promise<void>;
-  recipeCache: Record<string, RecipeCacheEntry>;
-  recipeLoadingMeal: string | null;
-  savedDesserts: MealPlanItem[];
-  weeklyMenu: MealPlanItem[];
+  onToggleCardDetails: (key: string) => void;
+  onScheduleMeal: (meal: MealPlanItem, day: CookingDay | undefined) => void;
+  recipeLoadingMeal: string | null; savedDesserts: MealPlanItem[]; weeklyMenu: MealPlanItem[];
 };
 
-const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
-
-export function SmartCartCookSections({
-  showGuidance,
-  onDismissGuidance,
-  expandedDetailCards,
-  expandedIngredientsMeals,
-  formatCardEyebrow,
-  onArchiveMeal,
-  onGetRecipe,
-  onRemoveFromWeeklyMenu,
-  onToggleCardDetails,
-  onToggleIngredients,
-  recipeCache,
-  recipeLoadingMeal,
-  savedDesserts,
-  weeklyMenu,
-}: SmartCartCookSectionsProps) {
-  const hasCookPlan = weeklyMenu.length > 0 || savedDesserts.length > 0;
-
-  return (
-    <div className="flex flex-col gap-6">
-      <section className="md:rounded-[2.25rem] md:border md:border-pine/15 md:bg-[#f8f4ec] md:p-5 md:shadow-xl">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="hidden md:block text-xs font-semibold uppercase tracking-[0.25em] text-pine/65">
-              Cook
-            </p>
-            <p className="font-display text-2xl text-ink">Your cook-ready lineup</p>
-            <p className="hidden md:block mt-1 text-sm leading-6 text-ink/70">
-              Meals and sweet treats you add to This Week land here so your recipes are ready when it is time
-              to cook.
-            </p>
-          </div>
-          <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-pine shadow-sm">
-            {weeklyMenu.length + savedDesserts.length} ready
-          </span>
-        </div>
-
-        <SmartCartFirstUseGuide area="cook" showGuidance={showGuidance} onDismissGuidance={onDismissGuidance} />
-
-        {!hasCookPlan ? (
-          <div className="mt-5 rounded-[1.5rem] border border-dashed border-pine/20 bg-white px-4 py-10 text-center text-ink/60">
-            <p className="font-display text-2xl text-ink">Nothing in This Week yet</p>
-            <p className="mt-3 text-sm leading-7">
-              Tap <strong>Add to This Week</strong> on meals or desserts you want to cook this
-              week.
-            </p>
-          </div>
-        ) : null}
-
-        {weeklyMenu.length > 0 ? (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {weeklyMenu.map((meal, index) => (
-              <article
-                key={`saved-${meal.day}-${meal.name}`}
-                className="rounded-3xl border border-pine/15 border-t-4 border-t-apricot bg-white px-4 py-4 shadow-lg"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                  {mealKindLabel(getMealKind(meal))} · {formatCardEyebrow(meal.day)}
-                </p>
-                <h3 className="mt-2 font-display text-xl text-ink">{safeTrim(meal.name)}</h3>
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <p className="text-sm leading-6 text-ink/70">Serves {meal.servings}</p>
-                </div>
-                <SmartCartMealDetails expanded={expandedDetailCards.has(`saved-${meal.day}::${meal.name}`)} onToggle={() => onToggleCardDetails(`saved-${meal.day}::${meal.name}`)} notes={safeTrim(meal.notes)} />
-                <div className="mt-4">
-                  <SmartCartMealActions
-                    inThisWeek
-                    recipeLoading={recipeLoadingMeal === meal.name}
-                    onViewRecipe={() => void onGetRecipe(meal)}
-                    onSaveToVault={() => void onArchiveMeal(meal)}
-                  />
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={recipeLoadingMeal === meal.name}
-                    onClick={() => void onToggleIngredients(meal)}
-                    type="button"
-                  >
-                    {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`)
-                      ? "Hide Ingredients"
-                      : "View Ingredients"}
-                  </button>
-                  <button
-                    className="col-span-2 inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"
-                    onClick={() => void onRemoveFromWeeklyMenu(meal)}
-                    type="button"
-                  >
-                    Cooked It
-                  </button>
-                </div>
-                {expandedIngredientsMeals.has(`${meal.day}::${meal.name}`) &&
-                ((meal.ingredients && meal.ingredients.length > 0) || recipeCache[meal.name]) ? (
-                  <div className="mt-4 rounded-[1rem] bg-cream px-3 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                      Ingredients
-                    </p>
-                    <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                      {(meal.ingredients && meal.ingredients.length > 0
-                        ? meal.ingredients
-                            .filter(
-                              (ingredient) =>
-                                ingredient &&
-                                typeof ingredient.name === "string" &&
-                                typeof ingredient.amount === "string",
-                            )
-                            .map(
-                              (ingredient) =>
-                                `${safeTrim(ingredient.amount)} ${safeTrim(ingredient.name)}`,
-                            )
-                        : (recipeCache[meal.name]?.ingredients ?? []).filter(
-                            (ingredient) => typeof ingredient === "string",
-                          )
-                      )
-                        .map((ingredient) => safeTrim(ingredient))
-                        .filter(Boolean)
-                        .map((ingredient) => (
-                          <li key={`${meal.name}-${ingredient}`} className="flex gap-2">
-                            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                            <span>{ingredient}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        ) : null}
-      </section>
-
-      {savedDesserts.length > 0 ? (
-        <section className="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-lg">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/80">
-                Sweet treat
-              </p>
-              <p className="font-display text-2xl text-ink">This Week&apos;s Sweet Treats</p>
-              <p className="mt-1 text-sm leading-6 text-ink/70">
-                Keep your favorite sweet treats with this week&apos;s cook-ready plan.
-              </p>
-            </div>
-            <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-berry">
-              {savedDesserts.length} ready
-            </span>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {savedDesserts.map((meal, index) => {
-              const mealKey = `${safeTrim(meal.day)}::${safeTrim(meal.name)}`;
-
-              return (
-                <article
-                  key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
-                  className="overflow-hidden rounded-3xl border border-berry/15 border-t-4 border-t-berry bg-white shadow-xl"
-                >
-                  <div className="flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                        {formatCardEyebrow(safeTrim(meal.day))}
-                      </p>
-                      <h3 className="mt-2 font-display text-[1.45rem] leading-tight text-ink sm:text-2xl">
-                        {safeTrim(meal.name)}
-                      </h3>
-                    </div>
-                    <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-ink/55">
-                      Serves {meal.servings}
-                    </span>
-                  </div>
-
-                  <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                    <SmartCartMealDetails expanded={expandedDetailCards.has(`saved-dessert-${mealKey}`)} onToggle={() => onToggleCardDetails(`saved-dessert-${mealKey}`)} notes={safeTrim(meal.notes)} />
-                    <SmartCartMealActions
-                      inThisWeek
-                      recipeLoading={recipeLoadingMeal === meal.name}
-                      onViewRecipe={() => void onGetRecipe(meal)}
-                      onSaveToVault={() => void onArchiveMeal(meal)}
-                    />
-                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-                      <button
-                        className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                        onClick={() => onToggleIngredients(meal)}
-                        type="button"
-                      >
-                        {expandedIngredientsMeals.has(mealKey)
-                          ? "Hide Ingredients"
-                          : "View Ingredients"}
-                      </button>
-                      <button
-                        className="col-span-2 inline-flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600 sm:col-span-1"
-                        onClick={() => void onRemoveFromWeeklyMenu(meal)}
-                        type="button"
-                      >
-                        Cooked It
-                      </button>
-                    </div>
-                    {expandedIngredientsMeals.has(mealKey) && (meal.ingredients ?? []).length > 0 ? (
-                      <div className="rounded-[1rem] bg-cream px-3 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                          Ingredients
-                        </p>
-                        <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                          {(meal.ingredients ?? [])
-                            .filter(
-                              (ingredient) =>
-                                ingredient &&
-                                typeof ingredient.name === "string" &&
-                                typeof ingredient.amount === "string",
-                            )
-                            .map((ingredient) => (
-                              <li
-                                key={`${safeTrim(meal.name)}-${safeTrim(ingredient.name)}-${safeTrim(ingredient.amount)}`}
-                                className="flex gap-2"
-                              >
-                                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                                <span>
-                                  {safeTrim(ingredient.amount)} {safeTrim(ingredient.name)}
-                                </span>
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-    </div>
-  );
+export function SmartCartCookSections({ showGuidance, onDismissGuidance, expandedDetailCards, onArchiveMeal, onGetRecipe, onRemoveFromWeeklyMenu, onToggleCardDetails, onScheduleMeal, recipeLoadingMeal, savedDesserts, weeklyMenu }: Props) {
+  const total = weeklyMenu.length + savedDesserts.length;
+  const renderMeal = (meal: MealPlanItem) => {
+    const key = `saved-${meal.day}::${meal.name}`;
+    return <article key={key} className="rounded-3xl border border-pine/15 border-t-4 border-t-apricot bg-white p-4 shadow-lg">
+      <p className="text-xs font-semibold uppercase tracking-wide text-berry">{mealKindLabel(getMealKind(meal))} · {meal.scheduledDay ?? "Flexible"}</p>
+      <h3 className="mt-2 font-display text-xl text-ink">{meal.name}</h3>
+      <p className="mt-2 text-sm text-ink/70">Serves {meal.servings}</p>
+      <div className="mt-4"><SmartCartDayPicker value={meal.scheduledDay} onChange={(day) => onScheduleMeal(meal, day)} /></div>
+      <div className="mt-4"><SmartCartMealActions inThisWeek recipeLoading={recipeLoadingMeal === meal.name} onViewRecipe={() => void onGetRecipe(meal)} onSaveToVault={() => void onArchiveMeal(meal)} more={<>
+        <SmartCartMealDetails expanded={expandedDetailCards.has(key)} onToggle={() => onToggleCardDetails(key)} notes={meal.notes} />
+        <button type="button" onClick={() => void onRemoveFromWeeklyMenu(meal)} className="min-h-11 w-full rounded-xl border border-pine/20 px-3 py-3 text-left text-sm font-semibold text-pine">Cooked It</button>
+      </>} /></div>
+    </article>;
+  };
+  return <div className="space-y-6">
+    <section>
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="font-display text-2xl text-ink">Your cook-ready lineup</h2>
+        <span className="shrink-0 rounded-full bg-sage/30 px-3 py-1 text-sm font-semibold text-pine">{total} ready</span>
+      </div>
+      <SmartCartFirstUseGuide area="cook" showGuidance={showGuidance} onDismissGuidance={onDismissGuidance} />
+      {!total ? <div className="mt-5 rounded-2xl border border-dashed border-pine/20 bg-white p-6 text-center"><p className="font-display text-xl">Nothing in This Week yet</p><p className="mt-3 text-sm text-ink/70">Add meals from Meals or Vault, then choose when to cook them.</p></div> : null}
+      {weeklyMenu.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2">{sortScheduledMeals(weeklyMenu).map(renderMeal)}</div> : null}
+    </section>
+    {savedDesserts.length ? <section><h2 className="font-display text-2xl text-berry">This Week’s Sweet Treats</h2><div className="mt-4 grid gap-4 sm:grid-cols-2">{sortScheduledMeals(savedDesserts).map(renderMeal)}</div></section> : null}
+  </div>;
 }

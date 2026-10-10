@@ -2,8 +2,9 @@
 
 import { useId } from "react";
 import { getMealKind, mealKindLabel } from "../lib/meal-types";
+import { sortScheduledMeals } from "../lib/meal-schedule";
 
-type WeekMeal = { day: string; name: string };
+type WeekMeal = { day: string; name: string; scheduledDay?: string };
 type Props = {
   dinners: WeekMeal[];
   desserts: WeekMeal[];
@@ -32,7 +33,7 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
   const nextLabel = nextStage === "shop" ? "Open shopping list" : nextStage === "cook" ? "Choose a meal to cook" : nextStage === "meals" ? "Choose your meals" : "Plan your week";
   const nextTitle = nextStage === "shop" ? "Your shopping list is ready." : nextStage === "cook" ? "Ready when you are." : nextStage === "meals" ? "Your meal picks are ready." : "Let’s plan your week.";
   const nextDescription = nextStage === "shop" ? `${readyCount} meals chosen · ${remaining} items left to collect.` : nextStage === "cook" ? `${readyCount} meals ready for you to cook.` : nextStage === "meals" ? "Choose what you want to cook. We’ll build the list around your picks." : "Start with what’s in your kitchen, your budget, and a little inspiration.";
-  const menu = [...dinners.map(meal => ({ ...meal, kind: mealKindLabel(getMealKind(meal)) })), ...desserts.map(meal => ({ ...meal, kind: "Sweet Treat" }))];
+  const menu = sortScheduledMeals([...dinners.map(meal => ({ ...meal, kind: mealKindLabel(getMealKind(meal)) })), ...desserts.map(meal => ({ ...meal, kind: "Sweet Treat" }))]);
 
   return (
     <section aria-labelledby={titleId} className="md:rounded-[2rem] md:border md:border-pine/15 md:bg-[#fffdf8] md:p-8 md:shadow-xl">
@@ -63,7 +64,7 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
         </div>
         <ul className="mt-2 divide-y divide-stone-200">
           {menu.slice(0, 2).map((meal, index) => <li key={`${meal.kind}-${meal.day}-${meal.name}-${index}`} className="py-3">
-            <p className="inline-flex rounded-full bg-sage/40 px-2 py-0.5 text-xs font-semibold text-pine">{meal.kind}</p>
+            <p className="inline-flex rounded-full bg-sage/40 px-2 py-0.5 text-xs font-semibold text-pine">{meal.scheduledDay ? `${meal.scheduledDay} · ` : ""}{meal.kind}</p>
             <p className="mt-1 text-sm leading-6 text-ink">{meal.name}</p>
           </li>)}
         </ul>

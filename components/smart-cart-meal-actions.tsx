@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 type MealActionsProps = {
   inThisWeek: boolean;
   weekFull?: boolean;
@@ -7,7 +9,8 @@ type MealActionsProps = {
   busy?: boolean;
   onViewRecipe: () => void;
   onAddToWeek?: () => void;
-  onSaveToVault: () => void;
+  onSaveToVault?: () => void;
+  more?: ReactNode;
 };
 
 export function SmartCartMealActions({
@@ -18,18 +21,24 @@ export function SmartCartMealActions({
   onViewRecipe,
   onAddToWeek,
   onSaveToVault,
+  more,
 }: MealActionsProps) {
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <button className="col-span-2 min-h-11 rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60" disabled={recipeLoading || busy} onClick={onViewRecipe} type="button">
+    <div className="space-y-3">
+      <div className={`grid gap-2 ${onAddToWeek && !inThisWeek ? "grid-cols-2" : "grid-cols-1"}`}>
+      <button className="min-h-12 rounded-2xl bg-orange-500 px-3 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60" disabled={recipeLoading || busy} onClick={onViewRecipe} type="button">
         {recipeLoading ? "Loading recipe..." : "View Recipe"}
       </button>
-      <button className="min-h-11 rounded-full bg-orange-50 px-3 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-70" disabled={inThisWeek || weekFull || busy} onClick={onAddToWeek} type="button">
-        {inThisWeek ? "In This Week" : weekFull ? "This Week Full" : "Add to This Week"}
-      </button>
-      <button className="min-h-11 rounded-full bg-sage/30 px-3 py-3 text-sm font-semibold text-pine transition hover:bg-sage/50 disabled:cursor-not-allowed disabled:opacity-60" disabled={busy} onClick={onSaveToVault} type="button">
-        Save to Vault
-      </button>
+      {onAddToWeek && !inThisWeek ? <button className="min-h-12 rounded-2xl bg-pine px-3 py-3 text-sm font-semibold text-white hover:bg-pine/90 disabled:opacity-60" disabled={weekFull || busy} onClick={onAddToWeek} type="button">{weekFull ? "This Week Full" : "Add to This Week"}</button> : null}
+      </div>
+      {onAddToWeek && inThisWeek ? <p className="text-sm font-semibold text-pine">In This Week</p> : null}
+      {onSaveToVault || more ? <details className="border-t border-pine/10">
+        <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-pine">More</summary>
+        <div className="space-y-3 pb-2">
+          {onSaveToVault ? <button className="min-h-11 w-full rounded-xl bg-sage/30 px-3 py-3 text-left text-sm font-semibold text-pine hover:bg-sage/50 disabled:opacity-60" disabled={busy} onClick={onSaveToVault} type="button">Save to Vault</button> : null}
+          {more}
+        </div>
+      </details> : null}
     </div>
   );
 }

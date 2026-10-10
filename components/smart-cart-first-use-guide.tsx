@@ -11,7 +11,7 @@ export type FirstUseGuidanceProps = {
 const guidance = {
   cook: {
     title: "Your meals for This Week",
-    body: "Add breakfast, lunch, dinner, and Sweet Treat picks to This Week to put them here and build your shopping list. Open View Recipe when you are ready to cook. Cooked It marks a meal finished and updates the shopping list.",
+    body: "Add meals to This Week and choose when to make them. Change Cook on anytime. View Recipe lets you check off ingredients and follow cooking steps. More keeps extra details, Save to Vault, and Cooked It together. Cooked It marks a meal finished and updates the shopping list.",
   },
   vault: {
     title: "Keep recipes for another week",

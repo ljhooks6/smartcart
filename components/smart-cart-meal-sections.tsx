@@ -36,15 +36,9 @@ type GeneratedPlan = {
   desserts: GeneratedDessert[];
 };
 
-type RecipeCacheEntry = {
-  ingredients: string[];
-};
-
 type SmartCartMealSectionsProps = {
   cuisinePreference: string;
   expandedDetailCards: Set<string>;
-  expandedIngredientsMeals: Set<string>;
-  formatCardEyebrow: (day: string) => string;
   generatedPlan: GeneratedPlan;
   householdSize: number;
   onArchiveMeal: (meal: MealPlanItem) => void | Promise<void>;
@@ -55,8 +49,6 @@ type SmartCartMealSectionsProps = {
   onSaveToWeeklyMenu: (meal: MealPlanItem) => void;
   onToggleCardDetails: (cardKey: string) => void;
   onToggleDessertSave: (dessert: GeneratedDessert, index: number) => void;
-  onToggleIngredients: (meal: MealPlanItem) => void | Promise<void>;
-  recipeCache: Record<string, RecipeCacheEntry>;
   recipeLoadingMeal: string | null;
   replacingDessertKey: string | null;
   replacingMealKey: string | null;
@@ -72,8 +64,6 @@ const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() :
 export function SmartCartMealSections({
   cuisinePreference,
   expandedDetailCards,
-  expandedIngredientsMeals,
-  formatCardEyebrow,
   generatedPlan,
   householdSize,
   onArchiveMeal,
@@ -84,8 +74,6 @@ export function SmartCartMealSections({
   onSaveToWeeklyMenu,
   onToggleCardDetails,
   onToggleDessertSave,
-  onToggleIngredients,
-  recipeCache,
   recipeLoadingMeal,
   replacingDessertKey,
   replacingMealKey,
@@ -134,7 +122,6 @@ export function SmartCartMealSections({
               <div className="grid gap-4 md:grid-cols-2">
           {options.map(({ meal, index }) => {
             const mealCardKey = `generated-${meal.day}::${meal.name}`;
-            const mealEyebrow = formatCardEyebrow(meal.day);
             const matchesCuisinePreference = mealMatchesCuisinePreference(cuisinePreference, meal);
             return (
               <article
@@ -144,7 +131,7 @@ export function SmartCartMealSections({
                 <div className="flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-                      {mealEyebrow}
+                      {mealKindLabel(kind)} option
                     </p>
                     {matchesCuisinePreference ? (
                       <p className="mt-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-emerald-800 shadow-sm">
@@ -161,7 +148,6 @@ export function SmartCartMealSections({
                 </div>
 
                 <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                  <SmartCartMealDetails expanded={expandedDetailCards.has(mealCardKey)} onToggle={() => onToggleCardDetails(mealCardKey)} notes={safeTrim(meal.notes)} />
                   <SmartCartMealActions
                     inThisWeek={savedMealKeys.has(`${meal.day}::${meal.name}`)}
                     weekFull={!hasRoomForMeal(weeklyMenu, meal)}
@@ -170,10 +156,11 @@ export function SmartCartMealSections({
                     onViewRecipe={() => void onGetRecipe(meal)}
                     onAddToWeek={() => onSaveToWeeklyMenu(meal)}
                     onSaveToVault={() => void onArchiveMeal(meal)}
-                  />
-                  <button className="min-h-11 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60" disabled={replacingMealKey === `${meal.day}::${meal.name}`} onClick={() => void onReplaceMeal(meal, index)} type="button">
+                    more={<> <SmartCartMealDetails expanded={expandedDetailCards.has(mealCardKey)} onToggle={() => onToggleCardDetails(mealCardKey)} notes={safeTrim(meal.notes)} /> <button className="min-h-11 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60" disabled={replacingMealKey === `${meal.day}::${meal.name}`} onClick={() => void onReplaceMeal(meal, index)} type="button">
                     {replacingMealKey === `${meal.day}::${meal.name}` ? "Replacing..." : "Replace"}
-                  </button>
+                  </button> </>}
+                  />
+
                 </div>
               </article>
             );
@@ -209,65 +196,19 @@ export function SmartCartMealSections({
                       </h3>
                     </div>
                   </div>
-                  <SmartCartMealDetails expanded={expandedDetailCards.has(dessertCardKey)} onToggle={() => onToggleCardDetails(dessertCardKey)} notes={safeTrim(dessert.description)} />
-                  <button
-                    className="mt-4 ml-3 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                    onClick={() =>
-                      void onToggleIngredients({
-                        user_id: safeTrim(userId),
-                        day: `Sweet Treat ${index + 1}`,
-                        name: dessert.title,
-                        servings: householdSize || 2,
-                        notes: dessert.description,
-                        ingredients: dessert.ingredients,
-                        imageUrl: dessert.imageUrl,
-                      })
-                    }
-                    type="button"
-                  >
-                    {expandedIngredientsMeals.has(`Sweet Treat ${index + 1}::${dessert.title}`)
-                      ? "Hide Ingredients"
-                      : "View Ingredients"}
-                  </button>
-                  {expandedIngredientsMeals.has(`Sweet Treat ${index + 1}::${dessert.title}`) ? (
-                    <div className="mt-4 w-full rounded-[1rem] bg-cream px-3 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                        Ingredients
-                      </p>
-                      <ul className="mt-3 space-y-2 text-sm leading-6 text-ink/75">
-                        {dessert.ingredients
-                          .filter(
-                            (ingredient) =>
-                              ingredient &&
-                              typeof ingredient.name === "string" &&
-                              typeof ingredient.amount === "string",
-                          )
-                          .map((ingredient) => (
-                            <li
-                              key={`${dessert.title}-${ingredient.name}-${ingredient.amount}`}
-                              className="flex gap-2"
-                            >
-                              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-berry" />
-                              <span>
-                                {safeTrim(ingredient.amount)} {safeTrim(ingredient.name)}
-                              </span>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  ) : null}
                   <div className="mt-4">
                     <SmartCartMealActions
                       inThisWeek={isDessertSaved}
                       recipeLoading={recipeLoadingMeal === dessert.title}
                       busy={isReplacingThisDessert}
+                      more={<><SmartCartMealDetails expanded={expandedDetailCards.has(dessertCardKey)} onToggle={() => onToggleCardDetails(dessertCardKey)} notes={safeTrim(dessert.description)} /><button className="mt-3 min-h-11 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60" disabled={isReplacingThisDessert} onClick={() => void onReplaceDessert(dessert, index)} type="button">
+                      {isReplacingThisDessert ? "Replacing..." : "Replace"}
+                    </button></>}
                       onViewRecipe={() => void onGetDessertRecipe(dessert, index)}
                       onAddToWeek={() => onToggleDessertSave(dessert, index)}
                       onSaveToVault={() => void onArchiveMeal({ user_id: safeTrim(userId), day: `Sweet Treat ${index + 1}`, name: dessert.title, servings: householdSize || 2, notes: dessert.description, ingredients: dessert.ingredients, imageUrl: dessert.imageUrl })}
                     />
-                    <button className="mt-3 min-h-11 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60" disabled={isReplacingThisDessert} onClick={() => void onReplaceDessert(dessert, index)} type="button">
-                      {isReplacingThisDessert ? "Replacing..." : "Replace"}
-                    </button>
+
                   </div>
                 </article>
               );
