@@ -48,7 +48,7 @@ export function equipmentViolations(text: string, equipment?: string[]) {
   const available = new Set(equipment.map(normalized));
   const rules: Array<[string, RegExp]> = [
     ["oven", /\boven\b|\bbake\b|\bbroil\b|\broast\b/],
-    ["stovetop", /\bstovetop\b|\bskillet\b|\bsaucepan\b|\bsaut[eÃ©]\b/],
+    ["stovetop", /\bstovetop\b|\bskillet\b|\bsaucepan\b|\bsaute(?:ed)?\b/],
     ["microwave", /\bmicrowave\b/], ["grill", /\bgrill\b|\bgrilled\b/],
     ["air fryer", /\bair fryer\b|\bair fried\b/],
     ["slow cooker", /\bslow cooker\b|\bcrockpot\b/], ["blender", /\bblender\b|\bfood processor\b/],
@@ -76,5 +76,6 @@ export function recipeViolations(recipe: { ingredients: string[]; steps: string[
   }
   return [...new Set(errors)];
 }
+
 
 
