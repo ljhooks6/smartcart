@@ -1,5 +1,7 @@
 "use client";
 
+import { SmartCartMealDetails } from "./smart-cart-meal-details";
+
 import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart-first-use-guide";
 
 import { SmartCartMealActions } from "./smart-cart-meal-actions";
@@ -105,18 +107,7 @@ export function SmartCartCookSections({
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className="text-sm leading-6 text-ink/70">Serves {meal.servings}</p>
                 </div>
-                {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`) ? (
-                  <p className="mt-3 text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
-                ) : null}
-                <button
-                  className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                  onClick={() => onToggleCardDetails(`saved-${meal.day}::${meal.name}`)}
-                  type="button"
-                >
-                  {expandedDetailCards.has(`saved-${meal.day}::${meal.name}`)
-                    ? "Hide Details"
-                    : "Show Details"}
-                </button>
+                <SmartCartMealDetails expanded={expandedDetailCards.has(`saved-${meal.day}::${meal.name}`)} onToggle={() => onToggleCardDetails(`saved-${meal.day}::${meal.name}`)} notes={safeTrim(meal.notes)} />
                 <div className="mt-4">
                   <SmartCartMealActions
                     inThisWeek
@@ -224,18 +215,7 @@ export function SmartCartCookSections({
                   </div>
 
                   <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                    {expandedDetailCards.has(`saved-dessert-${mealKey}`) ? (
-                      <p className="text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
-                    ) : null}
-                    <button
-                      className="inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                      onClick={() => onToggleCardDetails(`saved-dessert-${mealKey}`)}
-                      type="button"
-                    >
-                      {expandedDetailCards.has(`saved-dessert-${mealKey}`)
-                        ? "Hide Details"
-                        : "Show Details"}
-                    </button>
+                    <SmartCartMealDetails expanded={expandedDetailCards.has(`saved-dessert-${mealKey}`)} onToggle={() => onToggleCardDetails(`saved-dessert-${mealKey}`)} notes={safeTrim(meal.notes)} />
                     <SmartCartMealActions
                       inThisWeek
                       recipeLoading={recipeLoadingMeal === meal.name}

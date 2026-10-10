@@ -1,5 +1,7 @@
 "use client";
 
+import { SmartCartMealDetails } from "./smart-cart-meal-details";
+
 import { SmartCartMealActions } from "./smart-cart-meal-actions";
 import { getMealKind, mealKindLabel, hasRoomForMeal } from "../lib/meal-types";
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
@@ -159,16 +161,7 @@ export function SmartCartMealSections({
                 </div>
 
                 <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                  {expandedDetailCards.has(mealCardKey) ? (
-                    <p className="text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
-                  ) : null}
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-ink transition hover:bg-stone-200"
-                    onClick={() => onToggleCardDetails(mealCardKey)}
-                    type="button"
-                  >
-                    {expandedDetailCards.has(mealCardKey) ? "Hide Details" : "Show Details"}
-                  </button>
+                  <SmartCartMealDetails expanded={expandedDetailCards.has(mealCardKey)} onToggle={() => onToggleCardDetails(mealCardKey)} notes={safeTrim(meal.notes)} />
                   <SmartCartMealActions
                     inThisWeek={savedMealKeys.has(`${meal.day}::${meal.name}`)}
                     weekFull={!hasRoomForMeal(weeklyMenu, meal)}
@@ -216,18 +209,7 @@ export function SmartCartMealSections({
                       </h3>
                     </div>
                   </div>
-                  {expandedDetailCards.has(dessertCardKey) ? (
-                    <p className="mt-3 text-sm leading-7 text-ink/80">
-                      {safeTrim(dessert.description)}
-                    </p>
-                  ) : null}
-                  <button
-                    className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200"
-                    onClick={() => onToggleCardDetails(dessertCardKey)}
-                    type="button"
-                  >
-                    {expandedDetailCards.has(dessertCardKey) ? "Hide Details" : "Show Details"}
-                  </button>
+                  <SmartCartMealDetails expanded={expandedDetailCards.has(dessertCardKey)} onToggle={() => onToggleCardDetails(dessertCardKey)} notes={safeTrim(dessert.description)} />
                   <button
                     className="mt-4 ml-3 inline-flex items-center justify-center rounded-full bg-stone-100 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-orange-50"
                     onClick={() =>

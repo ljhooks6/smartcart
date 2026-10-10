@@ -1,5 +1,7 @@
 "use client";
 
+import { SmartCartMealDetails } from "./smart-cart-meal-details";
+
 import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart-first-use-guide";
 
 import { FormEvent } from "react";
@@ -175,18 +177,7 @@ export function SmartCartLibrarySections({
                   <h3 className="mt-2 font-display text-xl text-ink">{safeTrim(meal.name)}</h3>
                   <p className="mt-2 text-sm leading-6 text-ink/70">Serves {meal.servings}</p>
                   <p className="mt-2 text-xs font-semibold text-pine">Saved to Vault</p>
-                  {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`) && (
-                    <p className="mt-3 text-sm leading-7 text-ink/75">{safeTrim(meal.notes)}</p>
-                  )}
-                  <button
-                    className="mt-4 inline-flex items-center justify-center rounded-full bg-stone-100 px-3 py-2 text-sm font-semibold text-ink transition hover:bg-orange-50"
-                    onClick={() => onToggleCardDetails(`vault-${meal.day}::${meal.name}`)}
-                    type="button"
-                  >
-                    {expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)
-                      ? "Hide Details"
-                      : "Show Details"}
-                  </button>
+                  <SmartCartMealDetails expanded={expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)} onToggle={() => onToggleCardDetails(`vault-${meal.day}::${meal.name}`)} notes={safeTrim(meal.notes)} />
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       className="inline-flex items-center justify-center rounded-full bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"

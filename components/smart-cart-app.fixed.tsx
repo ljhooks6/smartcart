@@ -16,6 +16,7 @@ import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
 import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
 import { SmartCartHeroHeader } from "./smart-cart-hero-header";
+import { SmartCartAccountDialog } from "./smart-cart-account-dialog";
 import { SmartCartWelcome } from "./smart-cart-welcome";
 import { SmartCartLibrarySections } from "./smart-cart-library-sections";
 import { SmartCartMealSections } from "./smart-cart-meal-sections";
@@ -657,6 +658,7 @@ export function SmartCartApp() {
   );
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("week");
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const mobileScrollPositions = useRef<Partial<Record<MobileTab, number>>>({});
   const [isStoreMode, setIsStoreMode] = useState(false);
   const [cookedHistory, setCookedHistory] = useState<{ key: string; entries: Array<{ name: string; cookedAt: string }> }>({ key: "", entries: [] });
@@ -2581,12 +2583,20 @@ export function SmartCartApp() {
         toastMessage={toastMessage}
         toastTone={toastTone}
       />
-      <header className="flex w-full max-w-7xl items-center justify-between border-b border-stone-200 pb-3 md:hidden">
+      <SmartCartAccountDialog open={isAccountOpen} onClose={() => setIsAccountOpen(false)}
+        authMessage={authMessage} email={email} isAuthLoading={isAuthLoading} isProfileLoading={isProfileLoading}
+        onEmailChange={setEmail} onGoogleLogin={handleGoogleLogin} onSwitchGoogleAccount={handleSwitchGoogleAccount}
+        onUpgrade={handleUpgradeToPlus} onLoginSubmit={handleLogin}
+        onSignOut={() => { void supabase.auth.signOut(); }}
+        userPlan={membershipProfile?.plan ?? null} userEmail={safeTrim(user?.email)} />
+      <header className="sticky top-0 z-30 flex min-h-14 w-full max-w-7xl items-center justify-between border-b border-stone-200 bg-[#fffaf2] py-2 md:hidden">
         <h1 className="font-display text-2xl text-ink">{activeTabMeta.label}</h1>
-        <span className="text-sm font-semibold text-pine">MealCaddie</span>
+        <button type="button" aria-haspopup="dialog" onClick={() => setIsAccountOpen(true)} className="flex min-h-11 items-center gap-2 rounded-full border border-pine/15 bg-white px-3 text-sm font-semibold text-pine">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg>Account
+        </button>
       </header>
       <div className="w-full max-w-7xl mx-auto flex flex-col gap-4 md:gap-8 font-body">
-        <div className={activeMobileTab === "plan" ? "block md:block" : "hidden md:block"}>
+        <div className="hidden md:block">
             <SmartCartHeroHeader
               authMessage={authMessage}
               email={email}
