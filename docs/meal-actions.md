@@ -7,3 +7,5 @@ This Week drives the Cook Lineup and grocery list. Cook cards show the meal type
 Save to Vault keeps the existing move behavior: it removes the meal from the active plan and This Week after a successful cloud save. The confirmation and Vault guidance explain this. Generated Sweet Treats now have the same Vault action as dinners and are removed from generated options after saving. Existing confirmation preferences and success feedback are retained.
 
 No database schema or authentication changes.
+
+Meals is a selection screen: Show Details is visible directly on every meal and treat card, with Add to This Week below. Recipes open from Cook or Vault. Secondary Save to Vault and Replace actions remain under More.
