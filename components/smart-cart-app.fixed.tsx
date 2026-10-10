@@ -1074,6 +1074,9 @@ export function SmartCartApp() {
   } = useSmartCartRecipe({
     householdSize: Number(formState.householdSize) || 2,
     userId: safeTrim(user?.id),
+    diet: formState.diet,
+    avoidIngredients: formState.avoidIngredients,
+    availableEquipment: formState.availableEquipment,
   });
 
   const savedMealKeys = useMemo(
@@ -1293,11 +1296,12 @@ export function SmartCartApp() {
     try {
       const response = await fetch("/api/replace-dessert", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: await getMealRequestHeaders(user?.id),
         body: JSON.stringify({
           rejectedDessertTitle: dessert.title,
+          avoidIngredients: safeTrim(formState.avoidIngredients),
+          availableEquipment: formState.availableEquipment,
+          prepTime: formState.prepTime,
           budget: Number(formState.budget),
           diet: safeTrim(formState.diet) || "No specific diet provided",
           householdSize: Number(formState.householdSize),

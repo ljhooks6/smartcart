@@ -2,10 +2,18 @@ import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { formatRecipeIngredients } from "@/lib/recipe-ingredients";
+import { getRequestMembership } from "@/lib/server-membership";
+import { ingredientViolations, recipeViolations } from "@/lib/ai-food-constraints";
+import { generateValidatedFood } from "@/lib/validated-food-generation";
+
+export const maxDuration = 150;
 
 const recipeRequestSchema = z.object({
   mealTitle: z.string().trim().min(1),
-  mealNotes: z.string().optional(),
+  mealNotes: z.string().max(10000).optional(),
+  diet: z.string().max(1000).optional(),
+  avoidIngredients: z.string().max(2000).optional(),
+  availableEquipment: z.array(z.string().max(100)).max(20).optional(),
   servings: z.number().int().positive().optional(),
   ingredients: z.array(z.object({
     name: z.string().trim().min(1),
@@ -21,7 +29,7 @@ const recipeResponseSchema = z.object({
 });
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY, maxRetries: 0, timeout: 60000,
 });
 
 export async function POST(request: Request) {
@@ -43,7 +51,11 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const { mealTitle, mealNotes, servings, ingredients } = requestResult.data;
+  const { mealTitle, mealNotes, servings, ingredients, diet, avoidIngredients, availableEquipment } = requestResult.data;
+  const membership = await getRequestMembership(request);
+  if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const preferences = { diet, avoidIngredients, availableEquipment };
+  if (ingredients && ingredientViolations(ingredients.map(i => i.name), preferences).length) return NextResponse.json({ error: "This saved meal conflicts with your current dietary preferences. Replace the meal or update your preferences first." }, { status: 422 });
   const ingredientLines = ingredients ? formatRecipeIngredients(ingredients) : undefined;
 
   if (!process.env.OPENAI_API_KEY) {
@@ -63,6 +75,8 @@ Rules:
 - Include one realistic prep time in minutes.
 - Include a concise ingredient list.
 - Include clear, step-by-step instructions.
+- Obey the diet, ingredient exclusions, and available equipment. Do not offer alternatives needing unavailable appliances.
+- For raw chicken or turkey, include an internal thermometer check of 165°F/74°C; color alone is not a doneness check.
 - Keep the recipe aligned with the given meal title and notes.
 - When planned ingredients are provided, they are the complete source of truth for the recipe. Use their exact names, types, and quantities, including every planned side. Do not add ingredients, substitute varieties, or change quantities. Only water may be used without an ingredient entry. Write steps using this same list.
 - Do not suggest optional garnishes or extra amounts beyond the planned list. If garnishing, reserve part of the listed amount and explain that in the steps.
@@ -78,49 +92,26 @@ Rules:
   const userPrompt = `
 Meal title: ${mealTitle}
 Meal notes: ${mealNotes?.trim() || "None provided"}
+Diet: ${diet || "No preference"}
+Excluded ingredients: ${avoidIngredients || "None"}
+Available equipment: ${availableEquipment?.join(", ") ?? "Oven, Stovetop, Microwave"}
 Servings: ${typeof servings === "number" ? servings : "Use a reasonable default"}
 Planned ingredients: ${ingredientLines ? JSON.stringify(ingredientLines) : "No stored ingredient list; create a practical recipe."}
 `;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      temperature: 0.4,
-      messages: [
-        { role: "system", content: systemPrompt.trim() },
-        { role: "user", content: userPrompt.trim() },
-      ],
+    const parsed = await generateValidatedFood(openai, {
+      model: membership.plan === "plus" ? "gpt-6.1-sol" : "gpt-6-luna",
+      system: systemPrompt.trim(), user: userPrompt.trim(),
+      parse: value => recipeResponseSchema.parse(value),
+      validate: value => recipeViolations(value, ingredients, preferences),
     });
-
-    const content = response.choices[0]?.message?.content;
-
-    if (!content) {
-      return NextResponse.json(
-        { error: "OpenAI returned an empty response." },
-        { status: 500 },
-      );
-    }
-
-    const parsed = recipeResponseSchema.parse(JSON.parse(content));
     return NextResponse.json({
       ...parsed,
       // Preserve the stored plan exactly, even if the model rewrites its list.
       ingredients: ingredientLines ?? parsed.ingredients,
     });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: `Schema validation failed: ${error.issues
-            .map((issue) => `${issue.path.join(".") || "root"}: ${issue.message}`)
-            .join("; ")}`,
-        },
-        { status: 500 },
-      );
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "We couldn't create a recipe that meets your preferences. Please try again." }, { status: 502 });
   }
 }

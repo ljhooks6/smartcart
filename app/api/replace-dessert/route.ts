@@ -1,161 +1,50 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getRequestMembership } from "@/lib/server-membership";
+import { equipmentViolations, ingredientViolations, pantryViolations } from "@/lib/ai-food-constraints";
+import { generateValidatedFood } from "@/lib/validated-food-generation";
 
-type ReplaceDessertRequest = {
-  rejectedDessertTitle: string;
-  budget: number;
-  diet?: string;
-  householdSize?: number;
-  combinedPantryItems?: string;
-  mealSourceMode?: "pantry-and-store" | "pantry-only";
-};
-
-const replaceDessertResponseSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
-  ingredients: z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        amount: z.string().min(1),
-        price: z.number().min(0.01),
-      }),
-    )
-    .min(1),
-  imageUrl: z.string().url().optional(),
+export const maxDuration = 150;
+const requestSchema = z.object({
+  rejectedDessertTitle: z.string().trim().min(1).max(500), budget: z.number().finite().positive(),
+  diet: z.string().max(1000).optional(), householdSize: z.number().int().positive().max(50).optional(),
+  combinedPantryItems: z.string().max(15000).default(""),
+  mealSourceMode: z.enum(["pantry-and-store", "pantry-only"]).default("pantry-and-store"),
+  avoidIngredients: z.string().max(2000).optional(), availableEquipment: z.array(z.string().max(100)).max(20).optional(),
+  prepTime: z.string().max(100).optional(),
 });
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const responseSchema = z.object({
+  title: z.string().min(1), description: z.string().min(1),
+  ingredients: z.array(z.object({ name: z.string().min(1), amount: z.string().min(1), price: z.number().finite().min(0.01) })).min(1).max(50),
 });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 0, timeout: 60000 });
 
 export async function POST(request: Request) {
   let body: unknown;
-
+  try { body = await request.json(); } catch { return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 }); }
+  const input = requestSchema.safeParse(body);
+  if (!input.success) return NextResponse.json({ error: "Provide a dessert title, positive budget, and valid preferences." }, { status: 400 });
+  const membership = await getRequestMembership(request);
+  if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "Recipe service is unavailable." }, { status: 503 });
+  const data = input.data;
+  const system = `You are a precise, creative dessert planner replacing one rejected dessert.
+Return exactly one practical dessert for the requested household, changing category or flavor when possible. Obey diet, excluded ingredients, available equipment, and prep-time preference. Do not suggest excluded ingredients, optional additions, or unavailable appliances.
+${data.mealSourceMode === "pantry-only" ? "Only use exact ingredient names from the pantry list. Water is the only permitted addition. Do not substitute varieties or add store ingredients." : "Prefer pantry ingredients; reasonable store additions are allowed."}
+Amounts are quantities actually used, not rounded-up packages. Price is the estimated USD value of the amount used, NOT additional shopping cost. Every ingredient, including owned pantry ingredients, must have price >=0.01. Pantry ownership is accounted for separately in application code. Omit water from priced ingredients. Keep the estimated ingredient value within the supplied budget.
+Return only JSON: {"title":"string","description":"string","ingredients":[{"name":"string","amount":"string","price":number}]}. Preserve specific food forms and dietary qualifiers.`;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Request body must be valid JSON." },
-      { status: 400 },
-    );
-  }
-
-  const {
-    rejectedDessertTitle,
-    budget,
-    diet,
-    householdSize,
-    combinedPantryItems,
-    mealSourceMode,
-  } = (body as Partial<ReplaceDessertRequest>) ?? {};
-  const isPantryOnlyMode = mealSourceMode === "pantry-only";
-
-  if (
-    typeof rejectedDessertTitle !== "string" ||
-    rejectedDessertTitle.trim().length === 0 ||
-    typeof budget !== "number"
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Missing required fields: rejectedDessertTitle, budget",
+    const result = await generateValidatedFood(openai, {
+      model: "gpt-6-luna", system, user: JSON.stringify(data), parse: value => responseSchema.parse(value),
+      validate: value => {
+        const names = value.ingredients.map(i => i.name);
+        return [...ingredientViolations(names, data), ...equipmentViolations(value.description, data.availableEquipment),
+          ...(data.mealSourceMode === "pantry-only" ? pantryViolations(names, data.combinedPantryItems) : []),
+          ...(value.title.trim().toLowerCase() === data.rejectedDessertTitle.trim().toLowerCase() ? ["Choose a different dessert"] : []),
+          ...(value.ingredients.reduce((sum, i) => sum + i.price, 0) > data.budget ? ["Estimated ingredient value exceeds budget"] : [])];
       },
-      { status: 400 },
-    );
-  }
-
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: "OPENAI_API_KEY is missing." },
-      { status: 500 },
-    );
-  }
-
-  const systemPrompt = `
-You are a creative dessert planner helping replace one rejected dessert.
-
-Rules:
-- Generate exactly ONE dessert.
-- It must feel different from the rejected dessert title.
-- Keep it practical, appealing, and budget-conscious.
-- ${
-    isPantryOnlyMode
-      ? "Pantry-only mode is active. Only use ingredients from the provided pantry items. Do not invent grocery additions or ingredients that require a store trip."
-      : "Prefer pantry-friendly desserts when possible, and add reasonable grocery ingredients only when needed."
-  }
-- The replacement should change dessert category or flavor lane when possible. For example, if the rejected dessert sounds like a cookie, brownie, or bar, try a pie, cobbler, pudding, crisp, cheesecake, or cake instead.
-- Avoid repeating the same dominant flavor word from the rejected dessert title unless the pantry strongly forces it.
-- Include a localized "ingredients" array using this exact shape for each item: { "name": "string", "amount": "string", "price": number }.
-- Preserve specific ingredient names and forms. Amounts must be the quantities actually used by this dessert for the requested servings, not rounded-up store packages. Reuse a pantry name only when using that exact ingredient.
-- Return valid JSON only.
-- Use this exact JSON shape:
-{
-  "title": "string",
-  "description": "string",
-  "ingredients": [
-    {
-      "name": "string",
-      "amount": "string",
-      "price": number
-    }
-  ]
-}
-`;
-
-  const userPrompt = `
-Generate one replacement dessert with these constraints:
-
-Rejected Dessert Title: ${rejectedDessertTitle}
-Budget: ${budget}
-Diet: ${diet?.trim() || "No specific diet provided"}
-Household Size: ${typeof householdSize === "number" ? householdSize : "Not provided"}
-Pantry Items: ${combinedPantryItems?.trim() || "None provided"}
-Meal Source Mode: ${
-    isPantryOnlyMode
-      ? "Pantry only - use only available kitchen inventory and do not plan a grocery trip."
-      : "Pantry plus store pickup - pantry-friendly is preferred, but reasonable grocery additions are allowed."
-  }
-
-The new dessert must be clearly different from "${rejectedDessertTitle}".
-`;
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: systemPrompt.trim() },
-        { role: "user", content: userPrompt.trim() },
-      ],
     });
-
-    const content = response.choices[0]?.message?.content;
-
-    if (!content) {
-      return NextResponse.json(
-        { error: "OpenAI returned an empty response." },
-        { status: 500 },
-      );
-    }
-
-    const parsed = replaceDessertResponseSchema.parse(JSON.parse(content));
-    return NextResponse.json(parsed);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: `Schema validation failed: ${error.issues
-            .map((issue) => `${issue.path.join(".") || "root"}: ${issue.message}`)
-            .join("; ")}`,
-        },
-        { status: 500 },
-      );
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+    return NextResponse.json(result);
+  } catch { return NextResponse.json({ error: "We couldn't find a treat that meets your preferences. Please try again." }, { status: 502 }); }
 }

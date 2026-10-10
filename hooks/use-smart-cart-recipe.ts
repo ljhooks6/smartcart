@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getMealRequestHeaders } from "../lib/meal-request-headers";
 import { getRecipeSourceKey } from "../lib/recipe-ingredients";
 import { normalizeRecipe, normalizeSavedRecipes, recipeStorageKey, rememberRecipe } from "../lib/recipe-progress";
 import { loadStoredJson, saveStoredJson } from "../lib/smart-cart-persistence";
@@ -38,26 +39,32 @@ type RecipeResponse = {
 type UseSmartCartRecipeArgs = {
   householdSize: number;
   userId: string;
+  diet: string;
+  avoidIngredients: string;
+  availableEquipment: string[];
 };
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
-export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipeArgs) {
+export function useSmartCartRecipe({ householdSize, userId, diet, avoidIngredients, availableEquipment }: UseSmartCartRecipeArgs) {
   const [recipeCache, setRecipeCache] = useState<Record<string, RecipeResponse>>({});
   const recipeSources = useRef<Record<string, string>>({});
   const [activeRecipeMeal, setActiveRecipeMeal] = useState<MealPlanItem | null>(null);
   const [recipeError, setRecipeError] = useState<string | null>(null);
   const [recipeLoadingMeal, setRecipeLoadingMeal] = useState<string | null>(null);
 
+  // A recipe generated under different restrictions must not bypass new checks.
+  const preferenceKey = JSON.stringify(["food-quality-v2", diet, avoidIngredients, availableEquipment]);
+  const sourceFor = useCallback((meal: MealPlanItem) => `${getRecipeSourceKey(meal)}::${preferenceKey}`, [preferenceKey]);
   const activeRecipe = useMemo(
-    () => (activeRecipeMeal && recipeSources.current[activeRecipeMeal.name] === getRecipeSourceKey(activeRecipeMeal)
+    () => (activeRecipeMeal && recipeSources.current[activeRecipeMeal.name] === sourceFor(activeRecipeMeal)
       ? recipeCache[activeRecipeMeal.name]
       : undefined),
-    [activeRecipeMeal, recipeCache],
+    [activeRecipeMeal, recipeCache, sourceFor],
   );
 
   async function fetchRecipeForMeal(meal: MealPlanItem) {
-    const sourceKey = getRecipeSourceKey(meal);
+    const sourceKey = sourceFor(meal);
     if (recipeCache[meal.name] && recipeSources.current[meal.name] === sourceKey) {
       setRecipeError(null);
       setRecipeLoadingMeal(null);
@@ -81,11 +88,10 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
     try {
       const response = await fetch("/api/get-recipe", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: await getMealRequestHeaders(userId || undefined),
         body: JSON.stringify({
           mealTitle: meal.name,
+          diet, avoidIngredients, availableEquipment,
           mealNotes: meal.notes,
           servings: meal.servings,
           ingredients: meal.ingredients?.length ? meal.ingredients : undefined,
@@ -160,7 +166,7 @@ export function useSmartCartRecipe({ householdSize, userId }: UseSmartCartRecipe
     setRecipeLoadingMeal(null);
   }, []);
 
-  useEffect(() => { resetRecipeState(); return () => { requestVersion.current += 1; }; }, [userId, resetRecipeState]);
+  useEffect(() => { resetRecipeState(); return () => { requestVersion.current += 1; }; }, [userId, preferenceKey, resetRecipeState]);
 
   return {
     activeRecipe,
