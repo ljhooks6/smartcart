@@ -1,5 +1,6 @@
 "use client";
 
+import { MealCaddieLogo } from "./mealcaddie-logo";
 import { FormEvent, useState } from "react";
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 
@@ -53,10 +54,7 @@ export function SmartCartHeroHeader({
       </button>
       <div className={`${isMobileSettingsOpen ? "block" : "hidden"} space-y-5 md:block md:space-y-8`}>
       <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-pine/15 bg-cream px-4 py-2 text-sm font-semibold text-pine">
-          MealCaddie
-          <span className="h-2.5 w-2.5 rounded-full bg-sage" />
-        </div>
+        <MealCaddieLogo />
 
         {isSignedIn ? (
           <div className="relative ml-auto w-full max-w-sm">

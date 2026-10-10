@@ -5,6 +5,7 @@ import { getMealRequestHeaders } from "../lib/meal-request-headers";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { MealCaddieLogo } from "./mealcaddie-logo";
 import { SmartCartGenerationProgress } from "./smart-cart-generation-progress";
 import { useGenerationJob } from "../hooks/use-generation-job";
 import type { GenerationJob } from "../lib/generation-request";
@@ -2562,7 +2563,7 @@ export function SmartCartApp() {
         onSignOut={() => { void supabase.auth.signOut(); }}
         userPlan={membershipProfile?.plan ?? null} userEmail={safeTrim(user?.email)} />
       <header className="sticky top-0 z-30 flex min-h-14 w-full max-w-7xl items-center justify-between border-b border-pine/15 bg-cream py-2 md:hidden">
-        <h1 className="font-display text-2xl text-pine">{activeTabMeta.label}</h1>
+        <MealCaddieLogo subtitle={activeTabMeta.label} />
         <button type="button" aria-haspopup="dialog" onClick={() => setIsAccountOpen(true)} className="flex min-h-11 items-center gap-2 rounded-full border border-pine/20 bg-sage/25 px-3 text-sm font-semibold text-pine">
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg>Account
         </button>
