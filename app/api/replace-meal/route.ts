@@ -1,3 +1,4 @@
+import { getRequestMembership } from "@/lib/server-membership";
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -20,7 +21,6 @@ type ReplaceMealRequest = {
   combinedPantryItems: string;
   rejectedMealTitle: string;
   mealType?: "breakfast" | "lunch" | "dinner";
-  replacementQuality?: "free" | "plus";
   prepTime?: string;
   adventureLevel?: string;
   cuisinePreference?: string;
@@ -202,10 +202,9 @@ export async function POST(request: Request) {
     combinedPantryItems,
     rejectedMealTitle,
     mealType,
-    replacementQuality,
     prepTime,
     adventureLevel,
-    cuisinePreference,
+    cuisinePreference: requestedCuisinePreference,
     mustHaveIngredient,
     avoidIngredients,
     existingMeals,
@@ -243,12 +242,16 @@ export async function POST(request: Request) {
     );
   }
 
+  const membership = await getRequestMembership(request);
+  if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const isPremiumReplacement = membership.plan === "plus";
+  const cuisinePreference = isPremiumReplacement && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
+
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
   const cuisineGuidance = buildCuisineGuidance(cuisinePreference);
   const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
-  const isPremiumReplacement = replacementQuality === "plus";
   const premiumRejectedMeals = isPremiumReplacement && Array.isArray(recentRejectedMeals)
     ? recentRejectedMeals
     : [];

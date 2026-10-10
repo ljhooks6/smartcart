@@ -1,5 +1,7 @@
 "use client";
 
+import { getMealRequestHeaders } from "../lib/meal-request-headers";
+
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
@@ -1220,16 +1222,13 @@ export function SmartCartApp() {
 
       const response = await fetch("/api/generate-list", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: await getMealRequestHeaders(user?.id),
         signal: controller.signal,
         body: JSON.stringify({
           budget,
           diet: safeTrim(formState.diet) || "No specific diet provided",
           cuisinePreference: isPlusMember ? safeTrim(formState.cuisinePreference) : "",
           householdSize,
-          generationQuality: isPlusMember ? "plus" : "free",
           mealSourceMode: formState.mealSourceMode,
           combinedPantryItems: combinedPantryItems.join(", "),
           fullyStocked: Array.from(fullyStocked),
@@ -2393,9 +2392,7 @@ export function SmartCartApp() {
     try {
       const response = await fetch("/api/replace-meal", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: await getMealRequestHeaders(user?.id),
           body: JSON.stringify({
             budget,
             diet: safeTrim(formState.diet) || "No specific diet provided",
@@ -2404,7 +2401,6 @@ export function SmartCartApp() {
             combinedPantryItems: combinedPantryItems.join(", "),
             rejectedMealTitle: meal.name,
             mealType: getMealKind(meal),
-            replacementQuality: isPlusMember ? "plus" : "free",
             prepTime: formState.prepTime,
             adventureLevel: formState.adventureLevel,
             mustHaveIngredient: safeTrim(formState.mustHaveIngredient),

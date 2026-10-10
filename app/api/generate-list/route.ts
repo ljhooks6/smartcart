@@ -1,3 +1,4 @@
+import { getRequestMembership } from "@/lib/server-membership";
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -32,7 +33,6 @@ type GenerateListRequest = {
   existingMeals?: string;
   availableEquipment?: string[];
   prepTime?: string;
-  generationQuality?: "free" | "plus";
   mealSourceMode?: "pantry-and-store" | "pantry-only";
 };
 
@@ -418,16 +418,14 @@ export async function POST(request: Request) {
     includeBreakfast,
     includeLunch,
     adventureLevel,
-    cuisinePreference,
+    cuisinePreference: requestedCuisinePreference,
     apply_upgrades,
     existingMeals,
     availableEquipment,
     prepTime,
-    generationQuality,
     mealSourceMode,
   } =
     (body as Partial<GenerateListRequest>) ?? {};
-  const isPlusGeneration = generationQuality === "plus";
   const normalizedMealSourceMode =
     mealSourceMode === "pantry-only" ? "pantry-only" : "pantry-and-store";
 
@@ -458,6 +456,11 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  const membership = await getRequestMembership(request);
+  if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const isPlusGeneration = membership.plan === "plus";
+  const cuisinePreference = isPlusGeneration && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
