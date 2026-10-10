@@ -169,7 +169,7 @@ export function SmartCartLibrarySections({
               {archivedMeals.map((meal) => (
                 <article
                   key={`vault-${meal.dbId ?? `${meal.day}-${meal.name}`}`}
-                  className="rounded-3xl border border-stone-200 bg-[#fffdf9] px-4 py-4 shadow-lg"
+                  className="rounded-3xl border border-pine/15 border-t-4 border-t-sage bg-white px-4 py-4 shadow-lg"
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
                     {formatCardEyebrow(meal.day)}

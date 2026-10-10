@@ -27,7 +27,7 @@ export function SmartCartMealActions({
       <button className="min-h-11 rounded-full bg-orange-50 px-3 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-70" disabled={inThisWeek || weekFull || busy} onClick={onAddToWeek} type="button">
         {inThisWeek ? "In This Week" : weekFull ? "This Week Full" : "Add to This Week"}
       </button>
-      <button className="min-h-11 rounded-full bg-stone-100 px-3 py-3 text-sm font-semibold text-ink transition hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-60" disabled={busy} onClick={onSaveToVault} type="button">
+      <button className="min-h-11 rounded-full bg-sage/30 px-3 py-3 text-sm font-semibold text-pine transition hover:bg-sage/50 disabled:cursor-not-allowed disabled:opacity-60" disabled={busy} onClick={onSaveToVault} type="button">
         Save to Vault
       </button>
     </div>

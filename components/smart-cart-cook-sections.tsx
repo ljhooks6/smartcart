@@ -98,7 +98,7 @@ export function SmartCartCookSections({
             {weeklyMenu.map((meal, index) => (
               <article
                 key={`saved-${meal.day}-${meal.name}`}
-                className="rounded-3xl border border-stone-200 bg-white px-4 py-4 shadow-lg"
+                className="rounded-3xl border border-pine/15 border-t-4 border-t-apricot bg-white px-4 py-4 shadow-lg"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
                   {mealKindLabel(getMealKind(meal))} · {formatCardEyebrow(meal.day)}
@@ -198,7 +198,7 @@ export function SmartCartCookSections({
               return (
                 <article
                   key={`saved-dessert-${meal.dbId ?? `${mealKey}-${index}`}`}
-                  className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
+                  className="overflow-hidden rounded-3xl border border-berry/15 border-t-4 border-t-berry bg-white shadow-xl"
                 >
                   <div className="flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
                     <div>

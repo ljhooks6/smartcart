@@ -2493,7 +2493,7 @@ export function SmartCartApp() {
   }
 
   return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2,_#f3efe6_55%,_#ebe7df)] flex flex-col items-center px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-12 md:pt-8">
+      <main className="mealcaddie-surface min-h-screen flex flex-col items-center px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-12 md:pt-8">
         <SmartCartStoreMode
           open={isStoreMode} onClose={() => setIsStoreMode(false)}
           groups={displayGroceriesByCategory} checkedItems={checkedItems} customItems={customItems}
@@ -2589,9 +2589,9 @@ export function SmartCartApp() {
         onUpgrade={handleUpgradeToPlus} onLoginSubmit={handleLogin}
         onSignOut={() => { void supabase.auth.signOut(); }}
         userPlan={membershipProfile?.plan ?? null} userEmail={safeTrim(user?.email)} />
-      <header className="sticky top-0 z-30 flex min-h-14 w-full max-w-7xl items-center justify-between border-b border-stone-200 bg-[#fffaf2] py-2 md:hidden">
-        <h1 className="font-display text-2xl text-ink">{activeTabMeta.label}</h1>
-        <button type="button" aria-haspopup="dialog" onClick={() => setIsAccountOpen(true)} className="flex min-h-11 items-center gap-2 rounded-full border border-pine/15 bg-white px-3 text-sm font-semibold text-pine">
+      <header className="sticky top-0 z-30 flex min-h-14 w-full max-w-7xl items-center justify-between border-b border-pine/15 bg-cream py-2 md:hidden">
+        <h1 className="font-display text-2xl text-pine">{activeTabMeta.label}</h1>
+        <button type="button" aria-haspopup="dialog" onClick={() => setIsAccountOpen(true)} className="flex min-h-11 items-center gap-2 rounded-full border border-pine/20 bg-sage/25 px-3 text-sm font-semibold text-pine">
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg>Account
         </button>
       </header>
@@ -3058,18 +3058,18 @@ export function SmartCartApp() {
         </div>
       </div>
 
-      <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-pine/15 bg-cream pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_24px_rgba(23,75,60,0.08)] md:hidden">
         <div className="mx-auto grid max-w-2xl grid-cols-6 px-1">
           {[mobileTabs[5], ...mobileTabs.slice(0, 5)].map((tab) => {
             const isActive = activeMobileTab === tab.id;
             return <button
               key={tab.id}
               aria-current={isActive ? "page" : undefined}
-              className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-[0.7rem] font-semibold ${isActive ? "text-pine" : "text-ink/55"}`}
+              className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-[0.7rem] font-semibold ${isActive ? "text-pine" : "text-ink/70"}`}
               onClick={() => navigateToStage(tab.id)}
               type="button"
             >
-              <span className={`flex h-7 w-10 items-center justify-center rounded-full ${isActive ? "bg-sage/20" : ""}`}><MobileTabIcon tab={tab.id} className="h-4 w-4" /></span>
+              <span className={`flex h-7 w-10 items-center justify-center rounded-full ${isActive ? "bg-pine text-white" : ""}`}><MobileTabIcon tab={tab.id} className="h-4 w-4" /></span>
               <span>{tab.shortLabel}</span>
             </button>;
           })}

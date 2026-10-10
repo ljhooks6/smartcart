@@ -38,10 +38,10 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
     <section aria-labelledby={titleId} className="md:rounded-[2rem] md:border md:border-pine/15 md:bg-[#fffdf8] md:p-8 md:shadow-xl">
       <h1 id={titleId} className="sr-only md:not-sr-only md:mb-6 md:font-display md:text-4xl md:text-ink">Your Week</h1>
       <div className="rounded-3xl bg-pine p-5 text-white sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Next up</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-apricot">Next up</p>
         <h2 className="mt-3 font-display text-3xl leading-tight">{nextTitle}</h2>
         <p className="mt-3 text-sm leading-6 text-white/80">{nextDescription}</p>
-        <button type="button" onClick={() => onNavigate(nextStage)} className="mt-5 min-h-12 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-pine hover:bg-cream sm:w-auto">{nextLabel}</button>
+        <button type="button" onClick={() => onNavigate(nextStage)} className="mt-5 min-h-12 w-full rounded-2xl bg-apricot px-5 py-3 text-sm font-semibold text-ink hover:bg-orange-200 sm:w-auto">{nextLabel}</button>
       </div>
 
       {!hasIngredients && readyCount > 0 ? <p role="status" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm leading-6 text-amber-800">Some saved meals have no stored ingredients. Their shopping requirements are not included.</p> : null}
@@ -51,9 +51,9 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
           <p className="font-semibold text-ink">Shopping progress</p>
           <p className="text-ink/65">{collectedCount} of {groceryCount} collected</p>
         </div>
-        {groceryCount > 0 ? <progress aria-label="Grocery collection progress" value={collectedCount} max={groceryCount} className="mt-3 h-2 w-full accent-pine" /> : null}
+        {groceryCount > 0 ? <progress aria-label="Grocery collection progress" value={collectedCount} max={groceryCount} className="brand-progress mt-3 h-2 w-full" /> : null}
         <p className="mt-3 text-sm text-ink/65">Estimated groceries <strong className="text-ink">{estimatedCost}</strong> · {budget} budget</p>
-        <p className={`mt-1 text-xs leading-5 ${overBudget ? "font-semibold text-red-700" : "text-ink/50"}`}>{overBudget ? "Above your budget. Review your meals or shopping list." : "Approximate prices; household extras are excluded."}</p>
+        <p className={`mt-1 text-xs leading-5 ${overBudget ? "font-semibold text-red-700" : "text-ink/70"}`}>{overBudget ? "Above your budget. Review your meals or shopping list." : "Approximate prices; household extras are excluded."}</p>
       </div> : null}
 
       {readyCount > 0 ? <div className="mt-5">
@@ -63,13 +63,13 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
         </div>
         <ul className="mt-2 divide-y divide-stone-200">
           {menu.slice(0, 2).map((meal, index) => <li key={`${meal.kind}-${meal.day}-${meal.name}-${index}`} className="py-3">
-            <p className="text-xs font-semibold text-pine/65">{meal.kind}</p>
+            <p className="inline-flex rounded-full bg-sage/40 px-2 py-0.5 text-xs font-semibold text-pine">{meal.kind}</p>
             <p className="mt-1 text-sm leading-6 text-ink">{meal.name}</p>
           </li>)}
         </ul>
       </div> : null}
 
-      <button type="button" onClick={() => onNavigate("vault")} className="mt-4 flex min-h-14 w-full items-center justify-between gap-3 border-y border-stone-200 py-3 text-left text-sm text-ink">
+      <button type="button" onClick={() => onNavigate("vault")} className="mt-4 flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border border-orange-200 bg-orange-100 px-4 py-3 text-left text-sm text-ink hover:bg-orange-200">
         <span className="font-semibold">Your saved favorites</span><span className="text-pine">{vaultCount} recipes <span aria-hidden="true">→</span></span>
       </button>
 

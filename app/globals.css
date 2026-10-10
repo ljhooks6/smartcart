@@ -43,6 +43,23 @@ body::before {
   text-wrap: balance;
 }
 
+.mealcaddie-surface {
+  background-color: #fff7e9;
+  background-image: radial-gradient(ellipse at top right, #ffe0bc 0, transparent 48%), radial-gradient(ellipse at bottom left, #e5eed6 0, transparent 55%);
+}
+
+.brand-progress {
+  appearance: none;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #ffe0bc;
+  color: #174b3c;
+}
+.brand-progress::-webkit-progress-bar { background: #ffe0bc; }
+.brand-progress::-webkit-progress-value { background: #174b3c; border-radius: 999px; }
+.brand-progress::-moz-progress-bar { background: #174b3c; border-radius: 999px; }
+
 .launch-cart-scene {
   animation: launch-scene-out 4s ease forwards;
 }

@@ -17,13 +17,13 @@ type Props = {
 export function SmartCartWelcome({ ready, busy, email, message, onEmailChange, onGoogleLogin, onEmailLogin, onContinueAsGuest }: Props) {
   const [showEmail, setShowEmail] = useState(false);
 
-  return <main className="flex min-h-[100svh] flex-col items-center justify-center bg-[#fcf8ef] px-6 py-10 font-body">
+  return <main className="mealcaddie-surface flex min-h-[100svh] flex-col items-center justify-center px-6 py-10 font-body">
     <div className="w-full max-w-sm">
       <div className="mb-10 text-center">
-        <Image src="/app-icon.png" alt="" width={88} height={88} priority className="mx-auto rounded-3xl" />
+        <Image src="/app-icon.png" alt="" width={88} height={88} priority className="mx-auto rounded-3xl ring-8 ring-apricot/30" />
         <p className="mt-3 text-lg font-semibold text-pine">MealCaddie</p>
       </div>
-      <h1 className="text-center font-display text-4xl leading-tight text-ink">Your week starts here.</h1>
+      <h1 className="text-center font-display text-4xl leading-tight text-pine">Your week starts here.</h1>
       <p className="mt-4 text-center text-base leading-7 text-ink/65">Sign in to keep your meals and saved recipes together.</p>
       {!ready ? <p role="status" className="mt-10 text-center text-sm text-pine">Getting your account ready…</p> : <div className="mt-8 space-y-3">
         <button type="button" disabled={busy} onClick={() => void onGoogleLogin()} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-pine px-4 py-4 font-semibold text-white disabled:opacity-60">
@@ -40,7 +40,7 @@ export function SmartCartWelcome({ ready, busy, email, message, onEmailChange, o
         </form> : null}
         {message ? <p role="status" aria-live="polite" className="rounded-xl bg-white p-3 text-sm leading-6 text-ink">{message}</p> : null}
         <button type="button" disabled={busy} onClick={onContinueAsGuest} className="min-h-12 w-full py-3 text-sm font-semibold text-ink/65 underline underline-offset-4 disabled:opacity-60">Continue as guest</button>
-        <p className="text-center text-xs leading-5 text-ink/50">Guest plans stay on this device. Sign in to save your week across devices.</p>
+        <p className="text-center text-xs leading-5 text-ink/70">Guest plans stay on this device. Sign in to save your week across devices.</p>
       </div>}
     </div>
   </main>;

@@ -9,13 +9,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#1b120d",
-        parchment: "#f7efe3",
-        apricot: "#f39a63",
-        sage: "#9ac08c",
-        pine: "#33563c",
-        berry: "#7e3e44",
-        cream: "#fffaf3",
+        ink: "#202c28",
+        parchment: "#f6ead3",
+        apricot: "#ffb074",
+        sage: "#b6d78a",
+        pine: "#174b3c",
+        berry: "#873f39",
+        cream: "#fff7e9",
+        orange: {
+          50: "#fff0df",
+          100: "#ffe0bc",
+          200: "#ffc998",
+          400: "#e47b48",
+          500: "#b94d28",
+          600: "#9f3e1e",
+          700: "#843719",
+        },
       },
       boxShadow: {
         halo: "0 24px 80px rgba(39, 22, 9, 0.15)",

@@ -139,7 +139,7 @@ export function SmartCartMealSections({
             return (
               <article
                 key={`${meal.day}-${meal.name}-${index}`}
-                className="overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-xl"
+                className="overflow-hidden rounded-3xl border border-pine/15 border-t-4 border-t-apricot bg-white shadow-xl"
               >
                 <div className="flex items-start justify-between gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
                   <div>
@@ -197,7 +197,7 @@ export function SmartCartMealSections({
               return (
                 <article
                   key={dessertCardKey}
-                  className="overflow-hidden rounded-[1.5rem] border border-rose-200 bg-white p-4 shadow-md"
+                  className="overflow-hidden rounded-[1.5rem] border border-berry/15 border-t-4 border-t-berry bg-white p-4 shadow-md"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
