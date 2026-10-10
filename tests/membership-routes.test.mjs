@@ -35,11 +35,18 @@ for (const endpoint of ['generate-list','replace-meal']) {
   test(`${endpoint}: body spoofing cannot upgrade guest/Free, verified Plus uses Plus model`, async () => {
     const previous=process.env.OPENAI_API_KEY;process.env.OPENAI_API_KEY='local-mock-only';
     try {
-      for (const [token,plan,expected] of [[undefined,'plus','gpt-4.1'],['valid','free','gpt-4.1'],['valid','plus','gpt-5.4']]) {
+      for (const [token,plan,expected] of [[undefined,'plus','gpt-4.1'],['valid','free','gpt-4.1'],['valid','plus','gpt-6.1-sol']]) {
         const f=fixture({plan}); const { POST }=f.load(path.join(root,'app/api',endpoint,'route.ts'));
         const response=await POST(new Request('http://local.test',{method:'POST',headers:{'Content-Type':'application/json',...(token ? {Authorization:`Bearer ${token}`} : {})},body:JSON.stringify(input)}));
         assert.equal(response.status,500);assert.equal(f.calls[0].model,expected);
-        assert.equal(JSON.stringify(f.calls[0].messages).includes('SecretCuisineMarker'),expected==='gpt-5.4');
+        if (plan === 'plus' && token) {
+          assert.equal(f.calls[0].reasoning_effort, 'low');
+          assert.equal('temperature' in f.calls[0], false);
+        } else {
+          assert.equal(f.calls[0].temperature, endpoint === 'generate-list' ? 0.4 : 0.7);
+          assert.equal('reasoning_effort' in f.calls[0], false);
+        }
+        assert.equal(JSON.stringify(f.calls[0].messages).includes('SecretCuisineMarker'),expected==='gpt-6.1-sol');
       }
     } finally { if(previous===undefined) delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=previous; }
   });

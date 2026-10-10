@@ -46,7 +46,7 @@ const openai = new OpenAI({
 });
 
 const FREE_MEAL_REPLACEMENT_MODEL = "gpt-4.1";
-const PLUS_MEAL_REPLACEMENT_MODEL = "gpt-5.4";
+const PLUS_MEAL_REPLACEMENT_MODEL = "gpt-6.1-sol";
 
 const TITLE_STOP_WORDS = new Set([
   "and",
@@ -290,7 +290,7 @@ export async function POST(request: Request) {
       const response = await openai.chat.completions.create({
         model: isPremiumReplacement ? PLUS_MEAL_REPLACEMENT_MODEL : FREE_MEAL_REPLACEMENT_MODEL,
         response_format: { type: "json_object" },
-        temperature: 0.7,
+        ...(isPremiumReplacement ? { reasoning_effort: "low" as const } : { temperature: 0.7 }),
         messages: [
           { role: "system", content: systemPrompt.trim() },
           { role: "user", content: userPrompt.trim() },

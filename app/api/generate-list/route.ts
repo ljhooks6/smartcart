@@ -84,9 +84,11 @@ const openai = new OpenAI({
   timeout: 45000,
 });
 
+export const maxDuration = 300;
 const OPENAI_REQUEST_TIMEOUT_MS = 45000;
+const PLUS_OPENAI_REQUEST_TIMEOUT_MS = 90000;
 const FREE_MEAL_GENERATION_MODEL = "gpt-4.1";
-const PLUS_MEAL_GENERATION_MODEL = "gpt-5.4";
+const PLUS_MEAL_GENERATION_MODEL = "gpt-6.1-sol";
 
 function estimateRestockPrice(itemName: string) {
   const normalized = itemName.trim().toLowerCase();
@@ -498,7 +500,7 @@ export async function POST(request: Request) {
         {
           model: isPlusGeneration ? PLUS_MEAL_GENERATION_MODEL : FREE_MEAL_GENERATION_MODEL,
           response_format: { type: "json_object" },
-          temperature: 0.4,
+          ...(isPlusGeneration ? { reasoning_effort: "low" as const } : { temperature: 0.4 }),
           messages: [
             { role: "system", content: systemPrompt.trim() },
             { role: "user", content: userPrompt.trim() },
@@ -508,7 +510,7 @@ export async function POST(request: Request) {
           ],
         },
         {
-          timeout: OPENAI_REQUEST_TIMEOUT_MS,
+          timeout: isPlusGeneration ? PLUS_OPENAI_REQUEST_TIMEOUT_MS : OPENAI_REQUEST_TIMEOUT_MS,
         },
       );
 
