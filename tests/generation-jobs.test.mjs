@@ -109,3 +109,13 @@ test('browser roles cannot read jobs, forge quotas, start work or overwrite resu
     assert.equal((await claim(db,job.id)).job.attempts,2);
   }finally {await db.close();}
 });
+
+ test('global queue admission stops at capacity across different quota identities', async () => {
+  const db=await database();
+  try {
+    await db.exec("insert into public.smartcart_generation_jobs(owner_key,quota_key,request_key,input_hash,input,plan) select 'seed-'||n,'seed-'||n,gen_random_uuid(),'seed','{}'::jsonb,'free' from generate_series(1,199) n");
+    const results=await Promise.all(Array.from({length:50},(_,i)=>reserve(db,'admission-'+i)));
+    assert.equal(results.filter(r=>r.job).length,1);assert.equal(results.filter(r=>r.code==='busy').length,49);
+    assert.equal((await db.query("select count(*)::integer n from public.smartcart_generation_jobs where status='queued'")).rows[0].n,200);
+  }finally{await db.close();}
+});

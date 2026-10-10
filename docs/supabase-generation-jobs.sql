@@ -44,6 +44,8 @@ begin
   if used>=p_limit then return jsonb_build_object('code','limit','limit',p_limit,'resetAt',reset_at); end if;
   if (select count(*) from public.smartcart_generation_jobs where quota_key=p_quota and created_at>now()-interval '10 minutes')>=3 then
     return jsonb_build_object('code','burst','retryAfter',600); end if;
+  -- Serialize new admissions across quota identities so simultaneous requests cannot overfill the queue.
+  perform pg_advisory_xact_lock(7319282);
   if (select count(*) from public.smartcart_generation_jobs where status='queued')>=200 then
     return jsonb_build_object('code','busy','retryAfter',60); end if;
   insert into public.smartcart_generation_jobs(owner_key,quota_key,user_id,request_key,input_hash,input,plan)
