@@ -31,7 +31,7 @@ function fixture({ plan = 'free', invalid = false, outage = false } = {}) {
   return { calls, load };
 }
 const input={ budget:150,diet:'No preference',householdSize:2,combinedPantryItems:'',rejectedMealTitle:'Previous meal',generationQuality:'plus',replacementQuality:'plus',userId:'someone-else',cuisinePreference:'SecretCuisineMarker' };
-for (const endpoint of ['generate-list','replace-meal']) {
+for (const endpoint of ['replace-meal']) {
   test(`${endpoint}: body spoofing cannot upgrade guest/Free, verified Plus uses Plus model`, async () => {
     const previous=process.env.OPENAI_API_KEY;process.env.OPENAI_API_KEY='local-mock-only';
     try {
@@ -61,3 +61,18 @@ for (const endpoint of ['generate-list','replace-meal']) {
     } finally { if(previous===undefined) delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=previous; }
   });
 }
+
+test('saved-job generation engine retains Free/Sol routing and compatible settings', async () => {
+  const previous=process.env.OPENAI_API_KEY;process.env.OPENAI_API_KEY='local-mock-only';
+  try {
+    for (const plan of ['free','plus']) {
+      const f=fixture({plan});const {generateMealPlan}=f.load(path.join(root,'lib/meal-generation.ts'));
+      const response=await generateMealPlan(input,plan);
+      assert.equal(response.status,500);
+      assert.equal(f.calls[0].model,plan==='plus'?'gpt-6.1-sol':'gpt-4.1');
+      assert.equal(JSON.stringify(f.calls[0].messages).includes('SecretCuisineMarker'),plan==='plus');
+      if(plan==='plus') { assert.equal(f.calls[0].reasoning_effort,'low');assert.equal('temperature' in f.calls[0],false); }
+      else assert.equal(f.calls[0].temperature,0.4);
+    }
+  } finally { if(previous===undefined) delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=previous; }
+});

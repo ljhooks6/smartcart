@@ -5,7 +5,9 @@ import { getMealRequestHeaders } from "../lib/meal-request-headers";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
-import { SmartCartGenerationProgress, type GenerationPhase } from "./smart-cart-generation-progress";
+import { SmartCartGenerationProgress } from "./smart-cart-generation-progress";
+import { useGenerationJob } from "../hooks/use-generation-job";
+import type { GenerationJob } from "../lib/generation-request";
 import { SmartCartContextForm } from "./smart-cart-context-form";
 import { SmartCartStoreMode } from "./smart-cart-store-mode";
 import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
@@ -631,9 +633,10 @@ export function SmartCartApp() {
   const [guestStorageReady, setGuestStorageReady] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [generationPhase, setGenerationPhase] = useState<GenerationPhase | null>(null);
+  const generation = useGenerationJob({ userId: user?.id, enabled: hasResolvedAuthSession && Boolean(user || hasContinuedAsGuest), onCompleted: handleGenerationCompleted });
+  const isLoading = generation.busy;
   const generationInFlight = useRef(false);
+  generationInFlight.current = isLoading;
   const [generatedPlan, setGeneratedPlan] =
     useState<GenerateListResponse | null>(null);
   const [fullyStocked, setFullyStocked] = useState<Set<string>>(new Set());
@@ -720,14 +723,17 @@ export function SmartCartApp() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
+  const planOwner = user?.id || "guest";
+  const [loadedPlanOwner, setLoadedPlanOwner] = useState<string | null>(null);
   const persistGeneratedPlan = useCallback((plan: GenerateListResponse | null) => {
+    if (!hasResolvedAuthSession || loadedPlanOwner !== planOwner) return;
     if (!plan) {
-      clearStoredJson(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+      clearStoredJson(`${SMART_CART_GENERATED_PLAN_STORAGE_KEY}:${planOwner}`);
       return;
     }
 
-    saveStoredJson(SMART_CART_GENERATED_PLAN_STORAGE_KEY, plan);
-  }, []);
+    saveStoredJson(`${SMART_CART_GENERATED_PLAN_STORAGE_KEY}:${planOwner}`, plan);
+  }, [hasResolvedAuthSession, loadedPlanOwner, planOwner]);
 
   const loadMembershipProfile = useCallback(async (nextUser: User | null) => {
     if (!nextUser?.id) {
@@ -925,9 +931,12 @@ export function SmartCartApp() {
   }, [hasResolvedAuthSession, user, guestStorageReady, savedDesserts]);
 
   useEffect(() => {
+    if (!hasResolvedAuthSession) return;
+    setHasLoadedGeneratedPlan(false);
+    setGeneratedPlan(null);
     try {
       const parsed = loadStoredJson<GenerateListResponse | null>(
-        SMART_CART_GENERATED_PLAN_STORAGE_KEY,
+        `${SMART_CART_GENERATED_PLAN_STORAGE_KEY}:${planOwner}`,
       );
 
       if (!parsed || typeof parsed !== "object") {
@@ -935,11 +944,12 @@ export function SmartCartApp() {
       }
       setGeneratedPlan(parsed);
     } catch {
-      clearStoredJson(SMART_CART_GENERATED_PLAN_STORAGE_KEY);
+      clearStoredJson(`${SMART_CART_GENERATED_PLAN_STORAGE_KEY}:${planOwner}`);
     } finally {
       setHasLoadedGeneratedPlan(true);
+      setLoadedPlanOwner(planOwner);
     }
-  }, []);
+  }, [hasResolvedAuthSession, planOwner]);
 
   useEffect(() => {
     if (!hasLoadedGeneratedPlan) {
@@ -1185,6 +1195,15 @@ export function SmartCartApp() {
     <button type="button" onClick={() => navigateToStage("week")} className="mt-4 rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white">Review Your Week</button>
   </div> : null;
 
+  function handleGenerationCompleted(job: GenerationJob) {
+    const data = job.result as GenerateListResponse;
+    setGeneratedPlan(data);
+    persistGeneratedPlan(data);
+    setHasAppliedUpgrades(Boolean(job.input.apply_upgrades));
+    setExpandedDetailCards(new Set());
+    showToast("Your meal options are ready. Open Meals to choose what to cook.", "success");
+  }
+
   async function submitPlan(applyUpgrades = false) {
     if (generationInFlight.current) return false;
     setValidationError(null);
@@ -1208,23 +1227,7 @@ export function SmartCartApp() {
       return false;
     }
 
-    generationInFlight.current = true;
-    setIsLoading(true);
-    setGenerationPhase("building");
-
-    let timeoutId: number | undefined;
-
-    try {
-      const controller = new AbortController();
-      timeoutId = window.setTimeout(() => {
-        controller.abort();
-      }, 65000);
-
-      const response = await fetch("/api/generate-list", {
-        method: "POST",
-        headers: await getMealRequestHeaders(user?.id),
-        signal: controller.signal,
-        body: JSON.stringify({
+    return generation.start({
           budget,
           diet: safeTrim(formState.diet) || "No specific diet provided",
           cuisinePreference: isPlusMember ? safeTrim(formState.cuisinePreference) : "",
@@ -1244,50 +1247,7 @@ export function SmartCartApp() {
           availableEquipment: formState.availableEquipment,
           apply_upgrades: applyUpgrades,
           existingMeals: existingMealTitles,
-        }),
-      });
-      const data = (await response.json()) as GenerateListResponse & {
-        error?: string;
-      };
-
-      if (!response.ok) {
-        setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
-        return false;
-      }
-      setGenerationPhase("organizing");
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
-      deriveGroceryLists({
-        fullyStocked, runningLow, restock, pantryItems: combinedPantryItems,
-        weeklyMenu: data.meals,
-        savedDesserts: data.desserts.map((dessert) => ({ name: dessert.title, ingredients: dessert.ingredients })),
-      });
-      setGeneratedPlan(data);
-      persistGeneratedPlan(data);
-      resetGroceryState();
-      setMealUndo(null);
-      setIsStoreMode(false);
-      resetRecipeState();
-      setHasAppliedUpgrades(applyUpgrades);
-      setSavedDesserts([]);
-      setExpandedDetailCards(new Set());
-      return true;
-    } catch (error) {
-      setRequestError(
-        error instanceof DOMException && error.name === "AbortError"
-          ? "Meal generation timed out. Please try again."
-          : error instanceof Error
-            ? error.message
-            : "Failed to fetch",
-      );
-      return false;
-    } finally {
-      if (typeof timeoutId === "number") {
-        window.clearTimeout(timeoutId);
-      }
-      generationInFlight.current = false;
-      setGenerationPhase(null);
-      setIsLoading(false);
-    }
+        });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1807,7 +1767,6 @@ export function SmartCartApp() {
     setFormState(clearedFormState);
     setValidationError(null);
     setRequestError(null);
-    setIsLoading(false);
     setGeneratedPlan(null);
     persistGeneratedPlan(null);
     setFullyStocked(new Set());
@@ -1856,7 +1815,7 @@ export function SmartCartApp() {
   }
 
   function handleClearForm() {
-    if (generationInFlight.current) return;
+    if (generationInFlight.current) { generation.setShowProgress(true); return; }
     setConfirmDontShowAgain(false);
     setConfirmDialog({ kind: "clear" });
   }
@@ -2559,7 +2518,11 @@ export function SmartCartApp() {
             </div>
           </div>
         ) : null}
-        <SmartCartGenerationProgress phase={generationPhase} includeDessert={formState.includeDessert} includeBreakfast={formState.includeBreakfast} includeLunch={formState.includeLunch} />
+        <SmartCartGenerationProgress phase={generation.showProgress && isLoading ? generation.job?.status === "queued" ? "queued" : "building" : null} includeDessert={Boolean(generation.job?.input.includeDessert ?? formState.includeDessert)} includeBreakfast={Boolean(generation.job?.input.includeBreakfast ?? formState.includeBreakfast)} includeLunch={Boolean(generation.job?.input.includeLunch ?? formState.includeLunch)} onContinue={() => generation.setShowProgress(false)} />
+        {(isLoading || generation.message) ? <div className="w-full max-w-7xl mb-4 rounded-2xl border border-pine/20 bg-white p-4" role="status" aria-live="polite">
+          <p className="text-sm text-ink/80">{generation.message || (generation.job?.status === "queued" ? "Your plan is saved and waiting to start. You can keep using MealCaddie." : "Your plan is being prepared. You can leave and return to your finished meal options.")}</p>
+          {isLoading ? <button type="button" onClick={() => generation.setShowProgress(true)} className="mt-2 text-sm font-semibold text-pine underline">View planning progress</button> : null}
+        </div> : null}
         <SmartCartFeedback
           undoMessage={mealUndo?.storageKey === cookedStorageKey
             ? !mealUndo.sweetTreat && !hasRoomForMeal(weeklyMenu, mealUndo.meal) && !weeklyMenu.some((item) => item.day === mealUndo.meal.day && item.name === mealUndo.meal.name)

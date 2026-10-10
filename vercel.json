@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/queues/generate-plan/route.ts": {
+      "experimentalTriggers": [{ "type": "queue/v2beta", "topic": "mealcaddie-plans" }]
+    }
+  }
+}

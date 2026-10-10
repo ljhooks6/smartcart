@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-export type GenerationPhase = "building" | "organizing";
+export type GenerationPhase = "queued" | "building" | "organizing";
 
-export function SmartCartGenerationProgress({ phase, includeDessert, includeBreakfast = false, includeLunch = false }: { phase: GenerationPhase | null; includeDessert: boolean; includeBreakfast?: boolean; includeLunch?: boolean }) {
+export function SmartCartGenerationProgress({ phase, includeDessert, includeBreakfast = false, includeLunch = false, onContinue }: { phase: GenerationPhase | null; includeDessert: boolean; includeBreakfast?: boolean; includeLunch?: boolean; onContinue?: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -29,12 +29,12 @@ export function SmartCartGenerationProgress({ phase, includeDessert, includeBrea
   const currentStep = phase === "organizing" ? 2 : 1;
 
   return (
-    <dialog ref={dialogRef} aria-labelledby={titleId} aria-describedby={descriptionId} onCancel={(event) => event.preventDefault()} className="m-auto w-[calc(100%_-_2rem)] max-w-md rounded-[2rem] border border-stone-200 bg-white p-6 text-ink shadow-2xl backdrop:bg-ink/35">
+    <dialog ref={dialogRef} aria-labelledby={titleId} aria-describedby={descriptionId} onCancel={(event) => { event.preventDefault(); onContinue?.(); }} className="m-auto w-[calc(100%_-_2rem)] max-w-md rounded-[2rem] border border-stone-200 bg-white p-6 text-ink shadow-2xl backdrop:bg-ink/35">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">MealCaddie is planning</p>
       <div role="status" aria-live="polite" aria-atomic="true">
-        <h2 id={titleId} className="mt-3 font-display text-3xl">{phase === "organizing" ? "Organizing your grocery list" : "Building your meals"}</h2>
+        <h2 id={titleId} className="mt-3 font-display text-3xl">{phase === "queued" ? "Your plan is in line" : phase === "organizing" ? "Organizing your grocery list" : "Building your meals"}</h2>
         <p id={descriptionId} className="mt-3 text-sm leading-6 text-ink/70">
-          {phase === "organizing"
+          {phase === "queued" ? "Your request is saved. Planning will start as soon as capacity is available." : phase === "organizing"
             ? "Your meal options are ready. We are preparing the ingredients and pantry checks."
             : `Using your pantry, budget, and kitchen equipment to build ${["dinner", includeBreakfast ? "breakfast" : "", includeLunch ? "lunch" : ""].filter(Boolean).join(", ")} options${includeDessert ? " and Sweet Treats" : ""}.`}
         </p>
@@ -48,7 +48,8 @@ export function SmartCartGenerationProgress({ phase, includeDessert, includeBrea
           </li>
         ))}
       </ol>
-      <p className="mt-5 text-xs leading-5 text-ink/60">Your current week stays available until the new plan is ready.</p>
+      <p className="mt-5 text-xs leading-5 text-ink/60">Your current week stays available. You can leave and return; your finished plan will be waiting.</p>
+      {onContinue ? <button type="button" onClick={onContinue} className="mt-5 w-full rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white">Keep using MealCaddie</button> : null}
     </dialog>
   );
 }
