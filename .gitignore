@@ -9,3 +9,5 @@ coverage
 # Local TypeScript and Supabase CLI state
 *.tsbuildinfo
 supabase/.temp/
+.phase3-lab-state.json
+.phase3-test-results.json

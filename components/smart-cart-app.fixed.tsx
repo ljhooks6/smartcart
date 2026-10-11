@@ -696,7 +696,26 @@ export function SmartCartApp() {
     skipSaveToMenuConfirm: false,
     skipVaultConfirm: false,
   });
-  const userPlan: SmartCartPlan = membershipProfile?.plan === "plus" ? "plus" : "free";
+  const [betaFeature, setBetaFeature] = useState<{ userId: string; featurePlan: string; expiresAt: string | null; betaEnabled: boolean } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setBetaFeature(null);
+    const refresh = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session || data.session.user.id !== user?.id) return;
+      try {
+        const response = await fetch("/api/feature-membership", { cache: "no-store", headers: { Authorization: `Bearer ${data.session.access_token}` } });
+        const result = await response.json();
+        if (alive) setBetaFeature(response.ok && result.userId === user?.id ? result : null);
+      } catch { if (alive) setBetaFeature(null); }
+    };
+    if (user?.id) void refresh();
+    const interval = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 30000);
+    window.addEventListener("focus", refresh);
+    return () => { alive = false; window.clearInterval(interval); window.removeEventListener("focus", refresh); };
+  }, [user?.id]);
+  const betaPlus = betaFeature?.userId === user?.id && betaFeature?.featurePlan === "plus" && (!betaFeature.expiresAt || new Date(betaFeature.expiresAt).getTime() > Date.now());
+  const userPlan: SmartCartPlan = membershipProfile?.plan === "plus" || betaPlus ? "plus" : "free";
   const isPlusMember = userPlan === "plus";
   const canPersistPantryMemory = isPlusMember;
 
@@ -2571,7 +2590,7 @@ export function SmartCartApp() {
         onEmailChange={setEmail} onGoogleLogin={handleGoogleLogin} onSwitchGoogleAccount={handleSwitchGoogleAccount}
         onUpgrade={handleUpgradeToPlus} onLoginSubmit={handleLogin}
         onSignOut={() => { void supabase.auth.signOut(); }}
-        userPlan={membershipProfile?.plan ?? null} userEmail={safeTrim(user?.email)} />
+        betaEnabled={betaFeature?.betaEnabled} betaExpiresAt={betaFeature?.expiresAt} userPlan={membershipProfile?.plan ?? null} userEmail={safeTrim(user?.email)} />
       <header className="sticky top-0 z-30 flex min-h-14 w-full max-w-7xl items-center justify-between border-b border-pine/15 bg-cream py-2 md:hidden">
         <MealCaddieLogo subtitle={activeTabMeta.label} />
         <button type="button" aria-haspopup="dialog" onClick={() => setIsAccountOpen(true)} className="flex min-h-11 items-center gap-2 rounded-full border border-pine/20 bg-sage/25 px-3 text-sm font-semibold text-pine">

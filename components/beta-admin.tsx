@@ -27,6 +27,7 @@ function ApplicantCard({ applicant, onChange, busy }: { applicant: Applicant; on
       <label className="flex flex-col gap-1 text-sm font-semibold">Assigned cohort<select disabled={busy || immutable} className={selectClass} value={cohort} onChange={event => setCohort(event.target.value)}><option value="">Unassigned</option>{betaCohorts.map(value => <option key={value} value={value}>{displayBetaValue(value)}</option>)}</select></label>
       <button disabled={busy || immutable} className={buttonClass}>Save review</button>
       {applicant.status === "approved" ? <button type="button" disabled={busy} className={buttonClass} onClick={() => void onChange({ action: "draft", id: applicant.id })}>Prepare invitation draft</button> : null}
+      {["approved", "invited"].includes(applicant.status) && applicant.cohort !== "reserve" ? <Link className="min-h-11 py-3 font-semibold text-pine underline" href={`/admin/beta/onboarding?application=${applicant.id}`}>Review invitation queue</Link> : null}
       {applicant.marketing_consent ? <button type="button" disabled={busy} className="min-h-11 rounded-xl border border-pine/30 px-3 py-2 text-pine" onClick={() => void onChange({ action: "revoke_marketing", id: applicant.id })}>Revoke marketing consent</button> : null}
     </form>
   </article>;
@@ -59,7 +60,7 @@ export function BetaAdmin() {
   }
   return <main className="min-h-screen bg-cream px-4 py-6 text-ink sm:px-8"><div className="mx-auto max-w-5xl">
     <header className="mb-6 flex flex-wrap items-center justify-between gap-4"><MealCaddieLogo /><nav className="flex flex-wrap gap-4 text-sm font-semibold text-pine"><Link className="min-h-11 py-3 underline" href="/">MealCaddie / sign in</Link><Link className="min-h-11 py-3 underline" href="/beta">Application preview</Link></nav></header>
-    <h1 className="text-3xl font-bold text-pine">Beta applicants</h1><p className="mt-2">Cohort assignment reserves a seat. It does not grant access, change billing, or send an email. Move new applicants to Under Review before approving; Reserve candidates stay under review or waitlisted.</p>
+    <h1 className="text-3xl font-bold text-pine">Beta applicants</h1><Link className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/admin/beta/onboarding">Participation, invitations and feedback</Link><p className="mt-2">Cohort assignment reserves a seat. It does not grant access, change billing, or send an email. Move new applicants to Under Review before approving; Reserve candidates stay under review or waitlisted.</p>
     <p role="status" aria-live="polite" className="mt-4 text-pine">{loading ? "Loading administration…" : message}</p><p role="alert" className="mt-2 text-berry">{error}</p>
     {!directory && !loading ? <button className={`${buttonClass} mt-3`} onClick={() => void load()}>Retry after signing in</button> : null}
     {directory ? <>

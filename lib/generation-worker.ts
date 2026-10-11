@@ -1,6 +1,8 @@
 import { claimGenerationJob, finishGenerationJob } from "./generation-jobs";
 import { generateMealPlan } from "./meal-generation";
-import { getSupabaseAdminClient } from "./supabase-admin";
+import { loadFeaturePlan } from "./beta-feature-membership";
+import { operationAllowed } from "./beta-onboarding-domain";
+import { recordPlanEngagement } from "./beta-plan-engagement";
 
 export class GenerationBusyError extends Error {
   constructor(public afterSeconds = 30) { super("Planning capacity is busy."); }
@@ -14,14 +16,18 @@ export async function processGenerationJob(id: string) {
   let plan: "free" | "plus" = "free";
   try {
     if (job.user_id) {
-      const { data, error } = await getSupabaseAdminClient().from("smartcart_profiles").select("plan").eq("id", job.user_id).maybeSingle();
-      if (error) throw new Error("We couldn't verify your membership. Please try again.");
-      plan = (data as { plan?: string } | null)?.plan === "plus" ? "plus" : "free";
+      plan = await loadFeaturePlan(job.user_id);
+    }
+    if (!operationAllowed(job.plan, plan)) {
+      // Failed jobs are excluded from quota usage by the existing reservation RPC.
+      await finishGenerationJob(job, "failed", null, "Your Plus access changed before planning started. Start a new plan with your current access. Your unused allowance has been released.", []);
+      return;
     }
     const response = await generateMealPlan(job.input, plan, details => usage.push(details));
     const result = await response.json();
     if (response.ok) {
       await finishGenerationJob(job, "completed", result, null, usage);
+      if (job.user_id) await recordPlanEngagement(job.user_id, job.id);
       console.info("Meal planning completed", { jobId: job.id, plan, providerCalls: usage.length });
       return;
     }

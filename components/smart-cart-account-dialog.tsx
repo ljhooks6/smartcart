@@ -3,14 +3,16 @@
 import type { FormEvent } from "react";
 import type { SmartCartPlan } from "../lib/smart-cart-membership";
 import { SmartCartDialog } from "./smart-cart-dialog";
+import Link from "next/link";
 
-export function SmartCartAccountDialog({ open, onClose, userEmail, userPlan, isProfileLoading, isAuthLoading, email, authMessage, onEmailChange, onGoogleLogin, onSwitchGoogleAccount, onLoginSubmit, onSignOut, onUpgrade }: {
+export function SmartCartAccountDialog({ open, onClose, userEmail, userPlan, betaEnabled, betaExpiresAt, isProfileLoading, isAuthLoading, email, authMessage, onEmailChange, onGoogleLogin, onSwitchGoogleAccount, onLoginSubmit, onSignOut, onUpgrade }: {
   open: boolean; onClose: () => void; userEmail: string; userPlan: SmartCartPlan | null;
   isProfileLoading: boolean; isAuthLoading: boolean; email: string; authMessage: string;
   onEmailChange: (value: string) => void;
   onGoogleLogin: () => void | Promise<void>; onSwitchGoogleAccount: () => void | Promise<void>;
   onLoginSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSignOut: () => void; onUpgrade: () => void | Promise<void>;
+  betaEnabled?: boolean; betaExpiresAt?: string | null;
 }) {
   const signedIn = Boolean(userEmail.trim());
   const buttonClass = "min-h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-pine hover:bg-cream disabled:opacity-60";
@@ -23,6 +25,7 @@ export function SmartCartAccountDialog({ open, onClose, userEmail, userPlan, isP
           <p className="mt-2 text-sm text-ink/65">{isProfileLoading ? "Loading your plan…" : userPlan === "plus" ? "MealCaddie Plus" : "Free plan"}</p>
         </div>
         <p className="text-sm leading-6 text-ink/65">Save your week to keep your meals and favorites together across devices.</p>
+        {betaEnabled ? <div className="rounded-xl bg-cream p-4"><p>{betaExpiresAt ? `Beta participation ends ${new Date(betaExpiresAt).toLocaleString()}.` : "Beta participation is invitation-only."}</p><Link onClick={onClose} className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/beta/participant">Beta participation and feedback</Link></div> : null}
         {userPlan !== "plus" ? <button type="button" className={buttonClass} onClick={() => { onClose(); void onUpgrade(); }}>Preview MealCaddie Plus</button> : null}
         <button type="button" className={buttonClass} disabled={isAuthLoading} onClick={() => { onClose(); void onSwitchGoogleAccount(); }}>Use a Different Google Account</button>
         <button type="button" className={buttonClass} disabled={isAuthLoading} onClick={() => { onClose(); onSignOut(); }}>Sign Out</button>
