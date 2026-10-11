@@ -1,0 +1,14 @@
+MealCaddie
+
+Confirm your email change
+
+A request was made to change your MealCaddie email from {{ .Email }} to {{ .NewEmail }}. Confirm only if you requested this change.
+
+Confirm email change:
+{{ .ConfirmationURL }}
+
+This link expires and can be used only once. Request a new message if it has expired. Use only your latest message.
+
+If you did not request this change, do not use the link. Contact support@mealcaddie.app. Keep your confirmation link private.
+
+Need help? Contact support@mealcaddie.app.

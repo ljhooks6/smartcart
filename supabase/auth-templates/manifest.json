@@ -1,0 +1,72 @@
+{
+  "status": "review-only-not-applied",
+  "sender": {
+    "name": "MealCaddie",
+    "email": "auth@mealcaddie.app"
+  },
+  "templates": [
+    {
+      "id": "magic-link-or-otp",
+      "subject": "Sign in to MealCaddie",
+      "usage": "active",
+      "requiredVariables": [
+        "ConfirmationURL"
+      ],
+      "html": "magic-link-or-otp.html",
+      "plainTextReviewCompanion": "magic-link-or-otp.txt"
+    },
+    {
+      "id": "confirm-sign-up",
+      "subject": "Confirm your MealCaddie email",
+      "usage": "active-new-email-account",
+      "requiredVariables": [
+        "ConfirmationURL"
+      ],
+      "html": "confirm-sign-up.html",
+      "plainTextReviewCompanion": "confirm-sign-up.txt"
+    },
+    {
+      "id": "invite-user",
+      "subject": "You have been invited to MealCaddie",
+      "usage": "dormant-account-invite",
+      "requiredVariables": [
+        "ConfirmationURL",
+        "SiteURL"
+      ],
+      "html": "invite-user.html",
+      "plainTextReviewCompanion": "invite-user.txt"
+    },
+    {
+      "id": "reset-password",
+      "subject": "Reset your MealCaddie password",
+      "usage": "dormant-no-recovery-ui",
+      "requiredVariables": [
+        "ConfirmationURL"
+      ],
+      "html": "reset-password.html",
+      "plainTextReviewCompanion": "reset-password.txt"
+    },
+    {
+      "id": "change-email-address",
+      "subject": "Confirm your MealCaddie email change",
+      "usage": "dormant-no-email-change-ui",
+      "requiredVariables": [
+        "ConfirmationURL",
+        "Email",
+        "NewEmail"
+      ],
+      "html": "change-email-address.html",
+      "plainTextReviewCompanion": "change-email-address.txt"
+    },
+    {
+      "id": "reauthentication",
+      "subject": "Confirm your MealCaddie request",
+      "usage": "dormant",
+      "requiredVariables": [
+        "Token"
+      ],
+      "html": "reauthentication.html",
+      "plainTextReviewCompanion": "reauthentication.txt"
+    }
+  ]
+}

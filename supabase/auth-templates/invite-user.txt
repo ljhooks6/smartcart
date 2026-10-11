@@ -1,0 +1,14 @@
+MealCaddie
+
+An invitation to MealCaddie
+
+You have been invited to create a MealCaddie account on {{ .SiteURL }}.
+
+Accept account invitation:
+{{ .ConfirmationURL }}
+
+This link expires and can be used only once. Request a new message if it has expired. Use only your latest message.
+
+Accept only if you expected this invitation. This account invitation does not grant beta access or enroll you in a paid subscription.
+
+Need help? Contact support@mealcaddie.app.
