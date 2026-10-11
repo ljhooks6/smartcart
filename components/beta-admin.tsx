@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { betaCohorts, betaStatuses, displayBetaValue } from "@/lib/beta-domain";
 import { BetaVerification } from "./beta-verification";
@@ -32,6 +32,7 @@ function ApplicantCard({ applicant, onChange, busy }: { applicant: Applicant; on
   </article>;
 }
 export function BetaAdmin() {
+  const authUser = useRef<string | null | undefined>(undefined);
   const [directory, setDirectory] = useState<Directory | null>(null); const [message, setMessage] = useState(""); const [error, setError] = useState("");
   const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ q: "", status: "", cohort: "", source: "", page: 1 });
@@ -42,7 +43,14 @@ export function BetaAdmin() {
     catch (failure) { setDirectory(null); setError(failure instanceof Error ? failure.message : "Unable to load applicants."); }
     finally { setLoading(false); }
   }, [filters]);
-  useEffect(() => { void load(); const { data } = supabase.auth.onAuthStateChange(() => { setDirectory(null); setTimeout(() => { void load(); }, 0); }); return () => data.subscription.unsubscribe(); }, [load]);
+  useEffect(() => { void load(); const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    const nextUser = session?.user.id ?? null;
+    const accountChanged = authUser.current !== nextUser;
+    authUser.current = nextUser;
+    // Repeated SIGNED_IN/TOKEN_REFRESHED events must not discard pending checks.
+    if (event === "INITIAL_SESSION" || !accountChanged) return;
+    setDirectory(null); setTimeout(() => { void load(); }, 0);
+  }); return () => data.subscription.unsubscribe(); }, [load]);
   async function change(body: unknown) {
     setBusy(true); setMessage(""); setError("");
     try { const result = await adminRequest("/api/beta/admin", body); setMessage(result.message + (result.result?.applications_deleted !== undefined ? ` Deleted ${result.result.applications_deleted} expired applications and ${result.result.counters_deleted} expired counters.` : "")); await load(); }
