@@ -67,6 +67,6 @@ try{
  await db.query("update beta_participations set cohort='free' where user_id=$1",[users.free.id]);await db.query("update beta_applications set cohort='free' where email=$1",[users.free.email]);
  writeFileSync('.phase3-lab-state.json',JSON.stringify({users,api},null,2));
  writeFileSync('.env.local',`NEXT_PUBLIC_SUPABASE_URL=${api}\nNEXT_PUBLIC_SUPABASE_ANON_KEY=${anon}\nSUPABASE_SERVICE_ROLE_KEY=${service}\nBETA_ONBOARDING_ENABLED=true\nBETA_ENTITLEMENTS_ENABLED=true\nBETA_INVITATION_DELIVERY_APPROVED=false\nBETA_APPLICATIONS_ENABLED=false\n`);
- writeFileSync('.phase3-test-results.json',JSON.stringify({localOnly:true,realEmailsSent:0,migrationSha256:createHash('sha256').update(readFileSync('supabase/migrations/20261011141927_beta_onboarding.sql')).digest('hex'),results},null,2));
+ writeFileSync('.phase3-test-results.json',JSON.stringify({localOnly:true,realEmailsSent:0,migrationSha256:createHash('sha256').update(readFileSync('supabase/migrations/20261011153040_beta_onboarding.sql')).digest('hex'),results},null,2));
  console.log(`Completed ${results.length} local scenarios; credentials remain in ignored local-only files.`);
 }finally{await db.end();}

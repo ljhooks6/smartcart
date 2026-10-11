@@ -1,6 +1,8 @@
-# Migration review and execution candidate — not approved for shared execution
+# Migration review and shared execution record
 
 File: `20261011141927_beta_onboarding.sql`.
+
+Approved and applied once to `mwxvorzrausbnqzjrhqm` on 2026-10-11. Supabase recorded execution version `20261011153040`; the repository file is now `20261011153040_beta_onboarding.sql`. The recorded SQL and renamed file retain the exact reviewed SHA-256 below. Test and local rehearsal references follow the recorded version. The execution checklist below is retained as the historical reviewed plan; do not reapply this migration. All new tables were empty, program onboarding/delivery remained disabled, and protected account/content/subscription fingerprints matched after execution. No pilot grants or accounts were created. See the workspace outputs/onboarding-migration-final-results.md for verification and remaining pilot approvals.
 
 SHA-256: `f8f3cea725af922f5b8fe590c664f7b90be844deabeb9573232842830e73bd36`.
 

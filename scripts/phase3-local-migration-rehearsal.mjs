@@ -6,7 +6,7 @@ const container=JSON.parse(execFileSync('docker',['inspect','supabase_db_mealcad
 for(const ports of Object.values(container.HostConfig.PortBindings))for(const binding of ports)assert.equal(binding.HostIp,'127.0.0.1');
 const env=Object.fromEntries(container.Config.Env.map(v=>{const i=v.indexOf('=');return[v.slice(0,i),v.slice(i+1)];}));
 const db=new Client({host:'127.0.0.1',port:54322,user:'postgres',password:env.POSTGRES_PASSWORD,database:'postgres'});await db.connect();
-const sql=readFileSync('supabase/migrations/20261011141927_beta_onboarding.sql','utf8');
+const sql=readFileSync('supabase/migrations/20261011153040_beta_onboarding.sql','utf8');
 const tables=['auth.users','public.smartcart_profiles','public.smartcart_subscriptions','public.archived_meals','public.pantry_inventory','public.weekly_menus'];
 const fingerprint=async()=>{const result={};for(const table of tables){if(!(await db.query('select to_regclass($1) t',[table])).rows[0].t)continue;result[table]=(await db.query(`select count(*) n,md5(coalesce(jsonb_agg(x order by x.id)::text,'[]')) hash from ${table} x`)).rows[0];}return result;};
 try{

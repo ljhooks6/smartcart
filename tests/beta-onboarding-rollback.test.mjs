@@ -9,7 +9,7 @@ test('empty-only rollback restores the exact original storage helper and allows 
  await root(db);await db.exec(rollback);
  assert.equal((await db.query("select prosrc from pg_proc where proname='storage_plan'")).rows[0].prosrc,original);
  assert.equal((await db.query("select count(*) n from smartcart_profiles")).rows[0].n,5);
- await db.exec(readFileSync('supabase/migrations/20261011141927_beta_onboarding.sql','utf8'));
+ await db.exec(readFileSync('supabase/migrations/20261011153040_beta_onboarding.sql','utf8'));
  assert.equal((await db.query("select onboarding_enabled from beta_programs")).rows[0].onboarding_enabled,false);
  }finally{await db.close();}
 });
