@@ -16,7 +16,7 @@ export function BetaApplication({ accepting, siteKey }: { accepting: boolean; si
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const mountChallenge = useCallback(() => {
     if (!widget.current || !window.turnstile || widgetId.current !== null || !siteKey) return;
-    widgetId.current = window.turnstile.render(widget.current, { sitekey: siteKey, action: "beta_application", callback: (value: string) => setToken(value), "expired-callback": () => setToken(""), "error-callback": () => { setToken(""); setMessage("Verification could not load. Please retry or contact support@mealcaddie.app."); } });
+    widgetId.current = window.turnstile.render(widget.current, { sitekey: siteKey, action: "beta_application", size: "compact", callback: (value: string) => setToken(value), "expired-callback": () => setToken(""), "error-callback": () => { setToken(""); setMessage("Verification could not load. Please retry or contact support@mealcaddie.app."); } });
   }, [siteKey]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -57,9 +57,9 @@ export function BetaApplication({ accepting, siteKey }: { accepting: boolean; si
         <div className="absolute -left-[10000px]" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
         <label className="flex items-start gap-3"><input type="checkbox" name="betaConsent" required className="mt-1 h-5 w-5 shrink-0 accent-pine" /><span>I agree to MealCaddie storing my application and contacting me about this beta. I’ve read the <Link href="/beta/privacy" className="font-semibold text-pine underline" target="_blank" rel="noopener">beta privacy notice (opens in a new tab)</Link>.</span></label>
         <label className="flex items-start gap-3"><input type="checkbox" name="marketingConsent" className="mt-1 h-5 w-5 shrink-0 accent-pine" /><span>Optional: I’d also like general MealCaddie news and product updates. This choice does not affect selection.</span></label>
-        {accepting && siteKey ? <><Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={mountChallenge} /><div ref={widget} /></> : null}
+        {accepting && siteKey ? <><Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" onReady={mountChallenge} /><div ref={widget} role="group" aria-label="Security verification" /><p id="beta-verification-status" role="status" aria-live="polite" className="text-sm">{token ? "Security verification is ready." : "Complete the security verification above before applying. If it does not load, contact support@mealcaddie.app."}</p></> : null}
         <p role="alert" className="text-sm font-semibold text-berry">{message}</p>
-        <button disabled={!accepting || !siteKey || !token || busy} className="min-h-12 w-full rounded-xl bg-pine px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Submitting…" : "Apply to help shape MealCaddie"}</button>
+        <button aria-describedby={accepting && siteKey ? "beta-verification-status" : undefined} disabled={!accepting || !siteKey || !token || busy} className="min-h-12 w-full rounded-xl bg-pine px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Submitting…" : "Apply to help shape MealCaddie"}</button>
         <p className="text-sm">Applying does not change your existing account or add you to the separate Plus updates waitlist.</p>
       </form>}
       <footer className="pb-8 text-sm"><a className="text-pine underline" href="mailto:support@mealcaddie.app">Questions or privacy requests</a></footer>
