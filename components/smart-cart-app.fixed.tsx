@@ -5,6 +5,7 @@ import { getMealRequestHeaders } from "../lib/meal-request-headers";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { signInMealCaddieEmail } from "../lib/auth-redirect";
 import { MealCaddieLogo } from "./mealcaddie-logo";
 import { SmartCartGenerationProgress } from "./smart-cart-generation-progress";
 import { useGenerationJob } from "../hooks/use-generation-job";
@@ -1930,7 +1931,12 @@ export function SmartCartApp() {
     setIsAuthLoading(true);
     setAuthMessage("");
 
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    let error: { message: string } | null;
+    try {
+      ({ error } = await signInMealCaddieEmail(supabase.auth, email, window.location.origin));
+    } catch (cause) {
+      error = { message: cause instanceof Error ? cause.message : "Unable to start sign-in. Please retry." };
+    }
 
     if (error) {
       setAuthMessage(error.message);

@@ -1,0 +1,45 @@
+{
+  "project": "mwxvorzrausbnqzjrhqm",
+  "status": "read-only-baseline-no-credentials",
+  "smtp": {
+    "customEnabled": false,
+    "credentialBackupNeeded": false,
+    "note": "No live SMTP field was edited. Original provider state is built-in; credentials are not exported."
+  },
+  "siteUrl": "https://mealcaddie.app",
+  "redirectAllowlist": [
+    "http://localhost:3000/",
+    "https://mealcaddie.vercel.app/",
+    "https://smartcart-lovat.vercel.app/",
+    "https://mealcaddie.app/",
+    "http://localhost:3001/",
+    "smartcart-git-feature-beta-recruitment-ljhooks6s-projects.vercel.app",
+    "https://smartcart-git-feature-beta-recruitment-ljhooks6s-projects.vercel.app/",
+    "https://preview.mealcaddie.app/"
+  ],
+  "providers": {
+    "google": true,
+    "email": true,
+    "otherProviders": false,
+    "manualLinking": false,
+    "anonymousSignIn": false,
+    "openSignup": true
+  },
+  "email": {
+    "confirmEmail": true,
+    "secureEmailChange": true,
+    "securePasswordChange": false,
+    "otpExpirySeconds": 3600,
+    "otpLength": 8
+  },
+  "rateLimits": {
+    "tokenRefreshPer5MinIp": 150,
+    "verificationPer5MinIp": 30,
+    "signupSigninPer5MinIp": 30,
+    "emailPerHour": 2,
+    "emailLimitNeedsOwnerCapture": false,
+    "ipForwarding": false
+  },
+  "securityNotificationsEnabled": false,
+  "note": "SMTP disabled rechecked this stage; owner confirmed email rate 2. Recheck all shared settings immediately before a later approved switch. No credential is included."
+}
