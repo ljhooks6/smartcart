@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
+import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 
 import { fetchLatestSubscriptionForUser } from "@/lib/smart-cart-billing";
 import { getStripeMonthlyPriceId, getStripeServerClient } from "@/lib/stripe";
-
-type CreateCheckoutSessionRequest = {
-  userId?: string;
-  email?: string;
-  plan?: string;
-};
 
 function getBaseUrl(request: Request) {
   const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -20,27 +15,19 @@ function getBaseUrl(request: Request) {
 }
 
 export async function POST(request: Request) {
-  let body: CreateCheckoutSessionRequest;
-
+  const match = /^Bearer ([^\s]+)$/i.exec(request.headers.get("authorization") ?? "");
+  if (!match) return NextResponse.json({ error: "Please sign in before upgrading." }, { status: 401 });
+  let userId: string; let email: string; let plan: string;
   try {
-    body = (await request.json()) as CreateCheckoutSessionRequest;
-  } catch {
-    return NextResponse.json(
-      { error: "Request body must be valid JSON." },
-      { status: 400 },
-    );
-  }
-
-  const userId = body.userId?.trim() || "";
-  const email = body.email?.trim() || "";
-  const plan = body.plan?.trim() || "free";
-
-  if (!userId || !email) {
-    return NextResponse.json(
-      { error: "Missing required fields: userId and email." },
-      { status: 400 },
-    );
-  }
+    const admin = getSupabaseAdminClient();
+    const { data, error } = await admin.auth.getUser(match[1]);
+    if (error) return NextResponse.json({ error: "Unable to verify your account." }, { status: error.status && error.status < 500 ? 401 : 503 });
+    if (!data.user || data.user.is_anonymous || !data.user.email || !data.user.email_confirmed_at) return NextResponse.json({ error: "Please sign in with a verified email." }, { status: 401 });
+    userId = data.user.id; email = data.user.email;
+    const profile = await admin.from("smartcart_profiles").select("plan").eq("id", userId).maybeSingle();
+    if (profile.error) return NextResponse.json({ error: "Unable to verify your membership." }, { status: 503 });
+    plan = (profile.data as { plan?: string } | null)?.plan ?? "free";
+  } catch { return NextResponse.json({ error: "Unable to verify your account." }, { status: 503 }); }
 
   if (plan === "plus") {
     return NextResponse.json(

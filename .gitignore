@@ -5,3 +5,7 @@ node_modules
 dist
 coverage
 *.log
+
+# Local TypeScript and Supabase CLI state
+*.tsbuildinfo
+supabase/.temp/

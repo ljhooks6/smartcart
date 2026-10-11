@@ -1,7 +1,18 @@
 {
   "functions": {
     "app/api/queues/generate-plan/route.ts": {
-      "experimentalTriggers": [{ "type": "queue/v2beta", "topic": "mealcaddie-plans" }]
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "mealcaddie-plans"
+        }
+      ]
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/beta-retention",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }

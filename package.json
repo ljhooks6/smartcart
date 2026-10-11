@@ -14,7 +14,9 @@
     "test:week": "node --experimental-strip-types --test tests/week-progress.test.mjs",
     "test:recovery": "node --experimental-strip-types --test tests/meal-recovery.test.mjs",
     "test:save": "node --experimental-strip-types --test tests/save-recovery.test.mjs",
-    "test:shopping": "node --experimental-strip-types --test tests/shopping-progress.test.mjs"
+    "test:shopping": "node --experimental-strip-types --test tests/shopping-progress.test.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:beta": "node --experimental-strip-types --test tests/beta-api.test.mjs tests/beta-database.test.mjs tests/checkout-identity.test.mjs"
   },
   "dependencies": {
     "@next/swc-wasm-nodejs": "^15.5.14",

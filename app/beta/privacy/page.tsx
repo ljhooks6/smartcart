@@ -1,0 +1,16 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { betaPagesEnabled } from "@/lib/beta-domain";
+import { MealCaddieLogo } from "@/components/mealcaddie-logo";
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Beta privacy notice | MealCaddie", robots: { index: false, follow: false } };
+export default function BetaPrivacy() {
+  if (!betaPagesEnabled()) notFound();
+  return <main className="min-h-screen bg-cream px-4 py-8"><article className="mx-auto max-w-2xl space-y-5 rounded-3xl bg-white p-6 sm:p-9"><MealCaddieLogo /><h1 className="text-3xl font-bold text-pine">Beta application privacy notice</h1><p>Beta privacy notice, version 2026-10-10-v1.</p>
+    <h2 className="text-xl font-semibold">Why we collect your information</h2><p>MealCaddie uses your email, planning routine, challenges, testing interests, plan preference, feedback willingness, consent choices, and application source to review applications, select testers, and coordinate the beta. Applying does not create an account or change your subscription.</p>
+    <h2 className="text-xl font-semibold">Consent and contact</h2><p>Beta contact consent is required to apply. General marketing consent is optional and recorded separately; it does not affect selection. We do not automatically add applicants to the existing Formspree waitlist. Beta communications will use beta@mealcaddie.app once email delivery is approved.</p>
+    <h2 className="text-xl font-semibold">Access and service providers</h2><p>Access to applications is limited to authorized beta administrators. We use Supabase for storage, Vercel for hosting, and Cloudflare Turnstile for abuse protection. Turnstile processes verification information under <a className="underline text-pine" href="https://www.cloudflare.com/privacypolicy/">Cloudflare’s privacy policy</a>. Short-lived rate-limit identifiers are derived from your network address. Application answers are not submitted to our meal-generation AI models.</p>
+    <h2 className="text-xl font-semibold">Retention and withdrawal</h2><p>Unselected applications are scheduled for deletion 90 days after recruitment closes. Approved, invited, and activated applications are retained through the beta and scheduled for deletion 90 days after it ends. Withdrawn applications are scheduled for deletion within seven days. Associated invitation drafts and application histories are deleted with the application. Abuse counters expire after 48 hours.</p><p>Contact <a className="underline text-pine" href="mailto:support@mealcaddie.app">support@mealcaddie.app</a> to withdraw, correct your application, revoke marketing consent, or request deletion. We verify requests before making changes. Application deletion does not delete your existing MealCaddie account, meal data, or subscription. Backup copies follow the storage provider’s backup expiry; any restoration must reapply pending deletion requests before recruitment resumes.</p>
+    <p>Please do not include medical details or other sensitive information in your answers.</p><Link className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/beta">Back to the application</Link>
+  </article></main>;
+}
