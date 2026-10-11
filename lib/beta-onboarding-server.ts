@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { betaJson, betaStorageClient, boundedJson } from "./beta-server";
-import { onboardingEnabled, betaEntitlementsEnabled, participantAction, adminOnboardingAction, sameOrigin } from "./beta-onboarding-domain";
+import { onboardingEnabled, betaEntitlementsEnabled, invitationSendingEnabled, participantAction, adminOnboardingAction, sameOrigin } from "./beta-onboarding-domain";
 import { pilotIdentityAllowed } from "./beta-pilot";
 
 export async function onboardingAccess(request: Request, admin = false) {
@@ -74,6 +74,7 @@ export async function adminPost(request: Request) {
   const parsed = adminOnboardingAction.safeParse(body); if (!parsed.success) return betaJson({ error: "Check the requested change." }, 400);
   const input = parsed.data;
   if (["promote", "extend"].includes(input.action) && !betaEntitlementsEnabled()) return betaJson({ error: "Privilege changes are disabled pending release approval." }, 409);
+  if (input.action === "issue" && !invitationSendingEnabled()) return betaJson({ error: "Invitation queueing is disabled until delivery is explicitly approved." }, 409);
   const rate = await access.client.rpc("beta_onboarding_rate", { p_user: access.user.id, p_kind: "admin" });
   if (rate.error) return onboardingError(rate.error);
   const result = input.action === "issue" ? await access.client.rpc("beta_issue_invitation", { p_actor: access.user.id, p_application: input.applicationId }) :

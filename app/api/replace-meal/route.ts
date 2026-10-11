@@ -1,5 +1,6 @@
 import { getRequestMembership } from "@/lib/server-membership";
 import OpenAI from "openai";
+import { pilotAIBudget } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -244,6 +245,7 @@ export async function POST(request: Request) {
 
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const isPremiumReplacement = membership.plan === "plus";
   const cuisinePreference = isPremiumReplacement && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 

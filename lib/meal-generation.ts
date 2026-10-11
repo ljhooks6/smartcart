@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { pilotAIBudget } from "./beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -393,6 +394,7 @@ function countCuisineAlignedMeals(
 }
 
 export async function generateMealPlan(body: unknown, plan: "free" | "plus", onUsage?: (details: unknown) => void) {
+  const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const {
     budget,
     diet,

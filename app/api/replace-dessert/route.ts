@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { pilotAIBudget } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getRequestMembership } from "@/lib/server-membership";
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
   if (!input.success) return NextResponse.json({ error: "Provide a dessert title, positive budget, and valid preferences." }, { status: 400 });
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "Recipe service is unavailable." }, { status: 503 });
   const data = input.data;
   const system = `You are a precise, creative dessert planner replacing one rejected dessert.

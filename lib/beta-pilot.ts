@@ -1,6 +1,10 @@
 // Server-only pilot controls. Neither public applications nor profile tiers are changed.
 type Env = Record<string, string | undefined>;
 export function pilotMode(env: Env = process.env) { return env.BETA_PILOT_MODE === "true"; }
+export function pilotIntakeEnabled(env: Env = process.env) {
+  return pilotMode(env) && env.BETA_PILOT_INTAKE_ENABLED === "true" &&
+    env.VERCEL_ENV !== "production" && (!env.VERCEL || env.VERCEL_ENV === "preview");
+}
 function identities(env: Env): Record<string, string | null> {
   try {
     const value = JSON.parse(env.BETA_PILOT_IDENTITIES ?? "{}");

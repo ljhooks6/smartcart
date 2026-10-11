@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { pilotAIBudget, pilotAIBudgetEnabled } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -15,6 +16,7 @@ const responseSchema = z.array(
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  ...(pilotAIBudgetEnabled() ? { maxRetries: 0, timeout: 60000 } : {}),
 });
 
 export async function POST(request: Request) {
@@ -49,8 +51,10 @@ export async function POST(request: Request) {
     "You are a culinary data parser and grocery estimator. Combine duplicate ingredients from the provided list. Mathematically add matching or convertible units (e.g., 2 cups + 2 cups = 4 cups). You MUST completely deduplicate the list. If an item appears twice, combine them into a single line item. Return ONLY a flat, valid JSON array of objects. Each object must contain a name string and a price number in USD. Do not return markdown, code blocks, or conversational text.";
 
   try {
+    const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      ...(pilotAIBudgetEnabled() ? { max_completion_tokens: 2000 } : {}),
       temperature: 0.2,
       messages: [
         { role: "system", content: systemPrompt },

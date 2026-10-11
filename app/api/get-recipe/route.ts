@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { pilotAIBudget } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { formatRecipeIngredients } from "@/lib/recipe-ingredients";
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
   const { mealTitle, mealNotes, servings, ingredients, diet, avoidIngredients, availableEquipment } = requestResult.data;
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const preferences = { diet, avoidIngredients, availableEquipment };
   if (ingredients && ingredientViolations(ingredients.map(i => i.name), preferences).length) return NextResponse.json({ error: "This saved meal conflicts with your current dietary preferences. Replace the meal or update your preferences first." }, { status: 422 });
   const ingredientLines = ingredients ? formatRecipeIngredients(ingredients) : undefined;
