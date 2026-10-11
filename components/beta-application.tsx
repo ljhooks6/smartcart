@@ -6,7 +6,7 @@ import { MealCaddieLogo } from "./mealcaddie-logo";
 import { betaInterests, displayBetaValue } from "@/lib/beta-domain";
 type TurnstileApi = { render: (element: HTMLElement, options: Record<string, unknown>) => string; reset: (id: string) => void; remove: (id: string) => void };
 declare global { interface Window { turnstile?: TurnstileApi } }
-const fieldClass = "w-full rounded-xl border border-pine/25 bg-white px-4 py-3 text-ink focus:outline-none focus:ring-2 focus:ring-pine";
+const fieldClass = "w-full rounded-xl border border-pine/70 bg-white px-4 py-3 text-ink focus:outline-none focus:ring-2 focus:ring-pine";
 const sourceChoices = ["direct", "facebook", "instagram", "friends", "community", "other"];
 export function BetaApplication({ accepting, siteKey }: { accepting: boolean; siteKey: string }) {
   const [token, setToken] = useState(""); const [busy, setBusy] = useState(false);

@@ -7,7 +7,7 @@ import { BetaVerification } from "./beta-verification";
 import { MealCaddieLogo } from "./mealcaddie-logo";
 type Applicant = { id: string; email: string; frequency: string; challenges: string; interests: string[]; plan_interest: string; feedback_willing: boolean; marketing_consent: boolean; beta_consent_at: string; source: string; campaign: string; status: string; cohort: string | null; updated_at: string; created_at: string };
 type Directory = { applications: Applicant[]; total: number; page: number; program: { free_target: number; plus_target: number; reserve_target: number; recruitment_closed_at: string | null; beta_ended_at: string | null }; counters: { cohorts: Record<string, number>; statuses: Record<string, number>; sources: Record<string, number> } };
-const selectClass = "min-h-11 rounded-xl border border-pine/25 bg-white px-3 py-2 text-ink focus:ring-2 focus:ring-pine";
+const selectClass = "min-h-11 rounded-xl border border-pine/70 bg-white px-3 py-2 text-ink focus:ring-2 focus:ring-pine";
 const buttonClass = "min-h-11 rounded-xl bg-pine px-4 py-2 font-semibold text-white disabled:opacity-50";
 async function adminRequest(path: string, body?: unknown) {
   const { data } = await supabase.auth.getSession();
