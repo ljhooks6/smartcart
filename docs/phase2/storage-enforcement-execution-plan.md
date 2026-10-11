@@ -1,6 +1,6 @@
 # Storage enforcement: reviewed execution plan
 
-Status: implemented on feature/beta-recruitment, tested in isolated PGlite PostgreSQL, **not applied** to the shared SmartCart database.
+Status: applied and verified on the shared SmartCart database on October 11, 2026. Recorded version and canonical repository filename: 20261011062506_secure_pantry_vault_limits.sql. SQL is unchanged; see storage-migration-history-reconciliation.md. The execution sequence below documents the reviewed procedure, not a request to replay it.
 
 ## Approved rules
 

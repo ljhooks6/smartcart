@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
-const migration=readFileSync('supabase/migrations/20261011044914_secure_pantry_vault_limits.sql','utf8');
+const migration=readFileSync('supabase/migrations/20261011062506_secure_pantry_vault_limits.sql','utf8');
 const free='11111111-1111-4111-8111-111111111111',plus='22222222-2222-4222-8222-222222222222',unverified='33333333-3333-4333-8333-333333333333';
 async function database(){
  const db=new PGlite();
