@@ -37,7 +37,7 @@ export function emailTestRecipient() { return z.string().email().max(254).parse(
 export async function sendApprovedBetaTest(verifiedAdminId: string) {
   if (verifiedAdminId !== "b172ef8f-f5d7-4faa-abdf-f3250b2a6ef3") throw Error("Owner test authorization is required.");
   const kind = "application";
-  if (process.env.VERCEL_ENV !== "preview" || process.env.BETA_EMAIL_TEST_SEND_APPROVED !== "true") throw Error("Email delivery is disabled.");
+  if (process.env.VERCEL_ENV !== "preview" || process.env.BETA_EMAIL_TEST_SEND_APPROVED !== "true" || process.env.BETA_EMAIL_LEDGER_VERIFIED !== "true") throw Error("Email delivery is disabled.");
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw Error("Email provider is unavailable.");
   if (emailTestRecipient().toLowerCase() !== "mealcaddie@proton.me") throw Error("Owner test recipient is not approved.");

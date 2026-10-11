@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     privacyReviewed: env.BETA_PRIVACY_REVIEW_APPROVED === "true",
     contactMailboxesVerified: env.BETA_CONTACT_MAILBOXES_VERIFIED === "true",
     automaticEmailsEnabled: false,
+    ownerTestAvailable: access.userId === "b172ef8f-f5d7-4faa-abdf-f3250b2a6ef3" && env.VERCEL_ENV === "preview" && env.BETA_EMAIL_TEST_SEND_APPROVED === "true" && env.BETA_EMAIL_LEDGER_VERIFIED === "true",
   };
   // In-process authorization test only: never invoke the destructive URL or expose its secret.
   const url = new URL("/api/cron/beta-retention?dryRun=1", request.url);
