@@ -1,5 +1,7 @@
 -- Reviewed, additive enforcement. Does not modify plans, subscriptions or existing content.
 begin;
+set local lock_timeout = '5s';
+set local statement_timeout = '30s';
 lock table public.archived_meals in share row exclusive mode;
 create schema if not exists mealcaddie_private;
 revoke all on schema mealcaddie_private from public, anon, authenticated;
