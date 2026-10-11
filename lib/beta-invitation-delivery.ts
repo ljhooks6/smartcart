@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { invitationSendingEnabled } from "./beta-onboarding-domain";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { pilotMode, pilotInvitationApproved } from "./beta-pilot";
 
 type Message = { from: string; to: string; reply_to: string; subject: string; text: string; html: string };
 type Transport = (message: Message, idempotencyKey: string) => Promise<{ id: string }>;
@@ -12,12 +13,25 @@ export async function deliverOneInvitation(client: SupabaseClient, transport: Tr
   if (env.BETA_EMAIL_CAPACITY_REVIEW_DATE !== today || Number(env.BETA_EMAIL_DAILY_HEADROOM ?? 0) < 20) throw Error("A current provider capacity review is required.");
   const origin = env.BETA_INVITATION_ORIGIN;
   if (!origin || !/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(origin)) throw Error("An explicitly reviewed invitation origin is required.");
+  if (pilotMode(env)) {
+    // Refuse an unrelated queue before reserving a token or contacting the provider.
+    const queue = await client.from("beta_invitations").select("id,beta_applications(email)").eq("state", "queued").limit(3);
+    if (queue.error || !queue.data || queue.data.length > 2 || queue.data.some(row => {
+      const application = row.beta_applications as unknown as { email?: string };
+      return !application?.email || !pilotInvitationApproved(row.id, application.email, env);
+    })) throw Error("Pilot delivery requires approved invitation IDs and recipient consent.");
+  }
   const token = randomBytes(32).toString("base64url");
   const hash = createHash("sha256").update(token).digest("hex");
   const claim = await client.rpc("beta_claim_delivery", { p_hash: hash });
   if (claim.error) throw Error("Unable to reserve delivery.");
   if (!claim.data) return { status: "idle" };
   const { id, email, idempotency_key } = claim.data as { id: string; email: string; idempotency_key: string };
+  if (!pilotInvitationApproved(id, email, env)) {
+    // A raced/unapproved claim must never reach transport. Preserve it for review.
+    await client.rpc("beta_finish_delivery", { p_id: id, p_status: "unknown", p_provider: null });
+    throw Error("Pilot claim changed; no email sent. Review the ledger before retrying.");
+  }
   const link = `${origin}/beta/accept#invite=${token}`;
   const message: Message = {
     from: "MealCaddie Beta <beta@mealcaddie.app>", to: email, reply_to: "beta@mealcaddie.app", subject: "Your invitation to the MealCaddie beta",

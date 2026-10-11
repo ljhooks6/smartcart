@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { betaJson, betaStorageClient, boundedJson } from "./beta-server";
 import { onboardingEnabled, betaEntitlementsEnabled, participantAction, adminOnboardingAction, sameOrigin } from "./beta-onboarding-domain";
+import { pilotIdentityAllowed } from "./beta-pilot";
 
 export async function onboardingAccess(request: Request, admin = false) {
   if (!onboardingEnabled()) return { response: betaJson({ error: "Beta onboarding is not enabled in this environment." }, 404) };
@@ -45,6 +46,7 @@ export async function participantPost(request: Request) {
   const parsed = participantAction.safeParse(body); if (!parsed.success) return betaJson({ error: "Check the form fields and consent." }, 400);
   const input = parsed.data;
   if (input.action === "accept" && !betaEntitlementsEnabled()) return betaJson({ error: "Activation is disabled pending release approval." }, 409);
+  if (input.action === "accept" && !pilotIdentityAllowed(access.user.id, access.user.email)) return betaJson({ error: "This verified account is not approved for the controlled pilot." }, 403);
   const rate = await access.client.rpc("beta_onboarding_rate", { p_user: access.user.id, p_kind: input.action === "accept" ? "accept" : input.action === "feedback" ? "feedback" : "settings" });
   if (rate.error) return onboardingError(rate.error);
   const result = input.action === "accept" ? await access.client.rpc("beta_accept_invitation", { p_user: access.user.id, p_hash: createHash("sha256").update(input.token).digest("hex") }) :
