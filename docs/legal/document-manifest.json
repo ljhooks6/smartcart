@@ -1,22 +1,24 @@
 {
-  "version": "2026-10-12-draft-v2",
-  "activated": false,
+  "version": "2026-10-12-beta-v1",
+  "effectiveDate": "October 12, 2026",
+  "publicationApproved": true,
+  "acceptanceByVerifiedUserOnly": true,
   "documents": {
     "terms": {
-      "title": "Terms of Service — counsel review draft",
-      "sha256": "fc6d8d7d62914f7a4ab8eed88f9ac57e301ab9dd305005d86ed33605d989ec88"
+      "title": "MealCaddie Terms of Service",
+      "sha256": "8a65500b3382747cee9fc142cf4bac220ea7c2f0e517016d1b9e0e83f640fb07"
     },
     "privacy": {
-      "title": "Privacy Policy update — counsel review draft",
-      "sha256": "3863d478ad3e573557e0582a54b4284915bf50cc6e72dccffdf47b6495b152f1"
+      "title": "MealCaddie Privacy Policy",
+      "sha256": "065522808695aa8816df17c004e15b9ae8b0c6abd095b596818923751a99989c"
     },
     "safety": {
-      "title": "Food Allergy and Dietary Safety Notice — counsel review draft",
-      "sha256": "009881efcd0bd35bd96823ff7bb83c6e4bc002c937b3595d5e9100639b6f228d"
+      "title": "MealCaddie Dietary Safety Notice",
+      "sha256": "a02350f1d2bc448dafb3599a63d76e0598f24c4a4759e6cc86a1fe5ac796b559"
     },
     "beta": {
-      "title": "Beta Participation Agreement — counsel review draft",
-      "sha256": "cb028b1af647b92ed65a185d396e602c559574c8e0082835eeccee1999a814d1"
+      "title": "MealCaddie Beta Participation Agreement",
+      "sha256": "623a4576c730d4927ac1346cf6d054381dba93b67c79cd512c3df15ced053c1e"
     }
   }
 }

@@ -35,13 +35,13 @@ export function emailTestRecipient() { return z.string().email().max(254).parse(
 // The owner-test route verifies the session before invoking this gated sender.
 // Claims survive timeouts: uncertain deliveries are never automatically retried.
 export async function sendApprovedBetaTest(verifiedAdminId: string) {
-  if (verifiedAdminId !== "b172ef8f-f5d7-4faa-abdf-f3250b2a6ef3") throw Error("Owner test authorization is required.");
+  if (verifiedAdminId !== process.env.BETA_EMAIL_TEST_ADMIN_ID) throw Error("Owner test authorization is required.");
   const kind = "application";
   if (process.env.VERCEL_ENV !== "preview" || process.env.BETA_EMAIL_TEST_SEND_APPROVED !== "true" || process.env.BETA_EMAIL_LEDGER_VERIFIED !== "true") throw Error("Email delivery is disabled.");
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw Error("Email provider is unavailable.");
-  if (emailTestRecipient().toLowerCase() !== "mealcaddie@proton.me") throw Error("Owner test recipient is not approved.");
-  const payload = prepareBetaEmail(kind, "mealcaddie@proton.me");
+  if (!process.env.BETA_EMAIL_TEST_ADMIN_ID || !process.env.BETA_EMAIL_TEST_APPROVED_RECIPIENT || emailTestRecipient().toLowerCase() !== process.env.BETA_EMAIL_TEST_APPROVED_RECIPIENT.toLowerCase()) throw Error("Owner test recipient is not approved.");
+  const payload = prepareBetaEmail(kind, emailTestRecipient());
   const key = "beta-test-v1-" + createHash("sha256").update("MealCaddie owner application test 2026-10-10 v1").digest("hex");
   const client = betaStorageClient();
   const claim = await client.from("beta_email_deliveries").insert({ idempotency_key: key, kind, state: "claimed" });

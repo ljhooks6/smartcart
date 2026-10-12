@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
 import {loader} from './helpers/load-local-ts.mjs';import {fixture,root,server,browser,activated,issued,admin,free,plus,paid,stranger} from './helpers/beta-onboarding-fixture.mjs';
-const migration=readFileSync('supabase/migrations/20261012203230_public_beta_access_and_agreements.sql','utf8');
+const migration=readFileSync('supabase/migrations/20261012222908_public_beta_access_and_agreements.sql','utf8');
 async function setup(){const db=await fixture();await root(db);await db.exec(`
  alter table smartcart_subscriptions add column user_id uuid,add column provider text,add column provider_subscription_id text,add column current_period_end timestamptz;
  create table weekly_menus(id uuid primary key default gen_random_uuid(),user_id uuid,meal_title text,type text,recipe_data jsonb,servings_count integer,status text);

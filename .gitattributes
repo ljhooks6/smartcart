@@ -1,3 +1,5 @@
 # Keep this new reviewed migration byte-stable across Windows and preview checkouts.
 supabase/migrations/20261011153040_beta_onboarding.sql text eol=lf
 docs/beta-onboarding/rollback-empty-only.sql text eol=lf
+
+supabase/migrations/*public_beta_access_and_agreements.sql text eol=lf

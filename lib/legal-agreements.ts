@@ -1,6 +1,7 @@
 import { betaStorageClient, betaJson, boundedJson } from "./beta-server";
 import {legalVersion} from "./legal-documents";
 import { productGateEnabled } from "./product-access";
+import { sameOrigin } from "./beta-onboarding-domain";
 export function legalGateEnabled() {return process.env.LEGAL_LANGUAGE_APPROVED==="true" && process.env.LEGAL_STORAGE_APPROVED==="true" && process.env.LEGAL_GATE_ENABLED==="true";}
 export async function agreementsForUser(userId: string | null) {
  if(productGateEnabled())return true; // Current product eligibility already accounts for fresh participant agreements, while preserving legacy users.
@@ -21,7 +22,7 @@ export async function requireAgreements(request: Request) {
 }
 export async function recordAgreements(request: Request) {
  if(!legalGateEnabled())return betaJson({error:"Draft acceptance recording is disabled pending legal, migration and rollout approval."},403);
- const origin=request.headers.get("origin");if(origin!==new URL(request.url).origin)return betaJson({error:"Invalid origin."},403);
+ if(!request.headers.get("origin")||!sameOrigin(request))return betaJson({error:"Invalid origin."},403);
  const token=/^Bearer ([^\s]+)$/i.exec(request.headers.get("authorization")??"")?.[1];
  if(!token)return betaJson({error:"Sign in to review agreements."},401);
  const client=betaStorageClient();const identity=await client.auth.getUser(token);

@@ -1,23 +1,42 @@
-# Terms of Service — counsel review draft
+# MealCaddie Terms of Service
 
-Version: 2026-10-12-draft-v2
+Version: 2026-10-12-beta-v1
+Effective date: October 12, 2026
 
-REVIEW DRAFT — not activated; requires attorney review and separate rollout approval.
+## Operator and contact
 
-These proposed terms are not activated. MealCaddie is the product name. Legal operator: [pending ownership and registration verification]. Hooks Legacy LLC is the intended parent-company structure, not a confirmed operator. Address, service territory, minimum age and effective date require review. Contact support@mealcaddie.app.
+MealCaddie is a product operated by LaDarius Hooks, acting in an individual capacity. Contact: support@mealcaddie.app. Hooks Legacy LLC is the intended future holding company, with registration pending. MealCaddie LLC is the intended future operating subsidiary and has not been formed. Each intended company is not a confirmed operator, registered operator or party to these Terms.
 
-MealCaddie assists with meal planning, recipe suggestions, pantry and shopping organization. AI output can be incomplete, inaccurate or unsuitable. It is not medical, nutritional treatment or emergency advice. Do not use it to determine treatment, diagnosis, medication interactions or suitability for a medical condition.
+## What MealCaddie provides
 
-Check every ingredient, substitution, package label, manufacturer warning and preparation environment. Recipe descriptions and automated checks do not establish allergen absence. Do not consume food when suitability is uncertain. Users retain the choice to defer, stop or obtain qualified professional advice.
+MealCaddie assists with meal planning, recipe suggestions, pantry and grocery organization, and saving recipes. It uses AI, which can produce incomplete, inaccurate or unsuitable results. MealCaddie does not provide diagnosis, treatment, emergency services or medical assurances. Review recommendations before using them. The Dietary Safety Notice explains current restrictions and limitations.
 
-Keep account credentials and personal invitation links private. Use accurate account information and do not misuse the service or access another person's data. Report security issues to support@mealcaddie.app. Users retain rights in their submitted content; the proposed limited service license permits processing only to provide and maintain MealCaddie. Counsel must review content-license and deletion terms.
+## Accounts and beta access
 
-Free, paid Plus and temporary beta access are distinct. Temporary beta access requires no payment and expires according to participation terms. Existing Stripe subscription status and billing remain independent. Before any paid purchase, disclose the then-current price, renewal interval, applicable taxes, cancellation process and refund policy. No cancellation, price or refund rule is established by this draft.
+Use accurate information, keep credentials and personal invitation links private, and access only your own data or features you are authorized to use. Public application submission does not create an account, guarantee selection, enroll you in the beta or grant product access. New beta participation requires an approved invitation, the matching verified account and explicit recipient acceptance.
 
-Proposed warranties and liability provisions: services are provided subject to the warranties and mandatory rights applicable in each jurisdiction. Counsel should define any reasonable, enforceable limitation of damages and monetary cap after reviewing business facts and consumer law. This draft does not waive liability for bodily injury, negligence or claims that cannot lawfully be excluded.
+Existing stored Plus accounts, administrator access, the individually reviewed existing Free account and active beta participation are preserved under the reviewed access policy. Pending invitations remain pending until accepted. A Plus designation does not establish that a person pays for a subscription. Temporary beta grants remain separate from stored plans and billing records. Beta expiry or withdrawal does not erase saved content; account/content requests remain available through support.
 
-Proposed governing law: Texas, United States, subject to attorney review and mandatory consumer rights that may apply where you live. Contact support@mealcaddie.app for informal resolution without restricting legal remedies or limitation periods. Venue and dispute procedures require counsel review. No mandatory arbitration or class waiver is activated.
+The beta requires no payment information and creates no paid subscription. Paid checkout and subscription sales are disabled for this beta. Any future paid offering must disclose its price, renewal/cancellation conditions and other purchase terms separately and require appropriate authorization. These Terms do not authorize charges or convert an account to a paid subscription.
 
-Request account access/export, correction or deletion through your verified account privacy page or support@mealcaddie.app. Support verifies ownership and scope before acting. Beta withdrawal is separate and removes temporary privileges without deleting content. Existing Plus access is preserved pending administrator review; a stored Plus label does not establish payment. Declining proposed agreements does not delete content or alter current access. New participants will need affirmative agreement only after legal and rollout approval.
+## Responsible use
 
-You retain your rights in input and saved content. You permit necessary processing to operate and secure the service; no unrestricted resale or marketing license is proposed. AI output may resemble others' output and is not guaranteed unique or copyrightable. You are responsible for reviewing suggestions and avoiding unlawful or harmful use. Service changes, suspension for misuse and material terms updates need proportionate notice and an appeal/contact route; counsel must review these provisions.
+Do not attempt to bypass access, plan, invitation or security restrictions; access another person's records; submit malicious content; or use the service unlawfully. Do not put passwords, third-party private information or unnecessary medical information into application answers, planning text or feedback. Restrictions may be applied proportionately to protect users and the service. Where practical, we will explain a restriction and provide a support route; urgent security action may precede notice. A privacy request itself is not misuse.
+
+## Your content and feedback
+
+You retain the rights you have in your submitted content. You permit necessary processing to provide, secure and support the service, handle requests, and use feedback to improve MealCaddie. This does not transfer ownership of your personal data or authorize undisclosed marketing. AI output may resemble other output and is not guaranteed unique or copyrightable. You are responsible for confirming that content you submit may lawfully be used. We will not publish attributable feedback without your permission.
+
+## Reliability and safety
+
+Beta features may fail, change or become unavailable. AI output, ingredient-name review and saved content are not guarantees of food composition, allergy suitability, nutritional accuracy or fitness for a medical condition. Do not remove a genuine dietary restriction to obtain an AI result. These limitations describe the service; they do not waive bodily-injury, negligence, consumer or other rights that cannot lawfully be waived. No mandatory arbitration, class-action waiver, indemnity or monetary liability cap is introduced by these Terms.
+
+## Requests, changes and future operator
+
+Contact support@mealcaddie.app about access, corrections, withdrawal or deletion. Ownership and scope are verified before action. Beta withdrawal, account deletion and marketing withdrawal are different requests. Deletion is reviewed and handled by an administrator; requesting it does not immediately erase an account or cancel or modify billing records.
+
+We will identify material changes and any required fresh agreement rather than fabricate acceptance or rewrite past consent records. If MealCaddie LLC is formed and lawfully assumes operation, we will identify the new operator, publish an effective-date update, explain relevant effects on data and service responsibility, and obtain any consent required by applicable law. Formation alone does not automatically assign these Terms or transfer user records.
+
+## Governing law
+
+The proposed governing law is Texas, United States, subject to any mandatory rights applicable where you live. Contact support@mealcaddie.app for informal resolution; this does not shorten legal time limits or restrict available legal remedies. No exclusive venue is imposed here.

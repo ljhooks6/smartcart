@@ -1,12 +1,13 @@
+<!-- Recipient and identity examples in this document are synthetic. Real pilot records are owner-only and are not stored in Git. -->
 # Controlled two-person pilot
 
 Protected intake: https://preview.mealcaddie.app/beta/pilot-apply on feature/beta-onboarding. Vercel Authentication stays enabled; public intake, sending and activation remain disabled. PRs #1 and #2 remain draft and unmerged.
 
 ## Participant intake
 
-Free: mealcaddie@proton.me, verified UUID 1ef00e74-4412-412c-a2c9-be2ec9c89348, stored Free.
-Temporary Plus: elderrachel12@gmail.com, verified UUID d8a775f8-bc36-4577-a6d1-b0934c4a3b88, stored Free.
-Administrator b172ef8f-f5d7-4faa-abdf-f3250b2a6ef3 remains Plus/admin and is excluded from pilot messages/grants.
+Free: synthetic-person-4@example.invalid, verified UUID 99999999-9999-4999-8999-999999999999, stored Free.
+Temporary Plus: synthetic-person-3@example.invalid, verified UUID 88888888-8888-4888-8888-888888888888, stored Free.
+Administrator 77777777-7777-4777-8777-777777777777 remains Plus/admin and is excluded from pilot messages/grants.
 
 Both participants personally open the intake URL after normal Vercel and MealCaddie sign-in. Check the read-only verified email, answer the normal questions, read the privacy notice, explicitly check participation consent, choose optional marketing consent independently, complete Turnstile if prompted and submit once. Applying neither sends mail nor approves or activates access. Existing applications are displayed without overwriting answers/consent. No signup email is needed; do not request another authentication email without authorization. If signed out, Rachel can use her existing Google authentication; Proton needs an existing session or separately authorized normal login.
 

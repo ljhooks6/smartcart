@@ -8,11 +8,5 @@
         }
       ]
     }
-  },
-  "crons": [
-    {
-      "path": "/api/cron/beta-retention",
-      "schedule": "0 8 * * *"
-    }
-  ]
+  }
 }
