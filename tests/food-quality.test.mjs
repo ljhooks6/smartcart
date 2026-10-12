@@ -70,3 +70,14 @@ test('constraint checks preserve plant-based and gluten-free qualifiers while de
  assert.ok(pantryViolations(['Almond milk'],'Whole milk').length);
  assert.ok(recipeViolations({...recipe,steps:['Cook with salt.','Cook chicken.','Serve.']},meal.ingredients,{}).length);
 });
+test('declared allergies block saved recipe conflicts before AI and independently recheck regenerated substitutions',async()=>{
+ const diet='\nMealCaddie dietary settings v1: '+JSON.stringify({allergies:['Sesame'],preferences:[],customAllergies:'',intolerances:'',medical:''});
+ const blocked=fixture({responses:[recipe]});assert.equal((await blocked.post('get-recipe',{...meal,diet,ingredients:[{name:'Tahini',amount:'1 cup'}]})).status,422);assert.equal(blocked.calls.length,0);
+ const unsafe={...recipe,ingredients:['Rice'],steps:['Cook rice.','Substitute tahini for oil.','Serve.']},correct={...recipe,ingredients:['Rice'],steps:['Rinse rice.','Boil rice in water.','Serve rice.']};
+ const f=fixture({responses:[unsafe,correct]});const response=await f.post('get-recipe',{mealTitle:'Rice',diet});assert.equal(response.status,200);assert.equal(f.calls.length,2);assert.deepEqual((await response.json()).ingredients,['Rice']);
+ const rejected=fixture({responses:[unsafe]});assert.equal((await rejected.post('get-recipe',{mealTitle:'Rice',diet})).status,502);assert.equal(rejected.calls.length,2);
+});
+test('shopping consolidation rejects a generated known allergen and lost dietary qualifiers',async()=>{
+ const diet='\nMealCaddie dietary settings v1: '+JSON.stringify({allergies:['Milk'],preferences:[],customAllergies:'',intolerances:'',medical:''});
+ for(const output of [[{name:'Milk',price:1}],[{name:'Bread',price:1}]]){const f=fixture({responses:[output]});const response=await f.post('consolidate-ingredients',{ingredients:['gluten-free oat bread'],diet});assert.equal(response.status,422);assert.equal(f.calls.length,1);}
+});

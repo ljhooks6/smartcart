@@ -1,9 +1,12 @@
+import { requireAgreements } from "@/lib/legal-agreements";
+import { assessDiet } from "@/lib/dietary-safety";
 import OpenAI from "openai";
 import { pilotAIBudget, pilotAIBudgetEnabled } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const requestSchema = z.object({
+  diet: z.string().max(6000).optional(),
   ingredients: z.array(z.string().min(1)).min(1),
 });
 
@@ -20,6 +23,7 @@ const openai = new OpenAI({
 });
 
 export async function POST(request: Request) {
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let body: unknown;
 
   try {
@@ -81,6 +85,10 @@ export async function POST(request: Request) {
       .trim();
 
     const parsed = responseSchema.parse(JSON.parse(cleanedContent));
+    const dietarySafety = assessDiet(parsed.map(i => i.name), parsedRequest.data.diet);
+    const original = parsedRequest.data.ingredients;
+    const qualifiers = original.filter(i => /free|allerg|milk|wheat|soy|sesame|nut|peanut/i.test(i));
+    if (dietarySafety.conflicts.length || qualifiers.some(i => !parsed.some(r => r.name.toLowerCase().includes(i.toLowerCase())))) return NextResponse.json({ error: "Ingredient transformation needs review. Keep the original ingredient list and dietary qualifiers.", dietarySafety }, { status: 422 });
     return NextResponse.json(parsed);
   } catch (error) {
     if (error instanceof z.ZodError) {

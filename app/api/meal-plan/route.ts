@@ -1,3 +1,5 @@
+import { requireAgreements } from "@/lib/legal-agreements";
+import { assessDiet, ingredientTexts } from "@/lib/dietary-safety";
 import { NextResponse } from "next/server";
 
 import {
@@ -82,6 +84,7 @@ const mockMealPlan = {
 };
 
 export async function POST(request: Request) {
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let payload: unknown;
 
   try {
@@ -117,5 +120,7 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json(parsedResponse.data);
+  const dietarySafety = assessDiet(ingredientTexts(parsedResponse.data), parsedRequest.data.dietaryRestrictions);
+  if (dietarySafety.conflicts.length) return NextResponse.json({ error: "This example plan conflicts with your declared allergies.", dietarySafety }, { status: 422 });
+  return NextResponse.json({ ...parsedResponse.data, dietarySafety });
 }

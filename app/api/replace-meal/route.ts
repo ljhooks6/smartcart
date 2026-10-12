@@ -1,3 +1,5 @@
+import { requireAgreements } from "@/lib/legal-agreements";
+import { assessDiet, allergyConflicts } from "@/lib/dietary-safety";
 import { getRequestMembership } from "@/lib/server-membership";
 import OpenAI from "openai";
 import { pilotAIBudget } from "@/lib/beta-pilot-ai";
@@ -185,6 +187,7 @@ function isTooSimilarToRejectedMeal(rejectedTitle: string, replacementTitle: str
 }
 
 export async function POST(request: Request) {
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let body: unknown;
 
   try {
@@ -321,7 +324,7 @@ export async function POST(request: Request) {
       ];
       const blockedMatches = dietaryPreferences.blockedIngredients.filter((blocked) =>
         replacementHaystacks.some((value) => value.includes(blocked)),
-      );
+      ).concat(allergyConflicts(candidate, diet));
       const avoidedMatches = avoidanceGuidance.avoidedItems.filter((blocked) =>
         replacementHaystacks.some((value) => value.includes(blocked)),
       );
@@ -399,7 +402,9 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(parsed);
+    const dietarySafety = assessDiet(parsed, diet);
+    if (dietarySafety.conflicts.length) return NextResponse.json({ error: "Known allergy conflict detected. Choose Replace again to generate another meal.", dietarySafety }, { status: 422 });
+    return NextResponse.json({ ...parsed, dietarySafety });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

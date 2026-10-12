@@ -1,3 +1,4 @@
+import { allergyConflicts } from "./dietary-safety";
 import { getIngredientKey } from "./grocery-list";
 import { parseAvoidanceItems } from "./meal-request-normalization";
 
@@ -12,7 +13,7 @@ export function ingredientViolations(names: string[], preferences: FoodPreferenc
   const avoid = parseAvoidanceItems(preferences.avoidIngredients);
   const categories: Record<string, string> = { dairy: "dairy-free", gluten: "gluten-free", eggs: "egg-free", nuts: "nut-free", "tree nuts": "tree-nut-free", peanuts: "peanut-free" };
   const diet = normalized([preferences.diet ?? "", ...avoid.map(item => categories[item] ?? "")].join(", "));
-  const errors: string[] = [];
+  const errors: string[] = allergyConflicts(names, preferences.diet);
   for (const name of names) {
     // Label qualifiers are not ingredients: "peanut-free oat milk" still
     // allows oat milk, while "peanut-free almond milk" still contains almond.
@@ -58,7 +59,7 @@ export function equipmentViolations(text: string, equipment?: string[]) {
 
 export function recipeViolations(recipe: { ingredients: string[]; steps: string[] }, planned: Array<{name: string; amount: string}> | undefined, preferences: FoodPreferences) {
   const steps = recipe.steps.join(" ");
-  const errors = [...ingredientViolations(planned?.map(i => i.name) ?? recipe.ingredients, preferences), ...equipmentViolations(steps, preferences.availableEquipment)];
+  const errors = [...ingredientViolations(planned?.map(i => i.name) ?? recipe.ingredients, preferences), ...allergyConflicts([...recipe.ingredients, ...recipe.steps], preferences.diet), ...equipmentViolations(steps, preferences.availableEquipment)];
   if (planned) {
     const expected = planned.map(i => normalized(`${i.amount} ${i.name}`)).sort();
     const returned = recipe.ingredients.map(normalized).sort();
@@ -76,6 +77,3 @@ export function recipeViolations(recipe: { ingredients: string[]; steps: string[
   }
   return [...new Set(errors)];
 }
-
-
-

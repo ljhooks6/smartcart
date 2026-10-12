@@ -1,3 +1,5 @@
+import { requireAgreements } from "@/lib/legal-agreements";
+import { assessDiet } from "@/lib/dietary-safety";
 import OpenAI from "openai";
 import { pilotAIBudget } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
@@ -12,7 +14,7 @@ export const maxDuration = 150;
 const recipeRequestSchema = z.object({
   mealTitle: z.string().trim().min(1),
   mealNotes: z.string().max(10000).optional(),
-  diet: z.string().max(1000).optional(),
+  diet: z.string().max(6000).optional(),
   avoidIngredients: z.string().max(2000).optional(),
   availableEquipment: z.array(z.string().max(100)).max(20).optional(),
   servings: z.number().int().positive().optional(),
@@ -34,6 +36,7 @@ const openai = new OpenAI({
 });
 
 export async function POST(request: Request) {
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let body: unknown;
 
   try {
@@ -109,6 +112,7 @@ Planned ingredients: ${ingredientLines ? JSON.stringify(ingredientLines) : "No s
       validate: value => recipeViolations(value, ingredients, preferences),
     });
     return NextResponse.json({
+      dietarySafety: assessDiet([...parsed.ingredients, ...parsed.steps], diet),
       ...parsed,
       // Preserve the stored plan exactly, even if the model rewrites its list.
       ingredients: ingredientLines ?? parsed.ingredients,

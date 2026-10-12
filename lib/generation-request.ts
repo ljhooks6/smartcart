@@ -4,7 +4,7 @@ const text = z.string().max(4000);
 const items = z.array(z.string().max(150)).max(100);
 export const generationRequestSchema = z.object({
   budget: z.number().finite().positive().max(10000),
-  diet: z.string().min(1).max(500), householdSize: z.number().int().min(1).max(30),
+  diet: z.string().min(1).max(6000), householdSize: z.number().int().min(1).max(30),
   combinedPantryItems: text,
   fullyStocked: items.optional(), runningLow: items.optional(), restock: items.optional(),
   mustHaveIngredient: text.optional(), avoidIngredients: text.optional(),

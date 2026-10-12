@@ -1,3 +1,4 @@
+import { requireAgreements } from "@/lib/legal-agreements";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generationIdentity } from "@/lib/generation-identity";
@@ -12,6 +13,7 @@ function reply(body: unknown, status: number, cookie?: string | null, retryAfter
     ...(cookie ? { "Set-Cookie": cookie } : {}), ...(retryAfter ? { "Retry-After": String(retryAfter) } : {}) } });
 }
 export async function POST(request: Request) {
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return reply({ error: "Please start planning from MealCaddie." }, 403);
   let input;

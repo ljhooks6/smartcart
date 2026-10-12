@@ -1,4 +1,5 @@
 "use client";
+import { DietarySafetySummary } from "./dietary-safety-summary";
 
 import { getMealRequestHeaders } from "../lib/meal-request-headers";
 
@@ -2477,6 +2478,7 @@ export function SmartCartApp() {
 
   return (
       <main className="mealcaddie-surface min-h-screen flex flex-col items-center px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-12 md:pt-8">
+        <DietarySafetySummary diet={formState.diet} value={[weeklyMenu,savedDesserts,archivedMeals]} />
         <PersonalizedWelcome />
         <SmartCartStoreMode
           open={isStoreMode} onClose={() => setIsStoreMode(false)}
@@ -3056,10 +3058,3 @@ export function SmartCartApp() {
     </main>
   );
 }
-
-
-
-
-
-
-

@@ -1,3 +1,4 @@
+import { agreementsForUser } from "./legal-agreements";
 import { claimGenerationJob, finishGenerationJob } from "./generation-jobs";
 import { generateMealPlan } from "./meal-generation";
 import { loadFeaturePlan } from "./beta-feature-membership";
@@ -23,6 +24,7 @@ export async function processGenerationJob(id: string) {
       await finishGenerationJob(job, "failed", null, "Your Plus access changed before planning started. Start a new plan with your current access. Your unused allowance has been released.", []);
       return;
     }
+    if (!await agreementsForUser(job.user_id)) { await finishGenerationJob(job, "failed", null, "Review current agreements before starting new planning. Your unused allowance has been released.", []); return; }
     const response = await generateMealPlan(job.input, plan, details => usage.push(details));
     const result = await response.json();
     if (response.ok) {

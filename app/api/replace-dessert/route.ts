@@ -1,3 +1,5 @@
+import { requireAgreements } from "@/lib/legal-agreements";
+import { assessDiet } from "@/lib/dietary-safety";
 import OpenAI from "openai";
 import { pilotAIBudget } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
@@ -9,7 +11,7 @@ import { generateValidatedFood } from "@/lib/validated-food-generation";
 export const maxDuration = 150;
 const requestSchema = z.object({
   rejectedDessertTitle: z.string().trim().min(1).max(500), budget: z.number().finite().positive(),
-  diet: z.string().max(1000).optional(), householdSize: z.number().int().positive().max(50).optional(),
+  diet: z.string().max(6000).optional(), householdSize: z.number().int().positive().max(50).optional(),
   combinedPantryItems: z.string().max(15000).default(""),
   mealSourceMode: z.enum(["pantry-and-store", "pantry-only"]).default("pantry-and-store"),
   avoidIngredients: z.string().max(2000).optional(), availableEquipment: z.array(z.string().max(100)).max(20).optional(),
@@ -22,6 +24,7 @@ const responseSchema = z.object({
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 0, timeout: 60000 });
 
 export async function POST(request: Request) {
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 }); }
   const input = requestSchema.safeParse(body);
@@ -47,6 +50,6 @@ Return only JSON: {"title":"string","description":"string","ingredients":[{"name
           ...(value.ingredients.reduce((sum, i) => sum + i.price, 0) > data.budget ? ["Estimated ingredient value exceeds budget"] : [])];
       },
     });
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, dietarySafety: assessDiet(result, data.diet) });
   } catch { return NextResponse.json({ error: "We couldn't find a treat that meets your preferences. Please try again." }, { status: 502 }); }
 }
