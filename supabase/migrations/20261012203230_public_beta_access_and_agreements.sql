@@ -12,10 +12,13 @@ create table public.beta_access_configuration (
 insert into public.beta_access_configuration(singleton) values(true);
 create table public.beta_preserved_accounts (
  user_id uuid primary key references auth.users(id),
- reason text not null check(reason in ('existing_plus_pending_review','contractual_preservation')),
+ reason text not null check(reason in ('existing_plus_pending_review','existing_free_pending_review','contractual_preservation')),
  recorded_at timestamptz not null default clock_timestamp()
 );
 -- Preserve existing verified Plus without pretending it represents payment.
+-- The individually approved existing Free account is preserved by the separately
+-- reviewed UUID-bound operator manifest before either access gate is enabled.
+-- Do not snapshot all Free users or infer eligibility from saved content alone.
 insert into public.beta_preserved_accounts(user_id,reason)
  select p.id,'existing_plus_pending_review' from public.smartcart_profiles p join auth.users u on u.id=p.id
  where p.plan='plus' and u.email_confirmed_at is not null and not coalesce(u.is_anonymous,false);
