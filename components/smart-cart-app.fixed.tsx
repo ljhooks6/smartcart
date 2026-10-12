@@ -5,7 +5,8 @@ import { getMealRequestHeaders } from "../lib/meal-request-headers";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
-import { signInMealCaddieEmail } from "../lib/auth-redirect";
+import { signInMealCaddieEmail, signInMealCaddieGoogle } from "../lib/auth-redirect";
+import { PersonalizedWelcome } from "./account-personalization";
 import { MealCaddieLogo } from "./mealcaddie-logo";
 import { SmartCartGenerationProgress } from "./smart-cart-generation-progress";
 import { useGenerationJob } from "../hooks/use-generation-job";
@@ -1967,18 +1968,8 @@ export function SmartCartApp() {
   }
 
   async function startGoogleLogin() {
-    const redirectTo =
-      typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
-
-    return supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        queryParams: {
-          prompt: "consent select_account",
-        },
-        redirectTo,
-      },
-    });
+    try { return await signInMealCaddieGoogle(supabase.auth, window.location.origin); }
+    catch { return { error: { message: "Please sign in from the official MealCaddie website or protected preview." } }; }
   }
 
   async function handleGoogleLogin() {
@@ -2486,6 +2477,7 @@ export function SmartCartApp() {
 
   return (
       <main className="mealcaddie-surface min-h-screen flex flex-col items-center px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-12 md:pt-8">
+        <PersonalizedWelcome />
         <SmartCartStoreMode
           open={isStoreMode} onClose={() => setIsStoreMode(false)}
           groups={displayGroceriesByCategory} checkedItems={checkedItems} customItems={customItems}

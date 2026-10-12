@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import type { SmartCartPlan } from "../lib/smart-cart-membership";
 import { SmartCartDialog } from "./smart-cart-dialog";
 import Link from "next/link";
+import { PreferredNameEditor } from "./account-personalization";
 
 export function SmartCartAccountDialog({ open, onClose, userEmail, userPlan, betaEnabled, betaExpiresAt, isProfileLoading, isAuthLoading, email, authMessage, onEmailChange, onGoogleLogin, onSwitchGoogleAccount, onLoginSubmit, onSignOut, onUpgrade }: {
   open: boolean; onClose: () => void; userEmail: string; userPlan: SmartCartPlan | null;
@@ -24,6 +25,7 @@ export function SmartCartAccountDialog({ open, onClose, userEmail, userPlan, bet
           <p className="mt-2 break-all text-sm font-semibold">{userEmail}</p>
           <p className="mt-2 text-sm text-ink/65">{isProfileLoading ? "Loading your plan…" : userPlan === "plus" ? "MealCaddie Plus" : "Free plan"}</p>
         </div>
+        <PreferredNameEditor />
         <p className="text-sm leading-6 text-ink/65">Save your week to keep your meals and favorites together across devices.</p>
         {betaEnabled ? <div className="rounded-xl bg-cream p-4"><p>{betaExpiresAt ? `Beta participation ends ${new Date(betaExpiresAt).toLocaleString()}.` : "Beta participation is invitation-only."}</p><Link onClick={onClose} className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/beta/participant">Beta participation and feedback</Link></div> : null}
         {userPlan !== "plus" ? <button type="button" className={buttonClass} onClick={() => { onClose(); void onUpgrade(); }}>Preview MealCaddie Plus</button> : null}

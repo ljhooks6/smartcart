@@ -1,5 +1,5 @@
-import { SmartCartApp } from "@/components/smart-cart-app.fixed";
+import { AuthHome } from "@/components/auth-home";
 
 export default function HomePage() {
-  return <SmartCartApp />;
+  return <AuthHome />;
 }

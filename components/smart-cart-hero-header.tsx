@@ -1,6 +1,7 @@
 "use client";
 
 import { MealCaddieLogo } from "./mealcaddie-logo";
+import { PreferredNameEditor } from "./account-personalization";
 import { FormEvent, useState } from "react";
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 
@@ -120,6 +121,7 @@ export function SmartCartHeroHeader({
                   <div className="mt-4 rounded-2xl bg-cream px-4 py-3 text-sm leading-6 text-ink/70">
                     Your pantry, weekly plan, and vault stay synced here.
                   </div>
+                  <div className="mt-4"><PreferredNameEditor /></div>
                   {userPlan !== "plus" ? (
                     <button
                       className="mt-4 w-full rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"

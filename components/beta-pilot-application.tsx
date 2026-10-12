@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { BetaApplication } from "./beta-application";
 import { MealCaddieLogo } from "./mealcaddie-logo";
+import { signInPath } from "@/lib/auth-destination";
 type Intake = { email: string; application: { status: string; cohort: string | null; beta_consent_at: string } | null };
 export async function pilotAuthorization() {
   const { data, error } = await supabase.auth.getSession();
@@ -29,7 +30,7 @@ export function BetaPilotApplication({ siteKey }: { siteKey: string }) {
     {loading ? <p role="status">Verifying your signed-in participant account…</p> : null}
     {error ? <p role="alert" className="rounded-xl border border-berry/30 bg-white p-4 text-berry">{error}</p> : null}
     {intake?.application ? <section className="rounded-2xl bg-white p-6"><h2 className="text-xl font-bold">Your application is already recorded.</h2><p className="mt-3 break-all">{intake.email}</p><p className="mt-3">Status: {intake.application.status.replace(/_/g, " ")}. Applying does not automatically approve or activate participation.</p><p className="mt-3">For changes or withdrawal, contact <a href="mailto:support@mealcaddie.app" className="underline">support@mealcaddie.app</a>.</p></section> : null}
-    <div className="flex flex-wrap gap-4"><Link href="/" className="inline-flex min-h-12 items-center rounded-xl bg-pine px-4 py-3 font-semibold text-white">MealCaddie / sign in</Link><button disabled={loading} onClick={() => void refresh()} className="min-h-12 rounded-xl border border-pine px-4 py-3 font-semibold disabled:opacity-50">Refresh after sign-in</button></div>
+    <div className="flex flex-wrap gap-4"><Link href={signInPath("/beta/pilot-apply")} className="inline-flex min-h-12 items-center rounded-xl bg-pine px-4 py-3 font-semibold text-white">MealCaddie / sign in</Link><button disabled={loading} onClick={() => void refresh()} className="min-h-12 rounded-xl border border-pine px-4 py-3 font-semibold disabled:opacity-50">Refresh after sign-in</button></div>
     <p className="text-sm">Only the two verified pilot identities can apply here. Public recruitment, invitation sending and participation activation remain separately controlled.</p>
   </div></main>;
 }

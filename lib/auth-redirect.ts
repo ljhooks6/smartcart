@@ -12,7 +12,8 @@ const emailAuthOrigins = new Set([
 
 export function emailAuthRedirect(origin: string) {
   const url = new URL(origin);
-  if (!emailAuthOrigins.has(url.origin) || url.username || url.password ||
+  const isolatedLab = process.env.NODE_ENV !== "production" && ["http://localhost:5501", "http://127.0.0.1:5501"].includes(url.origin);
+  if ((!emailAuthOrigins.has(url.origin) && !isolatedLab) || url.username || url.password ||
       url.pathname !== "/" || url.search || url.hash) {
     throw new Error("Please sign in from the official MealCaddie website or approved preview.");
   }
@@ -26,4 +27,8 @@ type EmailAuthClient = {
 
 export function signInMealCaddieEmail(auth: EmailAuthClient, email: string, origin: string) {
   return auth.signInWithOtp({ email, options: { emailRedirectTo: emailAuthRedirect(origin) } });
+}
+type GoogleAuthClient = { signInWithOAuth: (input: { provider: "google"; options: { redirectTo: string; queryParams: { prompt: string } } }) => Promise<{ error: { message: string } | null }> };
+export function signInMealCaddieGoogle(auth: GoogleAuthClient, origin: string) {
+  return auth.signInWithOAuth({ provider: "google", options: { redirectTo: emailAuthRedirect(origin), queryParams: { prompt: "consent select_account" } } });
 }

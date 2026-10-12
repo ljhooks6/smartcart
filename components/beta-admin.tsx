@@ -59,7 +59,7 @@ export function BetaAdmin() {
     finally { setBusy(false); }
   }
   return <main className="min-h-screen bg-cream px-4 py-6 text-ink sm:px-8"><div className="mx-auto max-w-5xl">
-    <header className="mb-6 flex flex-wrap items-center justify-between gap-4"><MealCaddieLogo /><nav className="flex flex-wrap gap-4 text-sm font-semibold text-pine"><Link className="min-h-11 py-3 underline" href="/">MealCaddie / sign in</Link><Link className="min-h-11 py-3 underline" href="/beta">Application preview</Link></nav></header>
+    <header className="mb-6 flex flex-wrap items-center justify-between gap-4"><MealCaddieLogo /><nav className="flex flex-wrap gap-4 text-sm font-semibold text-pine"><Link className="min-h-11 py-3 underline" href="/auth/sign-in?next=%2Fadmin%2Fbeta">MealCaddie / sign in</Link><Link className="min-h-11 py-3 underline" href="/beta">Application preview</Link></nav></header>
     <h1 className="text-3xl font-bold text-pine">Beta applicants</h1><Link className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/admin/beta/onboarding">Participation, invitations and feedback</Link><p className="mt-2">Cohort assignment reserves a seat. It does not grant access, change billing, or send an email. Move new applicants to Under Review before approving; Reserve candidates stay under review or waitlisted.</p>
     <p role="status" aria-live="polite" className="mt-4 text-pine">{loading ? "Loading administration…" : message}</p><p role="alert" className="mt-2 text-berry">{error}</p>
     {!directory && !loading ? <button className={`${buttonClass} mt-3`} onClick={() => void load()}>Retry after signing in</button> : null}

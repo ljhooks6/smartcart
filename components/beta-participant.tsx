@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { MealCaddieLogo } from "./mealcaddie-logo";
+import { signInPath } from "@/lib/auth-destination";
+import { rememberDestination, saveInvitationReturn, takeInvitationReturn, clearInvitationReturn } from "@/lib/account-client";
 
 export async function betaRequest(path: string, body?: unknown) {
   const { data } = await supabase.auth.getSession();
@@ -39,8 +41,8 @@ export function BetaParticipant({ accept = false, enabled }: { accept?: boolean;
   useEffect(() => {
     const counter = requestVersion;
     if (accept) {
-      const candidate = new URLSearchParams(window.location.hash.slice(1)).get("invite") ?? "";
-      if (/^[A-Za-z0-9_-]{43}$/.test(candidate)) { invitation.current = candidate; setHasInvitation(true); }
+      const candidate = new URLSearchParams(window.location.hash.slice(1)).get("invite") || takeInvitationReturn();
+      if (/^[A-Za-z0-9_-]{43}$/.test(candidate)) { invitation.current = candidate; setHasInvitation(true); saveInvitationReturn(candidate); }
       if (window.location.hash) window.history.replaceState(null, "", window.location.pathname);
     }
     if (enabled) void load();
@@ -54,7 +56,7 @@ export function BetaParticipant({ accept = false, enabled }: { accept?: boolean;
     setBusy(true); setMessage(""); setError("");
     try {
       const result = await betaRequest("/api/beta/onboarding", body); setMessage(result.message);
-      if ((body as { action?: string }).action === "accept") { invitation.current = ""; setHasInvitation(false); }
+      if ((body as { action?: string }).action === "accept") { invitation.current = ""; clearInvitationReturn(); setHasInvitation(false); }
       if ((body as { action?: string }).action === "feedback") { setFeedback(""); feedbackKey.current = null; }
       await load();
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Unable to save. Your input has been kept."); }
@@ -63,7 +65,7 @@ export function BetaParticipant({ accept = false, enabled }: { accept?: boolean;
   const participant = overview?.participation;
   const active = participant && !participant.revoked_at && new Date(participant.expires_at).getTime() > Date.now();
   return <main className="min-h-screen bg-cream px-4 py-6 text-ink"><div className="mx-auto max-w-2xl">
-    <header className="mb-6 flex flex-wrap items-center justify-between gap-3"><MealCaddieLogo /><Link className="min-h-11 py-3 font-semibold text-pine underline" href="/">MealCaddie / sign in</Link></header>
+    <header className="mb-6 flex flex-wrap items-center justify-between gap-3"><MealCaddieLogo /><Link className="min-h-11 py-3 font-semibold text-pine underline" href={signInPath(accept ? "/beta/accept" : "/beta/participant")} onClick={event => { event.preventDefault(); void rememberDestination(accept ? "/beta/accept" : "/beta/participant", invitation.current || undefined).then(() => window.location.assign(signInPath(accept ? "/beta/accept" : "/beta/participant"))).catch(() => setError("We couldn't preserve your invitation. Please retry sign-in.")); }}>MealCaddie / sign in</Link></header>
     <h1 className="text-3xl font-bold text-pine">{accept ? "Your beta invitation" : "Your MealCaddie beta"}</h1>
     <p className="mt-3">Help us make everyday meal planning easier. Participation requires no payment information and creates no subscription.</p>
     <p role="status" aria-live="polite" className="my-3 text-pine">{message}</p><p role="alert" className="my-3 text-berry">{error}</p>

@@ -1,0 +1,21 @@
+# Authentication return and personal accounts
+
+The protected feature/beta-onboarding Preview now has /auth/sign-in?next=<validated path>, /account/setup and owner-only /api/account/profile.
+
+Only exact known application paths are accepted; query strings, fragments, external/encoded URLs, callbacks and duplicate next parameters are rejected or fall back to /. Public /beta remains unauthenticated. Pilot UUID/email checks and every protected route's server authorization remain.
+
+Authentication still uses the existing exact Supabase root redirect for email confirmation, magic links and Google. Before login, POST /api/auth/intent stores the destination in a 30-minute AES-GCM encrypted HttpOnly/Secure/SameSite=Lax cookie, keyed with a domain-separated digest of the existing server BETA_RATE_LIMIT_SECRET. No new key, redirect allowlist, SMTP setting or migration is required. GET requires verified caller identity, validates the decrypted intent and checks pilot/admin availability. It does not consume the intent prematurely during React refresh/Strict Mode; the authenticated client clears it after arrival. No authorization is granted by this cookie.
+
+Invitation tokens are never added to a login or callback URL. Existing email fragment tokens are scrubbed on the acceptance page; an encrypted cookie and short-lived same-origin sessionStorage handoff preserve them across authentication/setup. Token TTL is 30 minutes; invitation expiration and recipient checks still run independently at acceptance. The current flow supports a verification email opened in another tab of the same browser. A different browser/device has no original browser cookie and safely falls back to the home page; reopen the original invitation there. Multiple simultaneous logins in one browser use the latest explicit return intent. No sensitive tokens are logged by these application endpoints.
+
+Preferred names use auth.users user metadata preferred_name and mealcaddie_setup_complete. They are display-only and never used for tiers, ownership, administration or beta grants. /api/account/profile verifies getUser(token), confirmed email and non-anonymous identity, validates only name/skip, and updates Auth through the caller's bearer token and public key. It accepts no target UUID, email, plan or app_metadata and uses no privileged mutation. Supabase merges metadata; existing Google fields and other metadata survive.
+
+Names normalize Unicode/spacing and allow 60 Unicode code points, excluding control/directional formatting and angle brackets. They are rendered as React text. Google given_name/full_name/name can prefill first setup, but saved preferred_name wins and email prefixes are never names. No last-name field or duplicate name table is added.
+
+Recently created accounts (created within one hour and not setup-complete) receive a brief save-or-skip setup, followed by their original destination. Older accounts without names receive an optional dashboard completion link and can use Account immediately, including time-sensitive pilot workflows. Delayed first verification after one hour receives that same optional completion opportunity. Setup completion persists across devices. The first dashboard welcome is consumed once per browser visit after new setup; refresh then uses Welcome back. Existing accounts always receive Welcome back with the saved name or a generic greeting.
+
+Preferred-name editing extends both the desktop account menu and existing mobile Account dialog, with loading, validation focus and success/error announcements. Clearing the name restores the generic greeting. The new screens add no animations; existing reduced-motion behavior remains.
+
+Testing uses the unlinked loopback Auth/mail sink and disposable example.invalid accounts only. Set MEALCADDIE_LOCAL_AUTH_LAB=1 to use .next-auth-lab and avoid sharing a cache with production compilation. Local 5501 callbacks are allowed by code only outside production and are already allowed in the unlinked lab; no shared allowlist was changed.
+
+Production code/release, SMTP, two/hour authentication rate, Stripe, profiles.plan, guest behavior, Formspree, beta applications/consent, invitations and activation gates remain unchanged. Full physical-device and NVDA/VoiceOver/TalkBack checks remain separate release gates.

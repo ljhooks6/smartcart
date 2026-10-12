@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import "./globals.css";
+import { PersonalizationProvider } from "@/components/account-personalization";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://mealcaddie.app"),
@@ -40,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-stone-50 font-body text-ink antialiased">{children}</body>
+      <body className="bg-stone-50 font-body text-ink antialiased"><PersonalizationProvider>{children}</PersonalizationProvider></body>
     </html>
   );
 }
