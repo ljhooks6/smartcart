@@ -1,3 +1,4 @@
+import { currentAgreementsRecorded, legalGateEnabled } from "./legal-agreements";
 import { createHash } from "node:crypto";
 import { betaJson, betaStorageClient, boundedJson } from "./beta-server";
 import { onboardingEnabled, betaEntitlementsEnabled, invitationSendingEnabled, participantAction, adminOnboardingAction, sameOrigin } from "./beta-onboarding-domain";
@@ -63,9 +64,10 @@ export async function participantPost(request: Request) {
   const input = parsed.data;
   if (input.action === "accept" && !betaEntitlementsEnabled()) return betaJson({ error: "Activation is disabled pending release approval." }, 409);
   if (input.action === "accept" && !pilotIdentityAllowed(access.user.id, access.user.email)) return betaJson({ error: "This verified account is not approved for the controlled pilot." }, 403);
+  if (input.action === "accept" && legalGateEnabled() && !await currentAgreementsRecorded(access.user.id)) return betaJson({error:"Review and affirm current beta agreements, then reopen your invitation.",reviewUrl:"/legal/review"},428);
   const rate = await access.client.rpc("beta_onboarding_rate", { p_user: access.user.id, p_kind: input.action === "accept" ? "accept" : input.action === "feedback" ? "feedback" : "settings" });
   if (rate.error) return onboardingError(rate.error);
-  const result = input.action === "accept" ? await access.client.rpc("beta_accept_invitation", { p_user: access.user.id, p_hash: createHash("sha256").update(input.token).digest("hex") }) :
+  const result = input.action === "accept" ? await access.client.rpc(legalGateEnabled() ? "beta_accept_with_agreements" : "beta_accept_invitation", { p_user: access.user.id, p_hash: createHash("sha256").update(input.token).digest("hex") }) :
     input.action === "feedback" ? await access.client.rpc("beta_submit_feedback", { p_user: access.user.id, p_category: input.category, p_feature: input.feature, p_message: input.message, p_key: input.requestKey }) :
     await access.client.rpc("beta_participant_settings", { p_user: access.user.id, p_consent: input.consent, p_withdraw: input.withdraw });
   if (result.error) return onboardingError(result.error);
@@ -73,16 +75,21 @@ export async function participantPost(request: Request) {
 }
 export async function adminGet(request: Request) {
   const access = await onboardingAccess(request, true); if ("response" in access) return access.response;
+  const raw = new URL(request.url).searchParams.get("page") ?? "1";
+  if (!/^[1-9]\d{0,3}$/.test(raw)) return betaJson({error:"Invalid page."},400);
+  const page=Number(raw),offset=(page-1)*50;
   const results = await Promise.all([
-    access.client.from("beta_invitations").select("id,application_id,state,created_at,issued_at,expires_at,consumed_at,revoked_at,beta_applications(email,cohort)").order("created_at", { ascending: false }).limit(100),
-    access.client.from("beta_invitation_deliveries").select("invitation_id,status,provider_id,attempted_at,updated_at,error_code").order("updated_at", { ascending: false }).limit(100),
-    access.client.from("beta_participations").select("id,user_id,cohort,activated_at,expires_at,revoked_at,withdrawn_at,engagement_consent,beta_applications(email)").order("activated_at", { ascending: false }).limit(100),
-    access.client.from("beta_feedback").select("id,participation_id,category,feature,message,status,admin_note,created_at,updated_at").order("created_at", { ascending: false }).limit(100),
-    access.client.from("beta_engagement_daily").select("participation_id,day,action,total").order("day", { ascending: false }).limit(200),
+    access.client.from("beta_invitations").select("id,application_id,state,created_at,issued_at,expires_at,consumed_at,revoked_at,beta_applications(email,cohort)",{count:"exact"}).order("created_at", { ascending: false }).order("id").range(offset,offset+49),
+    access.client.from("beta_participations").select("id,user_id,cohort,activated_at,expires_at,revoked_at,withdrawn_at,engagement_consent,beta_applications(email)",{count:"exact"}).order("activated_at", { ascending: false }).order("id").range(offset,offset+49),
+    access.client.from("beta_feedback").select("id,participation_id,category,feature,message,status,admin_note,created_at,updated_at",{count:"exact"}).order("created_at", { ascending: false }).order("id").range(offset,offset+49),
+    access.client.from("beta_engagement_daily").select("participation_id,day,action,total",{count:"exact"}).order("day", { ascending: false }).order("participation_id").order("action").range(offset,offset+49),
     access.client.from("beta_programs").select("wave_size,participation_limit_at,participation_days,onboarding_enabled,invitation_delivery_enabled").eq("slug", "public-beta").single(),
   ]);
   const failed = results.find(result => result.error); if (failed?.error) return onboardingError(failed.error);
-  return betaJson(Object.fromEntries(["invitations", "deliveries", "participants", "feedback", "engagement", "program"].map((name, i) => [name, results[i].data])));
+  const ids=(results[0].data ?? []).map(item=>item.id);
+  const deliveries=ids.length ? await access.client.from("beta_invitation_deliveries").select("invitation_id,status,provider_id,attempted_at,updated_at,error_code").in("invitation_id",ids) : {data:[],error:null};
+  if(deliveries.error)return onboardingError(deliveries.error);
+  return betaJson({invitations:results[0].data,deliveries:deliveries.data,participants:results[1].data,feedback:results[2].data,engagement:results[3].data,program:results[4].data,page,pageSize:50,hasMore:results.slice(0,4).some(result=>(result.count ?? 0)>offset+50),totals:{invitations:results[0].count,participants:results[1].count,feedback:results[2].count,engagement:results[3].count}});
 }
 export async function adminPost(request: Request) {
   const access = await onboardingAccess(request, true); if ("response" in access) return access.response;

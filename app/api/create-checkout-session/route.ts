@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { productGateEnabled } from "@/lib/product-access";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 
 import { fetchLatestSubscriptionForUser } from "@/lib/smart-cart-billing";
@@ -15,6 +16,7 @@ function getBaseUrl(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if(productGateEnabled())return NextResponse.json({error:"Paid subscriptions are not available during this invitation-only beta. Beta participation requires no payment."},{status:403});
   const match = /^Bearer ([^\s]+)$/i.exec(request.headers.get("authorization") ?? "");
   if (!match) return NextResponse.json({ error: "Please sign in before upgrading." }, { status: 401 });
   let userId: string; let email: string; let plan: string;

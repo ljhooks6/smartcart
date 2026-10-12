@@ -1,3 +1,5 @@
+import { foodSafetyResponse } from "@/lib/food-safety-response";
+import { requireProductAccess } from "@/lib/product-access";
 import { requireAgreements } from "@/lib/legal-agreements";
 import { assessDiet, allergyConflicts } from "@/lib/dietary-safety";
 import { getRequestMembership } from "@/lib/server-membership";
@@ -187,6 +189,7 @@ function isTooSimilarToRejectedMeal(rejectedTitle: string, replacementTitle: str
 }
 
 export async function POST(request: Request) {
+  const productResponse = await requireProductAccess(request); if (productResponse) return productResponse;
   const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let body: unknown;
 
@@ -248,6 +251,7 @@ export async function POST(request: Request) {
 
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const safetyResponse=foodSafetyResponse({diet,avoidIngredients},true);if(safetyResponse)return safetyResponse;
   const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const isPremiumReplacement = membership.plan === "plus";
   const cuisinePreference = isPremiumReplacement && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";

@@ -1,0 +1,22 @@
+{
+  "version": "2026-10-12-draft-v2",
+  "activated": false,
+  "documents": {
+    "terms": {
+      "title": "Terms of Service — counsel review draft",
+      "sha256": "fc6d8d7d62914f7a4ab8eed88f9ac57e301ab9dd305005d86ed33605d989ec88"
+    },
+    "privacy": {
+      "title": "Privacy Policy update — counsel review draft",
+      "sha256": "3863d478ad3e573557e0582a54b4284915bf50cc6e72dccffdf47b6495b152f1"
+    },
+    "safety": {
+      "title": "Food Allergy and Dietary Safety Notice — counsel review draft",
+      "sha256": "009881efcd0bd35bd96823ff7bb83c6e4bc002c937b3595d5e9100639b6f228d"
+    },
+    "beta": {
+      "title": "Beta Participation Agreement — counsel review draft",
+      "sha256": "cb028b1af647b92ed65a185d396e602c559574c8e0082835eeccee1999a814d1"
+    }
+  }
+}

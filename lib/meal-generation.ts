@@ -1,3 +1,4 @@
+import { foodSafetyResponse } from "./food-safety-response";
 import { assessDiet, allergyConflicts, ingredientTexts } from "@/lib/dietary-safety";
 import OpenAI from "openai";
 import { pilotAIBudget } from "./beta-pilot-ai";
@@ -449,6 +450,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     );
   }
 
+  const safetyResponse=foodSafetyResponse({diet,avoidIngredients},true);if(safetyResponse)return safetyResponse;
   const isPlusGeneration = plan === "plus";
   const cuisinePreference = isPlusGeneration && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 

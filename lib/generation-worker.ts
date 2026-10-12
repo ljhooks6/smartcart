@@ -1,3 +1,4 @@
+import { productAccessForUser, productGateEnabled } from "./product-access";
 import { agreementsForUser } from "./legal-agreements";
 import { claimGenerationJob, finishGenerationJob } from "./generation-jobs";
 import { generateMealPlan } from "./meal-generation";
@@ -16,6 +17,7 @@ export async function processGenerationJob(id: string) {
   const usage: unknown[] = [];
   let plan: "free" | "plus" = "free";
   try {
+    if (!(await productAccessForUser(job.user_id)).allowed) { await finishGenerationJob(job,"failed",null,"Your product access ended before planning started. Your unused allowance has been released.",[]);return; }
     if (job.user_id) {
       plan = await loadFeaturePlan(job.user_id);
     }
@@ -28,6 +30,7 @@ export async function processGenerationJob(id: string) {
     const response = await generateMealPlan(job.input, plan, details => usage.push(details));
     const result = await response.json();
     if (response.ok) {
+      if (productGateEnabled() && (!(await productAccessForUser(job.user_id)).allowed || (job.user_id && !operationAllowed(job.plan,await loadFeaturePlan(job.user_id))))) { await finishGenerationJob(job,"failed",null,"Your access changed during planning. The result was withheld; existing saved content is unchanged.",usage);return; }
       await finishGenerationJob(job, "completed", result, null, usage);
       if (job.user_id) await recordPlanEngagement(job.user_id, job.id);
       console.info("Meal planning completed", { jobId: job.id, plan, providerCalls: usage.length });

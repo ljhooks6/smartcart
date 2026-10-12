@@ -1,3 +1,5 @@
+import { foodSafetyResponse } from "@/lib/food-safety-response";
+import { requireProductAccess } from "@/lib/product-access";
 import { requireAgreements } from "@/lib/legal-agreements";
 import { assessDiet, ingredientTexts } from "@/lib/dietary-safety";
 import { NextResponse } from "next/server";
@@ -84,6 +86,7 @@ const mockMealPlan = {
 };
 
 export async function POST(request: Request) {
+  const productResponse = await requireProductAccess(request); if (productResponse) return productResponse;
   const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let payload: unknown;
 
@@ -108,6 +111,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const safetyResponse=foodSafetyResponse(parsedRequest.data,true);if(safetyResponse)return safetyResponse;
   const parsedResponse = mealPlanResponseSchema.safeParse(mockMealPlan);
 
   if (!parsedResponse.success) {

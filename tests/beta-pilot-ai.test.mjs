@@ -15,6 +15,7 @@ test('pilot AI rate-limit failures fail closed before a provider request',async(
  for(const result of [{data:null,error:{message:'unavailable'}},{data:null,error:null}]){const api=loader({'supabase-admin':{getSupabaseAdminClient:()=>({rpc:async()=>result})}})('lib/beta-pilot-ai.ts');assert.equal((await api.pilotAIBudget({})).status,503);}
 }));
 test('all provider-starting features include the pilot gate, while token and transport bounds remain present',()=>{
- for(const file of ['lib/meal-generation.ts','app/api/get-recipe/route.ts','app/api/replace-meal/route.ts','app/api/replace-dessert/route.ts','app/api/consolidate-ingredients/route.ts'])assert.match(readFileSync(file,'utf8'),/await pilotAIBudget\(body\)/);
- assert.match(readFileSync('app/api/consolidate-ingredients/route.ts','utf8'),/max_completion_tokens: 2000/);
+ for(const file of ['lib/meal-generation.ts','app/api/get-recipe/route.ts','app/api/replace-meal/route.ts','app/api/replace-dessert/route.ts'])assert.match(readFileSync(file,'utf8'),/await pilotAIBudget\(body\)/);
+ assert.doesNotMatch(readFileSync('app/api/consolidate-ingredients/route.ts','utf8'),/OpenAI|pilotAIBudget/);
+ assert.match(readFileSync('app/api/consolidate-ingredients/route.ts','utf8'),/FOOD_TRANSFORMATION_RESTRICTED/);
 });

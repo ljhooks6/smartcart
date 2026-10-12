@@ -1,3 +1,5 @@
+import { foodSafetyResponse } from "@/lib/food-safety-response";
+import { requireProductAccess } from "@/lib/product-access";
 import { requireAgreements } from "@/lib/legal-agreements";
 import { assessDiet } from "@/lib/dietary-safety";
 import OpenAI from "openai";
@@ -24,6 +26,7 @@ const responseSchema = z.object({
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 0, timeout: 60000 });
 
 export async function POST(request: Request) {
+  const productResponse = await requireProductAccess(request); if (productResponse) return productResponse;
   const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 }); }
@@ -33,6 +36,7 @@ export async function POST(request: Request) {
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
   const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "Recipe service is unavailable." }, { status: 503 });
+  const safetyResponse=foodSafetyResponse(input.data,true);if(safetyResponse)return safetyResponse;
   const data = input.data;
   const system = `You are a precise, creative dessert planner replacing one rejected dessert.
 Return exactly one practical dessert for the requested household, changing category or flavor when possible. Obey diet, excluded ingredients, available equipment, and prep-time preference. Do not suggest excluded ingredients, optional additions, or unavailable appliances.

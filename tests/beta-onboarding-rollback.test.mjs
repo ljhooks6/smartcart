@@ -7,7 +7,7 @@ test('empty-only rollback restores the exact original storage helper and allows 
  const db=await fixture();try{
  const original=readFileSync('supabase/migrations/20261011062506_secure_pantry_vault_limits.sql','utf8').match(/as \$\$([\s\S]*?)\$\$;/)[1];
  await root(db);await db.exec(rollback);
- assert.equal((await db.query("select prosrc from pg_proc where proname='storage_plan'")).rows[0].prosrc,original);
+ assert.equal((await db.query("select prosrc from pg_proc where proname='storage_plan'")).rows[0].prosrc.replace(/\r\n/g,'\n'),original.replace(/\r\n/g,'\n'));
  assert.equal((await db.query("select count(*) n from smartcart_profiles")).rows[0].n,5);
  await db.exec(readFileSync('supabase/migrations/20261011153040_beta_onboarding.sql','utf8'));
  assert.equal((await db.query("select onboarding_enabled from beta_programs")).rows[0].onboarding_enabled,false);

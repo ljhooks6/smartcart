@@ -92,7 +92,7 @@ export function BetaParticipant({ accept = false, enabled }: { accept?: boolean;
       <h2 className="text-xl font-semibold text-pine">This account matches your beta invitation.</h2>
       <p>{review.cohort === "plus" ? "Temporary Plus Beta" : "Free Beta"} · 30 days from acceptance, capped by the program end date.</p>
       {review.cohort === "plus" ? <p>Plus privileges are temporary and expire automatically. Your stored Free plan and saved content remain unchanged.</p> : null}
-      <p>The personal link expires seven days after issuance. Do not forward it. Signing in does not automatically accept it.</p>
+      <p>The personal link expires seven days after issuance. Do not forward it. Signing in does not automatically accept it.</p><p><Link href="/legal/review" className="min-h-11 inline-block py-3 text-pine underline">Review proposed agreements</Link>. New participants will affirm the current versions before activation when the separately approved agreement gate is enabled.</p>
       <form onSubmit={event => { event.preventDefault(); void change({ action: "accept", token: invitation.current, consent }); }}>
         <label className="flex items-start gap-3 py-3"><input type="checkbox" required checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-1 h-5 w-5" /><span>I agree to beta participation and have read the <Link href="/beta/privacy" className="text-pine underline">privacy notice</Link>. Optional analytics and marketing are separate choices.</span></label>
         <button className={button} disabled={!enabled || !hasInvitation || !consent || busy}>{busy ? "Checking…" : "Accept invitation"}</button>

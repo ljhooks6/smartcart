@@ -1,10 +1,10 @@
 # Terms of Service — counsel review draft
 
-Version: 2026-10-12-draft-v1
+Version: 2026-10-12-draft-v2
 
-**Requires qualified counsel review before production use. Not activated.**
+REVIEW DRAFT — not activated; requires attorney review and separate rollout approval.
 
-These proposed terms are not activated. MealCaddie's legal operator, address, service territory, minimum age, effective date and governing law must be completed and reviewed before rollout. Contact support@mealcaddie.app.
+These proposed terms are not activated. MealCaddie is the product name. Legal operator: [pending ownership and registration verification]. Hooks Legacy LLC is the intended parent-company structure, not a confirmed operator. Address, service territory, minimum age and effective date require review. Contact support@mealcaddie.app.
 
 MealCaddie assists with meal planning, recipe suggestions, pantry and shopping organization. AI output can be incomplete, inaccurate or unsuitable. It is not medical, nutritional treatment or emergency advice. Do not use it to determine treatment, diagnosis, medication interactions or suitability for a medical condition.
 
@@ -16,6 +16,8 @@ Free, paid Plus and temporary beta access are distinct. Temporary beta access re
 
 Proposed warranties and liability provisions: services are provided subject to the warranties and mandatory rights applicable in each jurisdiction. Counsel should define any reasonable, enforceable limitation of damages and monetary cap after reviewing business facts and consumer law. This draft does not waive liability for bodily injury, negligence or claims that cannot lawfully be excluded.
 
-Disputes: contact support@mealcaddie.app for informal resolution without restricting legal remedies or limitation periods. Governing law, venue, arbitration and class-action terms are deliberately unresolved; counsel must select lawful provisions and appropriate notice/consent. No mandatory arbitration or class waiver is activated.
+Proposed governing law: Texas, United States, subject to attorney review and mandatory consumer rights that may apply where you live. Contact support@mealcaddie.app for informal resolution without restricting legal remedies or limitation periods. Venue and dispute procedures require counsel review. No mandatory arbitration or class waiver is activated.
 
-Access restrictions, account closure, content export, deletion requests and material terms updates need a documented notice and appeal process. Declining new terms must not silently delete existing accounts, subscriptions or content. Any future acceptance gate requires legal review and separate rollout approval.
+Request account access/export, correction or deletion through your verified account privacy page or support@mealcaddie.app. Support verifies ownership and scope before acting. Beta withdrawal is separate and removes temporary privileges without deleting content. Existing Plus access is preserved pending administrator review; a stored Plus label does not establish payment. Declining proposed agreements does not delete content or alter current access. New participants will need affirmative agreement only after legal and rollout approval.
+
+You retain your rights in input and saved content. You permit necessary processing to operate and secure the service; no unrestricted resale or marketing license is proposed. AI output may resemble others' output and is not guaranteed unique or copyrightable. You are responsible for reviewing suggestions and avoiding unlawful or harmful use. Service changes, suspension for misuse and material terms updates need proportionate notice and an appeal/contact route; counsel must review these provisions.

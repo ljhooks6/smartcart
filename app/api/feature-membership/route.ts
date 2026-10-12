@@ -1,8 +1,10 @@
+import { requireProductAccess } from "@/lib/product-access";
 import { getRequestMembership } from "@/lib/server-membership";
 import { betaStorageClient, betaJson } from "@/lib/beta-server";
 import { betaEntitlementsEnabled, onboardingEnabled } from "@/lib/beta-onboarding-domain";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
+  const denied=await requireProductAccess(request);if(denied)return denied;
   const membership = await getRequestMembership(request);
   if ("status" in membership) return betaJson({ error: membership.error }, membership.status);
   let expiresAt: string | null = null;

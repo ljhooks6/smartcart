@@ -1,4 +1,4 @@
-const destinations = new Set(["/", "/beta/pilot-apply", "/beta/accept", "/beta/participant", "/admin/beta", "/admin/beta/onboarding"]);
+const destinations = new Set(["/", "/planner", "/account/privacy", "/legal/review", "/beta/pilot-apply", "/beta/accept", "/beta/participant", "/admin/beta", "/admin/beta/onboarding"]);
 export function authDestination(value: unknown): string {
   return typeof value === "string" && destinations.has(value) ? value : "/";
 }

@@ -1,14 +1,14 @@
 # Food Allergy and Dietary Safety Notice — counsel review draft
 
-Version: 2026-10-12-draft-v1
+Version: 2026-10-12-draft-v2
 
-**Requires qualified counsel review before production use. Not activated.**
+REVIEW DRAFT — not activated; requires attorney review and separate rollout approval.
 
 MealCaddie uses AI and limited ingredient-name rules. It cannot eliminate every allergy risk, determine every ingredient's composition or verify preparation conditions. A result is never guaranteed suitable, allergen-free or medically safe.
 
 Food allergies, intolerances, preferences and medically related restrictions are different. Confirm your allergy controls separately; original free-text entries are preserved without automatic classification. Custom allergies and unfamiliar aliases may not be recognized.
 
-Known recognized conflicts are blocked from generated results. Missing ingredients, mixed foods, substitutions and uncertain product composition are flagged for review. No known conflict detected means only that the current rules found no recognized conflict in the provided text; it is not a safety determination.
+Allergy-dependent, free-from, intolerance and unclassified dietary AI generation is temporarily refused before provider calls. AI ingredient rewriting is also restricted. Do not remove an actual restriction to obtain a result. Preview ingredient review is advisory and does not override this fail-closed restriction or establish product composition. Ordinary permitted preferences do not certify allergy suitability.
 
 Independently check every package ingredient list, manufacturer information, advisory warning, substitution and preparation condition, including cross-contact. A gluten-free or plant-based claim does not necessarily satisfy an allergy restriction. Do not rely on an ingredient's name alone.
 
