@@ -1,3 +1,4 @@
+import { allergySafetyResponse } from "@/lib/allergy-safety";
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "Recipe service is unavailable." }, { status: 503 });
+  const safetyResponse = allergySafetyResponse(input.data, true); if (safetyResponse) return safetyResponse;
   const data = input.data;
   const system = `You are a precise, creative dessert planner replacing one rejected dessert.
 Return exactly one practical dessert for the requested household, changing category or flavor when possible. Obey diet, excluded ingredients, available equipment, and prep-time preference. Do not suggest excluded ingredients, optional additions, or unavailable appliances.

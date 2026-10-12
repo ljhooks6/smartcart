@@ -1,3 +1,4 @@
+import { allergySafetyResponse } from "@/lib/allergy-safety";
 import { NextResponse } from "next/server";
 
 import {
@@ -105,6 +106,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const safetyResponse = allergySafetyResponse(parsedRequest.data, true); if (safetyResponse) return safetyResponse;
   const parsedResponse = mealPlanResponseSchema.safeParse(mockMealPlan);
 
   if (!parsedResponse.success) {

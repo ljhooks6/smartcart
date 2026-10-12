@@ -1,3 +1,4 @@
+import { allergySafetyResponse } from "@/lib/allergy-safety";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generationIdentity } from "@/lib/generation-identity";
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     input = generationRequestSchema.safeParse(JSON.parse(text));
   } catch { return reply({ error: "Request body must be valid JSON." }, 400); }
   if (!input.success) return reply({ error: "Check your budget, household size, pantry, and planning preferences." }, 400);
+  const safetyResponse = allergySafetyResponse(input.data, true); if (safetyResponse) return safetyResponse;
   const key = z.string().uuid().safeParse(request.headers.get("Idempotency-Key"));
   if (!key.success) return reply({ error: "Please refresh MealCaddie before generating a plan." }, 400);
   try {
@@ -52,6 +54,8 @@ export async function GET(request: Request) {
     if (job?.status === "queued") {
       try { await dispatchGenerationJob(job.id); } catch { /* Retry on a later poll. */ }
     }
+    const safetyResponse = job ? allergySafetyResponse(job.input, true) : null;
+    if (safetyResponse) return safetyResponse;
     return reply({ job: job ? publicGenerationJob(job) : null }, 200, identity.cookie);
   } catch { return reply({ error: "We couldn't check your plan. Your saved request is safe; please try again." }, 503, null, 15); }
 }

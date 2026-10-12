@@ -1,3 +1,4 @@
+import { allergySafetyResponse } from "@/lib/allergy-safety";
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -449,6 +450,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
   const isPlusGeneration = plan === "plus";
   const cuisinePreference = isPlusGeneration && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 
+  const safetyResponse = allergySafetyResponse({ diet, avoidIngredients }, true); if (safetyResponse) return safetyResponse;
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
