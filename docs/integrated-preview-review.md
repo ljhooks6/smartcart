@@ -1,0 +1,15 @@
+# Integrated protected Preview candidate
+
+All nine conflicts with production main 95fe3fc were resolved on feature/public-beta-readiness only. The exact production allergy-safety module is unchanged. All food endpoints retain its fail-closed server behavior through the narrow validated adapter; ingredient consolidation remains restricted. Both production visible safety notices were restored alongside structured dietary controls and the personalized welcome. Auto-merged duplicate guard calls in replacement/generation were removed in favor of the single tested adapter call.
+
+227/227 tests, lint, build and TypeScript pass (TypeScript separately rerun after build). No main merge, shared schema/configuration write, participant activation, email or production deployment. The six already-recorded migrations remain unchanged. The new migration and selected Free preservation manifest are still unapplied; preservation is proven in disposable PostgreSQL, not claimed live in this Preview's new eligibility RPC.
+
+Read-only predeploy baseline: users/profiles 4, subscriptions 0, vault 10, pantry 116, weekly rows 109, invitations 2, participation 1. Profile ID/plan fingerprint 229565ff2200de827f65a3a4bf8c0598. New preservation table absent.
+
+Project protection: Vercel Authentication enabled, all_except_custom_domains. Use this candidate's standard vercel.app branch and deployment aliases. Branch-only product access true; submissions, onboarding, entitlement activation, invitation/test email delivery and all agreement recording/enforcement flags false. No flags or domain bindings were changed for deployment. The original preview.mealcaddie.app pilot remains on its existing beta-onboarding deployment.
+
+Because shared migration execution is prohibited, a signed-in live preservation lookup is intentionally unavailable/fails closed here. Do not weaken this restriction or use the real pending invitation to mutate shared participation. Successful application/redemption/preservation/legal paths are verified in isolated tests. Live browser review checks the public disabled form, safe invitation state, denied planner, draft acknowledgment screen and responsive/keyboard behavior. Physical screen-reader release certification remains a separate gate.
+
+Operator clarification: Hooks Legacy LLC is intended and registration pending. Accurate current-operator publication alternative is prepared in docs/legal/operator-publication-review.md, awaiting the owner's identity details/approval. Registration does not block technical work.
+
+The integration conflict gate in docs/public-beta-release-sequence.md is now resolved for this candidate. That document remains the consolidated database/deployment/activation plan; reverify its exact heads/checksum before future production approval. No approvals for production, applications, emails or shared gates are implied by this protected deployment.

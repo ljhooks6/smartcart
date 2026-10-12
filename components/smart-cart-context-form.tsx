@@ -240,6 +240,7 @@ export function SmartCartContextForm({
           </div>
         </div>
 
+        <p role="note" className="text-sm text-ink">Allergy-dependent or free-from AI generation is temporarily restricted. Keep actual restrictions entered; do not remove them to obtain a plan. Verify ingredients, labels and cross-contact independently. Saved content is not certified safe.</p>
         <DietarySettings value={formState.diet} onChange={onDietChange} />
 
         <label className="space-y-2">
