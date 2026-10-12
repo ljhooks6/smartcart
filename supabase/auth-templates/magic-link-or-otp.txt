@@ -1,0 +1,14 @@
+MealCaddie
+
+Your meal plans are waiting
+
+Use this secure link to sign in to MealCaddie.
+
+Sign in to MealCaddie:
+{{ .ConfirmationURL }}
+
+This link expires and can be used only once. Request a new message if it has expired. Use only your latest message.
+
+If you did not request this email, you can ignore it. Never share your sign-in link.
+
+Need help? Contact support@mealcaddie.app.

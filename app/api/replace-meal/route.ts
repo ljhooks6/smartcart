@@ -1,6 +1,10 @@
-import { allergySafetyResponse } from "@/lib/allergy-safety";
+import { foodSafetyResponse } from "@/lib/food-safety-response";
+import { requireProductAccess } from "@/lib/product-access";
+import { requireAgreements } from "@/lib/legal-agreements";
+import { assessDiet, allergyConflicts } from "@/lib/dietary-safety";
 import { getRequestMembership } from "@/lib/server-membership";
 import OpenAI from "openai";
+import { pilotAIBudget } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -185,6 +189,8 @@ function isTooSimilarToRejectedMeal(rejectedTitle: string, replacementTitle: str
 }
 
 export async function POST(request: Request) {
+  const productResponse = await requireProductAccess(request); if (productResponse) return productResponse;
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let body: unknown;
 
   try {
@@ -245,10 +251,11 @@ export async function POST(request: Request) {
 
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const safetyResponse=foodSafetyResponse({diet,avoidIngredients},true);if(safetyResponse)return safetyResponse;
+  const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const isPremiumReplacement = membership.plan === "plus";
   const cuisinePreference = isPremiumReplacement && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 
-  const safetyResponse = allergySafetyResponse({ diet, avoidIngredients }, true); if (safetyResponse) return safetyResponse;
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
@@ -321,7 +328,7 @@ export async function POST(request: Request) {
       ];
       const blockedMatches = dietaryPreferences.blockedIngredients.filter((blocked) =>
         replacementHaystacks.some((value) => value.includes(blocked)),
-      );
+      ).concat(allergyConflicts(candidate, diet));
       const avoidedMatches = avoidanceGuidance.avoidedItems.filter((blocked) =>
         replacementHaystacks.some((value) => value.includes(blocked)),
       );
@@ -399,7 +406,9 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(parsed);
+    const dietarySafety = assessDiet(parsed, diet);
+    if (dietarySafety.conflicts.length) return NextResponse.json({ error: "Known allergy conflict detected. Choose Replace again to generate another meal.", dietarySafety }, { status: 422 });
+    return NextResponse.json({ ...parsed, dietarySafety });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

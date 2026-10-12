@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 
 import "./globals.css";
+import { PersonalizationProvider } from "@/components/account-personalization";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://mealcaddie.vercel.app"),
+  metadataBase: new URL("https://mealcaddie.app"),
   title: "MealCaddie | Meal & Grocery Planning Helper",
   description:
     "MealCaddie helps plan, organize, and shop for calmer weeks around your pantry, budget, time, and dietary needs.",
   manifest: "/manifest.webmanifest",
   openGraph: {
+    siteName: "MealCaddie",
     title: "MealCaddie | Pick the meals. Carry less of the week.",
     description:
       "Plan dinner, organize groceries, and come back to your week without starting over.",
@@ -39,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-stone-50 font-body text-ink antialiased">{children}</body>
+      <body className="bg-stone-50 font-body text-ink antialiased"><PersonalizationProvider>{children}</PersonalizationProvider></body>
     </html>
   );
 }

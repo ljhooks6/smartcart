@@ -1,5 +1,9 @@
-import { allergySafetyResponse } from "@/lib/allergy-safety";
+import { foodSafetyResponse } from "@/lib/food-safety-response";
+import { requireProductAccess } from "@/lib/product-access";
+import { requireAgreements } from "@/lib/legal-agreements";
+import { assessDiet } from "@/lib/dietary-safety";
 import OpenAI from "openai";
+import { pilotAIBudget } from "@/lib/beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { formatRecipeIngredients } from "@/lib/recipe-ingredients";
@@ -12,7 +16,7 @@ export const maxDuration = 150;
 const recipeRequestSchema = z.object({
   mealTitle: z.string().trim().min(1),
   mealNotes: z.string().max(10000).optional(),
-  diet: z.string().max(1000).optional(),
+  diet: z.string().max(6000).optional(),
   avoidIngredients: z.string().max(2000).optional(),
   availableEquipment: z.array(z.string().max(100)).max(20).optional(),
   servings: z.number().int().positive().optional(),
@@ -34,6 +38,8 @@ const openai = new OpenAI({
 });
 
 export async function POST(request: Request) {
+  const productResponse = await requireProductAccess(request); if (productResponse) return productResponse;
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let body: unknown;
 
   try {
@@ -55,7 +61,8 @@ export async function POST(request: Request) {
   const { mealTitle, mealNotes, servings, ingredients, diet, avoidIngredients, availableEquipment } = requestResult.data;
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
-  const safetyResponse = allergySafetyResponse({ diet, avoidIngredients }, true); if (safetyResponse) return safetyResponse;
+  const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
+  const safetyResponse = foodSafetyResponse({diet,avoidIngredients},true);if(safetyResponse)return safetyResponse;
   const preferences = { diet, avoidIngredients, availableEquipment };
   if (ingredients && ingredientViolations(ingredients.map(i => i.name), preferences).length) return NextResponse.json({ error: "This saved meal conflicts with your current dietary preferences. Replace the meal or update your preferences first." }, { status: 422 });
   const ingredientLines = ingredients ? formatRecipeIngredients(ingredients) : undefined;
@@ -109,6 +116,7 @@ Planned ingredients: ${ingredientLines ? JSON.stringify(ingredientLines) : "No s
       validate: value => recipeViolations(value, ingredients, preferences),
     });
     return NextResponse.json({
+      dietarySafety: assessDiet([...parsed.ingredients, ...parsed.steps], diet),
       ...parsed,
       // Preserve the stored plan exactly, even if the model rewrites its list.
       ingredients: ingredientLines ?? parsed.ingredients,

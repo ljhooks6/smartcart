@@ -1,0 +1,41 @@
+{
+  "templates": {
+    "magic-link-or-otp": {
+      "subject": "Your Magic Link",
+      "body": "<h2>Magic Link</h2>\r\n\r\n<p>Follow this link to login:</p>\r\n<p><a href=\"{{ .ConfirmationURL }}\">Log In</a></p>",
+      "bodySha256": "cd2526ef500fee202dfe92ea597b52d1d47f8b2446069e8a7a9899fabefa2271"
+    },
+    "confirm-sign-up": {
+      "subject": "Confirm Your Signup",
+      "body": "<h2>Confirm your signup</h2>\r\n\r\n<p>Follow this link to confirm your user:</p>\r\n<p><a href=\"{{ .ConfirmationURL }}\">Confirm your mail</a></p>",
+      "bodySha256": "ef22a29055ac8ef7dcae6599819582cbc1a2e58d4ba0527b2f5d0731f820d558"
+    },
+    "invite-user": {
+      "subject": "You have been invited",
+      "body": "<h2>You have been invited</h2>\r\n\r\n<p>You have been invited to create a user on {{ .SiteURL }}. Follow this link to accept the invite:</p>\r\n<p><a href=\"{{ .ConfirmationURL }}\">Accept the invite</a></p>",
+      "bodySha256": "8cb9e480d4531c75033c00ad048a53824c24c4bb264976cdb730aa4accd4bf68"
+    },
+    "change-email-address": {
+      "subject": "Confirm Email Change",
+      "body": "<h2>Confirm Change of Email</h2>\r\n\r\n<p>Follow this link to confirm the update of your email from {{ .Email }} to {{ .NewEmail }}:</p>\r\n<p><a href=\"{{ .ConfirmationURL }}\">Change Email</a></p>",
+      "bodySha256": "d95e49c16e837489a7da4d8758362c5b291bec9bf046c2d792b014012041a025"
+    },
+    "reset-password": {
+      "subject": "Reset Your Password",
+      "body": "<h2>Reset Password</h2>\r\n\r\n<p>Follow this link to reset the password for your user:</p>\r\n<p><a href=\"{{ .ConfirmationURL }}\">Reset Password</a></p>",
+      "bodySha256": "ea6d37da8c3954575fa1f783e7d3cd0716edf2a247651765ca206266dd60e4f6"
+    },
+    "reauthentication": {
+      "subject": "Confirm Reauthentication",
+      "body": "<h2>Confirm reauthentication</h2>\r\n\r\n<p>Enter the code: {{ .Token }}</p>",
+      "bodySha256": "82e1d7940b96ce01ba5ad0c757e21aca27127c343b961f7d19faa947fd0f69cf"
+    }
+  },
+  "project": "mwxvorzrausbnqzjrhqm",
+  "status": "six-source-bodies-captured-and-six-subjects-complete",
+  "captureMethod": "Visible source editor selected/copied without editing; clipboard line endings retained.",
+  "ownerConfirmedSubjects": [
+    "invite-user",
+    "change-email-address"
+  ]
+}

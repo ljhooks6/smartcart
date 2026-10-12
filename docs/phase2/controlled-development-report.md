@@ -1,0 +1,31 @@
+# MealCaddie controlled development outcome
+
+## Completed
+
+- Email sign-in supplies the exact current approved origin as emailRedirectTo. Preview uses https://preview.mealcaddie.app/ and production uses https://mealcaddie.app/. Unknown origins/paths are rejected. The production Site URL and allowlist were not changed. Google OAuth and default new-user email signup are unchanged. Real supabase-js request tests use mocked transport, so no authentication email was sent.
+- Owner-approved pantry/vault rules are documented and implemented as an **unapplied** database migration: Free five vault slots, unrestricted Plus vault, Plus pantry writes, owner reads/deletes and existing vault edits preserved after downgrade. Protected profile entitlements, confirmed non-anonymous identity, immutable ownership, atomic counters and profile locks enforce direct writes/RPCs. Existing client error handling preserves drafts/recipes and displays denial. Weekly history does not consume vault slots.
+- Eight isolated PostgreSQL regressions cover direct table roles, cap/bulk rollback, spoofed claims, identity/ownership, upgrade/downgrade, upserts, pantry RPC atomicity and reviewed rollback. The full suite passed **131 tests**; build, lint/type checks and diff checks passed. The final timeout-only migration adjustment passed all eight affected tests again.
+- Six original authentication body sources and all subjects are backed up with hashes. Owner-confirmed masked subjects: You have been invited; Confirm Email Change. Owner-confirmed original email hourly rate: 2. The actual backup passes six-template, checksum, required-variable, subject and settings validation. Original custom SMTP is disabled. No credentials are included.
+- The owner created the dedicated MealCaddie Supabase Auth credential. Resend's key list confirms Sending access and no activity. The secret was not read, logged, committed or used. Secure future setup and an unlinked local mail-sink Auth lab are prepared. No shared SMTP/template setting was saved.
+
+## Protected preview and production evidence
+
+The redirect fix is built in protected Preview on feature/beta-recruitment. Existing owner sign-in and Plus navigation load normally; the owner can open the private Beta applicants dashboard. Unauthenticated requests to /, /beta and /admin/beta return 302 to vercel.com authentication. Production returns 200 and remains deployment dpl_5fn7svkRb9ZRu5bpWj74onbGcxfH, commit 394e33d8179cb578f5e81eeaa2a27f57f1ac269b.
+
+Read-only shared-database evidence: 3 Auth users; 10 vault rows; 116 pantry rows; profile fingerprint cf4b7539f8cc7141f69eca90a80568fd and subscription fingerprint d751713988987e9331980363e24189ce match the preceding baseline. There are zero orphan vault owners and no pre-existing private-schema conflict. Authenticated plan column updates remain denied. No account, plan, subscription, guest logic, Formspree handler, production code deployment or beta entitlement was changed. PR #1 remains draft. Recruitment/invitation/test-email controls remain disabled; this stage sends no real emails.
+
+## Unresolved verification and risks
+
+1. Docker/Podman is absent; official native Supabase runtime does not support Windows. The isolated lab config parses and is accepted by the CLI, but Auth startup, actual issued-email link expiry/replay, rendering in real inbox clients, independent PostgreSQL connections, HTTP PostgREST and restore/restart rehearsal have **not** run. PGlite concurrent requests are serialized in one embedded engine and must not be described as a multi-connection load test.
+2. The migration is not active on shared Supabase. Pantry/vault protections are implemented for review but live storage remains at its previous enforcement state. Database application affects production even though the website branch is Preview. Five-second lock and 30-second statement limits fail closed if installation cannot complete promptly. Existing over-cap data is preserved.
+3. Shared SMTP switching is not ready for approval until isolated email/rollback rehearsal succeeds. A successful file/variable backup validator is not proof of live provider rollback. Recheck settings immediately before any later switch. Changing from built-in mail may affect limits; preserve the recorded rate unless a specific change is separately approved.
+4. Legacy account-creation/mutable-search-path advisor findings require separate dependency review. They were not silently changed in this scope. Existing pantry UI visibility still follows current tier behavior; database reads/deletes preserve content after downgrade. Full screen-reader and real inbox-client testing remain pending.
+
+## Exact next approvals and owner actions
+
+1. Provide an isolated container runtime. Owner installation/start of official Docker Desktop may require OS prerequisites and a restart; complete any installer agreements personally. Then authorize execution of the named unlinked local Auth/mail-sink and multi-connection/API test lab. No production data, real SMTP credential or external mail delivery belongs in that lab.
+2. **After isolated verification**, separately approve applying only 20261011044914_secure_pantry_vault_limits.sql to mwxvorzrausbnqzjrhqm using storage-enforcement-execution-plan.md. Reviewed SQL SHA256: **8C5BF422A1949F85BEC06327ECDA895E00B3B45AA9198AA586CD2A8AC5DF5E90**. A rollback must also be explicitly approved because it restores earlier client-only enforcement.
+3. **After isolated rollback rehearsal**, separately approve the exact shared Resend SMTP configuration, active branded templates and controlled real authentication email test identity/recipient/count. Enter the dedicated credential privately through owner handoff. No switch, live email, invitation or notification is authorized by this report.
+4. Production deployment, merge, public recruitment and temporary beta entitlements remain separately gated. No public-launch approval is requested now.
+
+Review: https://preview.mealcaddie.app/ and https://github.com/ljhooks6/smartcart/pull/1. Supporting files: storage-enforcement-reviewed.sql, storage-enforcement-execution-plan.md, storage-enforcement-rollback.sql, pantry-vault-enforcement-review.md, controlled-smtp-setup.md, controlled-auth-template-backup.json and controlled-auth-settings-backup.json.

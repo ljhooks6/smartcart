@@ -1,0 +1,20 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { betaPagesEnabled } from "@/lib/beta-domain";
+import { MealCaddieLogo } from "@/components/mealcaddie-logo";
+import { onboardingEnabled } from "@/lib/beta-onboarding-domain";
+import { legalVersion, legalEffectiveDate } from "@/lib/legal-documents";
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Beta privacy notice | MealCaddie" };
+export default function BetaPrivacy() {
+  if (!betaPagesEnabled() && !onboardingEnabled()) notFound();
+  return <main className="min-h-screen bg-cream px-4 py-8"><article className="mx-auto max-w-2xl space-y-5 rounded-3xl bg-white p-6 sm:p-9"><MealCaddieLogo /><h1 className="text-3xl font-bold text-pine">Beta application privacy notice</h1>
+    <p>MealCaddie is operated by LaDarius Hooks in an individual capacity. Hooks Legacy LLC registration is pending; MealCaddie LLC has not been formed. Neither is the current registered operator.</p>
+    <p>Application-contact consent: 2026-10-10-v1. Current Privacy Policy: {legalVersion}, effective {legalEffectiveDate}. This notice clarifies the same application-review and beta-contact purpose; it does not record acceptance of the four product agreements or rewrite earlier consent.</p>
+    <h2 className="text-xl font-semibold">Information and purpose</h2><p>We use your email, planning routine, challenges, interests, Free/Plus preference, feedback willingness, consent choices and application source to review applications and organize invitation-only testing. Applying does not create an account, activate participation, change your plan or request payment. Please avoid medical details and unnecessary sensitive information.</p>
+    <h2 className="text-xl font-semibold">Consent and providers</h2><p>Application-review and beta-contact consent is required to apply. Marketing is optional and separate; it does not affect selection. You are not automatically added to the independent Formspree updates list. Submission sends no automatic email or invitation.</p><p>Authorized administrators review applications. Supabase stores records, Vercel hosts the site and Cloudflare Turnstile provides verification. Short-lived network-derived rate-limit identifiers protect the form. Application answers are not sent to meal-generation AI models. Resend delivers separately authorized emails.</p>
+    <h2 className="text-xl font-semibold">Retention and requests</h2><p>Daily automated cleanup is disabled. Administrators review removal requests and due records manually. Unselected applications follow 90 days after recruitment closes; selected applications and feedback follow 90 days after the program ends. Withdrawn applications have a seven-day removal target. Application-linked invitations and history are removed with the application; your existing account, saved recipes, pantry and menus are preserved. Abuse counters have a 48-hour expiry.</p><p>Contact <a className="underline text-pine" href="mailto:support@mealcaddie.app">support@mealcaddie.app</a> for withdrawal, correction, access or deletion review. We verify ownership and scope. Account deletion is not automatic. Provider logs and backups do not necessarily disappear immediately; restoration must reconcile approved deletions.</p>
+    <p>Feedback does not require optional analytics. Raw optional reporting events follow 30 days, aggregate reporting follows 90 days after program end, and program audit records follow 180 days. Earlier withdrawal can remove related reporting. The <Link className="underline text-pine" href="/legal/privacy">full Privacy Policy</Link> explains manual handling, evidence and provider limitations.</p>
+    <nav aria-label="Legal documents" className="flex flex-col gap-2">{[["terms","Terms of Service"],["privacy","Privacy Policy"],["safety","Dietary Safety Notice"],["beta","Beta Participation Agreement"]].map(([key,title])=><Link key={key} className="min-h-11 py-3 text-pine underline" href={"/legal/"+key}>{title}</Link>)}</nav><Link className="inline-block min-h-11 py-3 text-pine underline" href="/beta">Back to the application</Link>
+  </article></main>;
+}

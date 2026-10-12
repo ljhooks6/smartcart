@@ -1,0 +1,5 @@
+-- Superseded review draft. Do not execute this file.
+-- The complete versioned ledger is now prepared in:
+-- supabase/migrations/20261012203230_public_beta_access_and_agreements.sql
+-- That migration remains unapplied to shared Supabase and requires separate approval.
+-- No acceptance backfill or cleanup is authorized.

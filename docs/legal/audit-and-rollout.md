@@ -1,0 +1,34 @@
+# Dietary safety audit and controlled rollout
+## Findings and changes
+The previous diet field was a free-text string in browser planning settings and request payloads. It fed AI prompts and partial dairy/egg/nut/gluten/avoidance keyword checks. There was no complete nine-allergen assessment, unknown composition state, or legal agreement ledger. Planned ingredient equality helped recipe consistency but did not cover every ingredient introduced in instructions. Old recipes and pantry entries were not evidence of dietary suitability. AI consolidation could rewrite ingredient qualifiers. The alternate meal-plan route serves an example plan and also needed conflict checks.
+
+Structured controls now separate nine named allergy groups, custom allergies, preferences, intolerances and medically related notes. Severity is not requested. The original diet text remains intact and visible, alongside a versioned settings block in the existing diet string. No account preference migration or legacy reclassification occurs. Plain old strings still load unchanged. Existing request persistence carries the expanded field; the request bound increases from 500/1000 to 6000 characters. Extremely long pre-existing entries remain visible and must be shortened by the user before generating; they are not silently truncated.
+
+Independent server rules check recognized ingredient aliases, generated ingredients, recipe substitution steps, replacement meals/treats and transformed lists. Weekly plans and replacement meals feed allergy conflicts into the existing bounded correction attempts and reject remaining conflicts before returning a successful result. Recipes/treats use the existing maximum two-call validator. Known saved-meal conflicts reject recipe generation before spending. Regeneration is an attempt, not a promise; rejected output is never presented as suitable. The example-plan endpoint also rejects recognized conflicts.
+
+Generic or processed names, sauces, stock, pesto, substitutions, missing ingredient lists, custom aliases and legacy text are marked uncertain. Only a narrow set of plain ingredient descriptions can qualify for “No known conflict detected in the supplied text.” This is a lexical assessment, not brand/product certification. Plant-based/free-from claims do not establish suitability. Species aliases, refined oils, quantities, non-English names, manufacturing composition and cross-contact remain imperfectly recognized. Conservative false positives can occur; users must verify independently rather than override a warning as proof of safety.
+
+The app displays a safety summary over current/saved menus and Vault data. Existing content is not erased or recategorized. Pantry ownership is never a guarantee. Deterministic shopping identities already preserve varieties and qualifiers; the AI consolidation endpoint now checks declared allergy conflicts and refuses qualifier loss. The current app relies on the deterministic grocery path; safety remains advisory for already saved/manual shopping content. No shopping item should be labelled safe solely from this check.
+
+## Legal drafts
+terms.md, privacy.md, safety.md and beta.md are original review drafts, with corresponding protected pages under /legal. They deliberately leave operator identity/address, age/territories, governing law, dispute resolution, enforceable liability cap, purchase/refund/cancellation specifics, provider terms and new retention details unresolved for qualified counsel. No bodily-injury/negligence/nonwaivable claim is asserted waived. No insurance coverage is claimed.
+
+Privacy review must assess optional dietary/health/religious data, browser-local storage on shared devices, Supabase generation jobs and saved content, AI-provider processing and retention/training settings, regional rights and possible health-breach obligations. Optional beta telemetry must exclude dietary text. Verify provider agreements and deletion/export/backups before adopting final statements.
+
+Sources reviewed: https://www.fda.gov/food/buy-store-serve-safe-food/food-allergies-what-you-need-know ; https://www.ftc.gov/business-guidance/resources/mobile-health-app-developers-ftc-best-practices . These sources inform review; they do not establish compliance or liability protection.
+
+## Prepared agreement recording
+The proposed-agreement-ledger.sql is a review draft, not an applied shared migration. It was tested in disposable in-memory PostgreSQL only. It records the authenticated UUID, two immutable version identifiers and a database timestamp; uniqueness prevents resetting the first acceptance on a repeat. Browser roles cannot write, service role receives select/insert only and owner RLS limits browser reads. No acceptance backfill exists.
+
+The HTTP endpoint re-verifies Supabase identity, exact origin, allowed fields, affirmative terms/safety booleans and current version values. Unchecked-by-default controls link full drafts. Optional marketing/analytics do not affect agreement recording. Declining/defer has no persistence or entitlement effect.
+
+All three flags default off and were not configured: LEGAL_LANGUAGE_APPROVED, LEGAL_STORAGE_APPROVED, LEGAL_GATE_ENABLED. Their conjunction controls recording and new-AI functionality. Queued work revalidates and releases unused reservations when a future gate refuses it. No existing shared user or guest is gated now.
+
+## Separate approvals required before activation
+1. Qualified counsel approval of final texts and missing operator/jurisdiction/billing/privacy facts. Publish final immutable versions, not the draft identifier. Preserve a content hash/archive for each final version.
+2. Review the proposed ledger, retention/export/deletion and rollback. Create its formal migration through the Supabase CLI, perform a fresh shared preflight and obtain specific shared-migration execution approval. No other schema migration is bundled.
+3. Separate controlled rollout approval: relevant features, existing-account/guest handling, notice period, deferral and cancellation access, approved flags and rollout monitoring. Existing data and paid subscriptions must remain intact.
+4. Activate only after migration verification and legal signoff. Re-test new/old versions, ownership, current terms, outage failures, guest handling and queued work. Monitor failures without collecting dietary text. Keep rollback bounded to disabling the legal flags; never erase acceptance records or customer content automatically. Empty-ledger-only schema rollback requires explicit approval.
+5. Maintain separate production deployment and PR merge approval. Full physical-device and assistive-technology tests remain launch gates.
+
+Current legal routes are Preview review surfaces; production publication of approved documents requires a reviewed code change. This prevents accidentally serving draft terms as active production agreements.

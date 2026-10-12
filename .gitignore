@@ -1,7 +1,14 @@
 .next
+.next-auth-lab
 node_modules
 .env
 .env.local
 dist
 coverage
 *.log
+
+# Local TypeScript and Supabase CLI state
+*.tsbuildinfo
+supabase/.temp/
+.phase3-lab-state.json
+.phase3-test-results.json

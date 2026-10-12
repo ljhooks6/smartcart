@@ -67,7 +67,9 @@ test('guest quota uses trusted network header, not guest cookie or spoofed IP fi
 });
 
 test('worker reads fresh membership and duplicate deliveries do not produce duplicate AI calls',async()=>{
-  const job={id:randomUUID(),user_id:'owner',plan:'plus',attempts:1,status:'queued',input};let calls=0;let state='queued';const finished=[];
+  // Duplicate dispatch remains covered for an authorized Free request. Expired
+  // Plus requests are separately tested to stop rather than silently downgrade.
+  const job={id:randomUUID(),user_id:'owner',plan:'free',attempts:1,status:'queued',input};let calls=0;let state='queued';const finished=[];
   const load=loader({'generation-jobs':{
     claimGenerationJob:async()=>{if(state==='running')return {code:'busy'};if(state==='completed')return {code:'done'};state='running';return {job};},
     finishGenerationJob:async(j,status,result,error,usage)=>{state=status;finished.push({status,result,error,usage});},

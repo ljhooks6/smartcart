@@ -1,5 +1,7 @@
-import { allergySafetyResponse } from "@/lib/allergy-safety";
+import { foodSafetyResponse } from "./food-safety-response";
+import { assessDiet, allergyConflicts, ingredientTexts } from "@/lib/dietary-safety";
 import OpenAI from "openai";
+import { pilotAIBudget } from "./beta-pilot-ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -394,6 +396,7 @@ function countCuisineAlignedMeals(
 }
 
 export async function generateMealPlan(body: unknown, plan: "free" | "plus", onUsage?: (details: unknown) => void) {
+  const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const {
     budget,
     diet,
@@ -447,10 +450,10 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     );
   }
 
+  const safetyResponse=foodSafetyResponse({diet,avoidIngredients},true);if(safetyResponse)return safetyResponse;
   const isPlusGeneration = plan === "plus";
   const cuisinePreference = isPlusGeneration && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 
-  const safetyResponse = allergySafetyResponse({ diet, avoidIngredients }, true); if (safetyResponse) return safetyResponse;
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
@@ -533,7 +536,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     let blockedMatches = findBlockedContentMatches(
       [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
       [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
-    );
+    ).concat(allergyConflicts(parsed, diet));
     let repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
     let equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
     let missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
@@ -560,7 +563,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       blockedMatches = findBlockedContentMatches(
         [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
         [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
-      );
+      ).concat(allergyConflicts(parsed, diet));
       repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
       equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
       missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
@@ -592,7 +595,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       blockedMatches = findBlockedContentMatches(
         [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
         [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
-      );
+      ).concat(allergyConflicts(parsed, diet));
       repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
       equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
       missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
@@ -676,7 +679,10 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
         0,
       );
 
+    const dietarySafety = assessDiet({ ...parsed, restock_items: deterministicRestockItems }, diet);
+    if (dietarySafety.conflicts.length) return NextResponse.json({ error: "Known allergy conflict detected. Generate a new plan; no rejected plan was saved.", dietarySafety }, { status: 422 });
     return NextResponse.json({
+      dietarySafety,
       ...parsed,
       meals: allMeals,
       breakfasts: includeBreakfast ? parsed.breakfasts : [],

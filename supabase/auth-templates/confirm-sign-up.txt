@@ -1,0 +1,14 @@
+MealCaddie
+
+Welcome to MealCaddie
+
+Confirm your email address to finish setting up your MealCaddie account.
+
+Confirm my email:
+{{ .ConfirmationURL }}
+
+This link expires and can be used only once. Request a new message if it has expired. Use only your latest message.
+
+If you did not start creating an account, you can ignore this email. Confirming your account does not enroll you in a paid subscription or accept a beta invitation.
+
+Need help? Contact support@mealcaddie.app.

@@ -1,4 +1,7 @@
-import { allergySafetyResponse } from "@/lib/allergy-safety";
+import { foodSafetyResponse } from "@/lib/food-safety-response";
+import { requireProductAccess } from "@/lib/product-access";
+import { requireAgreements } from "@/lib/legal-agreements";
+import { assessDiet, ingredientTexts } from "@/lib/dietary-safety";
 import { NextResponse } from "next/server";
 
 import {
@@ -83,6 +86,8 @@ const mockMealPlan = {
 };
 
 export async function POST(request: Request) {
+  const productResponse = await requireProductAccess(request); if (productResponse) return productResponse;
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   let payload: unknown;
 
   try {
@@ -106,7 +111,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const safetyResponse = allergySafetyResponse(parsedRequest.data, true); if (safetyResponse) return safetyResponse;
+  const safetyResponse=foodSafetyResponse(parsedRequest.data,true);if(safetyResponse)return safetyResponse;
   const parsedResponse = mealPlanResponseSchema.safeParse(mockMealPlan);
 
   if (!parsedResponse.success) {
@@ -119,5 +124,7 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json(parsedResponse.data);
+  const dietarySafety = assessDiet(ingredientTexts(parsedResponse.data), parsedRequest.data.dietaryRestrictions);
+  if (dietarySafety.conflicts.length) return NextResponse.json({ error: "This example plan conflicts with your declared allergies.", dietarySafety }, { status: 422 });
+  return NextResponse.json({ ...parsedResponse.data, dietarySafety });
 }

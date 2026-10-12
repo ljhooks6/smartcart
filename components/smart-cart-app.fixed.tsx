@@ -1,10 +1,13 @@
 "use client";
+import { DietarySafetySummary } from "./dietary-safety-summary";
 
 import { getMealRequestHeaders } from "../lib/meal-request-headers";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { signInMealCaddieEmail, signInMealCaddieGoogle } from "../lib/auth-redirect";
+import { PersonalizedWelcome } from "./account-personalization";
 import { MealCaddieLogo } from "./mealcaddie-logo";
 import { SmartCartGenerationProgress } from "./smart-cart-generation-progress";
 import { useGenerationJob } from "../hooks/use-generation-job";
@@ -695,7 +698,26 @@ export function SmartCartApp() {
     skipSaveToMenuConfirm: false,
     skipVaultConfirm: false,
   });
-  const userPlan: SmartCartPlan = membershipProfile?.plan === "plus" ? "plus" : "free";
+  const [betaFeature, setBetaFeature] = useState<{ userId: string; featurePlan: string; expiresAt: string | null; betaEnabled: boolean } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setBetaFeature(null);
+    const refresh = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session || data.session.user.id !== user?.id) return;
+      try {
+        const response = await fetch("/api/feature-membership", { cache: "no-store", headers: { Authorization: `Bearer ${data.session.access_token}` } });
+        const result = await response.json();
+        if (alive) setBetaFeature(response.ok && result.userId === user?.id ? result : null);
+      } catch { if (alive) setBetaFeature(null); }
+    };
+    if (user?.id) void refresh();
+    const interval = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 30000);
+    window.addEventListener("focus", refresh);
+    return () => { alive = false; window.clearInterval(interval); window.removeEventListener("focus", refresh); };
+  }, [user?.id]);
+  const betaPlus = betaFeature?.userId === user?.id && betaFeature?.featurePlan === "plus" && (!betaFeature.expiresAt || new Date(betaFeature.expiresAt).getTime() > Date.now());
+  const userPlan: SmartCartPlan = membershipProfile?.plan === "plus" || betaPlus ? "plus" : "free";
   const isPlusMember = userPlan === "plus";
   const canPersistPantryMemory = isPlusMember;
 
@@ -1930,7 +1952,12 @@ export function SmartCartApp() {
     setIsAuthLoading(true);
     setAuthMessage("");
 
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    let error: { message: string } | null;
+    try {
+      ({ error } = await signInMealCaddieEmail(supabase.auth, email, window.location.origin));
+    } catch (cause) {
+      error = { message: cause instanceof Error ? cause.message : "Unable to start sign-in. Please retry." };
+    }
 
     if (error) {
       setAuthMessage(error.message);
@@ -1942,18 +1969,8 @@ export function SmartCartApp() {
   }
 
   async function startGoogleLogin() {
-    const redirectTo =
-      typeof window !== "undefined" ? `${window.location.origin}/` : undefined;
-
-    return supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        queryParams: {
-          prompt: "consent select_account",
-        },
-        redirectTo,
-      },
-    });
+    try { return await signInMealCaddieGoogle(supabase.auth, window.location.origin); }
+    catch { return { error: { message: "Please sign in from the official MealCaddie website or protected preview." } }; }
   }
 
   async function handleGoogleLogin() {
@@ -2462,6 +2479,8 @@ export function SmartCartApp() {
   return (
       <main className="mealcaddie-surface min-h-screen flex flex-col items-center px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-12 md:pt-8">
         <p role="note" className="mb-3 w-full max-w-6xl rounded-xl border border-ink/20 bg-cream p-3 text-sm text-ink">Allergy-dependent generation is temporarily restricted. Saved recipes and grocery lists are not verified for allergies. Check ingredients, labels and cross-contact independently.</p>
+        <DietarySafetySummary diet={formState.diet} value={[generatedPlan,weeklyMenu,savedDesserts,archivedMeals,...Array.from(restock)]} />
+        <PersonalizedWelcome />
         <SmartCartStoreMode
           open={isStoreMode} onClose={() => setIsStoreMode(false)}
           groups={displayGroceriesByCategory} checkedItems={checkedItems} customItems={customItems}
@@ -2566,7 +2585,7 @@ export function SmartCartApp() {
         onEmailChange={setEmail} onGoogleLogin={handleGoogleLogin} onSwitchGoogleAccount={handleSwitchGoogleAccount}
         onUpgrade={handleUpgradeToPlus} onLoginSubmit={handleLogin}
         onSignOut={() => { void supabase.auth.signOut(); }}
-        userPlan={membershipProfile?.plan ?? null} userEmail={safeTrim(user?.email)} />
+        betaEnabled={betaFeature?.betaEnabled} betaExpiresAt={betaFeature?.expiresAt} userPlan={membershipProfile?.plan ?? null} userEmail={safeTrim(user?.email)} />
       <header className="sticky top-0 z-30 flex min-h-14 w-full max-w-7xl items-center justify-between border-b border-pine/15 bg-cream py-2 md:hidden">
         <MealCaddieLogo subtitle={activeTabMeta.label} />
         <button type="button" aria-haspopup="dialog" onClick={() => setIsAccountOpen(true)} className="flex min-h-11 items-center gap-2 rounded-full border border-pine/20 bg-sage/25 px-3 text-sm font-semibold text-pine">

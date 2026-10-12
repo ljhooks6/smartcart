@@ -1,4 +1,6 @@
-import { allergySafetyResponse } from "@/lib/allergy-safety";
+import { foodSafetyResponse } from "@/lib/food-safety-response";
+import { requireProductAccess } from "@/lib/product-access";
+import { requireAgreements } from "@/lib/legal-agreements";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generationIdentity } from "@/lib/generation-identity";
@@ -13,6 +15,8 @@ function reply(body: unknown, status: number, cookie?: string | null, retryAfter
     ...(cookie ? { "Set-Cookie": cookie } : {}), ...(retryAfter ? { "Retry-After": String(retryAfter) } : {}) } });
 }
 export async function POST(request: Request) {
+  const productResponse = await requireProductAccess(request); if (productResponse) return productResponse;
+  const legalResponse = await requireAgreements(request); if (legalResponse) return legalResponse;
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return reply({ error: "Please start planning from MealCaddie." }, 403);
   let input;
@@ -22,7 +26,7 @@ export async function POST(request: Request) {
     input = generationRequestSchema.safeParse(JSON.parse(text));
   } catch { return reply({ error: "Request body must be valid JSON." }, 400); }
   if (!input.success) return reply({ error: "Check your budget, household size, pantry, and planning preferences." }, 400);
-  const safetyResponse = allergySafetyResponse(input.data, true); if (safetyResponse) return safetyResponse;
+  const safetyResponse = foodSafetyResponse(input.data, true); if (safetyResponse) return safetyResponse;
   const key = z.string().uuid().safeParse(request.headers.get("Idempotency-Key"));
   if (!key.success) return reply({ error: "Please refresh MealCaddie before generating a plan." }, 400);
   try {
@@ -44,6 +48,7 @@ export async function POST(request: Request) {
   } catch { return reply({ error: "Planning is temporarily unavailable. Please try again shortly." }, 503, null, 15); }
 }
 export async function GET(request: Request) {
+  const productResponse = await requireProductAccess(request); if (productResponse) return productResponse;
   const id = new URL(request.url).searchParams.get("id");
   if (id && !z.string().uuid().safeParse(id).success) return reply({ error: "Invalid planning request." }, 400);
   try {
@@ -54,8 +59,7 @@ export async function GET(request: Request) {
     if (job?.status === "queued") {
       try { await dispatchGenerationJob(job.id); } catch { /* Retry on a later poll. */ }
     }
-    const safetyResponse = job ? allergySafetyResponse(job.input, true) : null;
-    if (safetyResponse) return safetyResponse;
+    const safetyResponse = job ? foodSafetyResponse(job.input, true) : null; if (safetyResponse) return safetyResponse;
     return reply({ job: job ? publicGenerationJob(job) : null }, 200, identity.cookie);
   } catch { return reply({ error: "We couldn't check your plan. Your saved request is safe; please try again." }, 503, null, 15); }
 }
