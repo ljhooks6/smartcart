@@ -240,7 +240,7 @@ export function SmartCartContextForm({
         </div>
 
         <label className="space-y-2">
-          <span className="text-sm font-semibold text-ink">Dietary Restrictions</span>
+          <span className="text-sm font-semibold text-ink">Dietary Restrictions</span><span role="note" className="block text-sm text-ink">Allergy-dependent or free-from AI generation is temporarily restricted. Keep actual restrictions entered; do not remove them to obtain a plan. Verify ingredients, labels and cross-contact independently. Saved content is not certified safe.</span>
           <input
             className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
             onChange={(event) => onDietChange(event.target.value)}

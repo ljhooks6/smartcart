@@ -1,3 +1,4 @@
+import { allergySafetyResponse } from "@/lib/allergy-safety";
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
   const { mealTitle, mealNotes, servings, ingredients, diet, avoidIngredients, availableEquipment } = requestResult.data;
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
+  const safetyResponse = allergySafetyResponse({ diet, avoidIngredients }, true); if (safetyResponse) return safetyResponse;
   const preferences = { diet, avoidIngredients, availableEquipment };
   if (ingredients && ingredientViolations(ingredients.map(i => i.name), preferences).length) return NextResponse.json({ error: "This saved meal conflicts with your current dietary preferences. Replace the meal or update your preferences first." }, { status: 422 });
   const ingredientLines = ingredients ? formatRecipeIngredients(ingredients) : undefined;

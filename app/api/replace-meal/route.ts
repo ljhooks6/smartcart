@@ -1,3 +1,4 @@
+import { allergySafetyResponse } from "@/lib/allergy-safety";
 import { getRequestMembership } from "@/lib/server-membership";
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
@@ -247,6 +248,7 @@ export async function POST(request: Request) {
   const isPremiumReplacement = membership.plan === "plus";
   const cuisinePreference = isPremiumReplacement && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 
+  const safetyResponse = allergySafetyResponse({ diet, avoidIngredients }, true); if (safetyResponse) return safetyResponse;
   const dietaryPreferences = normalizeDietaryPreferences(diet);
   const mustHaveGuidance = buildMustHaveGuidance(mustHaveIngredient);
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
