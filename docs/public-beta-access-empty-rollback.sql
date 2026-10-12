@@ -45,6 +45,35 @@ revoke all on function public.save_mealcaddie_week(jsonb, jsonb) from public, an
 grant execute on function public.save_mealcaddie_week(jsonb, jsonb) to authenticated;
 
 
+create or replace function public.beta_accept_invitation(p_user uuid,p_hash text) returns jsonb language plpgsql security invoker set search_path='' as $$
+declare address text; i public.beta_invitations; a public.beta_applications; p public.beta_programs; existing public.beta_participations; until_at timestamptz;
+begin
+ address:=public.beta_verified_user(p_user);
+ select * into p from public.beta_programs where slug='public-beta' and onboarding_enabled and beta_ended_at is null for update;
+ if not found then raise exception 'onboarding disabled'; end if;
+ select * into i from public.beta_invitations where token_hash=p_hash;
+ if not found then raise exception 'invalid invitation'; end if;
+ select * into a from public.beta_applications where id=i.application_id for update;
+ select * into i from public.beta_invitations where id=i.id for update;
+ if address<>a.email or (i.bound_user_id is not null and i.bound_user_id<>p_user) then raise exception 'wrong recipient'; end if;
+ if i.state='consumed' then
+ select * into existing from public.beta_participations where application_id=a.id and user_id=p_user;
+ if found then return jsonb_build_object('activated',true,'alreadyAccepted',true); end if;
+ end if;
+ if i.state<>'issued' or i.expires_at<=clock_timestamp() or a.status<>'invited' or not exists(select 1 from public.beta_invitation_deliveries where invitation_id=i.id and status in ('accepted','delivered')) then raise exception 'invalid or expired invitation'; end if;
+ if exists(select 1 from public.beta_participations where user_id=p_user) then raise exception 'account already participating'; end if;
+ until_at:=least(clock_timestamp()+make_interval(days=>p.participation_days),coalesce(p.participation_limit_at,'infinity'::timestamptz));
+ if until_at<=clock_timestamp() then raise exception 'program expired'; end if;
+ -- Shared profile lock serializes activation against existing saved-content guards.
+ perform 1 from public.smartcart_profiles where id=p_user for update;
+ insert into public.beta_participations(application_id,user_id,cohort,expires_at) values(a.id,p_user,a.cohort,until_at);
+ update public.beta_invitations set state='consumed',bound_user_id=p_user,consumed_at=clock_timestamp() where id=i.id;
+ update public.beta_applications set status='activated',updated_at=clock_timestamp() where id=a.id;
+ insert into public.beta_application_events(application_id,actor_id,kind) values(a.id,p_user,'activated');
+ return jsonb_build_object('activated',true,'expiresAt',until_at,'cohort',a.cohort);
+end $$;
+
+
 drop function public.beta_accept_with_agreements(uuid,text);
 drop function public.beta_product_access(uuid);
 drop function mealcaddie_private.product_write_gate();

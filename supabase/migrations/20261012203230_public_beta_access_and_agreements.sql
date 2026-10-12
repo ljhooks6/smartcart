@@ -71,6 +71,7 @@ begin
  select * into b from public.beta_participations where user_id=p_user and revoked_at is null and withdrawn_at is null and activated_at<=clock_timestamp() and expires_at>clock_timestamp();
  if not found then return jsonb_build_object('allowed',false,'reason','active_participation_required');end if;
  select * into c from public.beta_access_configuration where singleton;
+ if not found then return jsonb_build_object('allowed',false,'reason','configuration_unavailable');end if;
  if c.legal_enabled and b.activated_at>=c.legacy_participation_before and not exists(select 1 from public.legal_agreements where user_id=p_user and terms_version=c.legal_version and privacy_version=c.legal_version and safety_version=c.legal_version and beta_version=c.legal_version) then return jsonb_build_object('allowed',false,'reason','agreement_review_required');end if;
  return jsonb_build_object('allowed',true,'reason','active_beta');
 end$$;
@@ -82,8 +83,11 @@ grant execute on function public.beta_product_access(uuid) to service_role;
 -- Authenticated clients can evaluate only their own access, not enumerate UUIDs.
 create function public.beta_product_access_allowed() returns boolean
 language plpgsql security definer set search_path='' as $$
+declare gate boolean;
 begin
- if not exists(select 1 from public.beta_access_configuration where singleton and enabled) then return true;end if;
+ select enabled into gate from public.beta_access_configuration where singleton;
+ if not found then return false;end if;
+ if not gate then return true;end if;
  return coalesce((mealcaddie_private.product_access(auth.uid())->>'allowed')::boolean,false);
 end$$;
 revoke all on function public.beta_product_access_allowed() from public,anon;
@@ -106,6 +110,38 @@ do $$declare name text;begin
  execute format('create trigger beta_product_write_gate before insert or update or delete on public.%I for each row execute function mealcaddie_private.product_write_gate()',name);
  end loop;
 end$$;
+create or replace function public.beta_accept_invitation(p_user uuid,p_hash text) returns jsonb language plpgsql security invoker set search_path='' as $$
+declare address text; i public.beta_invitations; a public.beta_applications; p public.beta_programs; existing public.beta_participations; until_at timestamptz;
+begin
+ perform 1 from public.beta_access_configuration where singleton for share;
+ if not found then raise exception 'Program access configuration unavailable';end if;
+ if exists(select 1 from public.beta_access_configuration where singleton and legal_enabled) and not exists(select 1 from public.beta_participations b join public.beta_access_configuration c on c.singleton where b.user_id=p_user and b.activated_at<c.legacy_participation_before) and not exists(select 1 from public.legal_agreements agreement_record join public.beta_access_configuration version_config on version_config.singleton where agreement_record.user_id=p_user and agreement_record.terms_version=version_config.legal_version and agreement_record.privacy_version=version_config.legal_version and agreement_record.safety_version=version_config.legal_version and agreement_record.beta_version=version_config.legal_version) then raise exception 'Current agreements required before activation';end if;
+ address:=public.beta_verified_user(p_user);
+ select * into p from public.beta_programs where slug='public-beta' and onboarding_enabled and beta_ended_at is null for update;
+ if not found then raise exception 'onboarding disabled'; end if;
+ select * into i from public.beta_invitations where token_hash=p_hash;
+ if not found then raise exception 'invalid invitation'; end if;
+ select * into a from public.beta_applications where id=i.application_id for update;
+ select * into i from public.beta_invitations where id=i.id for update;
+ if address<>a.email or (i.bound_user_id is not null and i.bound_user_id<>p_user) then raise exception 'wrong recipient'; end if;
+ if i.state='consumed' then
+ select * into existing from public.beta_participations where application_id=a.id and user_id=p_user;
+ if found then return jsonb_build_object('activated',true,'alreadyAccepted',true); end if;
+ end if;
+ if i.state<>'issued' or i.expires_at<=clock_timestamp() or a.status<>'invited' or not exists(select 1 from public.beta_invitation_deliveries where invitation_id=i.id and status in ('accepted','delivered')) then raise exception 'invalid or expired invitation'; end if;
+ if exists(select 1 from public.beta_participations where user_id=p_user) then raise exception 'account already participating'; end if;
+ until_at:=least(clock_timestamp()+make_interval(days=>p.participation_days),coalesce(p.participation_limit_at,'infinity'::timestamptz));
+ if until_at<=clock_timestamp() then raise exception 'program expired'; end if;
+ -- Shared profile lock serializes activation against existing saved-content guards.
+ perform 1 from public.smartcart_profiles where id=p_user for update;
+ insert into public.beta_participations(application_id,user_id,cohort,expires_at) values(a.id,p_user,a.cohort,until_at);
+ update public.beta_invitations set state='consumed',bound_user_id=p_user,consumed_at=clock_timestamp() where id=i.id;
+ update public.beta_applications set status='activated',updated_at=clock_timestamp() where id=a.id;
+ insert into public.beta_application_events(application_id,actor_id,kind) values(a.id,p_user,'activated');
+ return jsonb_build_object('activated',true,'expiresAt',until_at,'cohort',a.cohort);
+end $$;
+
+
 create function public.beta_accept_with_agreements(p_user uuid,p_hash text) returns jsonb
 language plpgsql security invoker set search_path='' as $$
 declare c public.beta_access_configuration;
