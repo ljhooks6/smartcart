@@ -38,7 +38,23 @@ export async function participantGet(request: Request) {
   const feedback = data ? await access.client.from("beta_feedback").select("id,category,feature,message,status,created_at").eq("participation_id", data.id).order("created_at", { ascending: false }).limit(20) : { data: [], error: null };
   if (feedback.error) return onboardingError(feedback.error);
   const billingPlan = baseline.data?.plan === "plus" ? "plus" : "free";
-  return betaJson({ participation: data, featurePlan: betaEntitlementsEnabled() ? plan.data : billingPlan, billingPlan, feedback: feedback.data });
+  return betaJson({ verifiedEmail: access.user.email, participation: data, featurePlan: betaEntitlementsEnabled() ? plan.data : billingPlan, billingPlan, feedback: feedback.data });
+}
+// Read-only invitation review: the raw token stays in the POST body and is
+// hashed before lookup. No invitation details leave the server for another user.
+export async function invitationReview(request: Request) {
+  const access = await onboardingAccess(request); if ("response" in access) return access.response;
+  let body: unknown; try { body = await boundedJson(request); } catch { return betaJson({ error: "Invalid invitation." }, 400); }
+  const input = body as { token?: unknown };
+  if (!input || Object.keys(input).length !== 1 || typeof input.token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(input.token)) return betaJson({ error: "Invalid invitation." }, 400);
+  const result = await access.client.from("beta_invitations").select("id,state,bound_user_id,expires_at,beta_applications(email,cohort,status)").eq("token_hash", createHash("sha256").update(input.token).digest("hex")).maybeSingle();
+  if (result.error) return betaJson({ error: "We couldn't check your invitation. Try again." }, 503);
+  const row = result.data;
+  if (!row) return betaJson({ state: "unavailable" });
+  const applicant = row.beta_applications as unknown as { email: string; cohort: string; status: string };
+  if (!pilotIdentityAllowed(access.user.id, access.user.email) || applicant.email !== access.user.email?.toLowerCase() || row.bound_user_id !== access.user.id) return betaJson({ state: "wrong_account" });
+  const state = row.state === "consumed" ? "accepted" : row.state === "revoked" ? "revoked" : row.state !== "issued" || new Date(row.expires_at).getTime() <= Date.now() ? "expired" : "ready";
+  return betaJson({ state, cohort: applicant.cohort, expiresAt: row.expires_at });
 }
 export async function participantPost(request: Request) {
   const access = await onboardingAccess(request); if ("response" in access) return access.response;

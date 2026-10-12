@@ -27,7 +27,7 @@ export function SmartCartAccountDialog({ open, onClose, userEmail, userPlan, bet
         </div>
         <PreferredNameEditor />
         <p className="text-sm leading-6 text-ink/65">Save your week to keep your meals and favorites together across devices.</p>
-        {betaEnabled ? <div className="rounded-xl bg-cream p-4"><p>{betaExpiresAt ? `Beta participation ends ${new Date(betaExpiresAt).toLocaleString()}.` : "Beta participation is invitation-only."}</p><Link onClick={onClose} className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/beta/participant">Beta participation and feedback</Link></div> : null}
+        {betaEnabled ? <div className="rounded-xl bg-cream p-4"><p>{betaExpiresAt ? `Beta participation ends ${new Date(betaExpiresAt).toLocaleString()}.` : "Beta participation is invitation-only."}</p><Link onClick={onClose} className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/beta/participant">Send beta feedback</Link></div> : null}
         {userPlan !== "plus" ? <button type="button" className={buttonClass} onClick={() => { onClose(); void onUpgrade(); }}>Preview MealCaddie Plus</button> : null}
         <button type="button" className={buttonClass} disabled={isAuthLoading} onClick={() => { onClose(); void onSwitchGoogleAccount(); }}>Use a Different Google Account</button>
         <button type="button" className={buttonClass} disabled={isAuthLoading} onClick={() => { onClose(); onSignOut(); }}>Sign Out</button>
