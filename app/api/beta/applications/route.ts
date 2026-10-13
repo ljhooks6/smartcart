@@ -1,5 +1,6 @@
 import { betaApplicationSchema, betaConsentVersion, betaPagesEnabled, betaSubmissionsEnabled } from "@/lib/beta-domain";
 import { betaStorageClient, betaJson, betaNetworkHash, boundedJson, verifyBetaChallenge } from "@/lib/beta-server";
+import { notifyAfterApplicationSave } from "@/lib/beta-notification-dispatch";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   if (!betaPagesEnabled()) return betaJson({ error: "Not found." }, 404);
@@ -23,6 +24,8 @@ export async function POST(request: Request) {
       source: input.source, campaign: input.campaign,
     } });
     if (error) return betaJson({ error: "Applications are temporarily unavailable. Please retry later." }, 503);
+    try { notifyAfterApplicationSave(input.email); }
+    catch { console.error("beta_admin_notification", { code: "scheduling_unavailable" }); }
     return betaJson({ message: "Thank you. Your application has been received for review. Applying does not guarantee an invitation." });
   } catch { return betaJson({ error: "Applications are temporarily unavailable. Please retry later." }, 503); }
 }

@@ -5,13 +5,17 @@ import { supabase } from "@/lib/supabase";
 import { betaCohorts, betaStatuses, displayBetaValue } from "@/lib/beta-domain";
 import { BetaVerification } from "./beta-verification";
 import { MealCaddieLogo } from "./mealcaddie-logo";
+import { BetaAdminNotifications } from "./beta-admin-notifications";
 type Applicant = { id: string; email: string; frequency: string; challenges: string; interests: string[]; plan_interest: string; feedback_willing: boolean; marketing_consent: boolean; beta_consent_at: string; source: string; campaign: string; status: string; cohort: string | null; updated_at: string; created_at: string };
 type Directory = { applications: Applicant[]; total: number; page: number; program: { free_target: number; plus_target: number; reserve_target: number; recruitment_closed_at: string | null; beta_ended_at: string | null }; counters: { cohorts: Record<string, number>; statuses: Record<string, number>; sources: Record<string, number> } };
 const selectClass = "min-h-11 rounded-xl border border-pine/70 bg-white px-3 py-2 text-ink focus:ring-2 focus:ring-pine";
 const buttonClass = "min-h-11 rounded-xl bg-pine px-4 py-2 font-semibold text-white disabled:opacity-50";
 async function adminRequest(path: string, body?: unknown) {
   const { data } = await supabase.auth.getSession();
-  if (!data.session) throw Error("Sign in to your confirmed administrator account in MealCaddie, then return here.");
+  if (!data.session) {
+    window.location.assign("/auth/sign-in?next=%2Fadmin%2Fbeta");
+    throw Error("Sign in to your confirmed administrator account in MealCaddie, then return here.");
+  }
   const response = await fetch(path, { method: body ? "POST" : "GET", cache: "no-store", headers: { Authorization: `Bearer ${data.session.access_token}`, ...(body ? { "Content-Type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   const result = await response.json(); if (!response.ok) throw Error(result.error ?? "Unable to load administration."); return result;
 }
@@ -65,6 +69,7 @@ export function BetaAdmin() {
     {!directory && !loading ? <button className={`${buttonClass} mt-3`} onClick={() => void load()}>Retry after signing in</button> : null}
     {directory ? <>
       <BetaVerification />
+      <BetaAdminNotifications request={adminRequest} />
       <section aria-label="Cohort counters" className="my-6 grid gap-3 sm:grid-cols-3">{betaCohorts.map(cohort => <div key={cohort} className="rounded-2xl bg-pine p-5 text-white"><h2 className="font-semibold">{displayBetaValue(cohort)}</h2><p className="mt-2 text-3xl font-bold">{directory.counters.cohorts[cohort] ?? 0} / {directory.program[`${cohort}_target` as "free_target" | "plus_target" | "reserve_target"]}</p><p className="mt-1 text-sm">Seats assigned</p></div>)}</section>
       <details className="mb-5 rounded-2xl border border-pine/20 bg-white p-5"><summary className="cursor-pointer font-semibold text-pine">Program settings and retention</summary>
         <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={event => { event.preventDefault(); void change({ action: "targets", targets }); }}>{betaCohorts.map(cohort => <label key={cohort} className="flex flex-col gap-1">{displayBetaValue(cohort)} target<input className={`${selectClass} w-28`} type="number" min={0} max={10000} required value={targets[cohort]} onChange={event => setTargets(previous => ({ ...previous, [cohort]: Number(event.target.value) }))} /></label>)}<button className={buttonClass} disabled={busy}>Save targets</button></form>
