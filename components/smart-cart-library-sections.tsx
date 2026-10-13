@@ -218,11 +218,11 @@ export function SmartCartLibrarySections({
               },
               {
                 title: "Grow the vault",
-                copy: `Free keeps ${vaultLimit} saved recipes. Plus will give your go-to meals room to stack up.`,
+                copy: `Free keeps ${vaultLimit} saved recipes. Plus gives your go-to meals more room.`,
               },
               {
-                title: "Plan more of the day",
-                copy: "Breakfast and lunch options are available on every plan. Automatic full-week scheduling and leftover lunch planning are planned for Plus.",
+                title: "More planning flexibility",
+                copy: "Free includes 5 weekly AI plans; Plus includes 20. Breakfast and lunch options are available on both.",
               },
             ].map((feature) => (
               <div

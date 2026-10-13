@@ -26,6 +26,7 @@ export function SmartCartAccountDialog({ open, onClose, userEmail, userPlan, bet
           <p className="mt-2 text-sm text-ink/65">{isProfileLoading ? "Loading your plan…" : userPlan === "plus" ? "MealCaddie Plus" : "Free plan"}</p>
         </div>
         <PreferredNameEditor />
+        <p className="text-sm leading-6 text-ink/65">{userPlan === "plus" ? "20 weekly AI plans, expanded Recipe Vault storage, cloud pantry memory and Cuisine Vibe." : "5 weekly AI plans, 10 saved recipes, manual pantry selection and weekly saving."} Both plans include seven dinner ideas, optional breakfast and lunch, budget planning and groceries. Allowances reset Monday at 00:00 UTC. Failed plans release allowance; retrying the same request does not count twice. Meal replacements and individual recipe refreshes do not use the weekly-plan allowance.</p>
         <p className="text-sm leading-6 text-ink/65">Save your week to keep your meals and favorites together across devices.</p>
         {betaEnabled ? <div className="rounded-xl bg-cream p-4"><p>{betaExpiresAt ? `Beta participation ends ${new Date(betaExpiresAt).toLocaleString()}.` : "Beta participation is invitation-only."}</p><Link onClick={onClose} className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/beta/participant">Send beta feedback</Link></div> : null}
         {userPlan !== "plus" ? <button type="button" className={buttonClass} onClick={() => { onClose(); void onUpgrade(); }}>Preview MealCaddie Plus</button> : null}

@@ -22,5 +22,5 @@ export type GenerationJob = {
   result: unknown | null; error: string | null;
 };
 export function generationLimits(plan: "guest" | "free" | "plus") {
-  return { limit: plan === "plus" ? 60 : plan === "free" ? 10 : 3, seconds: plan === "guest" ? 86400 : 604800 };
+  return { limit: plan === "plus" ? 20 : plan === "free" ? 5 : 3, seconds: plan === "guest" ? 86400 : 604800 };
 }
