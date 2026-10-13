@@ -12,7 +12,7 @@ and Pending Review status. No questionnaire answers, notes or invitation tokens.
 
 ## Migration requiring separate owner approval
 
-`20261013185630_beta_application_notifications.sql`
+`20261013191559_beta_application_notifications.sql` (approved original name: `20261013185630_beta_application_notifications.sql`; shared execution version reconciled without changing SQL bytes)
 
 SHA-256: `6faba7b81a685b035be942e5596b274bd5e8526317853e7fbe7a0b8173245e94`.
 
@@ -83,3 +83,4 @@ production commit after owner approval; no unrelated beta rollback.
 Local rollback rehearsal restores ordinary intake without deleting applications,
 outbox history, user content or existing account entitlements. No shared change or
 real notification is authorized merely by this review document.
+
