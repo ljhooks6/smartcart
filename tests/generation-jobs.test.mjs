@@ -10,9 +10,24 @@ async function database() {
   await db.exec(await readFile(new URL('../docs/supabase-generation-jobs.sql', import.meta.url), 'utf8'));
   return db;
 }
-async function reserve(db, owner, key = randomUUID(), hash = 'same', limit = 10, quota = owner, period = 604800) {
+async function reserve(db, owner, key = randomUUID(), hash = 'same', limit = 5, quota = owner, period = 604800) {
   return (await db.query('select public.smartcart_create_generation_job($1,$2,null,$3,$4,$5,\'free\',$6,$7) as reservation', [owner, quota, key, hash, JSON.stringify({ budget: 100 }), limit, period])).rows[0].reservation;
 }
+
+test('five and twenty plan caps share unchanged UTC weekly reset; over-cap history stays readable', async()=>{
+ const db=await database();try{
+   for(const limit of [5,20]) {
+     const owner='weekly-'+limit;
+     await db.query("insert into smartcart_generation_jobs(owner_key,quota_key,request_key,input_hash,input,plan,status,created_at) select $1,$1,gen_random_uuid(),'seed','{}','free','completed',date_trunc('week',now() at time zone 'UTC') at time zone 'UTC' from generate_series(1,$2)",[owner,limit+1]);
+     const denied=await reserve(db,owner,randomUUID(),'same',limit);assert.equal(denied.code,'limit');assert.equal(denied.limit,limit);
+     const expected=(await db.query("select (date_trunc('week',now() at time zone 'UTC') at time zone 'UTC')+interval '7 days' reset")).rows[0].reset;
+     assert.equal(new Date(denied.resetAt).getTime(),new Date(expected).getTime());
+     assert.equal((await db.query('select count(*)::int n from smartcart_generation_jobs where owner_key=$1',[owner])).rows[0].n,limit+1);
+     await db.query("update smartcart_generation_jobs set created_at=(date_trunc('week',now() at time zone 'UTC') at time zone 'UTC')-interval '1 second' where owner_key=$1",[owner]);
+     const allowed=await reserve(db,owner,randomUUID(),'same',limit);assert.ok(allowed.job);assert.equal(allowed.remaining,limit-1);
+   }
+ }finally{await db.close();}
+});
 async function finish(db, job, state = 'completed') {
   await db.query('select public.smartcart_finish_generation_job($1,$2,$3,$4,$5,$6)', [job.id, job.attempts, state, JSON.stringify({ meals: [] }), null, '[]']);
 }

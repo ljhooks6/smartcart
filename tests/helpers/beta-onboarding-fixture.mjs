@@ -24,7 +24,7 @@ export async function fixture() {
  `);
  for(const [id,email,plan] of [[admin,'admin@example.invalid','plus'],[free,'free@example.invalid','free'],[plus,'plus@example.invalid','free'],[paid,'paid@example.invalid','plus'],[stranger,'wrong@example.invalid','free']]){
  await db.query('insert into auth.users values($1,$2,now(),now(),false)',[id,email]);await db.query('insert into smartcart_profiles values($1,$2,$3,null)',[id,email,plan]);}
- for(const file of ['20261011003203_beta_recruitment.sql','20261011003522_beta_browser_deny_policies.sql','20261011062506_secure_pantry_vault_limits.sql','20261011153040_beta_onboarding.sql']) await db.exec(readFileSync('supabase/migrations/'+file,'utf8'));
+ for(const file of ['20261011003203_beta_recruitment.sql','20261011003522_beta_browser_deny_policies.sql','20261011062506_secure_pantry_vault_limits.sql','20261011153040_beta_onboarding.sql','20261013193916_finalize_product_tiers.sql']) await db.exec(readFileSync('supabase/migrations/'+file,'utf8'));
  await db.query('insert into beta_admins(user_id) values($1)',[admin]);
  await db.exec("update beta_programs set onboarding_enabled=true,invitation_delivery_enabled=true,participation_limit_at=now()+interval '60 days'");
  return db;

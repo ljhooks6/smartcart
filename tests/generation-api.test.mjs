@@ -47,11 +47,11 @@ test('job API verifies identity; body flags cannot upgrade, quota comes from ser
 test('saved reservation survives publish failure; quota and malformed input never dispatch',async()=>{
   const job={id:randomUUID(),status:'queued',input};let published=0;let code;
   const load=loader({'generation-identity':{generationIdentity:async()=>({owner:'user:one',quota:'user:one',userId:'one',plan:'plus',cookie:null})},'generation-jobs':{
-    reserveGenerationJob:async()=>code?{code,limit:60,resetAt:new Date(Date.now()+3600000).toISOString()}:{job},publicGenerationJob:j=>j,
+    reserveGenerationJob:async()=>code?{code,limit:20,resetAt:new Date(Date.now()+3600000).toISOString()}:{job},publicGenerationJob:j=>j,
   },'generation-dispatch':{dispatchGenerationJob:async()=>{published++;throw Error('unavailable');}}});
   const {POST}=load(path.join(root,'app/api/generate-list/route.ts'));
   const failed=await POST(request());assert.equal(failed.status,503);assert.equal((await failed.json()).job.id,job.id);
-  code='limit';const capped=await POST(request());assert.equal(capped.status,429);assert.ok(capped.headers.get('retry-after'));assert.match((await capped.json()).error,/60/);
+  code='limit';const capped=await POST(request());assert.equal(capped.status,429);assert.ok(capped.headers.get('retry-after'));assert.match((await capped.json()).error,/20/);
   assert.equal((await POST(request({...input,budget:-1}))).status,400);assert.equal(published,1);
 });
 

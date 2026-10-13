@@ -13,14 +13,14 @@ test('new recipient must verify its exact email before an initially unbound invi
  }finally{await db.close();}
 });
 
-test('complete Free journey: verified invitation, replay-safe activation, five vault slots, feedback without analytics',async()=>{
+test('complete Free journey: verified invitation, replay-safe activation, ten vault slots, feedback without analytics',async()=>{
  const db=await fixture();try{
  const invitation=await issued(db,free);await assert.rejects(db.query('select beta_accept_invitation($1,$2)',[stranger,invitation.hash]),/wrong recipient/);
  const first=(await db.query('select beta_accept_invitation($1,$2) r',[free,invitation.hash])).rows[0].r;assert.equal(first.cohort,'free');
  assert.equal((await db.query('select beta_accept_invitation($1,$2) r',[free,invitation.hash])).rows[0].r.alreadyAccepted,true);
  assert.equal((await db.query('select count(*)::int n from beta_participations')).rows[0].n,1);
- await browser(db,free);for(let n=0;n<5;n++)await db.query('insert into archived_meals(user_id,name) values($1,$2)',[free,'Synthetic recipe']);
- await assert.rejects(db.query('insert into archived_meals(user_id,name) values($1,$2)',[free,'Sixth']),/five vault/);
+ await browser(db,free);for(let n=0;n<10;n++)await db.query('insert into archived_meals(user_id,name) values($1,$2)',[free,'Synthetic recipe']);
+ await assert.rejects(db.query('insert into archived_meals(user_id,name) values($1,$2)',[free,'Eleventh']),/ten vault/);
  await assert.rejects(db.query('insert into pantry_inventory(user_id,ingredient_name) values($1,$2)',[free,'Synthetic pantry']),/requires Plus/);
  await server(db);const key=randomUUID();await db.query('select beta_submit_feedback($1,$2,$3,$4,$5)',[free,'bug','onboarding','The synthetic test button is confusing',key]);
  await db.query('select beta_submit_feedback($1,$2,$3,$4,$5)',[free,'bug','onboarding','Duplicate retry must not overwrite',key]);
@@ -30,11 +30,11 @@ test('complete Free journey: verified invitation, replay-safe activation, five v
 });
 test('temporary Plus journey: storage, optional reporting, expiry preserves content and paid Plus, no subscription created',async()=>{
  const db=await fixture();try{
- const p=await activated(db,plus,'plus');await browser(db,plus);for(let n=0;n<7;n++)await db.query('insert into archived_meals(user_id,name) values($1,$2)',[plus,'Synthetic']);await db.query('insert into pantry_inventory(user_id,ingredient_name) values($1,$2)',[plus,'Synthetic']);
+ const p=await activated(db,plus,'plus');await browser(db,plus);for(let n=0;n<12;n++)await db.query('insert into archived_meals(user_id,name) values($1,$2)',[plus,'Synthetic']);await db.query('insert into pantry_inventory(user_id,ingredient_name) values($1,$2)',[plus,'Synthetic']);
  await server(db);await db.query('select beta_participant_settings($1,true,false)',[plus]);const key=randomUUID();await db.query("select beta_record_engagement($1,'plan_completed',$2)",[plus,key]);await db.query("select beta_record_engagement($1,'plan_completed',$2)",[plus,key]);assert.equal((await db.query('select sum(total)::int n from beta_engagement_daily')).rows[0].n,1);
  await db.query('select beta_participant_settings($1,false,false)',[plus]);assert.equal((await db.query('select count(*)::int n from beta_engagement_daily')).rows[0].n,0);
  await root(db);await db.query("update beta_participations set activated_at=now()-interval '31 days',expires_at=now()-interval '1 second' where id=$1",[p.id]);await server(db);assert.equal((await db.query('select beta_effective_plan($1) plan',[plus])).rows[0].plan,'free');assert.equal((await db.query('select beta_effective_plan($1) plan',[paid])).rows[0].plan,'plus');
- await browser(db,plus);assert.equal((await db.query('select count(*)::int n from archived_meals')).rows[0].n,7);await db.exec("update archived_meals set name='Retained edit'");await assert.rejects(db.query('insert into archived_meals(user_id,name) values($1,$2)',[plus,'Denied']),/five vault/);await assert.rejects(db.exec("update pantry_inventory set ingredient_name='Denied'"),/requires Plus/);await db.exec('delete from archived_meals');
+ await browser(db,plus);assert.equal((await db.query('select count(*)::int n from archived_meals')).rows[0].n,12);await db.exec("update archived_meals set name='Retained edit'");await assert.rejects(db.query('insert into archived_meals(user_id,name) values($1,$2)',[plus,'Denied']),/ten vault/);await assert.rejects(db.exec("update pantry_inventory set ingredient_name='Denied'"),/requires Plus/);await db.exec('delete from archived_meals');
  await server(db);assert.equal((await db.query('select plan from smartcart_profiles where id=$1',[plus])).rows[0].plan,'free');await root(db);assert.equal((await db.query('select count(*)::int n from smartcart_subscriptions')).rows[0].n,1);
  }finally{await db.close();}
 });
