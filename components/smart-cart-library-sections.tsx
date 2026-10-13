@@ -200,9 +200,7 @@ export function SmartCartLibrarySections({
               More memory, more control, less dinner math.
             </p>
             <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-ink/70 sm:text-base">
-              Free helps you plan this week. Plus is being shaped for the households that want
-              MealCaddie to carry more of the routine: remembering pantry habits, tuning meals to
-              your taste, saving more favorites, and automating a full week of meals.
+              Free includes useful weekly planning. Plus adds more AI plans, cloud pantry memory, advanced Cuisine Vibe, expanded recipe storage and enhanced meal refinement.
             </p>
           </div>
 
@@ -237,8 +235,7 @@ export function SmartCartLibrarySections({
 
           {waitlistStatus === "success" ? (
             <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">
-              You are on the list. We will use Plus updates to bring early testers into pantry
-              memory, bigger vaults, and full-day planning as they are ready.
+              You are on the product-update list. This does not apply for beta access or activate Plus.
             </div>
           ) : waitlistStatus === "error" ? (
             <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
