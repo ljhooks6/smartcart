@@ -2506,8 +2506,6 @@ export function SmartCartApp() {
 
   return (
       <main className="mealcaddie-surface min-h-screen flex flex-col items-center px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-12 md:pt-8">
-        <p role="note" className="mb-3 w-full max-w-6xl rounded-xl border border-ink/20 bg-cream p-3 text-sm text-ink">Allergy-dependent generation is temporarily restricted. Saved recipes and grocery lists are not verified for allergies. Check ingredients, labels and cross-contact independently.</p>
-
         <PersonalizedWelcome />
         <SmartCartStoreMode
           open={isStoreMode} onClose={() => setIsStoreMode(false)}

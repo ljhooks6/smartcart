@@ -119,3 +119,30 @@ All those menus included rice somewhere; a rice side is not automatically a repe
 Final follow-up verification: **272 tests passed; TypeScript, lint and local production build passed.** The mobile allergy-banner work remains part of PR #8; the production allergy restriction is unchanged. No account, shared database, provider model, spending limit, billing or environment-variable changes.
 
 At the owner's explicit request, `vercel.json` disables automatic Git deployment **only for `feature/recipe-quality-dietary-controls`** while this revision is reviewed. Existing production and protected deployments remain in place. This uses Vercel's documented branch-specific [`git.deploymentEnabled`](https://vercel.com/docs/project-configuration/git-configuration) setting. A later approved Preview review can remove that one branch entry; merging or deploying remains separately gated. No current preview URL is evidence of this follow-up's deployed behavior.
+
+## Correction: verify the full mobile application shell
+
+The owner correctly identified a remaining paragraph directly inside the application `<main>` at `6b7abf6`. The earlier isolated component review did not catch that global paragraph, so the prior mobile-banner completion claim was incomplete.
+
+The global paragraph is removed. Its saved-recipe/grocery-list caveat is consolidated into the existing planning notice in `SmartCartContextForm`, next to dietary controls. The notice retains the instruction to keep genuine restrictions entered and now links directly to the complete `/legal/safety` document. The mobile Plan panel and desktop planning form share that component. Existing context-specific ingredient checks and the recipe-modal warnings are preserved.
+
+The **actual `/planner` application**, not a replacement tab-shell or isolated `DietarySafetySummary`, was exercised in Chrome using disposable browser-local saved content. The loopback-only server used dummy credentials and an empty local REST fixture, with no shared Supabase connection, AI generation or email delivery. A temporary fixture-seeding route was removed before commit and build.
+
+| Mobile tab | Planning notice visible at 320px | Visible at 390px | Horizontal overflow |
+|---|---:|---:|---|
+| Week | No | No | None |
+| Plan | Yes, once | Yes, once | None |
+| Meals | No | No | None |
+| Shop | No | No | None |
+| Cook | No | No | None |
+| Vault | No | No | None |
+
+Enter-key navigation was exercised across all six tabs. The actual Cook → View Recipe flow opened a cached synthetic saved recipe with a sesame/tahini conflict; the known-conflict warning and safety link remained visible, and the keyboard-operated close control worked. The complete safety link opened the actual legal document. At 1280px the desktop planning form showed one planning notice and no direct global paragraph. These are browser viewport checks, not full NVDA/VoiceOver/TalkBack or physical-device certification.
+
+`tests/mobile-safety-placement.test.mjs` verifies actual planning-form HTML and full-shell placement; the old integration assertion requiring the global paragraph was corrected to require contextual placement instead. Production allergy-restriction regressions remain mandatory. Rendered browser evidence is retained locally in `outputs/mobile-notice-browser-results.json` and Week/Plan/recipe screenshots; no test route or synthetic account is published.
+
+Final correction verification: **33 targeted tests and all 274 regression tests passed; TypeScript, lint and the local production build passed.** The build contains no disposable review route. No paid AI evaluation, shared migration, production deployment, account change or restriction change was performed.
+
+### Additional Improvements Worth Considering
+
+The confirmed overlap among Plan's general safety messages is recorded as **IMP-001** in [improvement-backlog.md](improvement-backlog.md). Complexity Low; priority Low; benefits both tiers; no paid-service cost. It is a proposal for owner review, separate from the product roadmap and not implemented as part of this correction.
