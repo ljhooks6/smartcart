@@ -17,6 +17,7 @@ import {
 } from "@/lib/meal-request-normalization";
 import { buildGenerateListPrompts } from "@/lib/meal-prompt-builders";
 import { normalizeOptionalMeals } from "@/lib/meal-types";
+import { buildMealVarietyGuidance, reviewMealVariety, type MealVarietyContext } from "./meal-variety";
 
 type GenerateListRequest = {
   budget: number;
@@ -35,6 +36,7 @@ type GenerateListRequest = {
   cuisinePreference?: string;
   apply_upgrades?: boolean;
   existingMeals?: string;
+  recentRejectedMeals?: string[];
   availableEquipment?: string[];
   prepTime?: string;
   mealSourceMode?: "pantry-and-store" | "pantry-only";
@@ -401,7 +403,7 @@ function countCuisineAlignedMeals(
   return meals.filter((meal) => mealMatchesCuisinePreference(cuisinePreference, meal)).length;
 }
 
-export async function generateMealPlan(body: unknown, plan: "free" | "plus", onUsage?: (details: unknown) => void) {
+export async function generateMealPlan(body: unknown, plan: "free" | "plus", onUsage?: (details: unknown) => void, varietyContext: MealVarietyContext = {}) {
   const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const {
     budget,
@@ -420,6 +422,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     cuisinePreference: requestedCuisinePreference,
     apply_upgrades,
     existingMeals,
+    recentRejectedMeals,
     availableEquipment,
     prepTime,
     mealSourceMode,
@@ -465,6 +468,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
   const cuisineGuidance = buildCuisineGuidance(cuisinePreference);
   const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
+  const varietyInput = { existingMeals, recentRejectedMeals, mustHaveIngredient, mealSourceMode };
 
   const { systemPrompt, userPrompt } = buildGenerateListPrompts({
     adventureGuidance: adventureGuidance.generationBlock,
@@ -476,6 +480,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     cuisinePromptBlock: cuisineGuidance.promptBlock,
     dietaryPromptBlock: dietaryPreferences.promptBlock,
     existingMeals: existingMeals?.trim() || "None provided",
+    varietyGuidance: buildMealVarietyGuidance(varietyInput, varietyContext),
     fullyStocked: Array.isArray(fullyStocked) ? fullyStocked : [],
     householdSize,
     includeDessert: Boolean(includeDessert),
@@ -703,6 +708,8 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     return NextResponse.json({
       dietarySafety,
       ...parsed,
+      // No extra provider call or retry is made for this culinary preference.
+      varietyReview: reviewMealVariety(parsed.meals.map(meal => meal.name), varietyInput, varietyContext),
       meals: allMeals,
       breakfasts: includeBreakfast ? parsed.breakfasts : [],
       lunches: includeLunch ? parsed.lunches : [],

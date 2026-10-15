@@ -11,6 +11,7 @@ export const generationRequestSchema = z.object({
   includeDessert: z.boolean().optional(), includeBreakfast: z.boolean().optional(), includeLunch: z.boolean().optional(),
   adventureLevel: z.string().max(200).optional(), cuisinePreference: z.string().max(200).optional(),
   apply_upgrades: z.boolean().optional(), existingMeals: text.optional(),
+  recentRejectedMeals: z.array(z.string().min(1).max(180)).max(12).optional(),
   availableEquipment: z.array(z.string().max(100)).max(20).default(["Oven", "Stovetop", "Microwave"]),
   prepTime: z.string().max(200).optional(), mealSourceMode: z.enum(["pantry-and-store", "pantry-only"]).optional(),
 });

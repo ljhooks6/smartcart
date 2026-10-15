@@ -83,4 +83,39 @@ Pricing-source feasibility is in [localized-grocery-pricing.md](localized-grocer
 
 Evaluation pricing references: [GPT-4.1](https://developers.openai.com/api/docs/models/gpt-4.1) and [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), reviewed October 15, 2026. Remaining cost uncertainty is actual account billing/service terms, not a license to exceed the approved ceiling.
 
-Final verification: **259 automated tests passed**, TypeScript passed, lint passed and production build passed. The only tool notices were existing Next lint deprecation and stale Browserslist metadata; no dependency upgrade was bundled. FDA ingredient-label reference reviewed: https://www.fda.gov/food/buy-store-serve-safe-food/food-allergies-what-you-need-know. This reference does not certify model output or replace ingredient validation.
+Verification of the original recipe-quality revision: **259 automated tests passed**, TypeScript passed, lint passed and production build passed. The only tool notices were existing Next lint deprecation and stale Browserslist metadata; no dependency upgrade was bundled. FDA ingredient-label reference reviewed: https://www.fda.gov/food/buy-store-serve-safe-food/food-allergies-what-you-need-know. This reference does not certify model output or replace ingredient validation.
+
+## Follow-up: recurring meal families across generations
+
+The owner reports repeated fried-rice suggestions in actual use. Code inspection confirms an explanation: the client previously sent only titles from the current generated plan and Cook menu, discarded older completed plans, and never sent rejected titles to full-plan generation. Rejections existed in memory only, were remembered only after a successful replacement, and were used only for Plus replacements. Exact-title exclusion treats Chicken Fried Rice, Vegetable Fried Rice and Egg Fried Rice as different choices. Existing format/protein checks mainly examined one seven-dinner response; they did not prevent one fried-rice dish from returning in every new plan. Low temperature, repeated frugality/pantry-reuse instructions, a stir-fry-over-rice example and a conflicting numeric protein reminder reinforced predictable defaults. These are code-level contributors, not proof of the model's internal reasoning.
+
+Reclassifying the **already collected** synthetic menus found these recurring families (number of accepted plans containing the family, not distinct users or longitudinal customer activity):
+
+| Family | Baseline, 15 accepted plans | Original quality candidate, 16 accepted plans |
+|---|---:|---:|
+| Fried rice | 5 | 8 |
+| Lemon chicken | 11 | 8 |
+| Beans and rice | 9 | 5 |
+| Quesadillas | 5 | 6 |
+| Potato hash | 4 | 2 |
+| Stir-fry | 4 | 3 |
+
+All those menus included rice somewhere; a rice side is not automatically a repeated dish. The cases share a stocked pantry, so these counts demonstrate fallback patterns in that dataset, not population prevalence or a before/after result for this follow-up. No further paid evaluations were run.
+
+### Correction
+
+- The authorized worker reuses the latest **three completed plans in the preceding 14 days** from the existing private generation-job table. Both `owner_key` and `user_id` are checked; guests use their individual server-issued cookie identity, never a shared network quota. Failed/current/future/older jobs and other accounts are excluded. Only dinner titles reach the prompt; historical dietary inputs, ingredients, feedback and provider usage are not forwarded. No new public history endpoint, RLS changes or migration.
+- History loads after authorization/claim, with a two-second timeout and a graceful fallback to current request context. It does not alter the stored input or idempotency hash. No server history is copied into the public job input or an account-independent cache.
+- A shared local classifier groups fried-rice variants (including stir-fried rice and common named variants), stir-fries, rice bowls and the other observed families. It distinguishes rice sides, risotto, pilaf and jambalaya from fried rice. It is deliberately a small heuristic vocabulary, not a universal semantic classifier.
+- Initial prompts distinguish within-plan diversity from across-generation rotation. Up to four recent families receive a short-term preference to rotate away, with rejected families strongest and common rice-default patterns prioritized. Swapping fried rice for another generic stir-fry/rice bowl is not presented as novelty. Instructions favor recognizable compatible dishes and economical ingredient overlap rather than maximizing pantry reuse. Contradictory numeric protein guidance and the anchoring stir-fry example were removed.
+- Up to twelve rejected titles are now remembered for 14 days in the current account's browser storage, including when a replacement fails. They are cleared by the existing reset action and ignored after expiry. Owner checks prevent reuse after switching accounts. Both Free and Plus full-plan and replacement requests receive this context. Rejections are not a cross-device preference service; recent completed plans supply server history across devices for a signed-in account. Local expiry is pruned on use/visit, not by a new background cleanup process.
+- Fried rice remains available when specifically requested through the existing must-have field or when constraints make it reasonable. Asking for rice/eggs alone is not interpreted as asking for fried rice. Dietary safety, pantry-only availability, budget, equipment, cuisine and time remain ahead of novelty. Saved recipes/plans are not rewritten.
+- A separate deterministic `varietyReview` records within-plan family counts and recent-family overlap in the owned result. **It never requests a paid retry, fails a valid plan, removes dinners or edits ingredients.** The new rotation is culinary guidance, not a claim of guaranteed model diversity. If a provider ignores it, the review exposes the overlap without charging for an automatic replacement. Existing safety/schema correction and pre-existing Plus refinement behavior retain their original bounds.
+
+### Follow-up verification and review hold
+
+`tests/meal-variety.test.mjs` adds 13 mocked tests: family aliases; within/across-plan distinction; other fallback families; request/constraint exceptions; bounded account/guest history; history failure fallback; bounded expiring rejection storage; schema ownership isolation; consecutive Free/Plus requests with different family context on the initial call; provider noncompliance without an added call; worker idempotency/input preservation; and Free replacement rejection context. The consecutive-generation fixture verifies the request/response wiring, **not a new live-model quality measurement**.
+
+Final follow-up verification: **272 tests passed; TypeScript, lint and local production build passed.** The mobile allergy-banner work remains part of PR #8; the production allergy restriction is unchanged. No account, shared database, provider model, spending limit, billing or environment-variable changes.
+
+At the owner's explicit request, `vercel.json` disables automatic Git deployment **only for `feature/recipe-quality-dietary-controls`** while this revision is reviewed. Existing production and protected deployments remain in place. This uses Vercel's documented branch-specific [`git.deploymentEnabled`](https://vercel.com/docs/project-configuration/git-configuration) setting. A later approved Preview review can remove that one branch entry; merging or deploying remains separately gated. No current preview URL is evidence of this follow-up's deployed behavior.

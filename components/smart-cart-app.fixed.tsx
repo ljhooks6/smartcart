@@ -19,6 +19,7 @@ import { deriveGroceryLists } from "../lib/grocery-list";
 import { restoreMealAtPosition, undoCookedEntry } from "../lib/meal-recovery";
 import { countCookedThisWeek } from "../lib/week-progress";
 import { getMealKind, mealKindLabel, hasRoomForMeal } from "../lib/meal-types";
+import { recentRejections, type RejectedMealEntry } from "../lib/meal-variety";
 import { recoverWeekDraft, weekDraftKey, weekSnapshot, saveErrorMessage } from "../lib/save-recovery";
 import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
@@ -666,7 +667,7 @@ export function SmartCartApp() {
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
   const [replacingDessertKey, setReplacingDessertKey] = useState<string | null>(null);
-  const [recentRejectedMeals, setRecentRejectedMeals] = useState<string[]>([]);
+  const [rejectedHistory, setRejectedHistory] = useState<{ owner: string; entries: RejectedMealEntry[] }>({ owner: "", entries: [] });
   const [expandedDetailCards, setExpandedDetailCards] = useState<Set<string>>(
     new Set(),
   );
@@ -749,6 +750,18 @@ export function SmartCartApp() {
   }, []);
 
   const planOwner = user?.id || "guest";
+  const rejectionStorageKey = `mealcaddie-rejected-meals:${planOwner}`;
+  const recentRejectedMeals = rejectedHistory.owner === planOwner
+    ? recentRejections(rejectedHistory.entries).map(entry => entry.title) : [];
+  useEffect(() => {
+    if (!hasResolvedAuthSession) return;
+    setRejectedHistory({ owner: planOwner, entries: recentRejections(loadStoredJson(rejectionStorageKey)) });
+  }, [hasResolvedAuthSession, planOwner, rejectionStorageKey]);
+  useEffect(() => {
+    if (hasResolvedAuthSession && rejectedHistory.owner === planOwner) {
+      saveStoredJson(rejectionStorageKey, recentRejections(rejectedHistory.entries));
+    }
+  }, [hasResolvedAuthSession, planOwner, rejectionStorageKey, rejectedHistory]);
   const [loadedPlanOwner, setLoadedPlanOwner] = useState<string | null>(null);
   const persistGeneratedPlan = useCallback((plan: GenerateListResponse | null) => {
     if (!hasResolvedAuthSession || loadedPlanOwner !== planOwner) return;
@@ -1275,6 +1288,7 @@ export function SmartCartApp() {
           availableEquipment: formState.availableEquipment,
           apply_upgrades: applyUpgrades,
           existingMeals: existingMealTitles,
+          recentRejectedMeals,
         });
   }
 
@@ -1814,7 +1828,8 @@ export function SmartCartApp() {
     setSavedDesserts([]);
     setReplacingMealKey(null);
     setReplacingDessertKey(null);
-    setRecentRejectedMeals([]);
+    setRejectedHistory({ owner: planOwner, entries: [] });
+    clearStoredJson(rejectionStorageKey);
     setExpandedDetailCards(new Set());
     mobileScrollPositions.current = {};
     setCloudSyncMessage("");
@@ -2377,6 +2392,12 @@ export function SmartCartApp() {
 
     setReplacingMealKey(mealKey);
     setRequestError(null);
+    // Record the user's rejection even if the replacement provider fails. Scope
+    // it to this identity; switching accounts never reuses another user's list.
+    setRejectedHistory(current => ({ owner: planOwner, entries: recentRejections([
+      { title: meal.name, rejectedAt: new Date().toISOString() },
+      ...(current.owner === planOwner ? current.entries : []),
+    ]) }));
 
     try {
       const response = await fetch("/api/replace-meal", {
@@ -2442,10 +2463,6 @@ export function SmartCartApp() {
         persistGeneratedPlan(nextPlan);
         return nextPlan;
       });
-
-      setRecentRejectedMeals((current) =>
-        Array.from(new Set([...current, safeTrim(meal.name)])).slice(-12),
-      );
 
       setWeeklyMenu((current) =>
         current.map((savedMeal) =>

@@ -21,6 +21,7 @@ import {
   parseMealNameList,
 } from "@/lib/meal-request-normalization";
 import { buildReplaceMealPrompts } from "@/lib/meal-prompt-builders";
+import { buildMealVarietyGuidance, mealTitles } from "@/lib/meal-variety";
 
 type ReplaceMealRequest = {
   budget: number;
@@ -266,14 +267,12 @@ export async function POST(request: Request) {
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
   const cuisineGuidance = buildCuisineGuidance(cuisinePreference);
   const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
-  const premiumRejectedMeals = isPremiumReplacement && Array.isArray(recentRejectedMeals)
-    ? recentRejectedMeals
-    : [];
+  const rejectedHistory = mealTitles(recentRejectedMeals, 12);
   const blockedTitles = Array.from(
     new Set([
       ...parseMealNameList(existingMeals),
       ...(isPremiumReplacement ? parseMealNameList(currentMealsContext) : []),
-      ...(premiumRejectedMeals.map((meal) =>
+      ...(rejectedHistory.map((meal) =>
         meal.trim().toLowerCase(),
       )),
       rejectedMealTitle.trim().toLowerCase(),
@@ -281,6 +280,11 @@ export async function POST(request: Request) {
   ).filter(Boolean);
 
   const { systemPrompt, userPrompt } = buildReplaceMealPrompts({
+    varietyGuidance: buildMealVarietyGuidance({
+      existingMeals: currentMealsContext || existingMeals,
+      recentRejectedMeals: [rejectedMealTitle, ...rejectedHistory].slice(0, 12),
+      mustHaveIngredient, mealSourceMode,
+    }),
     adventureGuidance: adventureGuidance.replacementBlock,
     adventureLevel: adventureLevel || "No preference provided",
     avoidancePromptBlock: avoidanceGuidance.promptBlock,

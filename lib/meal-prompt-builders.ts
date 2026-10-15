@@ -8,6 +8,7 @@ type GeneratePromptArgs = {
   cuisinePromptBlock: string;
   dietaryPromptBlock: string;
   existingMeals: string;
+  varietyGuidance?: string;
   fullyStocked: string[];
   householdSize: number;
   includeDessert: boolean;
@@ -22,6 +23,7 @@ type GeneratePromptArgs = {
 };
 
 type ReplacePromptArgs = {
+  varietyGuidance?: string;
   mealSourceMode?: "pantry-only" | "pantry-and-store";
   adventureGuidance: string;
   adventureLevel: string;
@@ -137,6 +139,7 @@ export function buildGenerateListPrompts({
   cuisinePromptBlock,
   dietaryPromptBlock,
   existingMeals,
+  varietyGuidance,
   fullyStocked,
   householdSize,
   includeDessert,
@@ -160,7 +163,7 @@ export function buildGenerateListPrompts({
   ];
 
   const corePlanningRules = [
-    "- Always generate a lean, frugal list first unless the user explicitly asks to apply upgrades.",
+    "- Build appetizing, recognizable dishes within the full budget. Affordability does not require the cheapest repetitive template or maximum pantry reuse. Do not apply premium upgrades unless requested.",
     "- Return exactly 7 dinner meals.",
     includeBreakfast ? "- Also return exactly 3 practical breakfast options in breakfasts. These are choices, not an automatic seven-day breakfast schedule. Favor quick meals with protein/fiber, realistic household portions, and affordable ingredients." : "- Breakfast is not selected: return an empty breakfasts array.",
     includeLunch ? "- Also return exactly 3 practical lunch options in lunches. These are choices, not an automatic seven-day lunch schedule. Favor balanced, easy lunches with realistic household portions. Any leftover ingredient must also be listed with the amount required; never assume an unchosen dinner will supply it." : "- Lunch is not selected: return an empty lunches array.",
@@ -169,8 +172,8 @@ export function buildGenerateListPrompts({
     "- Respect the diet exactly.",
     `- Respect the user's prep-time preference: ${prepTime || "No preference provided"}.`,
     "- This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.",
-    "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes (for example \"Baked Chicken\"). You must suggest fully composed plates (for example \"Baked Chicken with Roasted Potatoes and Green Beans\" or a complete one-pan dish like \"Beef and Broccoli Stir-Fry over Rice\"). Use a natural recognizable dish name; a coherent soup, pasta or one-pan dish can already be a complete meal. Describe complementary sides without attaching unrelated rice to every dish.",
-    `- CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals || "None provided"}.`,
+    "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes. Use a natural recognizable dish name; a coherent soup, pasta or one-pan dish can already be a complete meal. Describe complementary sides without attaching unrelated rice to every dish.",
+    `- Avoid repeating these current meal titles: ${existingMeals || "None provided"}. A specifically requested repeat or a hard pantry-only constraint can take precedence; this is not a permanent ban.`,
     `- CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.`,
     ...equipmentGuidance,
   ];
@@ -182,7 +185,7 @@ export function buildGenerateListPrompts({
     isPantryOnlyMode
       ? "- CRITICAL RULE: Pantry items are a hard restriction. You may only use ingredients from Pantry Items, Fully Stocked Pantry Items, and Running Low Pantry Items. Restock Pantry Items are not available for cooking in pantry-only mode."
       : "- CRITICAL RULE: Pantry items are helpful context, not a restriction. You are allowed to introduce additional proteins that are not already in the pantry and place them in the meal ingredients so the menu stays varied.",
-    "- CRITICAL RULE: Stop defaulting to cheap LLM tropes like Chickpea Curry, Lentil Soup, or Bean Tacos unless the user explicitly marked those items as owned in their pantry. You must prioritize the actual proteins the user selected. Do not force legumes into the menu just to keep the budget low. Be creative with the ingredients provided.",
+    "- Choose proteins compatible with dietary preferences, budget and owned inventory. Legumes are legitimate dishes, not mandatory low-cost fillers. Do not make a dish the default simply because its ingredients are already owned.",
     "- Build intentional flavor using a fitting marinade, sauce, aromatic or seasoning. A simple dish can work with one or two; never invent pantry-only seasonings.",
     "- CRITICAL RULE: FLAVOR VARIETY. Do not let the same spice, herb, or aromatic dominate the entire week. Avoid repeated signature flavor cues in titles when constraints allow; pantry-only availability outranks this preference. If cumin appears in one title, do not keep using cumin in other titles unless it is truly essential.",
     "- CRITICAL RULE: TITLE VARIETY. Do not repeat the same cuisine word, spice word, or meal format over and over in the meal names. Avoid titles that feel templated.",
@@ -194,7 +197,7 @@ export function buildGenerateListPrompts({
   const pantryAndIngredientRules = [
     isPantryOnlyMode
       ? "- Pantry-only mode is active: every ingredient in every meal must be something the user already has. Do not add grocery-gap ingredients."
-      : "- Reuse pantry items whenever possible.",
+      : "- Reuse pantry ingredients where useful, while rotating dishes, formats and techniques; owning rice and eggs does not require another fried-rice dinner.",
     isPantryOnlyMode
       ? "- Use Pantry Items, Fully Stocked Pantry Items, and Running Low Pantry Items as the available kitchen inventory. Do not use Restock Pantry Items."
       : "- Use pantry items from the \"fully stocked\", \"running low\", and \"restock\" lists to shape the meals.",
@@ -276,6 +279,7 @@ export function buildGenerateListPrompts({
     "Rules:",
     corePlanningRules,
     varietyRules,
+    varietyGuidance || "",
     pantryAndIngredientRules,
     writingAndDessertRules,
     adventureRules,
@@ -305,7 +309,7 @@ export function buildGenerateListPrompts({
     `Cuisine Preference: ${cuisinePromptBlock.replace("Cuisine preference: ", "")}`,
     `Prep Time Preference: ${prepTime || "No preference provided"}`,
     `Available Kitchen Equipment: ${selectedEquipment}`,
-    "Protein Variety Reminder: Even if the pantry only includes chicken, you must still diversify across at least 3 to 4 different main proteins and cap chicken at 2 meals.",
+    "Protein variety reminder: aim for variety only where the diet, owned inventory, budget, equipment and prep time support it. Vary the actual dish and technique; never invent pantry-only ingredients to meet a protein quota.",
     dietaryPromptBlock,
     mustHavePromptBlock,
     avoidancePromptBlock,
@@ -324,6 +328,7 @@ export function buildGenerateListPrompts({
 }
 
 export function buildReplaceMealPrompts({
+  varietyGuidance,
   adventureGuidance,
   adventureLevel,
   blockedTitles,
@@ -346,6 +351,7 @@ export function buildReplaceMealPrompts({
     `You are an expert budget-conscious meal planner helping replace a single rejected ${mealType}.`,
     "",
     "Rules:",
+    varietyGuidance || "",
     [
       "- Generate exactly ONE replacement meal.",
       `- The replacement MUST be a ${mealType} suitable for that time of day. Keep breakfast quick and practical, lunch balanced and easy, and dinner a complete plate.`,
