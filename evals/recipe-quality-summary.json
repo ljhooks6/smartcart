@@ -1,0 +1,603 @@
+{
+  "method": "40 unique case/tier/variant runs, with final candidate validator replay and remaining bounded correction slots; exploratory, not independent final-head resampling",
+  "baseline": "9fc354f17645d2e3aea44123f74960fbda3ab81a",
+  "providerCalls": 51,
+  "estimatedCostUSD": 1.598234,
+  "ceilingUSD": 15,
+  "rawEvidenceSHA256": "44de58aa430124278476d7a955e4a412bccbbeaf09eedd4202ae890530d259a4",
+  "results": [
+    {
+      "key": "two-adults-60/free/before",
+      "status": 500,
+      "providerResponses": 2,
+      "error": "Generated meals still repeated signature flavor words in titles after retry: garlic"
+    },
+    {
+      "key": "adventurous-100/free/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 121,
+      "menu": [
+        "Greek Lemon Chicken with Roasted Potatoes and Tomato-Cucumber Salad",
+        "Moroccan Chickpea Tagine with Carrots and Rice",
+        "Japanese Salmon Teriyaki with Steamed Rice and Sautéed Carrots",
+        "Indian Egg Curry with Steamed Rice and Tomato-Onion Salad",
+        "Mexican Black Bean and Veggie Quesadillas with Pico de Gallo",
+        "West African Peanut Stew with Chicken and Rice",
+        "Italian Sausage and Tomato Pasta Bake with Garlic Bread"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "two-adults-60/plus/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 151.75,
+      "menu": [
+        "Roast Chicken with Potato Wedges and Carrots",
+        "Mexican-Inspired Black Beans and Rice with Cabbage Slaw",
+        "Mini Meatloaves with Mashed Potatoes and Peas",
+        "Lemon-Oregano Chicken Pilaf with Carrots and Peas",
+        "Homestyle Egg and Potato Hash with Sautéed Cabbage",
+        "Keema-Inspired Beef and Peas over Rice",
+        "Tomato-Braised Black Beans with Carrot Rice"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "adventurous-100/plus/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 152.25,
+      "menu": [
+        "Moroccan-Inspired Chicken with Carrot Rice",
+        "Vietnamese-Inspired Ginger Pork with Cabbage and Rice",
+        "Chinese-Inspired Tomato-Braised Tofu over Rice",
+        "Cuban-Inspired Black Beans and Rice with Lemony Cabbage",
+        "Greek-Style Oregano Pork with Roasted Potatoes and Green Beans",
+        "Indian-Inspired Tofu Bhurji with Potatoes and Cabbage",
+        "Peruvian-Inspired Roast Chicken with Golden Potatoes and Tomato Salad"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "family-four/free/before",
+      "status": 200,
+      "providerResponses": 2,
+      "estimatedIngredientTotal": 126.5,
+      "menu": [
+        "Oven-Baked Chicken Breast with Roasted Potatoes and Lemon-Carrot Salad",
+        "Classic Beef Burgers with Oven Fries and Sautéed Onions",
+        "Cheesy Baked Pasta with Tomato Sauce and Herbed Carrot Ribbons",
+        "Pan-Seared Pork Chops with Sautéed Carrots and Herb Rice",
+        "Vegetarian Black Bean and Rice Skillet with Tomatoes and Cumin",
+        "Stovetop Tuna Noodle Casserole with Buttered Peas",
+        "Oven-Baked BBQ Chicken Drumsticks with Seasoned Potato Wedges and Coleslaw"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "family-four/plus/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 131,
+      "menu": [
+        "Paprika Roast Chicken with Potato Wedges and Carrots",
+        "Homestyle Meatloaf with Mashed Potatoes and Buttered Carrots",
+        "Smothered Pork Chops with Rice and Green Beans",
+        "Black Bean and Cheddar Quesadillas with Fresh Tomato Salad",
+        "One-Pot Chicken and Rice with Sweet Carrots",
+        "Spaghetti with Beef-Tomato Sauce and Roasted Broccoli",
+        "Country Pork, Cabbage, and Potato Skillet"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "limited-equipment/free/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 85,
+      "menu": [
+        "Lemon Herb Chicken Breast with Garlic Rice and Sautéed Carrots",
+        "Classic Beef and Potato Skillet with Onions and Paprika",
+        "Vegetable Fried Rice with Scrambled Eggs and Scallions",
+        "Spicy Black Bean and Tomato Stew with Garlic Toast",
+        "Pan-Seared Pork Chops with Lemon Potatoes and Sautéed Onions",
+        "Simple Shrimp and Tomato Sauté over Rice",
+        "Egg and Potato Hash with Sautéed Onions and Bell Peppers"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "limited-equipment/plus/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 136,
+      "menu": [
+        "Homestyle Chicken with Mashed Potatoes and Carrots",
+        "Mexican-Inspired Black Beans and Rice with Tomato-Cabbage Slaw",
+        "Pork Chops with Onion Gravy, Boiled Potatoes, and Wilted Cabbage",
+        "Mediterranean Lemon Chicken and Tomato Rice",
+        "Beef Patties with Potato-Carrot Mash and Sautéed Onions",
+        "Ginger-Soy Pork Stir-Fry over Rice",
+        "Smoky Black Bean and Egg Hash with Tomatoes and Potatoes"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "short-prep/free/before",
+      "status": 200,
+      "providerResponses": 2,
+      "estimatedIngredientTotal": 100.5,
+      "menu": [
+        "Lemon Herb Chicken Breast with Roasted Potatoes and Carrots",
+        "Savory Beef and Vegetable Stir-Fry over Rice",
+        "Pan-Seared Salmon with Rice Pilaf and Sautéed Spinach",
+        "Vegetarian Black Bean and Tomato Skillet with Spiced Rice",
+        "Classic Pork Chops with Mashed Potatoes and Buttered Green Beans",
+        "Egg Fried Rice with Scallions, Carrots, and Peas",
+        "Baked Tilapia with Herbed Tomato Rice and Lemon"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "short-prep/plus/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 78,
+      "menu": [
+        "Paprika Chicken with Mashed Potatoes and Carrots",
+        "Classic Beef Burgers with Crispy Potato Wedges and Tomato Salad",
+        "Homestyle Pork Chops with Rice and Glazed Carrots",
+        "Greek-Inspired Lemon Chicken with Rice and Warm Tomatoes",
+        "Keema-Inspired Beef with Potatoes and Peas",
+        "Black Bean and Cheddar Quesadillas with Tomato-Carrot Slaw",
+        "Cuban-Inspired Black Beans and Rice with Fresh Tomato Relish"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "pantry-only/free/before",
+      "status": 200,
+      "providerResponses": 2,
+      "estimatedIngredientTotal": 74.1,
+      "menu": [
+        "Paprika Chicken Breast with Roasted Potatoes and Carrots",
+        "Spanish-Style Rice with Black Beans, Tomatoes, and Cumin",
+        "Vegetable Frittata with Caramelized Onion, Tomato, and Herbs",
+        "Classic Oven-Baked Chicken Cutlets with Lemon Butter Carrots and Potatoes",
+        "Savory Black Bean and Rice Patties with Tomato-Carrot Relish",
+        "Egg and Potato Hash with Sautéed Onions and Paprika",
+        "Vegetable and Black Bean Stew with Rice and Lemon"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "vegetarian/free/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 88.5,
+      "menu": [
+        "Black Bean & Roasted Veggie Rice Bowls with Lemon-Garlic Yogurt Sauce",
+        "Vegetarian Egg Fried Rice with Snap Peas and Scallions",
+        "Cheesy Potato & Tomato Bake with Fresh Thyme and Paprika",
+        "Moroccan-Spiced Chickpea Stew with Carrots and Lemon",
+        "Vegetable Frittata with Spinach, Tomatoes, and Feta",
+        "Vegetarian Chili with Black Beans, Corn, and Smoked Paprika",
+        "Oven-Baked Vegetable Quesadillas with Black Beans, Cheese, and Cilantro"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "pantry-only/plus/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 154,
+      "menu": [
+        "Homestyle Roast Chicken with Potatoes and Carrots",
+        "Black Bean–Oat Patties with Mashed Potatoes and Warm Tomatoes",
+        "Golden Egg and Potato Hash with Carrots",
+        "Mediterranean-Inspired Lemon Chicken Pilaf with Carrots",
+        "Latin-Inspired Black Beans and Tomato Rice",
+        "Shakshuka-Inspired Eggs with Crisp Potato Wedges",
+        "Loaded Black Bean Potatoes with Carrot-Tomato Slaw"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "common-allergen/free/before",
+      "status": 422,
+      "providerResponses": 0,
+      "error": "AI generation for allergy-dependent, free-from or unverified dietary restrictions is temporarily unavailable. MealCaddie cannot verify ingredient composition, substitutions or cross-contact. Your dietary text and saved content remain unchanged. Do not remove an actual restriction to get a result; verify food independently or seek qualified advice."
+    },
+    {
+      "key": "common-allergen/plus/before",
+      "status": 422,
+      "providerResponses": 0,
+      "error": "AI generation for allergy-dependent, free-from or unverified dietary restrictions is temporarily unavailable. MealCaddie cannot verify ingredient composition, substitutions or cross-contact. Your dietary text and saved content remain unchanged. Do not remove an actual restriction to get a result; verify food independently or seek qualified advice."
+    },
+    {
+      "key": "vegetarian/plus/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 144,
+      "menu": [
+        "Homestyle Potato Frittata with Roasted Carrots",
+        "Ginger Tofu Fried Rice with Broccoli and Peas",
+        "Black Bean Patties with Oven Fries and Carrot Slaw",
+        "Cumin Black Bean Quesadillas with Tomato-Carrot Salad",
+        "Cottage Cheese–Stuffed Baked Potatoes with Broccoli",
+        "Mediterranean Lemon Tofu with Herbed Rice and Roasted Carrots",
+        "Shakshuka with Warm Tortilla Wedges"
+      ],
+      "desserts": [],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "multiple-restrictions/free/before",
+      "status": 422,
+      "providerResponses": 0,
+      "error": "AI generation for allergy-dependent, free-from or unverified dietary restrictions is temporarily unavailable. MealCaddie cannot verify ingredient composition, substitutions or cross-contact. Your dietary text and saved content remain unchanged. Do not remove an actual restriction to get a result; verify food independently or seek qualified advice."
+    },
+    {
+      "key": "multiple-restrictions/plus/before",
+      "status": 422,
+      "providerResponses": 0,
+      "error": "AI generation for allergy-dependent, free-from or unverified dietary restrictions is temporarily unavailable. MealCaddie cannot verify ingredient composition, substitutions or cross-contact. Your dietary text and saved content remain unchanged. Do not remove an actual restriction to get a result; verify food independently or seek qualified advice."
+    },
+    {
+      "key": "dessert-inclusive/free/before",
+      "status": 200,
+      "providerResponses": 2,
+      "estimatedIngredientTotal": 110,
+      "menu": [
+        "Lemon Herb Roasted Chicken Breast with Roasted Potatoes & Carrots",
+        "Simple Beef Stir-Fry with Rice & Bell Peppers",
+        "Oven-Baked Salmon with Herbed Rice & Steamed Broccoli",
+        "Vegetable & Black Bean Enchiladas with Tomato Salsa",
+        "Classic Pork Chops with Sautéed Apples & Mashed Potatoes",
+        "Egg Fried Rice with Scallions, Carrots & Peas",
+        "Mediterranean Baked Cod with Tomato, Onion & Herb Rice"
+      ],
+      "desserts": [
+        "Classic Oatmeal Raisin Cookies",
+        "Lemon Pudding Cake"
+      ],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "dessert-inclusive/plus/before",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 136,
+      "menu": [
+        "Paprika Roast Chicken with Potatoes and Carrots",
+        "Mini Meatloaves with Mashed Potatoes and Buttered Carrots",
+        "Pan-Seared Pork Chops with Rice and Tender Cabbage",
+        "Greek-Inspired Lemon Chicken with Tomato Rice",
+        "Ginger Beef and Cabbage Stir-Fry over Rice",
+        "Mexican-Inspired Black Bean and Tomato Rice Skillet",
+        "Moroccan-Inspired Black Bean, Potato and Carrot Stew"
+      ],
+      "desserts": [
+        "Cinnamon Oat Cookies",
+        "Warm Lemon Custard Pudding"
+      ],
+      "separateDescriptions": 0
+    },
+    {
+      "key": "two-adults-60/free/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 48.889999999999986,
+      "menu": [
+        "Lemon Herb Chicken Breast with Roasted Potatoes and Carrots",
+        "Beef and Vegetable Stir-Fry over Rice",
+        "Baked Tilapia with Tomato Rice Pilaf",
+        "Vegetable and Black Bean Quesadillas with Tomato Salsa",
+        "Classic Meatloaf with Mashed Potatoes and Buttered Carrots",
+        "Stovetop Chicken Fried Rice",
+        "Oven-Baked Salmon with Garlic Potatoes and Steamed Carrots"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "adventurous-100/free/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 61.11999999999999,
+      "menu": [
+        "Moroccan-Spiced Chicken with Roasted Carrots and Lemon Rice",
+        "Thai-Inspired Shrimp and Vegetable Stir-Fry with Jasmine Rice",
+        "Spanish Chickpea and Potato Stew",
+        "Japanese Salmon Teriyaki with Steamed Rice and Sautéed Carrots",
+        "West African Black Bean and Tomato Peanut Stew",
+        "Greek-Style Baked Cod with Lemon Potatoes and Tomato Salad",
+        "Korean Beef and Vegetable Bulgogi Bowl"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "two-adults-60/plus/after",
+      "status": 200,
+      "providerResponses": 2,
+      "estimatedIngredientTotal": 40.52,
+      "menu": [
+        "Chicken Pot Pie with a Biscuit Crust",
+        "Paprika Pork Chops with Mashed Potatoes and Cabbage",
+        "Spaghetti with Beef and Garden-Vegetable Sauce",
+        "Chicken Fajitas with Crunchy Lemon Slaw",
+        "Golden Tofu and Egg Fried Rice",
+        "Shakshuka with Warm Skillet Flatbread",
+        "Mediterranean Baked Fish with Lemon Potatoes and Roasted Vegetables"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "adventurous-100/plus/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 43.379999999999995,
+      "menu": [
+        "Chicken Shawarma Rice with Cucumber Yogurt",
+        "Korean-Inspired Ginger Pork with Cabbage and Rice",
+        "Veracruz-Style Fish with Potatoes",
+        "Peanut-Ginger Noodles with Crisp Tofu",
+        "Keema Matar with Rice",
+        "Black Bean Enfrijoladas with Eggs and Cabbage",
+        "Chicken Paprikash with Egg Noodles and Green Beans"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "family-four/free/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 68.32000000000001,
+      "menu": [
+        "Classic Chicken and Rice Bake",
+        "Beef and Potato Skillet with Onions",
+        "Oven-Baked Pork Chops with Roasted Carrots and Potatoes",
+        "Spaghetti and Meatballs with Tomato Sauce",
+        "Cheesy Vegetable Frittata",
+        "Black Bean and Rice Burritos",
+        "Oven-Baked Fish Sticks with Potato Wedges"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "family-four/plus/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 70.50000000000001,
+      "menu": [
+        "Roast Chicken with Potato Wedges and Carrots",
+        "Beef Burgers with Oven Fries and Crunchy Slaw",
+        "Pork Chops with Mashed Potatoes and Green Beans",
+        "Spaghetti with Beef and Garden-Vegetable Sauce",
+        "Biscuit-Topped Chicken Pot Pie",
+        "Lemon-Butter Fish with Rice and Broccoli",
+        "Black Bean and Cheese Quesadillas with Tomato Rice"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "limited-equipment/plus/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 40.37,
+      "menu": [
+        "Chicken with Pan Gravy, Mashed Potatoes and Carrots",
+        "Pork Chops with Onion Potatoes and Green Beans",
+        "Spaghetti with Beef, Tomato and Spinach Sauce",
+        "Black Bean and Cheddar Quesadillas with Crunchy Slaw",
+        "Ginger-Soy Chicken and Broccoli over Rice",
+        "Mediterranean Tomato-Poached Fish with Couscous and Zucchini",
+        "Potato and Spinach Hash with Soft Scrambled Eggs"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "limited-equipment/free/after",
+      "status": 200,
+      "providerResponses": 2,
+      "estimatedIngredientTotal": 34.92999999999999,
+      "menu": [
+        "Chicken and Vegetable Stir-Fry with Rice",
+        "Black Bean and Tomato Skillet with Fried Eggs",
+        "Simple Beef and Potato Hash",
+        "Vegetable Fried Rice with Scrambled Egg",
+        "Pan-Seared Tilapia with Sautéed Potatoes and Garlic Lemon Butter",
+        "Spicy Chickpea and Tomato Stew",
+        "Pasta Primavera with Chicken and Lemon"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "short-prep/free/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 32.13999999999999,
+      "menu": [
+        "Lemon Herb Chicken Breast with Roasted Potatoes and Carrots",
+        "Black Bean & Rice Skillet with Sautéed Onions and Tomatoes",
+        "Oven-Baked Tilapia with Garlic Butter and Steamed Rice",
+        "Vegetable Fried Rice with Scrambled Eggs",
+        "Pasta Primavera with Roasted Vegetables",
+        "Sheet Pan Sausage, Potato, and Onion Bake",
+        "Beef and Tomato Skillet with Garlic Rice"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "short-prep/plus/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 40.269999999999996,
+      "menu": [
+        "Beef Burgers with Potato Wedges and Lemon Slaw",
+        "Paprika Pork Chops with Mashed Potatoes and Green Beans",
+        "Homestyle Chicken and Gravy with Potatoes and Carrots",
+        "Chicken Fajita Tacos with Fresh Tomato Salsa",
+        "Shrimp and Egg Fried Rice",
+        "Black Bean and Cheddar Quesadillas with Crunchy Tomato Slaw",
+        "Mediterranean Tuna Penne with Tomatoes and Spinach"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "pantry-only/free/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 30.449999999999996,
+      "menu": [
+        "Lemon Paprika Roasted Chicken Breast with Garlic Potatoes and Carrots",
+        "Spanish-Inspired Rice with Tomato, Onion, and Fried Eggs",
+        "Black Bean and Vegetable Stew with Rice",
+        "Classic Oven-Baked Chicken with Mashed Potatoes and Buttered Carrots",
+        "Vegetable Fried Rice with Scrambled Eggs",
+        "Savory Black Bean Patties with Garlic Potato Wedges and Tomato Salad",
+        "Simple Vegetable Omelette with Sautéed Potatoes"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "pantry-only/plus/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 28.17,
+      "menu": [
+        "Paprika Chicken with Mashed Potatoes and Buttered Carrots",
+        "Black Bean Patties with Oven Fries and Tomato Salad",
+        "Potato and Onion Frittata with Roasted Carrots",
+        "Lemon-Garlic Chicken Pilaf",
+        "Cumin Black Beans and Tomato Rice",
+        "Shakshuka with Crisp Potato Wedges",
+        "Black Bean and Vegetable Cottage Pie"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "vegetarian/free/after",
+      "status": 200,
+      "providerResponses": 2,
+      "estimatedIngredientTotal": 28.609999999999996,
+      "menu": [
+        "Vegetarian Black Bean Enchiladas",
+        "Vegetable Fried Rice with Egg",
+        "Potato and Onion Frittata",
+        "Chickpea and Tomato Curry with Rice",
+        "Lemon-Garlic Roasted Vegetable Sheet Pan Dinner",
+        "Vegetable and Cheese Quesadillas",
+        "Classic Vegetable Pot Pie"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "common-allergen/free/after",
+      "status": 422,
+      "providerResponses": 2,
+      "error": "Ingredient validation could not establish compatibility: Composition not verified for: Paprika; Composition not verified for: Cumin; Composition not verified for: Pork Chops; Composition not verified for: Firm Tofu; Composition not verified for: Soy Sauce; Composition not verified for: 80/20 Ground Beef; Composition not verified for: White Fish Fillets (such as Tilapia or Cod); Composition not verified for: Butter"
+    },
+    {
+      "key": "vegetarian/plus/after",
+      "status": 200,
+      "providerResponses": 3,
+      "estimatedIngredientTotal": 34.00999999999999,
+      "menu": [
+        "Black Bean Burgers with Oven Fries and Crunchy Slaw",
+        "Broccoli and Cottage Cheese Macaroni Bake",
+        "Ginger-Soy Tofu with Broccoli over Rice",
+        "Paneer and Peas in Chunky Tomato Gravy with Rice",
+        "Mushroom-Spinach Frittata with Roasted Potatoes",
+        "Black Bean and Cheddar Quesadillas with Tomato-Cabbage Salad",
+        "Lemony White Bean and Vegetable Stew with Toast"
+      ],
+      "desserts": [],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "common-allergen/plus/after",
+      "status": 422,
+      "providerResponses": 1,
+      "error": "Ingredient validation could not establish compatibility: Composition not verified for: Paprika; Composition not verified for: Boneless Pork Chops; Composition not verified for: Green Cabbage; Composition not verified for: Butter; Composition not verified for: Flour; Composition not verified for: 85/15 Ground Beef; Composition not verified for: Green Bell Pepper; Composition not verified for: Cumin; Composition not verified for: Extra-Firm Tofu; Composition not verified for: Frozen Broccoli Florets; Composition not verified for: Fresh Ginger; Composition not verified for: Reduced-Sodium Soy Sauce; Composition not verified for: Sugar; Composition not verified for: Medium Flour Tortillas; Composition not verified for: Cheddar Cheese; Composition not verified for: Raw Peeled Shrimp; Composition not verified for: Dried Penne; Composition not verified for: Fresh Spinach"
+    },
+    {
+      "key": "multiple-restrictions/plus/after",
+      "status": 422,
+      "providerResponses": 1,
+      "error": "Ingredient validation could not establish compatibility: Composition not verified for: Paprika; Composition not verified for: 85/15 Ground Beef; Composition not verified for: Spaghetti; Composition not verified for: Dried Oregano; Composition not verified for: Boneless Pork Chops; Composition not verified for: Frozen Green Beans; Composition not verified for: Corn Tortillas; Composition not verified for: Green Bell Peppers; Composition not verified for: Cumin; Composition not verified for: Plain Tilapia Fillets; Composition not verified for: Frozen Broccoli Florets; Composition not verified for: Fresh Ginger; Composition not verified for: Reduced-Sodium Soy Sauce; Composition not verified for: Sugar; Composition not verified for: Ground Turkey; Composition not verified for: Tomato Paste"
+    },
+    {
+      "key": "multiple-restrictions/free/after",
+      "status": 422,
+      "providerResponses": 2,
+      "error": "Ingredient validation could not establish compatibility: Composition not verified for: Paprika; Composition not verified for: Cumin; Composition not verified for: Pork Chops; Composition not verified for: Scallions; Composition not verified for: Salmon Fillets; Composition not verified for: Ground Turkey"
+    },
+    {
+      "key": "dessert-inclusive/free/after",
+      "status": 200,
+      "providerResponses": 2,
+      "estimatedIngredientTotal": 43.21,
+      "menu": [
+        "Lemon Herb Chicken Breast with Roasted Potatoes and Carrots",
+        "Vegetable Fried Rice with Egg",
+        "Classic Beef and Tomato Skillet",
+        "Black Bean and Veggie Quesadillas",
+        "Oven-Baked Tilapia with Lemon Rice and Sautéed Carrots",
+        "Eggplant Parmesan Bake",
+        "Homestyle Pork Chops with Mashed Potatoes and Garlic Butter Carrots"
+      ],
+      "desserts": [
+        "Lemon Oatmeal Bars",
+        "Simple Chocolate Chip Blondies"
+      ],
+      "separateDescriptions": 7
+    },
+    {
+      "key": "dessert-inclusive/plus/after",
+      "status": 200,
+      "providerResponses": 1,
+      "estimatedIngredientTotal": 49.3,
+      "menu": [
+        "Roast Chicken with Potatoes and Carrots",
+        "Mini Meatloaves with Mashed Potatoes and Peas",
+        "Pork Chops with Onion Gravy, Rice and Apple Cabbage",
+        "Chicken Fajitas with Black Bean–Tomato Salad",
+        "Ginger-Soy Tofu with Broccoli over Rice",
+        "Black Bean Enchiladas with Crunchy Cabbage Slaw",
+        "Spaghetti and Meatballs in Garden Tomato Sauce"
+      ],
+      "desserts": [
+        "Apple Oat Crisp",
+        "Small Lemon Butter Cake"
+      ],
+      "separateDescriptions": 7
+    }
+  ]
+}

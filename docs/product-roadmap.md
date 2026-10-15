@@ -33,3 +33,15 @@ Explore supported TikTok, Instagram and Facebook content, authorized transcripti
 ## Provisional business pricing targets
 
 Free $0; Plus $5.99/month or $49.99/year. These are business targets, not active Stripe prices. Aim for a competitive entry point, personalization and convenience, sustainable AI usage, future household value and recipe management. Final pricing depends on beta feedback, actual AI/hosting costs and observed usage. Do not activate billing or advertise future features as available.
+
+## Proposed initiative — Localized grocery pricing
+
+Optional ZIP code, store/location matching and licensed provider integrations. Show freshness, confidence and coverage, with an explicit general-estimate fallback when no suitable local observation exists. Recipe ingredient cost (quantities consumed) and shopping-cart cost (whole packages purchased after pantry deductions) must be separate figures. ZIP alone is not a price source. Future Plus proposals include preferred-store comparisons, shopping optimization and savings opportunities; basic localization is proposed for Free. Provider access, commercial permission and cost testing precede implementation. See [feasibility assessment](localized-grocery-pricing.md).
+
+## Proposed initiative — Recipe customization and protein swaps
+
+Future **Swap Protein** action: offer only compatible alternatives, preview changes and require confirmation. Preserve the original recipe/version until confirmation. Recalculate title, ingredient quantities, cooking instructions and time, relevant verified doneness guidance, nutrition if available, budget, pantry usage and grocery lists together. This is recipe adaptation, never a word replacement.
+
+Persist original and replacement recipe versions, dietary context, source lineage, confirmed plan reference and idempotency key; update plan/grocery references atomically with ownership and current-entitlement checks. Revalidate allergens, custom exclusions, compound ingredients, equipment and feasibility before presenting and again before saving. Do not overwrite a personally owned recipe implicitly. New storage/versioning schema needs separate migration review.
+
+Proposed Free limited swaps and Plus higher allowance/customization require actual cost and safety evaluation before setting quotas. Preserve the original on failure, denial or expiry. Household concurrency and optional nutrition estimates need explicit design. No swapping is implemented in this release.

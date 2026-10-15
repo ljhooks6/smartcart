@@ -1,3 +1,5 @@
+import { dietaryCandidateEnabled, candidatePolicy, candidateOutputIssues } from "./dietary-candidate";
+import { NextResponse } from "next/server";
 import { allergySafetyResponse } from "./allergy-safety";
 import { readDiet } from "./dietary-safety";
 
@@ -5,6 +7,10 @@ import { readDiet } from "./dietary-safety";
 // Preview envelope with no allergy/intolerance/medical entry can carry ordinary
 // preferences; never discard an unknown field or an actual restriction.
 export function foodSafetyResponse(input: unknown, required = false) {
+  if(dietaryCandidateEnabled() && input && typeof input === "object" && !Array.isArray(input)) {
+    const errors=candidatePolicy(input as Record<string,unknown>).errors;
+    return errors.length ? NextResponse.json({error:errors.join(" "),code:"DIETARY_CANDIDATE_RESTRICTED",retryable:false},{status:422}) : null;
+  }
   if (!input || typeof input !== "object" || Array.isArray(input)) return allergySafetyResponse(input, required);
   const body = input as Record<string,unknown>, field = typeof body.diet === "string" ? "diet" : "dietaryRestrictions";
   const raw = body[field]; const marker = "\nMealCaddie dietary settings v1: ";
@@ -17,4 +23,10 @@ export function foodSafetyResponse(input: unknown, required = false) {
     const noRestriction = ["","none","no preference","no specific diet provided","no allergies","no known allergies","no dietary restrictions"].includes(legacy.trim().toLowerCase());
     return allergySafetyResponse({...body,[field]:[noRestriction ? "" : legacy.trim(),...settings.preferences].filter(Boolean).join(", ")},required);
   } catch { return allergySafetyResponse(input,required); }
+}
+
+export function candidateOutputResponse(input: Record<string,unknown>, value: unknown) {
+ if(!dietaryCandidateEnabled())return null;
+ const errors=candidateOutputIssues(value,input);
+ return errors.length ? NextResponse.json({error:"Ingredient validation could not establish compatibility: "+errors.join("; "),code:"DIETARY_OUTPUT_REJECTED",retryable:false},{status:422}) : null;
 }

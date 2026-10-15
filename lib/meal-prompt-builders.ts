@@ -22,6 +22,7 @@ type GeneratePromptArgs = {
 };
 
 type ReplacePromptArgs = {
+  mealSourceMode?: "pantry-only" | "pantry-and-store";
   adventureGuidance: string;
   adventureLevel: string;
   blockedTitles: string[];
@@ -46,7 +47,9 @@ const GENERATE_JSON_SHAPE = `{
       "day": "Day 1",
       "name": "string",
       "servings": number,
-      "notes": "string",
+      "prep_time_minutes": number,
+      "description": "1-2 sentences about the finished dish, never cooking steps",
+      "notes": "brief practical planning note",
       "ingredients": [
         {
           "name": "string",
@@ -57,13 +60,14 @@ const GENERATE_JSON_SHAPE = `{
     }
   ],
   "estimated_total_cost": number,
-  "breakfasts": [{ "day": "Breakfast 1", "name": "string", "servings": number, "notes": "string", "ingredients": [{ "name": "string", "amount": "string", "price": number }] }],
-  "lunches": [{ "day": "Lunch 1", "name": "string", "servings": number, "notes": "string", "ingredients": [{ "name": "string", "amount": "string", "price": number }] }],
+  "breakfasts": [{ "day": "Breakfast 1", "name": "string", "servings": number, "prep_time_minutes": number, "description": "finished dish flavor and texture", "notes": "planning note", "ingredients": [{ "name": "string", "amount": "string", "price": number }] }],
+  "lunches": [{ "day": "Lunch 1", "name": "string", "servings": number, "prep_time_minutes": number, "description": "finished dish flavor and texture", "notes": "planning note", "ingredients": [{ "name": "string", "amount": "string", "price": number }] }],
   "budget_summary": "string",
   "upgrade_available": boolean,
   "desserts": [
     {
       "title": "string",
+      "prep_time_minutes": number,
       "description": "string",
       "ingredients": [
         {
@@ -94,6 +98,7 @@ function joinPromptSections(sections: Array<string | string[]>) {
 function buildEquipmentGuidance(selectedEquipment: string) {
   const equipment = selectedEquipment.toLowerCase();
   const guidance: string[] = [];
+  if(!equipment.includes("blender"))guidance.push("- No blender is selected: do not include blender-dependent purees or blended sauces. Choose chopped, mashed or pan-built sauces only where the technique genuinely works.");
 
   if (equipment.includes("air fryer")) {
     guidance.push(
@@ -148,7 +153,7 @@ export function buildGenerateListPrompts({
   const isPantryOnlyMode = mealSourceMode === "pantry-only";
 
   const introSection = [
-    "You are an expert, budget-conscious logistical meal planner.",
+    "You are an experienced home cook and budget-conscious meal planner. Build dishes people want to cook again, not inventories assembled into plates.",
     isPantryOnlyMode
       ? "Create 7 dinner meal suggestions that can be made from the user's available pantry items without planning a store trip."
       : "Create 7 dinner meal suggestions that strictly adhere to the user's budget, diet, household size, and pantry items.",
@@ -160,11 +165,11 @@ export function buildGenerateListPrompts({
     includeBreakfast ? "- Also return exactly 3 practical breakfast options in breakfasts. These are choices, not an automatic seven-day breakfast schedule. Favor quick meals with protein/fiber, realistic household portions, and affordable ingredients." : "- Breakfast is not selected: return an empty breakfasts array.",
     includeLunch ? "- Also return exactly 3 practical lunch options in lunches. These are choices, not an automatic seven-day lunch schedule. Favor balanced, easy lunches with realistic household portions. Any leftover ingredient must also be listed with the amount required; never assume an unchosen dinner will supply it." : "- Lunch is not selected: return an empty lunches array.",
     "- Apply the user's diet, avoidance, pantry-only, equipment, prep-time, and budget constraints to breakfast and lunch too. Include their ingredients in the overall budget. Reuse identical ingredients where practical. Breakfast and lunch may use simple seasonings; do not force dinner-style side dishes, dinner protein-variety rules, or three aromatics into them.",
-    "- Respect the budget strictly.",
+    "- Respect the budget strictly. Include a realistic prep_time_minutes for every dish, covering preparation plus cooking until ready to serve; never compress a long braise or yeast rise into a short time limit.",
     "- Respect the diet exactly.",
     `- Respect the user's prep-time preference: ${prepTime || "No preference provided"}.`,
     "- This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.",
-    "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes (for example \"Baked Chicken\"). You must suggest fully composed plates (for example \"Baked Chicken with Roasted Potatoes and Green Beans\" or a complete one-pan dish like \"Beef and Broccoli Stir-Fry over Rice\"). If you suggest a protein, you MUST include a complementary side dish in the meal title.",
+    "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes (for example \"Baked Chicken\"). You must suggest fully composed plates (for example \"Baked Chicken with Roasted Potatoes and Green Beans\" or a complete one-pan dish like \"Beef and Broccoli Stir-Fry over Rice\"). Use a natural recognizable dish name; a coherent soup, pasta or one-pan dish can already be a complete meal. Describe complementary sides without attaching unrelated rice to every dish.",
     `- CRITICAL: Do NOT suggest, generate, or return any of the following meals: ${existingMeals || "None provided"}.`,
     `- CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.`,
     ...equipmentGuidance,
@@ -173,13 +178,13 @@ export function buildGenerateListPrompts({
   const varietyRules = [
     isPantryOnlyMode
       ? "- CRITICAL RULE: PANTRY-ONLY VARIETY. Create as much variety as the available pantry allows, but NEVER invent proteins, produce, sauces, or staple ingredients that are not listed as available."
-      : "- CRITICAL RULE: BALANCED PROTEIN VARIETY. You are generating 7 meals. Limit any single main protein (for example chicken) to a MAXIMUM of 2 meals. You MUST use at least 3 to 4 different main proteins. Do not let the user's pantry limit this rule.",
+      : "- Aim for protein variety when budget, diet and availability support it. Do not force new proteins or bean-heavy fillers to satisfy a numeric target. In constrained menus vary techniques, sauces and formats using available proteins.",
     isPantryOnlyMode
       ? "- CRITICAL RULE: Pantry items are a hard restriction. You may only use ingredients from Pantry Items, Fully Stocked Pantry Items, and Running Low Pantry Items. Restock Pantry Items are not available for cooking in pantry-only mode."
       : "- CRITICAL RULE: Pantry items are helpful context, not a restriction. You are allowed to introduce additional proteins that are not already in the pantry and place them in the meal ingredients so the menu stays varied.",
     "- CRITICAL RULE: Stop defaulting to cheap LLM tropes like Chickpea Curry, Lentil Soup, or Bean Tacos unless the user explicitly marked those items as owned in their pantry. You must prioritize the actual proteins the user selected. Do not force legumes into the menu just to keep the budget low. Be creative with the ingredients provided.",
-    "- CRITICAL RULE: FLAVOR MANDATE. Every recipe must explicitly include at least 3 herbs, spices, or aromatics.",
-    "- CRITICAL RULE: FLAVOR VARIETY. Do not let the same spice, herb, or aromatic dominate the entire week. Repeating the same signature flavor cue in multiple meal titles is forbidden. If cumin appears in one title, do not keep using cumin in other titles unless it is truly essential.",
+    "- Build intentional flavor using a fitting marinade, sauce, aromatic or seasoning. A simple dish can work with one or two; never invent pantry-only seasonings.",
+    "- CRITICAL RULE: FLAVOR VARIETY. Do not let the same spice, herb, or aromatic dominate the entire week. Avoid repeated signature flavor cues in titles when constraints allow; pantry-only availability outranks this preference. If cumin appears in one title, do not keep using cumin in other titles unless it is truly essential.",
     "- CRITICAL RULE: TITLE VARIETY. Do not repeat the same cuisine word, spice word, or meal format over and over in the meal names. Avoid titles that feel templated.",
     "- CRITICAL RULE: FORMAT VARIETY. Do not let more than 2 meals use the same title family such as stir-fry, skillet, curry, bowl, wrap, sheet-pan, pasta bake, or tacos.",
     "- CRITICAL RULE: CUISINE VARIETY. Spread the week across distinct flavor lanes. Do not let the menu read like seven variations of the same seasoning profile.",
@@ -203,12 +208,12 @@ export function buildGenerateListPrompts({
     "- NEVER append conversational text like \"(assumed purchase)\" to ingredient names.",
     "- BANNED: Any text like \"1 item\", \"(assumed purchase)\", or \"to taste\". If an amount is small, use \"1 pinch\" or \"1 tsp\".",
     "- You are a professional grocery curator. Preserve useful ingredient types such as \"Red Bell Peppers\", \"English Cucumber\", and \"80/20 Ground Beef\". Every ingredient amount MUST be the quantity actually used by this recipe for the requested household size (for example \"8 oz\", \"1/2 cup\", or \"2\"). Do not round recipe amounts up to a full store package. Use consistent ingredient names across meals when the ingredient is truly identical, including pantry names when using those exact items. Never equate different varieties or forms such as fresh garlic and garlic powder.",
-    "- Strict Consistency: Every ingredient listed inside a meal's ingredients array must be explicitly used in that meal's title or notes.",
-    "- No ingredient or pantry item should ever be priced below $1.00. Even tiny-use items must reflect the cost of buying a standard store container.",
+    "- Ingredients must support the named dish and sauce. Do not cram every ingredient into the title or description. No decorative cuisine labels without the corresponding flavor, ingredients and technique.",
+    "- Use realistic positive estimated costs consistently with existing grocery estimates; these are general estimates, not local prices or exact checkout totals. Avoid pricing a full container repeatedly as though each recipe requires a new one.",
   ];
 
   const writingAndDessertRules = [
-    "- Write a rich, helpful 2-3 sentence description for every dinner meal and every dessert option. Do not use one-sentence descriptions.",
+    "- Give every dinner, breakfast, lunch and dessert a separate description: 1-2 concise sentences about the finished dish, main ingredients, flavor, texture and sauce. Never use imperative cooking directions as descriptions; instructions belong in the full recipe.",
     includeDessert
       ? isPantryOnlyMode
         ? "- If includeDessert is true in pantry-only mode, generate up to TWO dessert options only if they can be made from the user's available pantry items. Do not add grocery-only dessert ingredients. If the listed pantry cannot support a realistic dessert, return an empty \"desserts\" array."
@@ -218,7 +223,7 @@ export function buildGenerateListPrompts({
     isPantryOnlyMode
       ? "- Pantry-only dessert rule: every dessert ingredient must be present in Pantry Items, Fully Stocked Pantry Items, or Running Low Pantry Items. Do not use Restock Pantry Items for dessert."
       : "- Dessert ingredients may use pantry items and reasonable grocery additions when they fit the budget.",
-    "- Generate only sweet, sugary desserts. Do not suggest savory items, biscuits, or bread-based side dishes like cheddar biscuits or spinach biscuits.",
+    "- Desserts must be achievable sweet dishes. Explore bakery-style brownies/blondies, cookie bars, fruit streusel muffins, sweet breads, rolls, cakes, cobblers/crisps, chilled desserts and cheesecakes. Do not default to plain cookies or pudding. Only name swirls, fillings, glazes or streusel if every supporting ingredient is present; respect time, equipment and budget.",
     "- DESSERT VARIETY RULE: If you return two desserts, they must feel clearly different in category and flavor base. Do not return two versions of the same dessert family.",
     "- Use different dessert lanes such as cookies, bars, cobbler, pudding, cheesecake, pie, crisp, icebox dessert, or cake. Avoid repetitive chocolate-only or cinnamon-only duplication unless the pantry forces it.",
     "- Avoid repeating the same signature dessert word or dominant flavor in both dessert titles.",
@@ -246,7 +251,7 @@ export function buildGenerateListPrompts({
       ? "- Pantry-only mode: the goal is avoiding a store trip, not spending the budget. Keep the plan realistic with the owned ingredients."
       : "- Keep the full plan budget-conscious without making every meal feel like the same cheap fallback.",
     isPantryOnlyMode
-      ? "- Include a final budget note that says this plan is designed around owned ingredients and may need minor substitutions if the pantry list is incomplete."
+      ? "- Include a final budget note that says this plan uses only listed owned ingredients. If the inventory cannot support a recipe, do not invent ingredients or suggest unvalidated substitutions."
       : "- Prioritize practical grocery overlap where it helps, but do not sacrifice variety just to reuse the same ingredients repeatedly.",
     isPantryOnlyMode
       ? "- Set \"upgrade_available\" to false because pantry-only mode is not a grocery upgrade flow."
@@ -333,6 +338,7 @@ export function buildReplaceMealPrompts({
   mustHavePromptBlock,
   prepTime,
   rejectedMealTitle,
+  mealSourceMode,
   mealType = "dinner",
   selectedEquipment,
 }: ReplacePromptArgs) {
@@ -358,11 +364,11 @@ export function buildReplaceMealPrompts({
       "  - Try new cuisines: choose a clearly different cuisine or flavor lane from the rejected meal and the current menu.",
       `- ${adventureGuidance}`,
       `- ${cuisinePromptBlock}`,
-      "- CRITICAL REPLACEMENT DISTINCTNESS: the replacement must differ from the rejected meal in at least TWO of these dimensions: main protein, cuisine lane, cooking format, or starch/side pairing.",
+      "- Change the actual dish, not only the title. Prefer two meaningful differences across protein, technique, flavor or format where constraints allow; never invent unavailable proteins or conflict with restrictions.",
       "- CRITICAL REPLACEMENT SAFETY: never return the rejected meal again, never return a tiny rename of the rejected meal, and never return a title that is already present in the current menu context.",
       "- CRITICAL REPLACEMENT VARIETY: if the rejected meal was a burger, wrap, taco, pasta, bowl, curry, stir-fry, skillet, or sheet-pan meal, do not return the same meal family unless the user explicitly asked for very simple staples and even then change the protein and side pairing substantially.",
       "- CLASSIC REPLACEMENTS ARE ALLOWED when they fit the adventure level. Burgers, wraps, pasta, tacos, quesadillas, BBQ plates, baked chicken dinners, and occasional comfort-food plates are all valid replacements if they are clearly different from the rejected or existing meals.",
-      "- Use pantry items where reasonable.",
+      mealSourceMode === "pantry-only" ? "- Pantry-only: use only exact names from Pantry Items; never add a grocery ingredient or substitute an unavailable protein. Constraints outrank novelty." : "- Use pantry items where reasonable.",
       "- Keep the replacement practical for a weeknight home cook.",
       "- Return valid JSON only.",
       "- Use this exact JSON shape:",

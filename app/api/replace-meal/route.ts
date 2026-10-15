@@ -1,3 +1,6 @@
+import { candidateOutputResponse } from "@/lib/food-safety-response";
+import { pantryViolations } from "@/lib/ai-food-constraints";
+import { foodTermMatches, equipmentRequirementText } from "@/lib/meal-quality";
 import { foodSafetyResponse } from "@/lib/food-safety-response";
 import { requireProductAccess } from "@/lib/product-access";
 import { requireAgreements } from "@/lib/legal-agreements";
@@ -35,6 +38,7 @@ type ReplaceMealRequest = {
   currentMealsContext?: string;
   recentRejectedMeals?: string[];
   availableEquipment?: string[];
+  mealSourceMode?: "pantry-only" | "pantry-and-store";
 };
 
 const replaceMealResponseSchema = z.object({
@@ -108,7 +112,7 @@ function findReplacementEquipmentViolations(
   description: string,
   selectedEquipmentSet: Set<string>,
 ) {
-  const haystack = `${title} ${description}`.toLowerCase();
+  const haystack = equipmentRequirementText(`${title} ${description}`);
   const violations: string[] = [];
 
   if (
@@ -208,6 +212,7 @@ export async function POST(request: Request) {
     householdSize,
     combinedPantryItems,
     rejectedMealTitle,
+    mealSourceMode,
     mealType,
     prepTime,
     adventureLevel,
@@ -292,6 +297,7 @@ export async function POST(request: Request) {
     rejectedMealTitle,
     mealType: mealType === "breakfast" || mealType === "lunch" ? mealType : "dinner",
     selectedEquipment,
+    mealSourceMode,
   });
 
   try {
@@ -327,11 +333,12 @@ export async function POST(request: Request) {
         ...candidate.ingredients.map((ingredient) => ingredient.toLowerCase()),
       ];
       const blockedMatches = dietaryPreferences.blockedIngredients.filter((blocked) =>
-        replacementHaystacks.some((value) => value.includes(blocked)),
+        replacementHaystacks.some((value) => foodTermMatches(value,blocked)),
       ).concat(allergyConflicts(candidate, diet));
       const avoidedMatches = avoidanceGuidance.avoidedItems.filter((blocked) =>
-        replacementHaystacks.some((value) => value.includes(blocked)),
+        replacementHaystacks.some((value) => foodTermMatches(value,blocked)),
       );
+      const pantryErrors=mealSourceMode === "pantry-only" ? pantryViolations(candidate.ingredients,combinedPantryItems) : [];
       const equipmentViolations = findReplacementEquipmentViolations(
         candidate.title,
         candidate.description,
@@ -355,7 +362,7 @@ export async function POST(request: Request) {
 
       return {
         avoidedMatches,
-        blockedMatches,
+        blockedMatches: [...blockedMatches,...pantryErrors],
         cuisineMismatch,
         equipmentViolations,
         titleCollision,
@@ -406,6 +413,7 @@ export async function POST(request: Request) {
       );
     }
 
+    const candidateFailure=candidateOutputResponse({diet,avoidIngredients},parsed);if(candidateFailure)return candidateFailure;
     const dietarySafety = assessDiet(parsed, diet);
     if (dietarySafety.conflicts.length) return NextResponse.json({ error: "Known allergy conflict detected. Choose Replace again to generate another meal.", dietarySafety }, { status: 422 });
     return NextResponse.json({ ...parsed, dietarySafety });

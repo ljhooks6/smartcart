@@ -8,7 +8,7 @@ import { getMealKind, mealKindLabel } from "../lib/meal-types";
 import { sortScheduledMeals, type CookingDay } from "../lib/meal-schedule";
 
 type MealPlanItem = {
-  dbId?: number | string; user_id: string; day: string; name: string; servings: number; notes: string;
+  dbId?: number | string; user_id: string; day: string; name: string; servings: number; notes: string; description?: string;
   scheduledDay?: CookingDay;
   ingredients?: { name: string; amount: string; price?: number }[];
 };
@@ -32,7 +32,7 @@ export function SmartCartCookSections({ showGuidance, onDismissGuidance, expande
       <p className="mt-2 text-sm text-ink/70">Serves {meal.servings}</p>
       <div className="mt-4"><SmartCartDayPicker value={meal.scheduledDay} onChange={(day) => onScheduleMeal(meal, day)} /></div>
       <div className="mt-4"><SmartCartMealActions inThisWeek recipeLoading={recipeLoadingMeal === meal.name} onViewRecipe={() => void onGetRecipe(meal)} onSaveToVault={() => void onArchiveMeal(meal)} more={<>
-        <SmartCartMealDetails expanded={expandedDetailCards.has(key)} onToggle={() => onToggleCardDetails(key)} notes={meal.notes} />
+        <SmartCartMealDetails expanded={expandedDetailCards.has(key)} onToggle={() => onToggleCardDetails(key)} description={meal.description} notes={meal.notes} />
         <button type="button" onClick={() => void onRemoveFromWeeklyMenu(meal)} className="min-h-11 w-full rounded-xl border border-pine/20 px-3 py-3 text-left text-sm font-semibold text-pine">Cooked It</button>
       </>} /></div>
     </article>;

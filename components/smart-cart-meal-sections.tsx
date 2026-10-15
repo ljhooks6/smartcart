@@ -20,6 +20,8 @@ type MealPlanItem = {
   name: string;
   servings: number;
   notes: string;
+  description?: string;
+  dietaryRestrictions?: string;
   ingredients?: IngredientItem[];
   imageUrl?: string;
 };
@@ -142,7 +144,7 @@ export function SmartCartMealSections({
                 </div>
 
                 <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                  <SmartCartMealDetails expanded={expandedDetailCards.has(mealCardKey)} onToggle={() => onToggleCardDetails(mealCardKey)} notes={safeTrim(meal.notes)} />
+                  <SmartCartMealDetails expanded={expandedDetailCards.has(mealCardKey)} onToggle={() => onToggleCardDetails(mealCardKey)} description={meal.description} notes={safeTrim(meal.notes)} />
                   <SmartCartMealActions
                     inThisWeek={savedMealKeys.has(`${meal.day}::${meal.name}`)}
                     weekFull={!hasRoomForMeal(weeklyMenu, meal)}
@@ -190,7 +192,7 @@ export function SmartCartMealSections({
                     </div>
                   </div>
                   <div className="mt-4">
-                    <SmartCartMealDetails expanded={expandedDetailCards.has(dessertCardKey)} onToggle={() => onToggleCardDetails(dessertCardKey)} notes={safeTrim(dessert.description)} />
+                    <SmartCartMealDetails expanded={expandedDetailCards.has(dessertCardKey)} onToggle={() => onToggleCardDetails(dessertCardKey)} description={dessert.description} notes="" />
                     <SmartCartMealActions
                       inThisWeek={isDessertSaved}
                       busy={isReplacingThisDessert}
@@ -199,7 +201,7 @@ export function SmartCartMealSections({
                     </button></>}
 
                       onAddToWeek={() => onToggleDessertSave(dessert, index)}
-                      onSaveToVault={() => void onArchiveMeal({ user_id: safeTrim(userId), day: `Sweet Treat ${index + 1}`, name: dessert.title, servings: householdSize || 2, notes: dessert.description, ingredients: dessert.ingredients, imageUrl: dessert.imageUrl })}
+                      onSaveToVault={() => void onArchiveMeal({ user_id: safeTrim(userId), day: `Sweet Treat ${index + 1}`, name: dessert.title, servings: householdSize || 2, notes: "", description: dessert.description, dietaryRestrictions: "dietaryRestrictions" in dessert ? dessert.dietaryRestrictions as string : undefined, ingredients: dessert.ingredients, imageUrl: dessert.imageUrl })}
                     />
 
                   </div>
