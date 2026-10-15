@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { DietarySafetySummary } from "./dietary-safety-summary";
 import { DietarySettings } from "./dietary-settings";
 
 import { FormEvent } from "react";
@@ -240,8 +242,9 @@ export function SmartCartContextForm({
           </div>
         </div>
 
-        <p role="note" className="text-sm text-ink">Allergy-dependent or free-from AI generation is temporarily restricted. Keep actual restrictions entered; do not remove them to obtain a plan. Verify ingredients, labels and cross-contact independently. Saved content is not certified safe.</p>
+        <p role="note" aria-label="Planning allergy safety" className="text-sm leading-6 text-ink">Allergy-dependent or free-from AI generation is temporarily restricted. Keep actual restrictions entered; do not remove them to obtain a plan. Saved recipes and grocery lists are not verified for allergies. Check ingredients, labels and cross-contact independently. <Link className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/legal/safety">Read the complete dietary safety notice</Link></p>
         <DietarySettings value={formState.diet} onChange={onDietChange} />
+        <div className="hidden md:block"><DietarySafetySummary compact diet={formState.diet} value={null} /></div>
 
         <label className="space-y-2">
           <span className="flex items-center gap-2 text-sm font-semibold text-ink">

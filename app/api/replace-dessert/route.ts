@@ -1,3 +1,4 @@
+import { candidateOutputResponse } from "@/lib/food-safety-response";
 import { foodSafetyResponse } from "@/lib/food-safety-response";
 import { requireProductAccess } from "@/lib/product-access";
 import { requireAgreements } from "@/lib/legal-agreements";
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   const safetyResponse=foodSafetyResponse(input.data,true);if(safetyResponse)return safetyResponse;
   const data = input.data;
   const system = `You are a precise, creative dessert planner replacing one rejected dessert.
-Return exactly one practical dessert for the requested household, changing category or flavor when possible. Obey diet, excluded ingredients, available equipment, and prep-time preference. Do not suggest excluded ingredients, optional additions, or unavailable appliances.
+Consider bakery-style blondies, brownies with justified swirls, fruit-streusel muffins, cookie bars, sweet breads, rolls, cobblers and chilled desserts. Match fillings and textures to the actual ingredients; never invent garnishes. Descriptions describe the finished dessert rather than cooking commands. Return exactly one practical dessert for the requested household, changing category or flavor when possible. Obey diet, excluded ingredients, available equipment, and prep-time preference. Do not suggest excluded ingredients, optional additions, or unavailable appliances.
 ${data.mealSourceMode === "pantry-only" ? "Only use exact ingredient names from the pantry list. Water is the only permitted addition. Do not substitute varieties or add store ingredients." : "Prefer pantry ingredients; reasonable store additions are allowed."}
 Amounts are quantities actually used, not rounded-up packages. Price is the estimated USD value of the amount used, NOT additional shopping cost. Every ingredient, including owned pantry ingredients, must have price >=0.01. Pantry ownership is accounted for separately in application code. Omit water from priced ingredients. Keep the estimated ingredient value within the supplied budget.
 Return only JSON: {"title":"string","description":"string","ingredients":[{"name":"string","amount":"string","price":number}]}. Preserve specific food forms and dietary qualifiers.`;
@@ -54,6 +55,7 @@ Return only JSON: {"title":"string","description":"string","ingredients":[{"name
           ...(value.ingredients.reduce((sum, i) => sum + i.price, 0) > data.budget ? ["Estimated ingredient value exceeds budget"] : [])];
       },
     });
+    const candidateFailure=candidateOutputResponse(data,result);if(candidateFailure)return candidateFailure;
     return NextResponse.json({ ...result, dietarySafety: assessDiet(result, data.diet) });
   } catch { return NextResponse.json({ error: "We couldn't find a treat that meets your preferences. Please try again." }, { status: 502 }); }
 }

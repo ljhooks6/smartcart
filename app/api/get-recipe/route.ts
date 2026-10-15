@@ -1,6 +1,8 @@
+import { candidateOutputResponse } from "@/lib/food-safety-response";
 import { foodSafetyResponse } from "@/lib/food-safety-response";
 import { requireProductAccess } from "@/lib/product-access";
 import { requireAgreements } from "@/lib/legal-agreements";
+import { mergeDietaryEntries } from "@/lib/dietary-safety";
 import { assessDiet } from "@/lib/dietary-safety";
 import OpenAI from "openai";
 import { pilotAIBudget } from "@/lib/beta-pilot-ai";
@@ -17,6 +19,7 @@ const recipeRequestSchema = z.object({
   mealTitle: z.string().trim().min(1),
   mealNotes: z.string().max(10000).optional(),
   diet: z.string().max(6000).optional(),
+  originalDietaryRestrictions: z.string().max(6000).optional(),
   avoidIngredients: z.string().max(2000).optional(),
   availableEquipment: z.array(z.string().max(100)).max(20).optional(),
   servings: z.number().int().positive().optional(),
@@ -58,7 +61,8 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const { mealTitle, mealNotes, servings, ingredients, diet, avoidIngredients, availableEquipment } = requestResult.data;
+  const { mealTitle, mealNotes, servings, ingredients, diet: currentDiet, avoidIngredients, availableEquipment } = requestResult.data;
+  const diet=mergeDietaryEntries(currentDiet || "",requestResult.data.originalDietaryRestrictions);
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
   const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
@@ -115,6 +119,7 @@ Planned ingredients: ${ingredientLines ? JSON.stringify(ingredientLines) : "No s
       parse: value => recipeResponseSchema.parse(value),
       validate: value => recipeViolations(value, ingredients, preferences),
     });
+    const candidateFailure=candidateOutputResponse({diet,avoidIngredients},{...parsed,ingredients:ingredientLines ?? parsed.ingredients});if(candidateFailure)return candidateFailure;
     return NextResponse.json({
       dietarySafety: assessDiet([...parsed.ingredients, ...parsed.steps], diet),
       ...parsed,

@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "feature/recipe-quality-dietary-controls": false
+    }
+  },
   "functions": {
     "app/api/queues/beta-notifications/route.ts": {
       "experimentalTriggers": [{ "type": "queue/v2beta", "topic": "mealcaddie-beta-notifications" }]

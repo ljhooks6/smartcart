@@ -1,3 +1,4 @@
+import { candidateOutputResponse } from "@/lib/food-safety-response";
 import { foodSafetyResponse } from "@/lib/food-safety-response";
 import { requireProductAccess } from "@/lib/product-access";
 import { requireAgreements } from "@/lib/legal-agreements";
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
       try { await dispatchGenerationJob(job.id); } catch { /* Retry on a later poll. */ }
     }
     const safetyResponse = job ? foodSafetyResponse(job.input, true) : null; if (safetyResponse) return safetyResponse;
+    const candidateFailure=job?.status === "completed" ? candidateOutputResponse(job.input,job.result) : null;if(candidateFailure)return candidateFailure;
     return reply({ job: job ? publicGenerationJob(job) : null }, 200, identity.cookie);
   } catch { return reply({ error: "We couldn't check your plan. Your saved request is safe; please try again." }, 503, null, 15); }
 }

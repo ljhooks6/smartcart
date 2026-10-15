@@ -22,6 +22,8 @@ type MealPlanItem = {
   name: string;
   servings: number;
   notes: string;
+  description?: string;
+  dietaryRestrictions?: string;
   ingredients?: IngredientItem[];
 };
 
@@ -174,7 +176,7 @@ export function SmartCartLibrarySections({
                   <p className="mt-2 text-sm leading-6 text-ink/70">Serves {meal.servings}</p>
                   <p className="mt-2 text-xs font-semibold text-pine">Saved to Vault</p>
                   <div className="mt-4"><SmartCartMealActions inThisWeek={false} recipeLoading={recipeLoadingMeal === meal.name} onViewRecipe={() => void onGetRecipe(meal)} onAddToWeek={() => void onRestoreMeal(meal)} more={<>
-                    <SmartCartMealDetails expanded={expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)} onToggle={() => onToggleCardDetails(`vault-${meal.day}::${meal.name}`)} notes={safeTrim(meal.notes)} />
+                    <SmartCartMealDetails expanded={expandedDetailCards.has(`vault-${meal.day}::${meal.name}`)} onToggle={() => onToggleCardDetails(`vault-${meal.day}::${meal.name}`)} description={meal.description} notes={safeTrim(meal.notes)} />
                     <button type="button" onClick={() => void onPermanentDelete(meal)} className="min-h-11 w-full rounded-xl border border-red-200 px-3 py-3 text-left text-sm font-semibold text-red-700">Permanent Delete</button>
                   </>} /></div>
                 </article>

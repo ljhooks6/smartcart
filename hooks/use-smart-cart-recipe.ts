@@ -18,6 +18,8 @@ type MealPlanItem = {
   name: string;
   servings: number;
   notes: string;
+  description?: string;
+  dietaryRestrictions?: string;
   ingredients?: IngredientItem[];
   imageUrl?: string;
 };
@@ -92,7 +94,8 @@ export function useSmartCartRecipe({ householdSize, userId, diet, avoidIngredien
         body: JSON.stringify({
           mealTitle: meal.name,
           diet, avoidIngredients, availableEquipment,
-          mealNotes: meal.notes,
+          mealNotes: meal.description || meal.notes,
+          originalDietaryRestrictions: meal.dietaryRestrictions,
           servings: meal.servings,
           ingredients: meal.ingredients?.length ? meal.ingredients : undefined,
         }),

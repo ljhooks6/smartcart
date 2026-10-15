@@ -9,6 +9,18 @@ export function readDiet(value = ""): { legacy: string; settings: DietarySetting
  return{legacy:value.slice(0,at),settings:s,malformed:false}; } catch {return{legacy:value,settings:empty,malformed:true};}
 }
 export function writeDiet(legacy: string, settings: DietarySettings) {return legacy+marker+JSON.stringify(settings);}
+export function mergeDietaryEntries(current: string, original?: string) {
+ if(!original || original===current)return current;
+ const a=readDiet(current),b=readDiet(original);
+ if(a.malformed||b.malformed)return original+"\n"+current;
+ return writeDiet([a.legacy,b.legacy].filter(Boolean).join(", "),{
+  allergies:[...new Set([...a.settings.allergies,...b.settings.allergies])],
+  preferences:[...new Set([...a.settings.preferences,...b.settings.preferences])],
+  customAllergies:[a.settings.customAllergies,b.settings.customAllergies].filter(Boolean).join(", "),
+  intolerances:[a.settings.intolerances,b.settings.intolerances].filter(Boolean).join(", "),
+  medical:[a.settings.medical,b.settings.medical].filter(Boolean).join(", "),
+ });
+}
 const aliases: Record<string,RegExp> = {
  Milk:/\b(milk|cheese|cream|butter|yogurt|yoghurt|whey|casein(?:ate)?|ghee|curds?|buttermilk|lactalbumin)\b/i,
  Eggs:/\b(eggs?|albumen|ovalbumin|meringue|mayonnaise|mayo|aioli)\b/i,
@@ -24,7 +36,7 @@ export const safetyNotice = "Ingredient checks are limited. Verify every package
 export function ingredientTexts(value: unknown): string[] {
  if(typeof value==="string")return [value];
  if(Array.isArray(value))return value.flatMap(ingredientTexts);
- if(value&&typeof value==="object")return Object.entries(value).filter(([k])=>["ingredients","name","item","steps","notes","description","title","meal_name","quick_instructions","meals","breakfasts","lunches","desserts","grocery_list","restock_items","produce","meat_and_dairy","pantry"].includes(k)).flatMap(([,v])=>ingredientTexts(v));
+ if(value&&typeof value==="object")return Object.entries(value).filter(([k])=>["ingredients","name","item","steps","notes","description","title","meal_name","quick_instructions","instructions","meals","breakfasts","lunches","desserts","grocery_list","restock_items","produce","meat_and_dairy","pantry"].includes(k)).flatMap(([,v])=>ingredientTexts(v));
  return [];
 }
 export function assessDiet(value: unknown, diet = "") {

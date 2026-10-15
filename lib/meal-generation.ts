@@ -1,3 +1,5 @@
+import { culinaryReview, planConstraintIssues, foodTermMatches, equipmentRequirementText } from "./meal-quality";
+import { candidateOutputResponse } from "./food-safety-response";
 import { foodSafetyResponse } from "./food-safety-response";
 import { assessDiet, allergyConflicts, ingredientTexts } from "@/lib/dietary-safety";
 import OpenAI from "openai";
@@ -15,6 +17,7 @@ import {
 } from "@/lib/meal-request-normalization";
 import { buildGenerateListPrompts } from "@/lib/meal-prompt-builders";
 import { normalizeOptionalMeals } from "@/lib/meal-types";
+import { buildMealVarietyGuidance, reviewMealVariety, type MealVarietyContext } from "./meal-variety";
 
 type GenerateListRequest = {
   budget: number;
@@ -33,6 +36,7 @@ type GenerateListRequest = {
   cuisinePreference?: string;
   apply_upgrades?: boolean;
   existingMeals?: string;
+  recentRejectedMeals?: string[];
   availableEquipment?: string[];
   prepTime?: string;
   mealSourceMode?: "pantry-and-store" | "pantry-only";
@@ -49,6 +53,8 @@ const mealSchema = z.object({
   name: z.string().min(1),
   servings: z.number().int().positive().optional(),
   notes: z.string().min(1).optional(),
+  description: z.string().min(1).max(1000).optional(),
+  prep_time_minutes: z.number().int().positive().optional(),
   ingredients: z.array(ingredientSchema).min(1),
   imageUrl: z.string().url().optional(),
 });
@@ -62,6 +68,7 @@ const groceryItemSchema = z.object({
 const dessertSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
+  prep_time_minutes: z.number().int().positive().optional(),
   ingredients: z.array(ingredientSchema).min(1),
   imageUrl: z.string().url().optional(),
 });
@@ -144,11 +151,12 @@ function findBlockedContentMatches(
     const haystacks = [
       meal.name.toLowerCase(),
       meal.notes?.toLowerCase() ?? "",
+      meal.description?.toLowerCase() ?? "",
       ...meal.ingredients.map((ingredient) => ingredient.name.toLowerCase()),
     ];
 
     return loweredBlocked.filter((blocked) =>
-      haystacks.some((value) => value.includes(blocked)),
+      haystacks.some((value) => foodTermMatches(value,blocked)),
     );
   });
 }
@@ -215,7 +223,7 @@ function findEquipmentViolations(
   const violations: string[] = [];
 
   meals.forEach((meal) => {
-    const haystack = `${meal.name} ${meal.notes ?? ""}`.toLowerCase();
+    const haystack = equipmentRequirementText(`${meal.name} ${meal.notes ?? ""} ${meal.description ?? ""}`);
 
     if (!selectedEquipmentSet.has("Oven")) {
       if (
@@ -395,7 +403,7 @@ function countCuisineAlignedMeals(
   return meals.filter((meal) => mealMatchesCuisinePreference(cuisinePreference, meal)).length;
 }
 
-export async function generateMealPlan(body: unknown, plan: "free" | "plus", onUsage?: (details: unknown) => void) {
+export async function generateMealPlan(body: unknown, plan: "free" | "plus", onUsage?: (details: unknown) => void, varietyContext: MealVarietyContext = {}) {
   const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const {
     budget,
@@ -414,6 +422,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     cuisinePreference: requestedCuisinePreference,
     apply_upgrades,
     existingMeals,
+    recentRejectedMeals,
     availableEquipment,
     prepTime,
     mealSourceMode,
@@ -459,6 +468,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
   const adventureGuidance = buildAdventureLevelGuidance(adventureLevel);
   const cuisineGuidance = buildCuisineGuidance(cuisinePreference);
   const avoidanceGuidance = buildAvoidanceGuidance(avoidIngredients);
+  const varietyInput = { existingMeals, recentRejectedMeals, mustHaveIngredient, mealSourceMode };
 
   const { systemPrompt, userPrompt } = buildGenerateListPrompts({
     adventureGuidance: adventureGuidance.generationBlock,
@@ -470,6 +480,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     cuisinePromptBlock: cuisineGuidance.promptBlock,
     dietaryPromptBlock: dietaryPreferences.promptBlock,
     existingMeals: existingMeals?.trim() || "None provided",
+    varietyGuidance: buildMealVarietyGuidance(varietyInput, varietyContext),
     fullyStocked: Array.isArray(fullyStocked) ? fullyStocked : [],
     householdSize,
     includeDessert: Boolean(includeDessert),
@@ -528,49 +539,56 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       );
     }
 
-    let parsed = aiGenerateListResponseSchema.parse({ ...rawPlan, breakfasts: includeBreakfast ? rawPlan.breakfasts : [], lunches: includeLunch ? rawPlan.lunches : [] });
+    async function parsePlan(raw: typeof rawPlan) {
+      const validated=aiGenerateListResponseSchema.safeParse({...raw,breakfasts:includeBreakfast?raw.breakfasts:[],lunches:includeLunch?raw.lunches:[],desserts:includeDessert?raw.desserts:[]});
+      if(validated.success)return validated.data;
+      const corrected=await requestMealPlan("SCHEMA CORRECTION: "+validated.error.issues.map(i=>i.path.join(".")+": "+i.message).join("; ")+". Use strictly positive ingredient prices; omit water from priced ingredients. Preserve every original constraint and finished-dish description.");
+      return aiGenerateListResponseSchema.parse({...corrected,breakfasts:includeBreakfast?corrected.breakfasts:[],lunches:includeLunch?corrected.lunches:[],desserts:includeDessert?corrected.desserts:[]});
+    }
+    let parsed = await parsePlan(rawPlan);
     parsed = {
       ...parsed,
       meals: normalizeGeneratedMeals(parsed.meals, householdSize),
     };
+    const constraintInput = {budget,householdSize,mealSourceMode:normalizedMealSourceMode,combinedPantryItems,fullyStocked,runningLow,restock,prepTime};
+    let constraintIssues = planConstraintIssues(parsed,constraintInput);
     let blockedMatches = findBlockedContentMatches(
-      [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
+      [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))],
       [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
     ).concat(allergyConflicts(parsed, diet));
     let repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
-    let equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
+    let equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))], selectedEquipmentSet);
     let missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
       parsed.meals,
       selectedEquipmentSet,
     );
-    let overusedProteins = findOverusedProteins(parsed.meals);
+    let overusedProteins = normalizedMealSourceMode === "pantry-only" ? [] : findOverusedProteins(parsed.meals);
     let repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
     let cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
 
     if (
-      blockedMatches.length > 0 ||
-      repeatedSignatureWords.length > 0 ||
+      blockedMatches.length > 0 || constraintIssues.length > 0 ||
       equipmentViolations.length > 0
     ) {
       rawPlan = await requestMealPlan(
-        `CRITICAL RETRY: Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
+        `CRITICAL RETRY: ${constraintIssues.join("; ")} Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
       );
-      parsed = aiGenerateListResponseSchema.parse({ ...rawPlan, breakfasts: includeBreakfast ? rawPlan.breakfasts : [], lunches: includeLunch ? rawPlan.lunches : [] });
+      parsed = await parsePlan(rawPlan);
       parsed = {
         ...parsed,
         meals: normalizeGeneratedMeals(parsed.meals, householdSize),
       };
       blockedMatches = findBlockedContentMatches(
-        [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
+        [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))],
         [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
       ).concat(allergyConflicts(parsed, diet));
       repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
-      equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
+      equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))], selectedEquipmentSet);
       missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
         parsed.meals,
         selectedEquipmentSet,
       );
-      overusedProteins = findOverusedProteins(parsed.meals);
+      overusedProteins = normalizedMealSourceMode === "pantry-only" ? [] : findOverusedProteins(parsed.meals);
       repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
       cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
     }
@@ -578,48 +596,51 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     if (
       isPlusGeneration &&
       (
-        missingSelectedEquipmentUsage.length > 0 ||
+        culinaryReview(parsed,normalizedMealSourceMode === "pantry-only").issues.length > 0 ||
+        (normalizedMealSourceMode !== "pantry-only" && repeatedSignatureWords.length > 0) ||
+        (normalizedMealSourceMode !== "pantry-only" && missingSelectedEquipmentUsage.length > 0) ||
         overusedProteins.length > 0 ||
-        repeatedMealFamilies.length > 0 ||
-        (Boolean(cuisinePreference?.trim()) && cuisineAlignedMeals < 3)
+        (normalizedMealSourceMode !== "pantry-only" && repeatedMealFamilies.length > 0) ||
+        (Boolean(cuisinePreference?.trim()) && cuisineAlignedMeals < 3 && normalizedMealSourceMode !== "pantry-only")
       )
     ) {
       rawPlan = await requestMealPlan(
-        `PLUS REFINEMENT RETRY: Keep the same budget, diet, pantry, and prep-time constraints, but improve the weekly plan quality. Fix these soft-quality issues: missing selected special equipment usage: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Overused proteins: ${overusedProteins.join(", ") || "none"}. Repeated meal families: ${repeatedMealFamilies.join(", ") || "none"}. Cuisine alignment count for the requested cuisine vibe is currently ${cuisineAlignedMeals} out of 7 and should be at least 3 when a cuisine preference is provided. Return a noticeably more varied, balanced weekly plan with exactly 7 dinner meals and valid JSON only. Desserts may be 0, 1, or 2 items.`,
+        `PLUS REFINEMENT RETRY: ${culinaryReview(parsed,normalizedMealSourceMode === "pantry-only").issues.join("; ")} Keep the same budget, diet, pantry, and prep-time constraints, but improve the weekly plan quality. Fix these soft-quality issues: missing selected special equipment usage: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Overused proteins: ${overusedProteins.join(", ") || "none"}. Repeated meal families: ${repeatedMealFamilies.join(", ") || "none"}. Cuisine alignment count for the requested cuisine vibe is currently ${cuisineAlignedMeals} out of 7 and should fit the requested cuisine when available ingredients support it; constraints outrank diversity. Return a noticeably more varied, balanced weekly plan with exactly 7 dinner meals and valid JSON only. Desserts may be 0, 1, or 2 items.`,
       );
-      parsed = aiGenerateListResponseSchema.parse({ ...rawPlan, breakfasts: includeBreakfast ? rawPlan.breakfasts : [], lunches: includeLunch ? rawPlan.lunches : [] });
+      parsed = await parsePlan(rawPlan);
       parsed = {
         ...parsed,
         meals: normalizeGeneratedMeals(parsed.meals, householdSize),
       };
       blockedMatches = findBlockedContentMatches(
-        [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches],
+        [...parsed.meals, ...parsed.breakfasts, ...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))],
         [...dietaryPreferences.blockedIngredients, ...avoidanceGuidance.avoidedItems],
       ).concat(allergyConflicts(parsed, diet));
       repeatedSignatureWords = findRepeatedSignatureTitleWords(parsed.meals);
-      equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches], selectedEquipmentSet);
+      equipmentViolations = findEquipmentViolations([...parsed.meals, ...parsed.breakfasts, ...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))], selectedEquipmentSet);
       missingSelectedEquipmentUsage = findMissingSelectedEquipmentUsage(
         parsed.meals,
         selectedEquipmentSet,
       );
-      overusedProteins = findOverusedProteins(parsed.meals);
+      overusedProteins = normalizedMealSourceMode === "pantry-only" ? [] : findOverusedProteins(parsed.meals);
       repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
       cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
     }
 
+    const finalDishSet=()=>[...parsed.meals,...parsed.breakfasts,...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))];
+    const remainingHardIssues=[...planConstraintIssues(parsed,constraintInput),...equipmentViolations,...blockedMatches];
+    if(remainingHardIssues.length && providerCalls<3) {
+      rawPlan=await requestMealPlan("FINAL CONSTRAINT CORRECTION: "+remainingHardIssues.join("; ")+". Do not relax constraints. No blender means no blended or pureed components; choose a recipe using the selected hardware. Preserve actual dish quality, descriptions and positive ingredient prices.");
+      parsed=await parsePlan(rawPlan);parsed={...parsed,meals:normalizeGeneratedMeals(parsed.meals,householdSize)};
+      blockedMatches=findBlockedContentMatches(finalDishSet(),[...dietaryPreferences.blockedIngredients,...avoidanceGuidance.avoidedItems]).concat(allergyConflicts(parsed,diet));
+      equipmentViolations=findEquipmentViolations(finalDishSet(),selectedEquipmentSet);
+    }
+    constraintIssues = planConstraintIssues(parsed,constraintInput);
+    if (constraintIssues.length) return NextResponse.json({error:"The plan could not meet your constraints. "+constraintIssues.join(" "),retryable:false},{status:422});
     if (blockedMatches.length > 0) {
       return NextResponse.json(
         {
           error: `Generated meals violated dietary restrictions or explicit avoid rules by including blocked terms: ${Array.from(new Set(blockedMatches)).join(", ")}`,
-        },
-        { status: 500 },
-      );
-    }
-
-    if (repeatedSignatureWords.length > 0) {
-      return NextResponse.json(
-        {
-          error: `Generated meals still repeated signature flavor words in titles after retry: ${repeatedSignatureWords.join(", ")}`,
         },
         { status: 500 },
       );
@@ -646,7 +667,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     if (optionalBlocked.length || optionalEquipment.length) {
       throw new Error("Breakfast or lunch options did not meet your dietary, avoidance, or equipment settings. Please try again.");
     }
-    const allMeals = [...parsed.meals, ...optionalMeals];
+    const allMeals = [...parsed.meals, ...optionalMeals].map(meal=>({...meal,dietaryRestrictions:diet}));
 
     const deterministicRestockItems = (
       normalizedMealSourceMode === "pantry-only"
@@ -674,22 +695,27 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
           ),
         0,
       ) +
+      parsed.desserts.reduce((sum,dessert)=>sum+dessert.ingredients.reduce((s,i)=>s+i.price,0),0) +
       deterministicRestockItems.reduce(
         (sum, item) => sum + item.estimated_price,
         0,
       );
 
+    if (normalizedMealSourceMode !== "pantry-only" && recalculatedTotal > budget+0.01) return NextResponse.json({error:"The estimated plan including desserts and restock exceeds your budget. No plan was saved.",retryable:false},{status:422});
+    const candidateFailure=candidateOutputResponse({diet,avoidIngredients},{...parsed,restock_items:deterministicRestockItems});if(candidateFailure)return candidateFailure;
     const dietarySafety = assessDiet({ ...parsed, restock_items: deterministicRestockItems }, diet);
     if (dietarySafety.conflicts.length) return NextResponse.json({ error: "Known allergy conflict detected. Generate a new plan; no rejected plan was saved.", dietarySafety }, { status: 422 });
     return NextResponse.json({
       dietarySafety,
       ...parsed,
+      // No extra provider call or retry is made for this culinary preference.
+      varietyReview: reviewMealVariety(parsed.meals.map(meal => meal.name), varietyInput, varietyContext),
       meals: allMeals,
       breakfasts: includeBreakfast ? parsed.breakfasts : [],
       lunches: includeLunch ? parsed.lunches : [],
       restock_items: deterministicRestockItems,
       estimated_total_cost: recalculatedTotal,
-      desserts: parsed.desserts,
+      desserts: parsed.desserts.map(d=>({...d,dietaryRestrictions:diet})),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

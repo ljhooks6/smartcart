@@ -19,6 +19,7 @@ import { deriveGroceryLists } from "../lib/grocery-list";
 import { restoreMealAtPosition, undoCookedEntry } from "../lib/meal-recovery";
 import { countCookedThisWeek } from "../lib/week-progress";
 import { getMealKind, mealKindLabel, hasRoomForMeal } from "../lib/meal-types";
+import { recentRejections, type RejectedMealEntry } from "../lib/meal-variety";
 import { recoverWeekDraft, weekDraftKey, weekSnapshot, saveErrorMessage } from "../lib/save-recovery";
 import { SmartCartCookSections } from "./smart-cart-cook-sections";
 import { SmartCartFeedback } from "./smart-cart-feedback";
@@ -71,6 +72,8 @@ type MealPlanItem = {
   name: string;
   servings: number;
   notes: string;
+  description?: string;
+  dietaryRestrictions?: string;
   scheduledDay?: CookingDay;
   ingredients?: IngredientItem[];
   instructions?: string[];
@@ -664,7 +667,7 @@ export function SmartCartApp() {
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
   const [replacingDessertKey, setReplacingDessertKey] = useState<string | null>(null);
-  const [recentRejectedMeals, setRecentRejectedMeals] = useState<string[]>([]);
+  const [rejectedHistory, setRejectedHistory] = useState<{ owner: string; entries: RejectedMealEntry[] }>({ owner: "", entries: [] });
   const [expandedDetailCards, setExpandedDetailCards] = useState<Set<string>>(
     new Set(),
   );
@@ -747,6 +750,18 @@ export function SmartCartApp() {
   }, []);
 
   const planOwner = user?.id || "guest";
+  const rejectionStorageKey = `mealcaddie-rejected-meals:${planOwner}`;
+  const recentRejectedMeals = rejectedHistory.owner === planOwner
+    ? recentRejections(rejectedHistory.entries).map(entry => entry.title) : [];
+  useEffect(() => {
+    if (!hasResolvedAuthSession) return;
+    setRejectedHistory({ owner: planOwner, entries: recentRejections(loadStoredJson(rejectionStorageKey)) });
+  }, [hasResolvedAuthSession, planOwner, rejectionStorageKey]);
+  useEffect(() => {
+    if (hasResolvedAuthSession && rejectedHistory.owner === planOwner) {
+      saveStoredJson(rejectionStorageKey, recentRejections(rejectedHistory.entries));
+    }
+  }, [hasResolvedAuthSession, planOwner, rejectionStorageKey, rejectedHistory]);
   const [loadedPlanOwner, setLoadedPlanOwner] = useState<string | null>(null);
   const persistGeneratedPlan = useCallback((plan: GenerateListResponse | null) => {
     if (!hasResolvedAuthSession || loadedPlanOwner !== planOwner) return;
@@ -1273,6 +1288,7 @@ export function SmartCartApp() {
           availableEquipment: formState.availableEquipment,
           apply_upgrades: applyUpgrades,
           existingMeals: existingMealTitles,
+          recentRejectedMeals,
         });
   }
 
@@ -1373,7 +1389,9 @@ export function SmartCartApp() {
                 ...savedDessert,
                 day: `Sweet Treat ${index + 1}`,
                 name: data.title,
-                notes: data.description,
+                notes: "",
+                description: data.description,
+                dietaryRestrictions: formState.diet,
                 ingredients: data.ingredients,
                 imageUrl: data.imageUrl,
               }
@@ -1721,7 +1739,9 @@ export function SmartCartApp() {
       day: `Sweet Treat ${index + 1}`,
       name: dessert.title,
       servings: Number(formState.householdSize) || 2,
-      notes: dessert.description,
+      notes: "",
+      description: dessert.description,
+      dietaryRestrictions: formState.diet,
       ingredients: dessert.ingredients,
       imageUrl: dessert.imageUrl,
     };
@@ -1808,7 +1828,8 @@ export function SmartCartApp() {
     setSavedDesserts([]);
     setReplacingMealKey(null);
     setReplacingDessertKey(null);
-    setRecentRejectedMeals([]);
+    setRejectedHistory({ owner: planOwner, entries: [] });
+    clearStoredJson(rejectionStorageKey);
     setExpandedDetailCards(new Set());
     mobileScrollPositions.current = {};
     setCloudSyncMessage("");
@@ -2073,6 +2094,8 @@ export function SmartCartApp() {
             : undefined) ?? fallback.servings,
         ) || 2,
       notes: resolvedNotes,
+      description: record && "description" in record && typeof record.description === "string" ? record.description : undefined,
+      dietaryRestrictions: record && "dietaryRestrictions" in record && typeof record.dietaryRestrictions === "string" ? record.dietaryRestrictions : undefined,
       scheduledDay: normalizeCookingDay(record && "scheduledDay" in record ? record.scheduledDay : undefined),
       ingredients: hydratedIngredients,
       instructions: (rawInstructions || []).filter(
@@ -2369,6 +2392,12 @@ export function SmartCartApp() {
 
     setReplacingMealKey(mealKey);
     setRequestError(null);
+    // Record the user's rejection even if the replacement provider fails. Scope
+    // it to this identity; switching accounts never reuses another user's list.
+    setRejectedHistory(current => ({ owner: planOwner, entries: recentRejections([
+      { title: meal.name, rejectedAt: new Date().toISOString() },
+      ...(current.owner === planOwner ? current.entries : []),
+    ]) }));
 
     try {
       const response = await fetch("/api/replace-meal", {
@@ -2381,6 +2410,7 @@ export function SmartCartApp() {
             householdSize,
             combinedPantryItems: combinedPantryItems.join(", "),
             rejectedMealTitle: meal.name,
+            mealSourceMode: formState.mealSourceMode,
             mealType: getMealKind(meal),
             prepTime: formState.prepTime,
             adventureLevel: formState.adventureLevel,
@@ -2407,7 +2437,9 @@ export function SmartCartApp() {
         day: meal.day,
         name: data.title,
         servings: meal.servings,
-        notes: `${data.description} Ingredients: ${data.ingredients.join(", ")}. Approx. prep time: ${data.prepTime} minutes.`,
+        description: data.description,
+        dietaryRestrictions: formState.diet,
+        notes: `Approx. prep time: ${data.prepTime} minutes.`,
         ingredients: data.ingredients.map((ingredient) => ({
           name: ingredient,
           amount: "1 pack",
@@ -2431,10 +2463,6 @@ export function SmartCartApp() {
         persistGeneratedPlan(nextPlan);
         return nextPlan;
       });
-
-      setRecentRejectedMeals((current) =>
-        Array.from(new Set([...current, safeTrim(meal.name)])).slice(-12),
-      );
 
       setWeeklyMenu((current) =>
         current.map((savedMeal) =>
@@ -2478,8 +2506,6 @@ export function SmartCartApp() {
 
   return (
       <main className="mealcaddie-surface min-h-screen flex flex-col items-center px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 md:pb-12 md:pt-8">
-        <p role="note" className="mb-3 w-full max-w-6xl rounded-xl border border-ink/20 bg-cream p-3 text-sm text-ink">Allergy-dependent generation is temporarily restricted. Saved recipes and grocery lists are not verified for allergies. Check ingredients, labels and cross-contact independently.</p>
-        <DietarySafetySummary diet={formState.diet} value={[generatedPlan,weeklyMenu,savedDesserts,archivedMeals,...Array.from(restock)]} />
         <PersonalizedWelcome />
         <SmartCartStoreMode
           open={isStoreMode} onClose={() => setIsStoreMode(false)}
@@ -2618,6 +2644,7 @@ export function SmartCartApp() {
                 activeMobileTab === "plan" ? `block ${activeTabMeta.panelClass}` : "hidden"
               }`}
             >
+            <div className="md:hidden"><DietarySafetySummary compact diet={formState.diet} value={generatedPlan} /></div>
             <SmartCartContextForm
               adventureLevelOptions={adventureLevelOptions}
               combinedPantryItems={combinedPantryItems}
@@ -3048,6 +3075,7 @@ export function SmartCartApp() {
       </nav>
 
       <SmartCartRecipeModal
+        diet={formState.diet}
         userId={safeTrim(user?.id)}
         onCooked={activeRecipeMeal && [...weeklyMenu, ...savedDesserts].some(meal => meal.day === activeRecipeMeal.day && meal.name === activeRecipeMeal.name) ? () => { closeRecipeModal(); void handleRemoveFromWeeklyMenu(activeRecipeMeal); } : undefined}
         activeRecipe={activeRecipe}
