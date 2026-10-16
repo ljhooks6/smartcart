@@ -121,3 +121,66 @@ test('misconfigured shared URL and swapped local keys fail closed without exposi
  await env(config,async()=>{assert.throws(()=>localLibraryConfig(),/loopback/);});
  await env({...config,MEALCADDIE_ALLERGY_LOCAL_SUPABASE_URL:'http://127.0.0.1:54335',MEALCADDIE_ALLERGY_LOCAL_ANON_KEY:credential('service_role')},async()=>{assert.throws(()=>localLibraryConfig(),/distinct local/);});
 }));
+
+test('ordinary tab adapter: chosen dinners/dessert, schedule, Vault restore/delete and canonical basket use signed identities',()=>env(active,async()=>{
+ const f=await libraryFixture();try{
+  const c=context(f),r=await executeLibraryCommand(generation(),c),currentDiet=input.diet;
+  const refs=r.plan.meals.slice(0,2).concat(r.plan.meals.filter(m=>m.kind==='dessert')).map(m=>({provenance:r.provenance,recipeId:m.id}));
+  refs[0].scheduledDay='Tuesday';
+  await executeLibraryCommand({action:'selection',entries:refs,currentDiet},c);
+  const inventory=await executeLibraryCommand({action:'inventory',currentDiet},c);
+  assert.equal(inventory.week.length,3);assert.equal(inventory.weekBlocked,false);assert.equal(inventory.week.find(m=>m.id===refs[0].recipeId).scheduledDay,'Tuesday');
+  const recipe=await executeLibraryCommand({action:'recipe',...refs[1],scheduledDay:undefined,currentDiet},c).catch(()=>null);
+  // Strict input schemas reject even unrelated display/scheduling fields.
+  assert.equal(recipe,null);
+  const opened=await executeLibraryCommand({action:'recipe',provenance:r.provenance,recipeId:refs[1].recipeId,currentDiet},c);
+  assert.ok(opened.recipe.ingredients.every(i=>i.amount&&i.price>=0));assert.ok(opened.recipe.notes.includes('Engineering candidate'));
+  const basket=await executeLibraryCommand({action:'basket',entries:refs,currentDiet},c);
+  const amounts=new Map();for(const m of inventory.week)for(const i of m.ingredients)amounts.set(i.foodId,(amounts.get(i.foodId)??0)+i.quantity);
+  for(const i of basket.groceries)assert.equal(i.quantity,Math.round(amounts.get(i.foodId)*1000)/1000);
+  assert.equal((await executeLibraryCommand({action:'basket',entries:refs,proposed:[...basket.groceries].reverse(),currentDiet},c)).groceries.length,basket.groceries.length);
+  for(const proposed of [basket.groceries.slice(1),basket.groceries.map((i,n)=>n?i:{...i,unit:'each'}),basket.groceries.map((i,n)=>n?i:{...i,name:'Tahini'}),[...basket.groceries,basket.groceries[0]]])await assert.rejects(executeLibraryCommand({action:'basket',entries:refs,proposed,currentDiet},c),e=>e.code==='GROCERY_CHANGED');
+  await assert.rejects(executeLibraryCommand({action:'selection',entries:[refs[0],refs[0]],currentDiet},c),e=>e.code==='DUPLICATE_RECIPE');
+  const saved=await executeLibraryCommand({action:'save-vault',provenance:r.provenance,recipeId:refs[0].recipeId,currentDiet},c);
+  await executeLibraryCommand({action:'delete-vault',id:saved.id,currentDiet},context(f,plus));assert.equal((await executeLibraryCommand({action:'inventory',currentDiet},c)).vault.length,1);
+  await executeLibraryCommand({action:'delete-vault',id:saved.id,currentDiet},c);assert.equal((await executeLibraryCommand({action:'inventory',currentDiet},c)).vault.length,0);
+  assert.equal(await f.count(),1);
+ }finally{await f.db.close();}
+}));
+
+test('current restrictions cannot strip signed original restrictions; retired keys, altered stored data and historical week fail closed',()=>env(active,async()=>{
+ const f=await libraryFixture();try{
+  const c=context(f),r=await executeLibraryCommand(generation(),c),currentDiet=diet(['Sesame']);
+  const restored=await executeLibraryCommand({action:'artifact',provenance:r.provenance,currentDiet},c);
+  assert.deepEqual([...restored.plan.policy.allergies].sort(),['Eggs','Milk','Peanuts','Sesame']);
+  assert.notEqual(restored.recipes[0].library.cacheKey,r.recipes[0].library.cacheKey);
+  await assert.rejects(executeLibraryCommand({action:'recipe',provenance:r.provenance,recipeId:r.plan.recipeIds[0],currentDiet,avoidIngredients:r.plan.meals[0].ingredients[0].name},c),e=>e.status===422);
+  await executeLibraryCommand({action:'save-week',provenance:r.provenance,currentDiet},c);
+  await f.db.query("update weekly_menus set recipe_data=jsonb_set(recipe_data,'{ingredients}','[{\"name\":\"Tahini\",\"quantity\":900}]') where user_id=$1",[free]);
+  const inventory=await executeLibraryCommand({action:'inventory',currentDiet},c);assert.ok(inventory.week.every(m=>m.ingredients.every(i=>i.name!=='Tahini')));
+  const rotated={...c,keys:{active:'local-v2',keys:{...keys.keys,'local-v2':randomBytes(32).toString('base64url')}}};
+  assert.equal((await executeLibraryCommand({action:'inventory',currentDiet},rotated)).week.length,8);
+  const retired={...c,keys:{active:'local-v2',keys:{'local-v2':rotated.keys.keys['local-v2']}}};
+  const withheld=await executeLibraryCommand({action:'inventory',currentDiet},retired);assert.equal(withheld.week.length,0);assert.equal(withheld.weekBlocked,true);assert.equal(withheld.unavailable,8);
+  await assert.rejects(executeLibraryCommand({action:'artifact',provenance:r.provenance,currentDiet},retired),e=>e.code==='PROVENANCE_INVALID');
+  await f.db.query("insert into weekly_menus(user_id,meal_title,status,recipe_data) values($1,'Historical meal','active_week','{}')",[free]);
+  const count=(await f.db.query('select count(*)::int n from weekly_menus')).rows[0].n;
+  await assert.rejects(executeLibraryCommand({action:'selection',entries:[],currentDiet},c),e=>e.code==='WEEK_REVIEW_REQUIRED');
+  assert.equal((await f.db.query('select count(*)::int n from weekly_menus')).rows[0].n,count);
+ }finally{await f.db.close();}
+}));
+
+test('local key ring validates active/retained keys without exposing them; real app entry remains hosted-disabled',()=>env(active,async()=>{
+ const {localLibraryConfig,localLibraryBrowserConfigured}=load('lib/allergy-library-local.ts');
+ const credential=role=>`header.${Buffer.from(JSON.stringify({role})).toString('base64url')}.signature`;
+ const config={MEALCADDIE_ALLERGY_LOCAL_SUPABASE_URL:'http://127.0.0.1:54335',MEALCADDIE_ALLERGY_LOCAL_ANON_KEY:credential('anon'),MEALCADDIE_ALLERGY_LOCAL_SERVICE_KEY:credential('service_role'),MEALCADDIE_ALLERGY_LOCAL_SIGNING_KEY:keys.keys['local-v1'],MEALCADDIE_ALLERGY_LOCAL_USER_IDS:free};
+ const ring={active:'local-v2',keys:{...keys.keys,'local-v2':randomBytes(32).toString('base64url')}};
+ await env({...config,MEALCADDIE_ALLERGY_LOCAL_KEY_RING:JSON.stringify(ring)},async()=>{assert.equal(localLibraryConfig().keys.active,'local-v2');});
+ await env({...config,NEXT_PUBLIC_SUPABASE_URL:'https://shared.example.invalid',NEXT_PUBLIC_SUPABASE_ANON_KEY:credential('anon')},async()=>assert.equal(localLibraryBrowserConfigured(),false));
+ await env({...config,NEXT_PUBLIC_SUPABASE_URL:config.MEALCADDIE_ALLERGY_LOCAL_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY:credential('anon')},async()=>assert.equal(localLibraryBrowserConfigured(),true));
+ for(const bad of ['invalid',JSON.stringify({...ring,active:'absent'}),JSON.stringify({...ring,keys:{'local-v2':'abc'}})])await env({...config,MEALCADDIE_ALLERGY_LOCAL_KEY_RING:bad},async()=>assert.throws(()=>localLibraryConfig(),/key ring/));
+ const source=readFileSync('components/allergy-library-application.tsx','utf8');assert.doesNotMatch(source,/from ["'].*(?:\/supabase|use-smart-cart-recipe|use-generation-job)["']/);
+ for(const name of ['WeekDashboard','MealSections','CookSections','LibrarySections','GrocerySidebar','RecipeModal'])assert.ok(source.includes('SmartCart'+name));
+ assert.match(readFileSync('app/labs/allergy-aware/app/page.tsx','utf8'),/if\(!localLibraryEnabled\(\)\)notFound\(\)/);
+ assert.equal(JSON.parse(readFileSync('vercel.json')).git.deploymentEnabled['feature/allergy-aware-candidate'],false);
+}));

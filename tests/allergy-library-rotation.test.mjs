@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loader} from './helpers/load-local-ts.mjs';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 const load=loader(),{writeDiet}=load('lib/dietary-safety.ts');
 const {reviewedRecipes,expandRecipeParts}=load('lib/allergy-aware-recipes.ts');
 const {profileById}=load('lib/allergy-aware-catalog.ts');
@@ -9,6 +11,13 @@ const {assertPilotScope}=load('lib/allergy-library-local.ts');
 const sources=['Milk','Eggs','Peanuts','Sesame'];
 const diet=(allergies=sources,preferences=[],extra={})=>writeDiet('No preference',{allergies,preferences,customAllergies:'',intolerances:'',medical:'',...extra});
 const base={diet:diet(),budget:1000,householdSize:2,count:7,includeDessert:true,availableEquipment:['Oven','Stovetop'],maxMinutes:60};
+
+test('ten-recipe calibration batch matches exact engineering revisions, with cooking and professional decisions unclaimed',()=>{
+ const batch=JSON.parse(readFileSync('docs/allergy-review-packet/calibration-batch.json','utf8'));
+ const {canonical}=load('lib/allergy-library-provenance.ts');assert.equal(batch.recipes.length,10);assert.equal(new Set(batch.recipes.map(r=>r.id)).size,10);
+ for(const r of batch.recipes){const spec=reviewedRecipes.find(s=>s.id===r.id);assert.equal(r.contentSHA256,createHash('sha256').update(canonical(spec)).digest('hex'));assert.equal(r.professionalReview,'NOT REVIEWED');assert.equal(r.practicalCooking,'NOT TESTED');assert.ok(r.calibrationQuestions);}
+ const matrix=readFileSync('docs/allergy-review-packet/physical-cooking-tests.md','utf8');for(const r of reviewedRecipes)assert.ok(matrix.includes(`| ${r.id} / ${r.revision} |`));
+});
 test('48 authored engineering candidates: 36 dinners, 12 desserts, explicit components and equipment',()=>{
  assert.equal(reviewedRecipes.length,48);assert.equal(reviewedRecipes.filter(r=>r.kind==='dinner').length,36);assert.equal(reviewedRecipes.filter(r=>r.kind==='dessert').length,12);
  assert.equal(new Set(reviewedRecipes.map(r=>r.id)).size,48);

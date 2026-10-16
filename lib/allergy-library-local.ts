@@ -26,7 +26,15 @@ export function localLibraryConfig(){
   // an accidentally swapped service key from being returned as a public key.
   try{if(JSON.parse(Buffer.from(publicKey.split('.')[1],"base64url").toString()).role!=="anon"||JSON.parse(Buffer.from(secret.split('.')[1],"base64url").toString()).role!=="service_role")throw Error();}
   catch{throw new LibraryError("LOCAL_CONFIG",503,"Use the distinct local anon and service-role test credentials.");}
-  const keys:LocalSigningKeys={active:"local-v1",keys:{"local-v1":signing}};
+  let keys:LocalSigningKeys={active:"local-v1",keys:{"local-v1":signing}};
+  // Optional disposable key ring: retain old verification keys during rotation;
+  // remove a key to retire its artifacts. Never copy this material to hosting.
+  if(process.env.MEALCADDIE_ALLERGY_LOCAL_KEY_RING){
+    const schema=z.object({active:z.string().regex(/^[a-z0-9-]{1,40}$/),keys:z.record(z.string().regex(/^[A-Za-z0-9_-]+$/))}).strict();
+    try{const parsed=schema.parse(JSON.parse(process.env.MEALCADDIE_ALLERGY_LOCAL_KEY_RING));
+      if(Object.keys(parsed.keys).length>5||!parsed.keys[parsed.active]||Object.entries(parsed.keys).some(([kid,key])=>!/^[a-z0-9-]{1,40}$/.test(kid)||Buffer.from(key,"base64url").length<32))throw Error();keys=parsed;
+    }catch{throw new LibraryError("LOCAL_CONFIG",503,"The local signing key ring is invalid.");}
+  }
   return {url:url.origin,secret,publicKey,ids,keys};
 }
 export function localLibraryClients(token?:string){
@@ -34,6 +42,12 @@ export function localLibraryClients(token?:string){
   const options={auth:{autoRefreshToken:false,persistSession:false}};
   // Separate clients, never the cached shared-project admin client or its keys.
   return {config,admin:createClient(config.url,config.secret,options),user:createClient(config.url,config.publicKey,{...options,...(token?{global:{headers:{Authorization:`Bearer ${token}`}}}:{})})};
+}
+export function localLibraryBrowserConfigured(){
+  // The ordinary layout imports the existing public SDK. A local app run must
+  // point that SDK at the same disposable service as the dedicated adapter.
+  // Use a clean browser profile; never inherit real-account localStorage.
+  try{const config=localLibraryConfig();return process.env.NEXT_PUBLIC_SUPABASE_URL===config.url&&process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY===config.publicKey;}catch{return false;}
 }
 export function assertPilotScope(input:RestrictionInput){
   const policy=buildAllergyPolicy(input);

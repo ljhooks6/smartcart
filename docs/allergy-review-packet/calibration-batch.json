@@ -1,0 +1,1073 @@
+{
+  "catalogVersion": "2026-10-16.2",
+  "status": "UNSENT / NOT REVIEWED / NOT COOKING-TESTED",
+  "recipes": [
+    {
+      "id": "lemon-chicken",
+      "revision": 1,
+      "title": "Lemon chicken with potato wedges and broccoli",
+      "description": "Golden chicken and potato wedges with broccoli and a fresh lemon-parsley dressing.",
+      "minutes": 40,
+      "equipment": "Oven",
+      "parts": [
+        {
+          "foodId": "chicken",
+          "quantity": 160
+        },
+        {
+          "foodId": "potato",
+          "quantity": 200
+        },
+        {
+          "foodId": "broccoli",
+          "quantity": 150
+        },
+        {
+          "componentId": "lemon-parsley-dressing",
+          "quantity": 1
+        }
+      ],
+      "steps": [
+        "Heat the oven to 425°F / 220°C. Cut potatoes into wedges and broccoli into florets. Separate raw chicken from the vegetables and ready-to-eat ingredients.",
+        "Reserve half the olive oil and lemon for the dressing. Toss potatoes with the remaining oil and salt; roast for 10 minutes. Add the chicken and broccoli and roast until the chicken reaches 165°F / 74°C on a food thermometer and potatoes are tender.",
+        "Combine the reserved oil and lemon with the parsley. Divide all cooked food and dressing evenly among the specified servings. Do not add a bottled dressing or an unlisted garnish."
+      ],
+      "kind": "dinner",
+      "family": "roast-chicken-dinner",
+      "requiredEquipment": [
+        "Oven"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "961cbffa9c037f55f701dfe0d4ef0fcb3515d73d9a63bdbffd5d4331c88d4954",
+      "ingredients": [
+        {
+          "foodId": "chicken",
+          "quantity": 160,
+          "name": "Chicken breast",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "potato",
+          "quantity": 200,
+          "name": "Potatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "broccoli",
+          "quantity": 150,
+          "name": "Broccoli",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 5,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "lemon",
+          "quantity": 0.25,
+          "name": "Lemon",
+          "unit": "each",
+          "declaredSources": []
+        },
+        {
+          "foodId": "parsley",
+          "quantity": 3,
+          "name": "Parsley",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "Verify raw chicken portion, cut thickness, oven capacity and thermometer endpoint; measure elapsed preparation plus cooking."
+    },
+    {
+      "id": "chickpea-tomato-stew",
+      "revision": 1,
+      "title": "Chickpea and tomato stew with rice",
+      "description": "A hearty tomato-garlic stew over fluffy rice.",
+      "minutes": 30,
+      "equipment": "Stovetop",
+      "parts": [
+        {
+          "foodId": "chickpeas",
+          "quantity": 180
+        },
+        {
+          "foodId": "rice",
+          "quantity": 65
+        },
+        {
+          "foodId": "water",
+          "quantity": 260
+        },
+        {
+          "componentId": "tomato-garlic-sauce",
+          "quantity": 1
+        }
+      ],
+      "steps": [
+        "Cook the rice in half the water in a covered saucepan until tender, about 18 minutes.",
+        "Dice the tomatoes and onion. Soften the onion and garlic in the olive oil; add tomatoes, oregano, salt and the remaining water. Simmer for 10 minutes.",
+        "Add the plain cooked chickpeas and simmer for 5 minutes until steaming throughout. Divide the stew and rice among the specified servings. The homemade sauce uses only the listed ingredients."
+      ],
+      "kind": "dinner",
+      "family": "chickpea-stew",
+      "requiredEquipment": [
+        "Stovetop"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "fd4b19edef4f353ff1b248ec463960bce478641f1ada0cd50f78ea4034129101",
+      "ingredients": [
+        {
+          "foodId": "chickpeas",
+          "quantity": 180,
+          "name": "Cooked plain chickpeas",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "rice",
+          "quantity": 65,
+          "name": "White rice",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "water",
+          "quantity": 260,
+          "name": "Water",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "tomato",
+          "quantity": 180,
+          "name": "Tomatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "garlic",
+          "quantity": 4,
+          "name": "Garlic",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 5,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "onion",
+          "quantity": 50,
+          "name": "Onions",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "oregano",
+          "quantity": 0.5,
+          "name": "Oregano",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "Verify drained/cooked chickpea state and usable weight, liquid reduction, serving yield and plain ingredient availability."
+    },
+    {
+      "id": "salmon-green-beans",
+      "revision": 1,
+      "title": "Lemon salmon with potatoes and green beans",
+      "description": "Tender salmon with potato wedges and lemon-parsley vegetables.",
+      "minutes": 40,
+      "equipment": "Oven",
+      "parts": [
+        {
+          "foodId": "salmon",
+          "quantity": 160
+        },
+        {
+          "foodId": "potato",
+          "quantity": 180
+        },
+        {
+          "foodId": "green-beans",
+          "quantity": 150
+        },
+        {
+          "componentId": "lemon-parsley-dressing",
+          "quantity": 1
+        }
+      ],
+      "steps": [
+        "Heat oven to 425°F / 220°C. Cut potatoes into small wedges and trim green beans; keep raw fish separate.",
+        "Reserve lemon and parsley. Toss potatoes with half the oil and salt and roast for 15 minutes. Add salmon and green beans with the remaining oil and salt and cook until the fish reaches 145°F / 63°C on a food thermometer and vegetables are tender.",
+        "Divide among the specified servings and finish with the reserved lemon and parsley. No alternative fish or bottled sauce is implied by this specification."
+      ],
+      "kind": "dinner",
+      "family": "roast-fish-dinner",
+      "requiredEquipment": [
+        "Oven"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "ec8080ed9c0d0e692ee0a19ffce333cdcbf88bd600d35b21c001c4e48aaf6082",
+      "ingredients": [
+        {
+          "foodId": "salmon",
+          "quantity": 160,
+          "name": "Plain salmon fillet",
+          "unit": "g",
+          "declaredSources": [
+            "Fish"
+          ]
+        },
+        {
+          "foodId": "potato",
+          "quantity": 180,
+          "name": "Potatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "green-beans",
+          "quantity": 150,
+          "name": "Green beans",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 5,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "lemon",
+          "quantity": 0.25,
+          "name": "Lemon",
+          "unit": "each",
+          "declaredSources": []
+        },
+        {
+          "foodId": "parsley",
+          "quantity": 3,
+          "name": "Parsley",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "Verify fish portion/thickness, independent vegetable and fish doneness, handling and timing; disclose Fish outside supported exclusions."
+    },
+    {
+      "id": "stuffed-peppers",
+      "revision": 1,
+      "title": "Quinoa and black bean stuffed peppers",
+      "description": "Pepper halves filled with quinoa, black beans and fresh tomato.",
+      "minutes": 50,
+      "equipment": "Oven",
+      "parts": [
+        {
+          "foodId": "pepper",
+          "quantity": 220
+        },
+        {
+          "foodId": "quinoa",
+          "quantity": 55
+        },
+        {
+          "foodId": "water",
+          "quantity": 160
+        },
+        {
+          "foodId": "black-beans",
+          "quantity": 130
+        },
+        {
+          "foodId": "tomato",
+          "quantity": 100
+        },
+        {
+          "foodId": "onion",
+          "quantity": 30
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 6
+        },
+        {
+          "foodId": "cumin",
+          "quantity": 1
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5
+        }
+      ],
+      "steps": [
+        "Heat the oven to 400°F / 200°C. Halve and seed the peppers; brush with half the oil and bake cut-side up for 15 minutes.",
+        "Rinse quinoa. In a saucepan soften chopped onion in remaining oil; add quinoa, water, chopped tomato, cumin and salt. Cover and simmer for 15 minutes; stir in the plain cooked beans.",
+        "Fill peppers with the quinoa mixture and bake for 15–20 minutes until tender and the center is steaming. Divide all listed food among the specified servings; no cheese or bottled sauce is included."
+      ],
+      "kind": "dinner",
+      "family": "stuffed-peppers",
+      "requiredEquipment": [
+        "Oven",
+        "Stovetop"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "3376cb72289cb745d3ad4c1a3ceaab9c518b17c4d9e8cf779f2b1178f39ed936",
+      "ingredients": [
+        {
+          "foodId": "pepper",
+          "quantity": 220,
+          "name": "Bell peppers",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "quinoa",
+          "quantity": 55,
+          "name": "Quinoa",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "water",
+          "quantity": 160,
+          "name": "Water",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "black-beans",
+          "quantity": 130,
+          "name": "Cooked plain black beans",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "tomato",
+          "quantity": 100,
+          "name": "Tomatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "onion",
+          "quantity": 30,
+          "name": "Onions",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 6,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "cumin",
+          "quantity": 1,
+          "name": "Cumin",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "Verify cooked rice handling, filling-to-pepper volume, pepper size, reheating/doneness, pan capacity and total elapsed time."
+    },
+    {
+      "id": "turkey-meatballs",
+      "revision": 1,
+      "title": "Turkey meatballs in tomato sauce with potatoes",
+      "description": "Oat-bound turkey meatballs simmered in homemade tomato sauce.",
+      "minutes": 45,
+      "equipment": "Stovetop",
+      "parts": [
+        {
+          "foodId": "turkey",
+          "quantity": 160
+        },
+        {
+          "foodId": "oats",
+          "quantity": 20
+        },
+        {
+          "foodId": "potato",
+          "quantity": 180
+        },
+        {
+          "foodId": "water",
+          "quantity": 250
+        },
+        {
+          "componentId": "tomato-garlic-sauce",
+          "quantity": 1
+        }
+      ],
+      "steps": [
+        "Cut potatoes into small cubes and simmer in most of the water in a covered saucepan until tender, about 18 minutes; reserve the cooking liquid with the potatoes.",
+        "Mix raw turkey with rolled oats and a little of the listed water; form small meatballs using a separate raw-meat surface. Soften the sauce onion and garlic in the oil; add chopped tomato, oregano, salt and remaining water.",
+        "Add meatballs, cover and gently simmer, turning carefully, until each reaches 165°F / 74°C on a food thermometer, about 15–20 minutes. Divide with the potatoes. No egg, breadcrumbs or unlisted sauce is included."
+      ],
+      "kind": "dinner",
+      "family": "meatballs",
+      "requiredEquipment": [
+        "Stovetop"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "b2f61ed5ac35202c253949edfe3aed8a77f2263215ffd210b5de759b33874838",
+      "ingredients": [
+        {
+          "foodId": "turkey",
+          "quantity": 160,
+          "name": "Plain ground turkey",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "oats",
+          "quantity": 20,
+          "name": "Rolled oats",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "potato",
+          "quantity": 180,
+          "name": "Potatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "water",
+          "quantity": 250,
+          "name": "Water",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "tomato",
+          "quantity": 180,
+          "name": "Tomatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "garlic",
+          "quantity": 4,
+          "name": "Garlic",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 5,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "onion",
+          "quantity": 50,
+          "name": "Onions",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "oregano",
+          "quantity": 0.5,
+          "name": "Oregano",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "High uncertainty: eggless binding, ball diameter, loss/yield, batch capacity and thermometer endpoint must be measured."
+    },
+    {
+      "id": "spinach-potato-gnocchi",
+      "revision": 1,
+      "title": "Potato gnocchi with spinach and tomato",
+      "description": "Small eggless potato dumplings with a fresh tomato-spinach sauce.",
+      "minutes": 55,
+      "equipment": "Stovetop",
+      "parts": [
+        {
+          "foodId": "potato",
+          "quantity": 220
+        },
+        {
+          "foodId": "wheat-flour",
+          "quantity": 65
+        },
+        {
+          "foodId": "spinach",
+          "quantity": 80
+        },
+        {
+          "foodId": "water",
+          "quantity": 600
+        },
+        {
+          "componentId": "tomato-garlic-sauce",
+          "quantity": 1
+        }
+      ],
+      "steps": [
+        "Peel and dice potatoes; simmer in most of the water until tender. Drain, let steam dry for 5 minutes and mash. Mix with most of the flour and half the salt into a soft dough; reserve the rest of the flour for the work surface.",
+        "Roll into thin ropes and cut small dumplings. Prepare sauce in a second pan: soften listed onion and garlic in the oil, add tomatoes, oregano, remaining salt and water, and simmer 10 minutes. Stir in spinach.",
+        "Simmer gnocchi in plain boiling water in batches until they float, then for about 3 more minutes so the flour cooks through. Drain and divide with sauce. Contains wheat; dough behavior and yield need practical review before pilot use."
+      ],
+      "kind": "dinner",
+      "family": "potato-dumplings",
+      "requiredEquipment": [
+        "Stovetop"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "8a9acf22b67011ec0505ba763cabfab10fc1e1999e29a9f30ba9228b91c5ef64",
+      "ingredients": [
+        {
+          "foodId": "potato",
+          "quantity": 220,
+          "name": "Potatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "wheat-flour",
+          "quantity": 65,
+          "name": "Wheat flour",
+          "unit": "g",
+          "declaredSources": [
+            "Wheat"
+          ]
+        },
+        {
+          "foodId": "spinach",
+          "quantity": 80,
+          "name": "Spinach",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "water",
+          "quantity": 600,
+          "name": "Water",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "tomato",
+          "quantity": 180,
+          "name": "Tomatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "garlic",
+          "quantity": 4,
+          "name": "Garlic",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 5,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "onion",
+          "quantity": 50,
+          "name": "Onions",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "oregano",
+          "quantity": 0.5,
+          "name": "Oregano",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "High uncertainty: potato moisture, flour hydration, dumpling size, raw flour cooking, sauce yield, two-pan timing and batch capacity."
+    },
+    {
+      "id": "cabbage-pancakes",
+      "revision": 1,
+      "title": "Savory cabbage pancakes with cucumber",
+      "description": "Thin cabbage and wheat-flour pancakes with a fresh cucumber side.",
+      "minutes": 35,
+      "equipment": "Stovetop",
+      "parts": [
+        {
+          "foodId": "cabbage",
+          "quantity": 160
+        },
+        {
+          "foodId": "wheat-flour",
+          "quantity": 75
+        },
+        {
+          "foodId": "water",
+          "quantity": 100
+        },
+        {
+          "foodId": "cucumber",
+          "quantity": 100
+        },
+        {
+          "foodId": "lime",
+          "quantity": 0.25
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 9
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5
+        }
+      ],
+      "steps": [
+        "Shred cabbage finely. Mix flour, water and half the salt into a batter, then fold in cabbage. Do not taste raw batter.",
+        "Heat most of the oil in a nonstick skillet. Spread batter into small thin pancakes; cook about 5 minutes per side until firm, golden and fully cooked through. Work in batches; large households take longer.",
+        "Dress cucumber slices with lime, remaining oil and salt. Divide with the pancakes. Contains wheat; no egg, bottled sauce or mayonnaise is included."
+      ],
+      "kind": "dinner",
+      "family": "savory-vegetable-pancakes",
+      "requiredEquipment": [
+        "Stovetop"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "e157149d11b3673df3936be054c5007902f3e25ff433dae239d7869cdb629e4a",
+      "ingredients": [
+        {
+          "foodId": "cabbage",
+          "quantity": 160,
+          "name": "Cabbage",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "wheat-flour",
+          "quantity": 75,
+          "name": "Wheat flour",
+          "unit": "g",
+          "declaredSources": [
+            "Wheat"
+          ]
+        },
+        {
+          "foodId": "water",
+          "quantity": 100,
+          "name": "Water",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "cucumber",
+          "quantity": 100,
+          "name": "Cucumber",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "lime",
+          "quantity": 0.25,
+          "name": "Lime",
+          "unit": "each",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 9,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "High uncertainty: cabbage water release, thinness, eggless binding, oil uptake, flour cooking and serial batch elapsed time."
+    },
+    {
+      "id": "polenta-mushrooms",
+      "revision": 1,
+      "title": "Soft polenta with mushroom ragout",
+      "description": "Cornmeal polenta with mushrooms and fresh tomato.",
+      "minutes": 40,
+      "equipment": "Stovetop",
+      "parts": [
+        {
+          "foodId": "cornmeal",
+          "quantity": 70
+        },
+        {
+          "foodId": "water",
+          "quantity": 360
+        },
+        {
+          "foodId": "mushroom",
+          "quantity": 170
+        },
+        {
+          "foodId": "tomato",
+          "quantity": 120
+        },
+        {
+          "foodId": "onion",
+          "quantity": 40
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 7
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5
+        },
+        {
+          "foodId": "parsley",
+          "quantity": 3
+        }
+      ],
+      "steps": [
+        "Bring most of the water and half the salt to a simmer. Slowly whisk in plain yellow cornmeal. Cook gently, stirring often, for about 30 minutes or until tender; add remaining listed water as needed.",
+        "In a skillet soften chopped onion and mushrooms in olive oil. Add chopped tomato and remaining salt and simmer for 10 minutes.",
+        "Divide polenta and mushroom ragout among servings; finish with parsley. No butter, milk, cheese or instant flavored polenta is used."
+      ],
+      "kind": "dinner",
+      "family": "polenta-ragout",
+      "requiredEquipment": [
+        "Stovetop"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "c67fd7141085722e3f253fea0c0bbea068a7c65a3014bcb771b04311b18d94fe",
+      "ingredients": [
+        {
+          "foodId": "cornmeal",
+          "quantity": 70,
+          "name": "Plain yellow cornmeal",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "water",
+          "quantity": 360,
+          "name": "Water",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "mushroom",
+          "quantity": 170,
+          "name": "Mushrooms",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "tomato",
+          "quantity": 120,
+          "name": "Tomatoes",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "onion",
+          "quantity": 40,
+          "name": "Onions",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 7,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "parsley",
+          "quantity": 3,
+          "name": "Parsley",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "Verify dry cornmeal grind, water ratio, sticking, texture, usable cooked yield and simultaneous topping timing."
+    },
+    {
+      "id": "lemon-shortbread",
+      "revision": 1,
+      "title": "Lemon olive-oil biscuits",
+      "description": "Small crisp wheat biscuits with lemon zest and olive oil.",
+      "minutes": 35,
+      "equipment": "Oven",
+      "parts": [
+        {
+          "foodId": "wheat-flour",
+          "quantity": 45
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 16
+        },
+        {
+          "foodId": "sugar",
+          "quantity": 14
+        },
+        {
+          "foodId": "lemon",
+          "quantity": 0.125
+        },
+        {
+          "foodId": "water",
+          "quantity": 5
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.1
+        }
+      ],
+      "steps": [
+        "Heat oven to 350°F / 175°C. Wash lemon; use its zest and a little juice. Mix with olive oil, sugar, water and salt, then stir in flour. No leavening is used.",
+        "Press into small thin biscuits on a lined tray and bake 15–20 minutes until dry and lightly golden. Do not taste raw dough; the flour must be fully cooked.",
+        "Cool on the tray for 10 minutes before dividing among servings. Contains wheat; texture and yield require cooking review."
+      ],
+      "kind": "dessert",
+      "family": "short-biscuits",
+      "requiredEquipment": [
+        "Oven"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "95301a3ead2ae12c01b78a16c8e814ff64ddb7079d028251260bfaaee2759ea0",
+      "ingredients": [
+        {
+          "foodId": "wheat-flour",
+          "quantity": 45,
+          "name": "Wheat flour",
+          "unit": "g",
+          "declaredSources": [
+            "Wheat"
+          ]
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 16,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "sugar",
+          "quantity": 14,
+          "name": "Sugar",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "lemon",
+          "quantity": 0.125,
+          "name": "Lemon",
+          "unit": "each",
+          "declaredSources": []
+        },
+        {
+          "foodId": "water",
+          "quantity": 5,
+          "name": "Water",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.1,
+          "name": "Salt",
+          "unit": "g",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "High uncertainty: eggless/dairy-free dough hydration, shaping, spread, thickness, cooked flour, texture and cooled yield; title is biscuits, not a reviewed shortbread."
+    },
+    {
+      "id": "sweet-potato-cocoa-squares",
+      "revision": 1,
+      "title": "Sweet potato cocoa squares",
+      "description": "Dense cocoa-wheat squares made with cooked sweet potato.",
+      "minutes": 70,
+      "equipment": "Oven",
+      "parts": [
+        {
+          "foodId": "sweet-potato",
+          "quantity": 120
+        },
+        {
+          "foodId": "wheat-flour",
+          "quantity": 35
+        },
+        {
+          "foodId": "cocoa",
+          "quantity": 8
+        },
+        {
+          "foodId": "sugar",
+          "quantity": 18
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 12
+        },
+        {
+          "foodId": "water",
+          "quantity": 140
+        }
+      ],
+      "steps": [
+        "Heat oven to 350°F / 175°C. Peel and dice sweet potato; simmer in most of the water until very soft, drain and mash.",
+        "Mix mash with sugar, olive oil, cocoa and remaining water. Fold in flour and spread thinly in a lined small baking dish. Do not taste raw batter.",
+        "Bake about 30 minutes until firm and cooked through, then cool 15 minutes before cutting and dividing. Contains wheat. This dense, unleavened candidate needs texture and yield review."
+      ],
+      "kind": "dessert",
+      "family": "cocoa-squares",
+      "requiredEquipment": [
+        "Oven",
+        "Stovetop"
+      ],
+      "reviewStatus": "engineering-candidate",
+      "contentSHA256": "a07876447270e6eecc59f324ebb4b3dc7dd2ee4cac294af0551f65446d5d1d62",
+      "ingredients": [
+        {
+          "foodId": "sweet-potato",
+          "quantity": 120,
+          "name": "Sweet potato",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "wheat-flour",
+          "quantity": 35,
+          "name": "Wheat flour",
+          "unit": "g",
+          "declaredSources": [
+            "Wheat"
+          ]
+        },
+        {
+          "foodId": "cocoa",
+          "quantity": 8,
+          "name": "Unsweetened cocoa powder",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "sugar",
+          "quantity": 18,
+          "name": "Sugar",
+          "unit": "g",
+          "declaredSources": []
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 12,
+          "name": "Olive oil",
+          "unit": "ml",
+          "declaredSources": []
+        },
+        {
+          "foodId": "water",
+          "quantity": 140,
+          "name": "Water",
+          "unit": "ml",
+          "declaredSources": []
+        }
+      ],
+      "practicalCooking": "NOT TESTED",
+      "professionalReview": "NOT REVIEWED",
+      "calibrationQuestions": "High uncertainty: cooked mash moisture, water allocation, dish dimensions, thickness, cooked flour, cooling/cutting and yield. Engineering estimate 70 min exceeds the default 60-min application setting."
+    }
+  ]
+}

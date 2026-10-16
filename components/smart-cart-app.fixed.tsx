@@ -1,4 +1,5 @@
 "use client";
+import dynamic from "next/dynamic";
 import { DietarySafetySummary } from "./dietary-safety-summary";
 
 import { getMealRequestHeaders } from "../lib/meal-request-headers";
@@ -603,7 +604,11 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
   return `${displayValue} ${baseParts.unit}`;
 }
 
-export function SmartCartApp() {
+const LocalLibraryApplication=dynamic(()=>import("./allergy-library-application").then(m=>m.AllergyLibraryApplication));
+export function SmartCartApp({runtime}:{runtime?:"local-library"}={}) {
+  return runtime==="local-library"?<LocalLibraryApplication />:<OrdinarySmartCartApp />;
+}
+function OrdinarySmartCartApp() {
   const firstUseGuidance = useFirstUseGuidance();
   type SaveStatus = "idle" | "saving" | "saved" | "error";
   type ConfirmDialog =

@@ -4,6 +4,7 @@ import { mergeDietaryEntries } from "../lib/dietary-safety";
 import { DietarySafetySummary } from "./dietary-safety-summary";
 import { useEffect, useRef, useState } from "react";
 import { SmartCartDialog } from "./smart-cart-dialog";
+import Link from "next/link";
 import { getRecipeSourceKey } from "../lib/recipe-ingredients";
 import { normalizeProgress, normalizeSavedRecipes, recipeStorageKey, rememberRecipe, toggleProgressIndex, type Recipe, type RecipeProgress } from "../lib/recipe-progress";
 import { loadStoredJson, saveStoredJson } from "../lib/smart-cart-persistence";
@@ -13,6 +14,7 @@ type Props = {
   diet: string;
   activeRecipe: Recipe | undefined; activeRecipeMeal: Meal | null; onClose: () => void;
   recipeError: string | null; recipeLoadingMeal: string | null; userId: string; onCooked?: () => void;
+  sourceNotice?: string;
 };
 
 function InteractiveRecipe({ recipe, meal, userId, onCooked }: { recipe: Recipe; meal: Meal; userId: string; onCooked?: () => void }) {
@@ -60,10 +62,10 @@ function InteractiveRecipe({ recipe, meal, userId, onCooked }: { recipe: Recipe;
   </div>;
 }
 
-export function SmartCartRecipeModal({ diet, activeRecipe, activeRecipeMeal, onClose, recipeError, recipeLoadingMeal, userId, onCooked }: Props) {
+export function SmartCartRecipeModal({ diet, activeRecipe, activeRecipeMeal, onClose, recipeError, recipeLoadingMeal, userId, onCooked, sourceNotice }: Props) {
   if (!activeRecipeMeal) return null;
   return <SmartCartDialog open title="Recipe" onClose={onClose}>
-    <DietarySafetySummary diet={mergeDietaryEntries(diet,activeRecipeMeal.dietaryRestrictions)} value={activeRecipe || activeRecipeMeal} />
+    {sourceNotice?<aside aria-label="Engineering candidate limitations" className="mb-5 rounded-xl border border-pine/30 bg-cream p-4 text-sm"><p>{sourceNotice}</p><Link href="/legal/safety" className="inline-block min-h-11 py-3 underline">Complete dietary safety notice</Link></aside>:<DietarySafetySummary diet={mergeDietaryEntries(diet,activeRecipeMeal.dietaryRestrictions)} value={activeRecipe || activeRecipeMeal} />}
     {activeRecipe ? <InteractiveRecipe key={`${userId}:${getRecipeSourceKey(activeRecipeMeal)}`} recipe={activeRecipe} meal={activeRecipeMeal} userId={userId} onCooked={onCooked} /> : <><h3 className="font-display text-2xl">{activeRecipeMeal.name}</h3><p role="status" className="mt-5 rounded-2xl bg-cream p-4 text-sm leading-6 text-ink/70">{recipeError || (recipeLoadingMeal === activeRecipeMeal.name ? "Building a fast, step-by-step recipe…" : "Getting your recipe ready…")}</p></>}
   </SmartCartDialog>;
 }

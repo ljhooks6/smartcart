@@ -90,6 +90,12 @@ try{
   await check(u.plan+' forged provenance and changed grocery list rejected',async()=>{assert.equal((await call({action:'save-week',provenance:generated.data.provenance.slice(0,-5)+'xxxxx',currentDiet:diet})).status,422);const proposed=generated.data.plan.groceries.map(l=>({name:l.name,quantity:l.quantity,unit:l.unit}));proposed.push({name:'Tahini',quantity:5,unit:'g'});assert.equal((await call({action:'groceries',provenance:generated.data.provenance,proposed,currentDiet:diet})).status,422);});
  }
  await check('profiles / subscription fixture unchanged',async()=>{assert.deepEqual((await db.query('select * from smartcart_profiles order by id')).rows,baseline);assert.equal((await db.query('select status from smartcart_subscriptions')).rows[0].status,'disabled-fixture');});
+ if(process.env.MEALCADDIE_TEST_LIBRARY_BROWSER==='1'){
+  // Reset ONLY this disposable fixture's synthetic content for the UI journey.
+  await db.query('delete from weekly_menus;delete from archived_meals');
+  await check('ordinary six-tab browser journeys on Free and Plus',async()=>{const {exerciseLibraryBrowser}=await import('./test-allergy-library-browser.mjs');assert.equal(await exerciseLibraryBrowser({accounts:created,db}),8);});
+  await check('browser journeys preserve profiles and subscription fixture',async()=>{assert.deepEqual((await db.query('select * from smartcart_profiles order by id')).rows,baseline);assert.equal((await db.query('select status from smartcart_subscriptions')).rows[0].status,'disabled-fixture');});
+ }
  const output={environment:'Loopback-only disposable PostgreSQL database, cached PostgREST and existing unlinked local GoTrue; no shared project',results,providerCalls:0,externalEmails:0,productionChanges:0};
  fs.writeFileSync('evals/allergy-library-local-integration.json',JSON.stringify(output,null,2)+'\n');
  console.log(JSON.stringify({passed:results.length,failed:0,credentialsLogged:false,providerCalls:0,externalEmails:0}));

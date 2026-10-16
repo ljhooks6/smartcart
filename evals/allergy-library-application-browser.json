@@ -1,0 +1,109 @@
+{
+  "environment": "Isolated headless Edge + real loopback Auth/PostgREST/PostgreSQL, synthetic accounts only",
+  "results": [
+    {
+      "tier": "free",
+      "width": 320,
+      "tabs": [
+        "Week",
+        "Plan",
+        "Meals",
+        "Shop",
+        "Cook",
+        "Vault"
+      ],
+      "horizontalOverflow": false
+    },
+    {
+      "tier": "free",
+      "width": 390,
+      "tabs": [
+        "Week",
+        "Plan",
+        "Meals",
+        "Shop",
+        "Cook",
+        "Vault"
+      ],
+      "horizontalOverflow": false
+    },
+    {
+      "tier": "free",
+      "width": 1280,
+      "tabs": [
+        "Week",
+        "Plan",
+        "Meals",
+        "Shop",
+        "Cook",
+        "Vault"
+      ],
+      "horizontalOverflow": false
+    },
+    {
+      "tier": "free",
+      "journey": "Plan → dinner/dessert Meals → Week/Cook → signed recipe → Vault → Shop → replacement → Cooked It → Vault restore",
+      "schedule": true,
+      "keyboardDialog": true,
+      "replacementRechecked": true,
+      "quotaUnchangedByReadsAndReplacement": true,
+      "cookedCount": true,
+      "staleSettingsWithheld": true,
+      "clearedSessionWithheld": true
+    },
+    {
+      "tier": "plus",
+      "width": 320,
+      "tabs": [
+        "Week",
+        "Plan",
+        "Meals",
+        "Shop",
+        "Cook",
+        "Vault"
+      ],
+      "horizontalOverflow": false
+    },
+    {
+      "tier": "plus",
+      "width": 390,
+      "tabs": [
+        "Week",
+        "Plan",
+        "Meals",
+        "Shop",
+        "Cook",
+        "Vault"
+      ],
+      "horizontalOverflow": false
+    },
+    {
+      "tier": "plus",
+      "width": 1280,
+      "tabs": [
+        "Week",
+        "Plan",
+        "Meals",
+        "Shop",
+        "Cook",
+        "Vault"
+      ],
+      "horizontalOverflow": false
+    },
+    {
+      "tier": "plus",
+      "journey": "Plan → dinner/dessert Meals → Week/Cook → signed recipe → Vault → Shop → replacement → Cooked It → Vault restore",
+      "schedule": true,
+      "keyboardDialog": true,
+      "replacementRechecked": true,
+      "quotaUnchangedByReadsAndReplacement": true,
+      "cookedCount": true,
+      "staleSettingsWithheld": true,
+      "clearedSessionWithheld": true
+    }
+  ],
+  "externalRequests": 0,
+  "providerCalls": 0,
+  "emails": 0,
+  "limitations": "Not physical-device or NVDA/VoiceOver/TalkBack evidence"
+}

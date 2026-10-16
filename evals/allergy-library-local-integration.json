@@ -44,6 +44,14 @@
     {
       "name": "profiles / subscription fixture unchanged",
       "passed": true
+    },
+    {
+      "name": "ordinary six-tab browser journeys on Free and Plus",
+      "passed": true
+    },
+    {
+      "name": "browser journeys preserve profiles and subscription fixture",
+      "passed": true
     }
   ],
   "providerCalls": 0,

@@ -14,7 +14,7 @@ export async function POST(request:Request){
     localLibraryRequest(request);
     const token=/^Bearer ([^\s]+)$/i.exec(request.headers.get("authorization")??"")?.[1];
     if(!token)return reply({error:"Sign in to the disposable local account.",code:"SIGN_IN"},401);
-    const text=await request.text();if(text.length>40000)return reply({error:"Local request is too large."},413);
+    const text=await request.text();if(text.length>180000)return reply({error:"Local request is too large."},413);
     let body:unknown;try{body=JSON.parse(text);}catch{return reply({error:"Use a valid local request."},400);}
     const {config,admin,user}=localLibraryClients(token);
     const verified=await admin.auth.getUser(token);

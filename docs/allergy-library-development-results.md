@@ -1,5 +1,7 @@
 # Local authenticated ingredient-source library — development results
 
+**Latest pass:** [ordinary-tab application integration, focused review and pilot blockers](allergy-library-application-readiness.md). The evidence below records the earlier `49dc122` milestone; it is retained as history, not the latest test count or wiring status.
+
 October 16, 2026. PR #9 remains **draft**, isolated on `feature/allergy-aware-candidate`. This development does not enable a hosted pilot, alter production allergy restrictions, configure hosted credentials, enroll real accounts or change billing. No AI calls, email, paid data or external reviewer contact.
 
 ## Implemented
