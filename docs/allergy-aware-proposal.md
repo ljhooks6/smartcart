@@ -2,6 +2,8 @@
 
 Base: production merge `b6909d07cb1808c5d427864d56aff8224059c2e3`. Isolated branch: `feature/allergy-aware-candidate`. This work does not include breakfast/lunch pausing or dessert-rotation changes. No production routes, existing dietary checks, account access, quotas, billing or saved records are changed. No shared migrations or services are required.
 
+Next-pass assessment: [48-candidate expansion, qualified review, authenticated integration and four-source pilot plan](allergy-pilot-development-plan.md). That plan identifies unimplemented work and separate approvals; it does not enable any pilot or broaden this prototype's release status.
+
 ## What changed from PR #8
 
 PR #8's disabled experiment used a small positive vocabulary and rejected all allergy menus in its paid evaluation. It detected conflicts, but expanding that vocabulary alone could not prove a sauce's subingredients or prevent free-form cooking steps from adding a food absent from the ingredient list.
