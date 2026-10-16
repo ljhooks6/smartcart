@@ -2,7 +2,7 @@ import { allergens } from "./dietary-safety";
 
 export type Allergen = typeof allergens[number];
 export type Unit = "g" | "ml" | "each";
-export const catalogVersion = "2026-10-16.1";
+export const catalogVersion = "2026-10-16.2";
 export const referenceReviewDate = "2026-10-16";
 export const referenceSources = {
   fda: "https://www.fda.gov/food/food-allergensgluten-free-guidance-documents-regulatory-information/frequently-asked-questions-food-allergen-labeling-guidance-industry",
@@ -44,6 +44,9 @@ export const foodCatalog: readonly FoodProfile[] = [
   food("pepper", "Bell peppers", ["bell pepper", "red bell pepper", "green bell pepper"], "g", .006),
   food("mushroom", "Mushrooms", ["mushroom"], "g", .009),
   food("green-beans", "Green beans", [], "g", .005),
+  food("cauliflower", "Cauliflower", ["cauliflower florets"], "g", .005),
+  food("white-beans", "Cooked plain white beans", ["plain cooked white beans"], "g", .004),
+  food("cornmeal", "Plain yellow cornmeal", [], "g", .003),
   food("cucumber", "Cucumber", ["cucumbers"], "g", .004),
   food("apple", "Apples", ["apple"], "g", .004),
   food("pear", "Pears", ["pear"], "g", .005),

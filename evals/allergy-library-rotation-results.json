@@ -1,0 +1,2863 @@
+{
+  "method": "100 deterministic local selections, no AI or external service; constraint checks are engineering evidence only",
+  "catalogVersion": "2026-10-16.2",
+  "recipes": 48,
+  "dinners": 36,
+  "desserts": 12,
+  "dinnerFamilies": 33,
+  "scenarios": [
+    {
+      "id": "sources-1",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "quinoa-chickpea-salad",
+            "poached-cod",
+            "beef-cabbage-cups",
+            "mushroom-quinoa-pilaf",
+            "pork-apple-cabbage",
+            "salmon-green-beans",
+            "lentil-shepherd-pie",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "grain-legume-salad",
+            "poached-fish",
+            "filled-leaf-cups",
+            "grain-pilaf",
+            "pork-chop-dinner",
+            "roast-fish-dinner",
+            "shepherd-pie",
+            "rice-pudding"
+          ],
+          "estimatedCost": 49.592,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "chickpea-tomato-stew",
+            "chicken-cabbage-rolls",
+            "chickpea-patties",
+            "loaded-sweet-potato",
+            "lentil-spinach-dal",
+            "lemon-chicken",
+            "beef-zucchini",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "chickpea-stew",
+            "cabbage-rolls",
+            "legume-patties",
+            "loaded-potato",
+            "lentil-dal",
+            "roast-chicken-dinner",
+            "ground-meat-vegetable-skillet",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 41.649,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "bean-oat-loaf",
+            "turkey-meatballs",
+            "white-bean-spinach",
+            "chicken-lemon-soup",
+            "lentil-soup",
+            "salmon-potato-cakes",
+            "roast-cauliflower-lentils",
+            "cocoa-bananas"
+          ],
+          "families": [
+            "legume-loaf",
+            "meatballs",
+            "white-bean-fricassee",
+            "chicken-soup",
+            "lentil-soup",
+            "fish-cakes",
+            "roasted-legume-vegetable-plate",
+            "warm-fruit-sauce"
+          ],
+          "estimatedCost": 39.917,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "egg-potato-skillet",
+            "spinach-potato-gnocchi",
+            "zucchini-lentil-bake",
+            "tomato-flatbread",
+            "pork-carrot-braise",
+            "turkey-burger-wedges",
+            "cabbage-pancakes",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "potato-egg-skillet",
+            "potato-dumplings",
+            "layered-vegetable-bake",
+            "flatbread-dinner",
+            "pork-braise",
+            "burger-patty-dinner",
+            "savory-vegetable-pancakes",
+            "baked-fruit"
+          ],
+          "estimatedCost": 35.732,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "quinoa-chickpea-salad",
+            "mushroom-quinoa-pilaf",
+            "paprika-chicken",
+            "stuffed-peppers",
+            "beef-cabbage-cups",
+            "pork-apple-cabbage",
+            "poached-cod",
+            "apple-pancakes"
+          ],
+          "families": [
+            "grain-legume-salad",
+            "grain-pilaf",
+            "chicken-rice-skillet",
+            "stuffed-peppers",
+            "filled-leaf-cups",
+            "pork-chop-dinner",
+            "poached-fish",
+            "sweet-pancakes"
+          ],
+          "estimatedCost": 46.244,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 35
+    },
+    {
+      "id": "sources-2",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "roasted-chickpea-plate",
+            "tomato-flatbread",
+            "mushroom-quinoa-pilaf",
+            "black-bean-potato-chili",
+            "beef-cabbage-cups",
+            "polenta-mushrooms",
+            "loaded-sweet-potato",
+            "berry-oat-crisp"
+          ],
+          "families": [
+            "roasted-legume-vegetable-plate",
+            "flatbread-dinner",
+            "grain-pilaf",
+            "bean-chili",
+            "filled-leaf-cups",
+            "polenta-ragout",
+            "loaded-potato",
+            "fruit-crisp"
+          ],
+          "estimatedCost": 41.456,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "salmon-green-beans",
+            "turkey-cabbage-skillet",
+            "bean-oat-loaf",
+            "spinach-potato-gnocchi",
+            "lentil-shepherd-pie",
+            "lentil-soup",
+            "pork-apple-cabbage",
+            "apple-galette"
+          ],
+          "families": [
+            "roast-fish-dinner",
+            "ground-meat-vegetable-skillet",
+            "legume-loaf",
+            "potato-dumplings",
+            "shepherd-pie",
+            "lentil-soup",
+            "pork-chop-dinner",
+            "fruit-galette"
+          ],
+          "estimatedCost": 42.944,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "salmon-potato-cakes",
+            "chicken-cabbage-rolls",
+            "cabbage-pancakes",
+            "lemon-chicken",
+            "chickpea-patties",
+            "stuffed-peppers",
+            "pork-carrot-braise",
+            "poached-pears"
+          ],
+          "families": [
+            "fish-cakes",
+            "cabbage-rolls",
+            "savory-vegetable-pancakes",
+            "roast-chicken-dinner",
+            "legume-patties",
+            "stuffed-peppers",
+            "pork-braise",
+            "poached-fruit"
+          ],
+          "estimatedCost": 45.422,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "turkey-burger-wedges",
+            "poached-cod",
+            "cod-parcels",
+            "lentil-spinach-dal",
+            "white-bean-spinach",
+            "turkey-meatballs",
+            "zucchini-lentil-bake",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "burger-patty-dinner",
+            "poached-fish",
+            "fish-parcels",
+            "lentil-dal",
+            "white-bean-fricassee",
+            "meatballs",
+            "layered-vegetable-bake",
+            "rice-pudding"
+          ],
+          "estimatedCost": 47.014,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "polenta-mushrooms",
+            "loaded-sweet-potato",
+            "roasted-chickpea-plate",
+            "mushroom-quinoa-pilaf",
+            "black-bean-potato-chili",
+            "chicken-lemon-soup",
+            "quinoa-chickpea-salad",
+            "banana-oat-cookies"
+          ],
+          "families": [
+            "polenta-ragout",
+            "loaded-potato",
+            "roasted-legume-vegetable-plate",
+            "grain-pilaf",
+            "bean-chili",
+            "chicken-soup",
+            "grain-legume-salad",
+            "soft-oat-cookies"
+          ],
+          "estimatedCost": 38.736,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 35
+    },
+    {
+      "id": "sources-3",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "lemon-chicken",
+            "chickpea-tomato-stew",
+            "mushroom-quinoa-pilaf",
+            "cabbage-pancakes",
+            "bean-oat-loaf",
+            "black-bean-potato-chili",
+            "chickpea-patties",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "roast-chicken-dinner",
+            "chickpea-stew",
+            "grain-pilaf",
+            "savory-vegetable-pancakes",
+            "legume-loaf",
+            "bean-chili",
+            "legume-patties",
+            "oat-pudding"
+          ],
+          "estimatedCost": 35.683,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "turkey-cabbage-skillet",
+            "pork-apple-cabbage",
+            "turkey-burger-wedges",
+            "polenta-mushrooms",
+            "chicken-cabbage-rolls",
+            "salmon-green-beans",
+            "beef-cabbage-cups",
+            "apple-pancakes"
+          ],
+          "families": [
+            "ground-meat-vegetable-skillet",
+            "pork-chop-dinner",
+            "burger-patty-dinner",
+            "polenta-ragout",
+            "cabbage-rolls",
+            "roast-fish-dinner",
+            "filled-leaf-cups",
+            "sweet-pancakes"
+          ],
+          "estimatedCost": 50.536,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "salmon-potato-cakes",
+            "stuffed-peppers",
+            "cod-parcels",
+            "quinoa-chickpea-salad",
+            "paprika-chicken",
+            "pork-carrot-braise",
+            "chicken-lemon-soup",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "fish-cakes",
+            "stuffed-peppers",
+            "fish-parcels",
+            "grain-legume-salad",
+            "chicken-rice-skillet",
+            "pork-braise",
+            "chicken-soup",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 51.187,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "turkey-meatballs",
+            "roast-cauliflower-lentils",
+            "tomato-flatbread",
+            "white-bean-spinach",
+            "poached-cod",
+            "loaded-sweet-potato",
+            "lentil-shepherd-pie",
+            "apple-galette"
+          ],
+          "families": [
+            "meatballs",
+            "roasted-legume-vegetable-plate",
+            "flatbread-dinner",
+            "white-bean-fricassee",
+            "poached-fish",
+            "loaded-potato",
+            "shepherd-pie",
+            "fruit-galette"
+          ],
+          "estimatedCost": 42.112,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "cabbage-pancakes",
+            "bean-oat-loaf",
+            "lemon-chicken",
+            "zucchini-lentil-bake",
+            "mushroom-quinoa-pilaf",
+            "black-bean-potato-chili",
+            "chickpea-patties",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "savory-vegetable-pancakes",
+            "legume-loaf",
+            "roast-chicken-dinner",
+            "layered-vegetable-bake",
+            "grain-pilaf",
+            "bean-chili",
+            "legume-patties",
+            "oat-pudding"
+          ],
+          "estimatedCost": 36.813,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 33
+    },
+    {
+      "id": "sources-4",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "egg-potato-skillet",
+            "cabbage-pancakes",
+            "lentil-spinach-dal",
+            "pork-carrot-braise",
+            "cod-parcels",
+            "turkey-meatballs",
+            "tomato-flatbread",
+            "cocoa-bananas"
+          ],
+          "families": [
+            "potato-egg-skillet",
+            "savory-vegetable-pancakes",
+            "lentil-dal",
+            "pork-braise",
+            "fish-parcels",
+            "meatballs",
+            "flatbread-dinner",
+            "warm-fruit-sauce"
+          ],
+          "estimatedCost": 37.581,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "black-bean-potato-chili",
+            "bean-oat-loaf",
+            "lentil-soup",
+            "beef-cabbage-cups",
+            "lentil-shepherd-pie",
+            "poached-cod",
+            "zucchini-lentil-bake",
+            "poached-pears"
+          ],
+          "families": [
+            "bean-chili",
+            "legume-loaf",
+            "lentil-soup",
+            "filled-leaf-cups",
+            "shepherd-pie",
+            "poached-fish",
+            "layered-vegetable-bake",
+            "poached-fruit"
+          ],
+          "estimatedCost": 43.156,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "stuffed-peppers",
+            "polenta-mushrooms",
+            "mushroom-quinoa-pilaf",
+            "lemon-chicken",
+            "chicken-cabbage-rolls",
+            "chicken-lemon-soup",
+            "chickpea-tomato-stew",
+            "lemon-shortbread"
+          ],
+          "families": [
+            "stuffed-peppers",
+            "polenta-ragout",
+            "grain-pilaf",
+            "roast-chicken-dinner",
+            "cabbage-rolls",
+            "chicken-soup",
+            "chickpea-stew",
+            "short-biscuits"
+          ],
+          "estimatedCost": 42.469,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "white-bean-spinach",
+            "roast-cauliflower-lentils",
+            "loaded-sweet-potato",
+            "salmon-potato-cakes",
+            "pork-apple-cabbage",
+            "salmon-green-beans",
+            "paprika-chicken",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "white-bean-fricassee",
+            "roasted-legume-vegetable-plate",
+            "loaded-potato",
+            "fish-cakes",
+            "pork-chop-dinner",
+            "roast-fish-dinner",
+            "chicken-rice-skillet",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 49.627,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "chickpea-patties",
+            "egg-potato-skillet",
+            "turkey-cabbage-skillet",
+            "cod-parcels",
+            "cabbage-pancakes",
+            "turkey-meatballs",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "lentil-dal",
+            "legume-patties",
+            "potato-egg-skillet",
+            "ground-meat-vegetable-skillet",
+            "fish-parcels",
+            "savory-vegetable-pancakes",
+            "meatballs",
+            "baked-fruit"
+          ],
+          "estimatedCost": 37.786,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 35
+    },
+    {
+      "id": "sources-5",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "poached-cod",
+            "tomato-flatbread",
+            "beef-zucchini",
+            "pork-carrot-braise",
+            "lentil-shepherd-pie",
+            "salmon-potato-cakes",
+            "potato-omelet",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "poached-fish",
+            "flatbread-dinner",
+            "ground-meat-vegetable-skillet",
+            "pork-braise",
+            "shepherd-pie",
+            "fish-cakes",
+            "potato-egg-skillet",
+            "rice-pudding"
+          ],
+          "estimatedCost": 45.772,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "pork-apple-cabbage",
+            "black-bean-potato-chili",
+            "mushroom-quinoa-pilaf",
+            "white-bean-spinach",
+            "paprika-chicken",
+            "quinoa-chickpea-salad",
+            "turkey-burger-wedges",
+            "poached-pears"
+          ],
+          "families": [
+            "pork-chop-dinner",
+            "bean-chili",
+            "grain-pilaf",
+            "white-bean-fricassee",
+            "chicken-rice-skillet",
+            "grain-legume-salad",
+            "burger-patty-dinner",
+            "poached-fruit"
+          ],
+          "estimatedCost": 43.668,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "roast-cauliflower-lentils",
+            "chicken-lemon-soup",
+            "lemon-chicken",
+            "loaded-sweet-potato",
+            "spinach-potato-gnocchi",
+            "turkey-meatballs",
+            "salmon-green-beans",
+            "berry-oat-crisp"
+          ],
+          "families": [
+            "roasted-legume-vegetable-plate",
+            "chicken-soup",
+            "roast-chicken-dinner",
+            "loaded-potato",
+            "potato-dumplings",
+            "meatballs",
+            "roast-fish-dinner",
+            "fruit-crisp"
+          ],
+          "estimatedCost": 48.182,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "zucchini-lentil-bake",
+            "chicken-cabbage-rolls",
+            "bean-oat-loaf",
+            "chickpea-tomato-stew",
+            "lentil-spinach-dal",
+            "beef-cabbage-cups",
+            "cabbage-pancakes",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "layered-vegetable-bake",
+            "cabbage-rolls",
+            "legume-loaf",
+            "chickpea-stew",
+            "lentil-dal",
+            "filled-leaf-cups",
+            "savory-vegetable-pancakes",
+            "oat-pudding"
+          ],
+          "estimatedCost": 34.567,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "chickpea-patties",
+            "pork-carrot-braise",
+            "turkey-cabbage-skillet",
+            "potato-omelet",
+            "polenta-mushrooms",
+            "stuffed-peppers",
+            "lentil-soup",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "legume-patties",
+            "pork-braise",
+            "ground-meat-vegetable-skillet",
+            "potato-egg-skillet",
+            "polenta-ragout",
+            "stuffed-peppers",
+            "lentil-soup",
+            "baked-fruit"
+          ],
+          "estimatedCost": 37.964,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 38
+    },
+    {
+      "id": "sources-6",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "pork-apple-cabbage",
+            "white-bean-spinach",
+            "roasted-chickpea-plate",
+            "spinach-potato-gnocchi",
+            "turkey-burger-wedges",
+            "turkey-cabbage-skillet",
+            "chickpea-tomato-stew",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "pork-chop-dinner",
+            "white-bean-fricassee",
+            "roasted-legume-vegetable-plate",
+            "potato-dumplings",
+            "burger-patty-dinner",
+            "ground-meat-vegetable-skillet",
+            "chickpea-stew",
+            "oat-pudding"
+          ],
+          "estimatedCost": 38.941,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "paprika-chicken",
+            "chickpea-patties",
+            "chicken-lemon-soup",
+            "tomato-flatbread",
+            "polenta-mushrooms",
+            "lemon-chicken",
+            "mushroom-quinoa-pilaf",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "chicken-rice-skillet",
+            "legume-patties",
+            "chicken-soup",
+            "flatbread-dinner",
+            "polenta-ragout",
+            "roast-chicken-dinner",
+            "grain-pilaf",
+            "baked-fruit"
+          ],
+          "estimatedCost": 38.896,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "loaded-sweet-potato",
+            "poached-cod",
+            "quinoa-chickpea-salad",
+            "lentil-soup",
+            "stuffed-peppers",
+            "cabbage-pancakes",
+            "lentil-spinach-dal",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "loaded-potato",
+            "poached-fish",
+            "grain-legume-salad",
+            "lentil-soup",
+            "stuffed-peppers",
+            "savory-vegetable-pancakes",
+            "lentil-dal",
+            "rice-pudding"
+          ],
+          "estimatedCost": 34.572,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "black-bean-potato-chili",
+            "salmon-green-beans",
+            "lentil-shepherd-pie",
+            "bean-oat-loaf",
+            "pork-carrot-braise",
+            "chicken-cabbage-rolls",
+            "cod-parcels",
+            "berry-oat-crisp"
+          ],
+          "families": [
+            "bean-chili",
+            "roast-fish-dinner",
+            "shepherd-pie",
+            "legume-loaf",
+            "pork-braise",
+            "cabbage-rolls",
+            "fish-parcels",
+            "fruit-crisp"
+          ],
+          "estimatedCost": 54.264,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "roasted-chickpea-plate",
+            "turkey-burger-wedges",
+            "salmon-potato-cakes",
+            "zucchini-lentil-bake",
+            "pork-apple-cabbage",
+            "spinach-potato-gnocchi",
+            "beef-zucchini",
+            "lemon-shortbread"
+          ],
+          "families": [
+            "roasted-legume-vegetable-plate",
+            "burger-patty-dinner",
+            "fish-cakes",
+            "layered-vegetable-bake",
+            "pork-chop-dinner",
+            "potato-dumplings",
+            "ground-meat-vegetable-skillet",
+            "short-biscuits"
+          ],
+          "estimatedCost": 43.827,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 36
+    },
+    {
+      "id": "sources-7",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "loaded-sweet-potato",
+            "chickpea-patties",
+            "chickpea-tomato-stew",
+            "quinoa-chickpea-salad",
+            "beef-cabbage-cups",
+            "salmon-green-beans",
+            "stuffed-peppers",
+            "poached-pears"
+          ],
+          "families": [
+            "loaded-potato",
+            "legume-patties",
+            "chickpea-stew",
+            "grain-legume-salad",
+            "filled-leaf-cups",
+            "roast-fish-dinner",
+            "stuffed-peppers",
+            "poached-fruit"
+          ],
+          "estimatedCost": 43.272,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "cabbage-pancakes",
+            "paprika-chicken",
+            "turkey-burger-wedges",
+            "bean-oat-loaf",
+            "lentil-spinach-dal",
+            "chicken-lemon-soup",
+            "pork-apple-cabbage",
+            "berry-oat-crisp"
+          ],
+          "families": [
+            "savory-vegetable-pancakes",
+            "chicken-rice-skillet",
+            "burger-patty-dinner",
+            "legume-loaf",
+            "lentil-dal",
+            "chicken-soup",
+            "pork-chop-dinner",
+            "fruit-crisp"
+          ],
+          "estimatedCost": 37.772,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "beef-zucchini",
+            "black-bean-potato-chili",
+            "tomato-flatbread",
+            "spinach-potato-gnocchi",
+            "pork-carrot-braise",
+            "chicken-cabbage-rolls",
+            "white-bean-spinach",
+            "banana-oat-cookies"
+          ],
+          "families": [
+            "ground-meat-vegetable-skillet",
+            "bean-chili",
+            "flatbread-dinner",
+            "potato-dumplings",
+            "pork-braise",
+            "cabbage-rolls",
+            "white-bean-fricassee",
+            "soft-oat-cookies"
+          ],
+          "estimatedCost": 42.962,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "lentil-shepherd-pie",
+            "polenta-mushrooms",
+            "mushroom-quinoa-pilaf",
+            "lentil-soup",
+            "salmon-potato-cakes",
+            "turkey-meatballs",
+            "roasted-chickpea-plate",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "shepherd-pie",
+            "polenta-ragout",
+            "grain-pilaf",
+            "lentil-soup",
+            "fish-cakes",
+            "meatballs",
+            "roasted-legume-vegetable-plate",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 44.625,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "salmon-green-beans",
+            "chickpea-tomato-stew",
+            "loaded-sweet-potato",
+            "lemon-chicken",
+            "zucchini-lentil-bake",
+            "cod-parcels",
+            "poached-cod",
+            "apple-galette"
+          ],
+          "families": [
+            "roast-fish-dinner",
+            "chickpea-stew",
+            "loaded-potato",
+            "roast-chicken-dinner",
+            "layered-vegetable-bake",
+            "fish-parcels",
+            "poached-fish",
+            "fruit-galette"
+          ],
+          "estimatedCost": 52.42,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 37
+    },
+    {
+      "id": "sources-8",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "roasted-chickpea-plate",
+            "zucchini-lentil-bake",
+            "lentil-spinach-dal",
+            "lemon-chicken",
+            "pork-carrot-braise",
+            "turkey-burger-wedges",
+            "turkey-cabbage-skillet",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "roasted-legume-vegetable-plate",
+            "layered-vegetable-bake",
+            "lentil-dal",
+            "roast-chicken-dinner",
+            "pork-braise",
+            "burger-patty-dinner",
+            "ground-meat-vegetable-skillet",
+            "baked-fruit"
+          ],
+          "estimatedCost": 41.726,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "paprika-chicken",
+            "cabbage-pancakes",
+            "mushroom-quinoa-pilaf",
+            "tomato-flatbread",
+            "beef-cabbage-cups",
+            "salmon-potato-cakes",
+            "chicken-cabbage-rolls",
+            "banana-oat-cookies"
+          ],
+          "families": [
+            "chicken-rice-skillet",
+            "savory-vegetable-pancakes",
+            "grain-pilaf",
+            "flatbread-dinner",
+            "filled-leaf-cups",
+            "fish-cakes",
+            "cabbage-rolls",
+            "soft-oat-cookies"
+          ],
+          "estimatedCost": 42.416,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "cod-parcels",
+            "chickpea-patties",
+            "black-bean-potato-chili",
+            "egg-potato-skillet",
+            "salmon-green-beans",
+            "chicken-lemon-soup",
+            "spinach-potato-gnocchi",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "fish-parcels",
+            "legume-patties",
+            "bean-chili",
+            "potato-egg-skillet",
+            "roast-fish-dinner",
+            "chicken-soup",
+            "potato-dumplings",
+            "oat-pudding"
+          ],
+          "estimatedCost": 45.081,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "polenta-mushrooms",
+            "lentil-soup",
+            "loaded-sweet-potato",
+            "white-bean-spinach",
+            "bean-oat-loaf",
+            "quinoa-chickpea-salad",
+            "chickpea-tomato-stew",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "polenta-ragout",
+            "lentil-soup",
+            "loaded-potato",
+            "white-bean-fricassee",
+            "legume-loaf",
+            "grain-legume-salad",
+            "chickpea-stew",
+            "rice-pudding"
+          ],
+          "estimatedCost": 33.042,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "turkey-cabbage-skillet",
+            "pork-apple-cabbage",
+            "pork-carrot-braise",
+            "lemon-chicken",
+            "roasted-chickpea-plate",
+            "poached-cod",
+            "turkey-meatballs",
+            "lemon-shortbread"
+          ],
+          "families": [
+            "ground-meat-vegetable-skillet",
+            "pork-chop-dinner",
+            "pork-braise",
+            "roast-chicken-dinner",
+            "roasted-legume-vegetable-plate",
+            "poached-fish",
+            "meatballs",
+            "short-biscuits"
+          ],
+          "estimatedCost": 48.479,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 36
+    },
+    {
+      "id": "sources-9",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "beef-zucchini",
+            "roasted-chickpea-plate",
+            "lemon-chicken",
+            "salmon-potato-cakes",
+            "chicken-cabbage-rolls",
+            "black-bean-potato-chili",
+            "egg-potato-skillet",
+            "apple-pancakes"
+          ],
+          "families": [
+            "ground-meat-vegetable-skillet",
+            "roasted-legume-vegetable-plate",
+            "roast-chicken-dinner",
+            "fish-cakes",
+            "cabbage-rolls",
+            "bean-chili",
+            "potato-egg-skillet",
+            "sweet-pancakes"
+          ],
+          "estimatedCost": 45.566,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "turkey-burger-wedges",
+            "pork-carrot-braise",
+            "chicken-lemon-soup",
+            "beef-cabbage-cups",
+            "chickpea-patties",
+            "paprika-chicken",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "lentil-dal",
+            "burger-patty-dinner",
+            "pork-braise",
+            "chicken-soup",
+            "filled-leaf-cups",
+            "legume-patties",
+            "chicken-rice-skillet",
+            "baked-fruit"
+          ],
+          "estimatedCost": 41.358,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "salmon-green-beans",
+            "loaded-sweet-potato",
+            "lentil-soup",
+            "turkey-meatballs",
+            "polenta-mushrooms",
+            "chickpea-tomato-stew",
+            "cod-parcels",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "roast-fish-dinner",
+            "loaded-potato",
+            "lentil-soup",
+            "meatballs",
+            "polenta-ragout",
+            "chickpea-stew",
+            "fish-parcels",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 48.667,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "poached-cod",
+            "quinoa-chickpea-salad",
+            "cabbage-pancakes",
+            "mushroom-quinoa-pilaf",
+            "zucchini-lentil-bake",
+            "lentil-shepherd-pie",
+            "spinach-potato-gnocchi",
+            "apple-galette"
+          ],
+          "families": [
+            "poached-fish",
+            "grain-legume-salad",
+            "savory-vegetable-pancakes",
+            "grain-pilaf",
+            "layered-vegetable-bake",
+            "shepherd-pie",
+            "potato-dumplings",
+            "fruit-galette"
+          ],
+          "estimatedCost": 40.348,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "chicken-cabbage-rolls",
+            "roasted-chickpea-plate",
+            "salmon-potato-cakes",
+            "turkey-cabbage-skillet",
+            "egg-potato-skillet",
+            "bean-oat-loaf",
+            "pork-apple-cabbage",
+            "apple-pancakes"
+          ],
+          "families": [
+            "cabbage-rolls",
+            "roasted-legume-vegetable-plate",
+            "fish-cakes",
+            "ground-meat-vegetable-skillet",
+            "potato-egg-skillet",
+            "legume-loaf",
+            "pork-chop-dinner",
+            "sweet-pancakes"
+          ],
+          "estimatedCost": 42.388,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 35
+    },
+    {
+      "id": "sources-10",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "salmon-green-beans",
+            "loaded-sweet-potato",
+            "chickpea-tomato-stew",
+            "turkey-cabbage-skillet",
+            "quinoa-chickpea-salad",
+            "spinach-potato-gnocchi",
+            "poached-cod",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "roast-fish-dinner",
+            "loaded-potato",
+            "chickpea-stew",
+            "ground-meat-vegetable-skillet",
+            "grain-legume-salad",
+            "potato-dumplings",
+            "poached-fish",
+            "baked-fruit"
+          ],
+          "estimatedCost": 46.708,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "turkey-meatballs",
+            "turkey-burger-wedges",
+            "cod-parcels",
+            "bean-oat-loaf",
+            "mushroom-quinoa-pilaf",
+            "roasted-chickpea-plate",
+            "beef-cabbage-cups",
+            "apple-galette"
+          ],
+          "families": [
+            "meatballs",
+            "burger-patty-dinner",
+            "fish-parcels",
+            "legume-loaf",
+            "grain-pilaf",
+            "roasted-legume-vegetable-plate",
+            "filled-leaf-cups",
+            "fruit-galette"
+          ],
+          "estimatedCost": 47.046,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "chicken-cabbage-rolls",
+            "lemon-chicken",
+            "paprika-chicken",
+            "salmon-potato-cakes",
+            "polenta-mushrooms",
+            "black-bean-potato-chili",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "lentil-dal",
+            "cabbage-rolls",
+            "roast-chicken-dinner",
+            "chicken-rice-skillet",
+            "fish-cakes",
+            "polenta-ragout",
+            "bean-chili",
+            "oat-pudding"
+          ],
+          "estimatedCost": 45.001,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "pork-apple-cabbage",
+            "tomato-flatbread",
+            "chickpea-patties",
+            "pork-carrot-braise",
+            "stuffed-peppers",
+            "lentil-shepherd-pie",
+            "cabbage-pancakes",
+            "lemon-shortbread"
+          ],
+          "families": [
+            "pork-chop-dinner",
+            "flatbread-dinner",
+            "legume-patties",
+            "pork-braise",
+            "stuffed-peppers",
+            "shepherd-pie",
+            "savory-vegetable-pancakes",
+            "short-biscuits"
+          ],
+          "estimatedCost": 35.637,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "loaded-sweet-potato",
+            "chickpea-tomato-stew",
+            "quinoa-chickpea-salad",
+            "lentil-soup",
+            "spinach-potato-gnocchi",
+            "poached-cod",
+            "beef-zucchini",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "loaded-potato",
+            "chickpea-stew",
+            "grain-legume-salad",
+            "lentil-soup",
+            "potato-dumplings",
+            "poached-fish",
+            "ground-meat-vegetable-skillet",
+            "rice-pudding"
+          ],
+          "estimatedCost": 38.944,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 35
+    },
+    {
+      "id": "sources-11",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "pork-apple-cabbage",
+            "chicken-cabbage-rolls",
+            "tomato-flatbread",
+            "turkey-cabbage-skillet",
+            "stuffed-peppers",
+            "roast-cauliflower-lentils",
+            "polenta-mushrooms",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "pork-chop-dinner",
+            "cabbage-rolls",
+            "flatbread-dinner",
+            "ground-meat-vegetable-skillet",
+            "stuffed-peppers",
+            "roasted-legume-vegetable-plate",
+            "polenta-ragout",
+            "rice-pudding"
+          ],
+          "estimatedCost": 38.712,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "paprika-chicken",
+            "turkey-burger-wedges",
+            "lemon-chicken",
+            "black-bean-potato-chili",
+            "cabbage-pancakes",
+            "loaded-sweet-potato",
+            "berry-oat-crisp"
+          ],
+          "families": [
+            "lentil-dal",
+            "chicken-rice-skillet",
+            "burger-patty-dinner",
+            "roast-chicken-dinner",
+            "bean-chili",
+            "savory-vegetable-pancakes",
+            "loaded-potato",
+            "fruit-crisp"
+          ],
+          "estimatedCost": 40.72,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "salmon-green-beans",
+            "zucchini-lentil-bake",
+            "mushroom-quinoa-pilaf",
+            "chickpea-patties",
+            "chicken-lemon-soup",
+            "spinach-potato-gnocchi",
+            "chickpea-tomato-stew",
+            "banana-oat-cookies"
+          ],
+          "families": [
+            "roast-fish-dinner",
+            "layered-vegetable-bake",
+            "grain-pilaf",
+            "legume-patties",
+            "chicken-soup",
+            "potato-dumplings",
+            "chickpea-stew",
+            "soft-oat-cookies"
+          ],
+          "estimatedCost": 41.648,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "pork-carrot-braise",
+            "poached-cod",
+            "beef-cabbage-cups",
+            "salmon-potato-cakes",
+            "cod-parcels",
+            "bean-oat-loaf",
+            "lentil-shepherd-pie",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "pork-braise",
+            "poached-fish",
+            "filled-leaf-cups",
+            "fish-cakes",
+            "fish-parcels",
+            "legume-loaf",
+            "shepherd-pie",
+            "oat-pudding"
+          ],
+          "estimatedCost": 52.747,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "beef-zucchini",
+            "roasted-chickpea-plate",
+            "polenta-mushrooms",
+            "tomato-flatbread",
+            "quinoa-chickpea-salad",
+            "lentil-soup",
+            "pork-apple-cabbage",
+            "lemon-shortbread"
+          ],
+          "families": [
+            "ground-meat-vegetable-skillet",
+            "roasted-legume-vegetable-plate",
+            "polenta-ragout",
+            "flatbread-dinner",
+            "grain-legume-salad",
+            "lentil-soup",
+            "pork-chop-dinner",
+            "short-biscuits"
+          ],
+          "estimatedCost": 33.971,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 37
+    },
+    {
+      "id": "sources-12",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "cabbage-pancakes",
+            "mushroom-quinoa-pilaf",
+            "beef-cabbage-cups",
+            "beef-zucchini",
+            "spinach-potato-gnocchi",
+            "white-bean-spinach",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "lentil-dal",
+            "savory-vegetable-pancakes",
+            "grain-pilaf",
+            "filled-leaf-cups",
+            "ground-meat-vegetable-skillet",
+            "potato-dumplings",
+            "white-bean-fricassee",
+            "rice-pudding"
+          ],
+          "estimatedCost": 36.52,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "egg-potato-skillet",
+            "bean-oat-loaf",
+            "salmon-potato-cakes",
+            "paprika-chicken",
+            "pork-apple-cabbage",
+            "black-bean-potato-chili",
+            "poached-cod",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "potato-egg-skillet",
+            "legume-loaf",
+            "fish-cakes",
+            "chicken-rice-skillet",
+            "pork-chop-dinner",
+            "bean-chili",
+            "poached-fish",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 48.441,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "salmon-green-beans",
+            "loaded-sweet-potato",
+            "polenta-mushrooms",
+            "zucchini-lentil-bake",
+            "cod-parcels",
+            "lemon-chicken",
+            "chicken-lemon-soup",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "roast-fish-dinner",
+            "loaded-potato",
+            "polenta-ragout",
+            "layered-vegetable-bake",
+            "fish-parcels",
+            "roast-chicken-dinner",
+            "chicken-soup",
+            "oat-pudding"
+          ],
+          "estimatedCost": 48.829,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "chickpea-tomato-stew",
+            "lentil-soup",
+            "turkey-burger-wedges",
+            "roast-cauliflower-lentils",
+            "chicken-cabbage-rolls",
+            "turkey-meatballs",
+            "lentil-shepherd-pie",
+            "poached-pears"
+          ],
+          "families": [
+            "chickpea-stew",
+            "lentil-soup",
+            "burger-patty-dinner",
+            "roasted-legume-vegetable-plate",
+            "cabbage-rolls",
+            "meatballs",
+            "shepherd-pie",
+            "poached-fruit"
+          ],
+          "estimatedCost": 40.488,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "quinoa-chickpea-salad",
+            "stuffed-peppers",
+            "beef-zucchini",
+            "white-bean-spinach",
+            "cabbage-pancakes",
+            "tomato-flatbread",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "lentil-dal",
+            "grain-legume-salad",
+            "stuffed-peppers",
+            "ground-meat-vegetable-skillet",
+            "white-bean-fricassee",
+            "savory-vegetable-pancakes",
+            "flatbread-dinner",
+            "baked-fruit"
+          ],
+          "estimatedCost": 32.962,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 36
+    },
+    {
+      "id": "sources-13",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "white-bean-spinach",
+            "beef-zucchini",
+            "lemon-chicken",
+            "roasted-chickpea-plate",
+            "spinach-potato-gnocchi",
+            "lentil-shepherd-pie",
+            "mushroom-quinoa-pilaf",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "white-bean-fricassee",
+            "ground-meat-vegetable-skillet",
+            "roast-chicken-dinner",
+            "roasted-legume-vegetable-plate",
+            "potato-dumplings",
+            "shepherd-pie",
+            "grain-pilaf",
+            "oat-pudding"
+          ],
+          "estimatedCost": 40.955,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "potato-omelet",
+            "lentil-soup",
+            "pork-carrot-braise",
+            "loaded-sweet-potato",
+            "chickpea-patties",
+            "bean-oat-loaf",
+            "chicken-cabbage-rolls",
+            "poached-pears"
+          ],
+          "families": [
+            "potato-egg-skillet",
+            "lentil-soup",
+            "pork-braise",
+            "loaded-potato",
+            "legume-patties",
+            "legume-loaf",
+            "cabbage-rolls",
+            "poached-fruit"
+          ],
+          "estimatedCost": 38.31,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "pork-apple-cabbage",
+            "zucchini-lentil-bake",
+            "tomato-flatbread",
+            "chickpea-tomato-stew",
+            "turkey-meatballs",
+            "salmon-green-beans",
+            "black-bean-potato-chili",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "pork-chop-dinner",
+            "layered-vegetable-bake",
+            "flatbread-dinner",
+            "chickpea-stew",
+            "meatballs",
+            "roast-fish-dinner",
+            "bean-chili",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 46.661,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "salmon-potato-cakes",
+            "quinoa-chickpea-salad",
+            "chicken-lemon-soup",
+            "cod-parcels",
+            "lentil-spinach-dal",
+            "turkey-burger-wedges",
+            "stuffed-peppers",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "fish-cakes",
+            "grain-legume-salad",
+            "chicken-soup",
+            "fish-parcels",
+            "lentil-dal",
+            "burger-patty-dinner",
+            "stuffed-peppers",
+            "rice-pudding"
+          ],
+          "estimatedCost": 44.8,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "beef-zucchini",
+            "mushroom-quinoa-pilaf",
+            "roast-cauliflower-lentils",
+            "lemon-chicken",
+            "beef-cabbage-cups",
+            "cabbage-pancakes",
+            "paprika-chicken",
+            "banana-oat-cookies"
+          ],
+          "families": [
+            "ground-meat-vegetable-skillet",
+            "grain-pilaf",
+            "roasted-legume-vegetable-plate",
+            "roast-chicken-dinner",
+            "filled-leaf-cups",
+            "savory-vegetable-pancakes",
+            "chicken-rice-skillet",
+            "soft-oat-cookies"
+          ],
+          "estimatedCost": 39.884,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 37
+    },
+    {
+      "id": "sources-14",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "bean-oat-loaf",
+            "loaded-sweet-potato",
+            "salmon-potato-cakes",
+            "pork-apple-cabbage",
+            "paprika-chicken",
+            "chicken-cabbage-rolls",
+            "lentil-spinach-dal",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "legume-loaf",
+            "loaded-potato",
+            "fish-cakes",
+            "pork-chop-dinner",
+            "chicken-rice-skillet",
+            "cabbage-rolls",
+            "lentil-dal",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 45.239,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "lemon-chicken",
+            "chicken-lemon-soup",
+            "lentil-shepherd-pie",
+            "tomato-flatbread",
+            "polenta-mushrooms",
+            "salmon-green-beans",
+            "pork-carrot-braise",
+            "apple-galette"
+          ],
+          "families": [
+            "roast-chicken-dinner",
+            "chicken-soup",
+            "shepherd-pie",
+            "flatbread-dinner",
+            "polenta-ragout",
+            "roast-fish-dinner",
+            "pork-braise",
+            "fruit-galette"
+          ],
+          "estimatedCost": 46.198,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "beef-zucchini",
+            "cabbage-pancakes",
+            "beef-cabbage-cups",
+            "black-bean-potato-chili",
+            "stuffed-peppers",
+            "lentil-soup",
+            "zucchini-lentil-bake",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "ground-meat-vegetable-skillet",
+            "savory-vegetable-pancakes",
+            "filled-leaf-cups",
+            "bean-chili",
+            "stuffed-peppers",
+            "lentil-soup",
+            "layered-vegetable-bake",
+            "rice-pudding"
+          ],
+          "estimatedCost": 37.322,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "spinach-potato-gnocchi",
+            "chickpea-patties",
+            "cod-parcels",
+            "white-bean-spinach",
+            "roasted-chickpea-plate",
+            "quinoa-chickpea-salad",
+            "poached-cod",
+            "poached-pears"
+          ],
+          "families": [
+            "potato-dumplings",
+            "legume-patties",
+            "fish-parcels",
+            "white-bean-fricassee",
+            "roasted-legume-vegetable-plate",
+            "grain-legume-salad",
+            "poached-fish",
+            "poached-fruit"
+          ],
+          "estimatedCost": 43.602,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "pork-apple-cabbage",
+            "chicken-cabbage-rolls",
+            "loaded-sweet-potato",
+            "lentil-spinach-dal",
+            "chickpea-tomato-stew",
+            "paprika-chicken",
+            "turkey-meatballs",
+            "lemon-shortbread"
+          ],
+          "families": [
+            "pork-chop-dinner",
+            "cabbage-rolls",
+            "loaded-potato",
+            "lentil-dal",
+            "chickpea-stew",
+            "chicken-rice-skillet",
+            "meatballs",
+            "short-biscuits"
+          ],
+          "estimatedCost": 40.333,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 35
+    },
+    {
+      "id": "sources-15",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "poached-cod",
+            "lentil-shepherd-pie",
+            "chicken-cabbage-rolls",
+            "turkey-cabbage-skillet",
+            "lentil-spinach-dal",
+            "salmon-potato-cakes",
+            "chickpea-patties",
+            "berry-oat-crisp"
+          ],
+          "families": [
+            "poached-fish",
+            "shepherd-pie",
+            "cabbage-rolls",
+            "ground-meat-vegetable-skillet",
+            "lentil-dal",
+            "fish-cakes",
+            "legume-patties",
+            "fruit-crisp"
+          ],
+          "estimatedCost": 48.404,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "chickpea-tomato-stew",
+            "quinoa-chickpea-salad",
+            "mushroom-quinoa-pilaf",
+            "cabbage-pancakes",
+            "pork-apple-cabbage",
+            "spinach-potato-gnocchi",
+            "lemon-chicken",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "chickpea-stew",
+            "grain-legume-salad",
+            "grain-pilaf",
+            "savory-vegetable-pancakes",
+            "pork-chop-dinner",
+            "potato-dumplings",
+            "roast-chicken-dinner",
+            "rice-pudding"
+          ],
+          "estimatedCost": 36.38,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "beef-cabbage-cups",
+            "roasted-chickpea-plate",
+            "salmon-green-beans",
+            "stuffed-peppers",
+            "turkey-meatballs",
+            "lentil-soup",
+            "chicken-lemon-soup",
+            "cocoa-oat-pudding"
+          ],
+          "families": [
+            "filled-leaf-cups",
+            "roasted-legume-vegetable-plate",
+            "roast-fish-dinner",
+            "stuffed-peppers",
+            "meatballs",
+            "lentil-soup",
+            "chicken-soup",
+            "oat-pudding"
+          ],
+          "estimatedCost": 44.141,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "turkey-burger-wedges",
+            "zucchini-lentil-bake",
+            "tomato-flatbread",
+            "bean-oat-loaf",
+            "polenta-mushrooms",
+            "black-bean-potato-chili",
+            "pork-carrot-braise",
+            "poached-pears"
+          ],
+          "families": [
+            "burger-patty-dinner",
+            "layered-vegetable-bake",
+            "flatbread-dinner",
+            "legume-loaf",
+            "polenta-ragout",
+            "bean-chili",
+            "pork-braise",
+            "poached-fruit"
+          ],
+          "estimatedCost": 40.946,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "poached-cod",
+            "chicken-cabbage-rolls",
+            "beef-zucchini",
+            "white-bean-spinach",
+            "lentil-shepherd-pie",
+            "salmon-potato-cakes",
+            "lentil-spinach-dal",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "poached-fish",
+            "cabbage-rolls",
+            "ground-meat-vegetable-skillet",
+            "white-bean-fricassee",
+            "shepherd-pie",
+            "fish-cakes",
+            "lentil-dal",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 50.207,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        }
+      ],
+      "distinctRecipeIds": 35
+    },
+    {
+      "id": "vegan-budget",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "polenta-mushrooms",
+            "lentil-soup",
+            "roast-cauliflower-lentils",
+            "loaded-sweet-potato",
+            "black-bean-potato-chili",
+            "cabbage-pancakes",
+            "white-bean-spinach",
+            "banana-oat-cookies"
+          ],
+          "families": [
+            "polenta-ragout",
+            "lentil-soup",
+            "roasted-legume-vegetable-plate",
+            "loaded-potato",
+            "bean-chili",
+            "savory-vegetable-pancakes",
+            "white-bean-fricassee",
+            "soft-oat-cookies"
+          ],
+          "estimatedCost": 33.194,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "quinoa-chickpea-salad",
+            "mushroom-quinoa-pilaf",
+            "chickpea-tomato-stew",
+            "chickpea-patties",
+            "tomato-flatbread",
+            "roasted-chickpea-plate",
+            "cinnamon-apples"
+          ],
+          "families": [
+            "lentil-dal",
+            "grain-legume-salad",
+            "grain-pilaf",
+            "chickpea-stew",
+            "legume-patties",
+            "flatbread-dinner",
+            "roasted-legume-vegetable-plate",
+            "baked-fruit"
+          ],
+          "estimatedCost": 31.184,
+          "repeatFamilies": [
+            "roasted-legume-vegetable-plate"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "polenta-mushrooms",
+            "black-bean-potato-chili",
+            "cabbage-pancakes",
+            "lentil-soup",
+            "loaded-sweet-potato",
+            "white-bean-spinach",
+            "chickpea-tomato-stew",
+            "poached-pears"
+          ],
+          "families": [
+            "polenta-ragout",
+            "bean-chili",
+            "savory-vegetable-pancakes",
+            "lentil-soup",
+            "loaded-potato",
+            "white-bean-fricassee",
+            "chickpea-stew",
+            "poached-fruit"
+          ],
+          "estimatedCost": 34.48,
+          "repeatFamilies": [
+            "polenta-ragout",
+            "bean-chili",
+            "savory-vegetable-pancakes",
+            "lentil-soup",
+            "loaded-potato",
+            "white-bean-fricassee",
+            "chickpea-stew"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "quinoa-chickpea-salad",
+            "mushroom-quinoa-pilaf",
+            "chickpea-patties",
+            "tomato-flatbread",
+            "roast-cauliflower-lentils",
+            "cabbage-pancakes",
+            "berry-oat-crisp"
+          ],
+          "families": [
+            "lentil-dal",
+            "grain-legume-salad",
+            "grain-pilaf",
+            "legume-patties",
+            "flatbread-dinner",
+            "roasted-legume-vegetable-plate",
+            "savory-vegetable-pancakes",
+            "fruit-crisp"
+          ],
+          "estimatedCost": 31.206,
+          "repeatFamilies": [
+            "lentil-dal",
+            "grain-legume-salad",
+            "grain-pilaf",
+            "legume-patties",
+            "flatbread-dinner",
+            "roasted-legume-vegetable-plate",
+            "savory-vegetable-pancakes"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "white-bean-spinach",
+            "polenta-mushrooms",
+            "loaded-sweet-potato",
+            "black-bean-potato-chili",
+            "lentil-soup",
+            "chickpea-tomato-stew",
+            "roasted-chickpea-plate",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "white-bean-fricassee",
+            "polenta-ragout",
+            "loaded-potato",
+            "bean-chili",
+            "lentil-soup",
+            "chickpea-stew",
+            "roasted-legume-vegetable-plate",
+            "rice-pudding"
+          ],
+          "estimatedCost": 34.534,
+          "repeatFamilies": [
+            "white-bean-fricassee",
+            "polenta-ragout",
+            "loaded-potato",
+            "bean-chili",
+            "lentil-soup",
+            "chickpea-stew",
+            "roasted-legume-vegetable-plate"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        }
+      ],
+      "distinctRecipeIds": 19
+    },
+    {
+      "id": "vegetarian-stovetop",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "white-bean-spinach",
+            "lentil-soup",
+            "egg-potato-skillet",
+            "quinoa-chickpea-salad",
+            "black-bean-potato-chili",
+            "polenta-mushrooms",
+            "poached-pears"
+          ],
+          "families": [
+            "lentil-dal",
+            "white-bean-fricassee",
+            "lentil-soup",
+            "potato-egg-skillet",
+            "grain-legume-salad",
+            "bean-chili",
+            "polenta-ragout",
+            "poached-fruit"
+          ],
+          "estimatedCost": 33.846,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "mushroom-quinoa-pilaf",
+            "tomato-flatbread",
+            "cabbage-pancakes",
+            "chickpea-tomato-stew",
+            "chickpea-patties",
+            "potato-omelet",
+            "white-bean-spinach",
+            "cocoa-bananas"
+          ],
+          "families": [
+            "grain-pilaf",
+            "flatbread-dinner",
+            "savory-vegetable-pancakes",
+            "chickpea-stew",
+            "legume-patties",
+            "potato-egg-skillet",
+            "white-bean-fricassee",
+            "warm-fruit-sauce"
+          ],
+          "estimatedCost": 30.759,
+          "repeatFamilies": [
+            "potato-egg-skillet",
+            "white-bean-fricassee"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "lentil-spinach-dal",
+            "quinoa-chickpea-salad",
+            "black-bean-potato-chili",
+            "lentil-soup",
+            "polenta-mushrooms",
+            "chickpea-tomato-stew",
+            "mushroom-quinoa-pilaf",
+            "apple-pancakes"
+          ],
+          "families": [
+            "lentil-dal",
+            "grain-legume-salad",
+            "bean-chili",
+            "lentil-soup",
+            "polenta-ragout",
+            "chickpea-stew",
+            "grain-pilaf",
+            "sweet-pancakes"
+          ],
+          "estimatedCost": 34.494,
+          "repeatFamilies": [
+            "lentil-dal",
+            "grain-legume-salad",
+            "bean-chili",
+            "lentil-soup",
+            "polenta-ragout",
+            "chickpea-stew",
+            "grain-pilaf"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "chickpea-patties",
+            "tomato-flatbread",
+            "cabbage-pancakes",
+            "egg-potato-skillet",
+            "white-bean-spinach",
+            "black-bean-potato-chili",
+            "quinoa-chickpea-salad",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "legume-patties",
+            "flatbread-dinner",
+            "savory-vegetable-pancakes",
+            "potato-egg-skillet",
+            "white-bean-fricassee",
+            "bean-chili",
+            "grain-legume-salad",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 33.657,
+          "repeatFamilies": [
+            "legume-patties",
+            "flatbread-dinner",
+            "savory-vegetable-pancakes",
+            "potato-egg-skillet",
+            "white-bean-fricassee",
+            "bean-chili",
+            "grain-legume-salad"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "polenta-mushrooms",
+            "lentil-soup",
+            "lentil-spinach-dal",
+            "chickpea-tomato-stew",
+            "mushroom-quinoa-pilaf",
+            "potato-omelet",
+            "chickpea-patties",
+            "poached-pears"
+          ],
+          "families": [
+            "polenta-ragout",
+            "lentil-soup",
+            "lentil-dal",
+            "chickpea-stew",
+            "grain-pilaf",
+            "potato-egg-skillet",
+            "legume-patties",
+            "poached-fruit"
+          ],
+          "estimatedCost": 32.284,
+          "repeatFamilies": [
+            "polenta-ragout",
+            "lentil-soup",
+            "lentil-dal",
+            "chickpea-stew",
+            "grain-pilaf",
+            "potato-egg-skillet",
+            "legume-patties"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        }
+      ],
+      "distinctRecipeIds": 17
+    },
+    {
+      "id": "stovetop",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "black-bean-potato-chili",
+            "chicken-lemon-soup",
+            "paprika-chicken",
+            "turkey-meatballs",
+            "polenta-mushrooms",
+            "white-bean-spinach",
+            "turkey-cabbage-skillet",
+            "blueberry-dumplings"
+          ],
+          "families": [
+            "bean-chili",
+            "chicken-soup",
+            "chicken-rice-skillet",
+            "meatballs",
+            "polenta-ragout",
+            "white-bean-fricassee",
+            "ground-meat-vegetable-skillet",
+            "sweet-dumplings"
+          ],
+          "estimatedCost": 45.799,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "lentil-soup",
+            "tomato-flatbread",
+            "cabbage-pancakes",
+            "lentil-spinach-dal",
+            "chickpea-tomato-stew",
+            "mushroom-quinoa-pilaf",
+            "pork-apple-cabbage",
+            "apple-pancakes"
+          ],
+          "families": [
+            "lentil-soup",
+            "flatbread-dinner",
+            "savory-vegetable-pancakes",
+            "lentil-dal",
+            "chickpea-stew",
+            "grain-pilaf",
+            "pork-chop-dinner",
+            "sweet-pancakes"
+          ],
+          "estimatedCost": 30.204,
+          "repeatFamilies": [],
+          "explanation": "Recent recipe families were considered without changing your constraints."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "poached-cod",
+            "beef-cabbage-cups",
+            "quinoa-chickpea-salad",
+            "chickpea-patties",
+            "salmon-potato-cakes",
+            "beef-zucchini",
+            "polenta-mushrooms",
+            "poached-pears"
+          ],
+          "families": [
+            "poached-fish",
+            "filled-leaf-cups",
+            "grain-legume-salad",
+            "legume-patties",
+            "fish-cakes",
+            "ground-meat-vegetable-skillet",
+            "polenta-ragout",
+            "poached-fruit"
+          ],
+          "estimatedCost": 47.656,
+          "repeatFamilies": [
+            "ground-meat-vegetable-skillet",
+            "polenta-ragout"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "white-bean-spinach",
+            "turkey-meatballs",
+            "chicken-lemon-soup",
+            "paprika-chicken",
+            "black-bean-potato-chili",
+            "pork-apple-cabbage",
+            "cabbage-pancakes",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "white-bean-fricassee",
+            "meatballs",
+            "chicken-soup",
+            "chicken-rice-skillet",
+            "bean-chili",
+            "pork-chop-dinner",
+            "savory-vegetable-pancakes",
+            "rice-pudding"
+          ],
+          "estimatedCost": 39.63,
+          "repeatFamilies": [
+            "white-bean-fricassee",
+            "meatballs",
+            "chicken-soup",
+            "chicken-rice-skillet",
+            "bean-chili",
+            "pork-chop-dinner",
+            "savory-vegetable-pancakes"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "mushroom-quinoa-pilaf",
+            "chickpea-tomato-stew",
+            "lentil-soup",
+            "tomato-flatbread",
+            "lentil-spinach-dal",
+            "turkey-cabbage-skillet",
+            "quinoa-chickpea-salad",
+            "cocoa-bananas"
+          ],
+          "families": [
+            "grain-pilaf",
+            "chickpea-stew",
+            "lentil-soup",
+            "flatbread-dinner",
+            "lentil-dal",
+            "ground-meat-vegetable-skillet",
+            "grain-legume-salad",
+            "warm-fruit-sauce"
+          ],
+          "estimatedCost": 32.207,
+          "repeatFamilies": [
+            "grain-pilaf",
+            "chickpea-stew",
+            "lentil-soup",
+            "flatbread-dinner",
+            "lentil-dal",
+            "ground-meat-vegetable-skillet",
+            "grain-legume-salad"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        }
+      ],
+      "distinctRecipeIds": 25
+    },
+    {
+      "id": "budget-30",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "chicken-cabbage-rolls",
+            "bean-oat-loaf",
+            "lentil-spinach-dal",
+            "quinoa-chickpea-salad",
+            "roast-cauliflower-lentils",
+            "lentil-soup",
+            "cabbage-pancakes",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "cabbage-rolls",
+            "legume-loaf",
+            "lentil-dal",
+            "grain-legume-salad",
+            "roasted-legume-vegetable-plate",
+            "lentil-soup",
+            "savory-vegetable-pancakes",
+            "rice-pudding"
+          ],
+          "estimatedCost": 29.546,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "poached-cod",
+            "chickpea-patties",
+            "tomato-flatbread",
+            "roasted-chickpea-plate",
+            "cabbage-pancakes",
+            "lentil-spinach-dal",
+            "lentil-soup",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "poached-fish",
+            "legume-patties",
+            "flatbread-dinner",
+            "roasted-legume-vegetable-plate",
+            "savory-vegetable-pancakes",
+            "lentil-dal",
+            "lentil-soup",
+            "rice-pudding"
+          ],
+          "estimatedCost": 29.914,
+          "repeatFamilies": [
+            "roasted-legume-vegetable-plate",
+            "savory-vegetable-pancakes",
+            "lentil-dal",
+            "lentil-soup",
+            "rice-pudding"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "zucchini-lentil-bake",
+            "chickpea-tomato-stew",
+            "chicken-lemon-soup",
+            "white-bean-spinach",
+            "tomato-flatbread",
+            "lentil-soup",
+            "cabbage-pancakes",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "layered-vegetable-bake",
+            "chickpea-stew",
+            "chicken-soup",
+            "white-bean-fricassee",
+            "flatbread-dinner",
+            "lentil-soup",
+            "savory-vegetable-pancakes",
+            "rice-pudding"
+          ],
+          "estimatedCost": 29.89,
+          "repeatFamilies": [
+            "flatbread-dinner",
+            "lentil-soup",
+            "savory-vegetable-pancakes",
+            "rice-pudding"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "pork-apple-cabbage",
+            "loaded-sweet-potato",
+            "polenta-mushrooms",
+            "lentil-spinach-dal",
+            "tomato-flatbread",
+            "lentil-soup",
+            "cabbage-pancakes",
+            "lemon-shortbread"
+          ],
+          "families": [
+            "pork-chop-dinner",
+            "loaded-potato",
+            "polenta-ragout",
+            "lentil-dal",
+            "flatbread-dinner",
+            "lentil-soup",
+            "savory-vegetable-pancakes",
+            "short-biscuits"
+          ],
+          "estimatedCost": 29.943,
+          "repeatFamilies": [
+            "lentil-dal",
+            "flatbread-dinner",
+            "lentil-soup",
+            "savory-vegetable-pancakes"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "chicken-cabbage-rolls",
+            "stuffed-peppers",
+            "roast-cauliflower-lentils",
+            "lentil-spinach-dal",
+            "cabbage-pancakes",
+            "lentil-soup",
+            "tomato-flatbread",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "cabbage-rolls",
+            "stuffed-peppers",
+            "roasted-legume-vegetable-plate",
+            "lentil-dal",
+            "savory-vegetable-pancakes",
+            "lentil-soup",
+            "flatbread-dinner",
+            "rice-pudding"
+          ],
+          "estimatedCost": 29.828,
+          "repeatFamilies": [
+            "roasted-legume-vegetable-plate",
+            "lentil-dal",
+            "savory-vegetable-pancakes",
+            "lentil-soup",
+            "flatbread-dinner",
+            "rice-pudding"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        }
+      ],
+      "distinctRecipeIds": 21
+    },
+    {
+      "id": "pantry-only",
+      "runs": [
+        {
+          "generation": 1,
+          "recipeIds": [
+            "bean-oat-loaf",
+            "lentil-shepherd-pie",
+            "chickpea-tomato-stew",
+            "poached-cod",
+            "loaded-sweet-potato",
+            "beef-cabbage-cups",
+            "chicken-lemon-soup",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "legume-loaf",
+            "shepherd-pie",
+            "chickpea-stew",
+            "poached-fish",
+            "loaded-potato",
+            "filled-leaf-cups",
+            "chicken-soup",
+            "rice-pudding"
+          ],
+          "estimatedCost": 0,
+          "repeatFamilies": [],
+          "explanation": "Recent history was unavailable; this selection does not promise rotation across earlier plans."
+        },
+        {
+          "generation": 2,
+          "recipeIds": [
+            "bean-oat-loaf",
+            "loaded-sweet-potato",
+            "beef-cabbage-cups",
+            "chickpea-tomato-stew",
+            "lentil-shepherd-pie",
+            "poached-cod",
+            "chicken-lemon-soup",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "legume-loaf",
+            "loaded-potato",
+            "filled-leaf-cups",
+            "chickpea-stew",
+            "shepherd-pie",
+            "poached-fish",
+            "chicken-soup",
+            "rice-pudding"
+          ],
+          "estimatedCost": 0,
+          "repeatFamilies": [
+            "legume-loaf",
+            "loaded-potato",
+            "filled-leaf-cups",
+            "chickpea-stew",
+            "shepherd-pie",
+            "poached-fish",
+            "chicken-soup",
+            "rice-pudding"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 3,
+          "recipeIds": [
+            "lentil-shepherd-pie",
+            "chickpea-tomato-stew",
+            "chicken-lemon-soup",
+            "beef-cabbage-cups",
+            "poached-cod",
+            "bean-oat-loaf",
+            "loaded-sweet-potato",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "shepherd-pie",
+            "chickpea-stew",
+            "chicken-soup",
+            "filled-leaf-cups",
+            "poached-fish",
+            "legume-loaf",
+            "loaded-potato",
+            "rice-pudding"
+          ],
+          "estimatedCost": 0,
+          "repeatFamilies": [
+            "shepherd-pie",
+            "chickpea-stew",
+            "chicken-soup",
+            "filled-leaf-cups",
+            "poached-fish",
+            "legume-loaf",
+            "loaded-potato",
+            "rice-pudding"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 4,
+          "recipeIds": [
+            "bean-oat-loaf",
+            "lentil-shepherd-pie",
+            "beef-cabbage-cups",
+            "loaded-sweet-potato",
+            "poached-cod",
+            "chickpea-tomato-stew",
+            "chicken-lemon-soup",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "legume-loaf",
+            "shepherd-pie",
+            "filled-leaf-cups",
+            "loaded-potato",
+            "poached-fish",
+            "chickpea-stew",
+            "chicken-soup",
+            "rice-pudding"
+          ],
+          "estimatedCost": 0,
+          "repeatFamilies": [
+            "legume-loaf",
+            "shepherd-pie",
+            "filled-leaf-cups",
+            "loaded-potato",
+            "poached-fish",
+            "chickpea-stew",
+            "chicken-soup",
+            "rice-pudding"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        },
+        {
+          "generation": 5,
+          "recipeIds": [
+            "poached-cod",
+            "loaded-sweet-potato",
+            "lentil-shepherd-pie",
+            "chicken-lemon-soup",
+            "bean-oat-loaf",
+            "beef-cabbage-cups",
+            "chickpea-tomato-stew",
+            "cinnamon-rice-pudding"
+          ],
+          "families": [
+            "poached-fish",
+            "loaded-potato",
+            "shepherd-pie",
+            "chicken-soup",
+            "legume-loaf",
+            "filled-leaf-cups",
+            "chickpea-stew",
+            "rice-pudding"
+          ],
+          "estimatedCost": 0,
+          "repeatFamilies": [
+            "poached-fish",
+            "loaded-potato",
+            "shepherd-pie",
+            "chicken-soup",
+            "legume-loaf",
+            "filled-leaf-cups",
+            "chickpea-stew",
+            "rice-pudding"
+          ],
+          "explanation": "Compatible choices are limited under these constraints; some recent or rejected families recur. No restriction was relaxed."
+        }
+      ],
+      "distinctRecipeIds": 8
+    }
+  ],
+  "providerCalls": 0,
+  "costUSD": 0
+}

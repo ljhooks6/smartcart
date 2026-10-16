@@ -1,5 +1,7 @@
 # Bounded allergy library — next development plan
 
+Implementation follow-up: [local development results and remaining release blockers](allergy-library-development-results.md). The owner subsequently approved the isolated implementation and deterministic quota policy; the original planning assessment below is retained as decision history, not a claim that this work is still documentation-only.
+
 Assessment: October 16, 2026, against PR #9 engineering head `7786de8`. This is a **planning/documentation update**. PR #9 remains draft; no recipes, application code, schema, accounts, quotas, flags or production data were changed in this pass. External reviewers were not contacted. No service or evaluation was purchased.
 
 ## 1. Expand toward 48 engineering candidates, with measured variety

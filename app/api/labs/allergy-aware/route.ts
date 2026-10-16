@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { allergyLabEnabled, createAllergyAwarePlan } from "@/lib/allergy-aware-planner";
 import { auditAllergyDraft } from "@/lib/allergy-aware-policy";
+import { assertPilotScope } from "@/lib/allergy-library-local";
+import { LibraryError } from "@/lib/allergy-library-provenance";
 
 export async function POST(request:Request) {
   const url=new URL(request.url);
@@ -20,6 +22,9 @@ export async function POST(request:Request) {
     const i=input as {draft:unknown;diet:unknown};
     if(typeof i.diet!=="string"||i.diet.length>6000)return NextResponse.json({error:"Review the dietary entry"},{status:400});
     return NextResponse.json(auditAllergyDraft(i.draft,{diet:i.diet}),{headers:{"Cache-Control":"no-store"}});
+  }
+  if(input&&typeof input==="object"&&"diet" in input&&typeof input.diet==="string"){
+    try{assertPilotScope(input as {diet:string});}catch(error){if(error instanceof LibraryError)return NextResponse.json({ok:false,findings:[{code:error.code,path:"restrictions",message:error.message}]},{status:error.status});throw error;}
   }
   const result=createAllergyAwarePlan(input);
   return NextResponse.json(result,{status:result.ok?200:422,headers:{"Cache-Control":"no-store"}});
