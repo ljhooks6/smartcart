@@ -1,0 +1,55 @@
+{
+  "catalogVersion": "2026-10-16.2",
+  "components": {
+    "lemon-parsley-dressing": {
+      "name": "Homemade lemon-parsley dressing",
+      "parts": [
+        {
+          "foodId": "olive-oil",
+          "quantity": 5
+        },
+        {
+          "foodId": "lemon",
+          "quantity": 0.25
+        },
+        {
+          "foodId": "parsley",
+          "quantity": 3
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5
+        }
+      ]
+    },
+    "tomato-garlic-sauce": {
+      "name": "Homemade tomato-garlic sauce",
+      "parts": [
+        {
+          "foodId": "tomato",
+          "quantity": 180
+        },
+        {
+          "foodId": "garlic",
+          "quantity": 4
+        },
+        {
+          "foodId": "olive-oil",
+          "quantity": 5
+        },
+        {
+          "foodId": "onion",
+          "quantity": 50
+        },
+        {
+          "foodId": "oregano",
+          "quantity": 0.5
+        },
+        {
+          "foodId": "salt",
+          "quantity": 0.5
+        }
+      ]
+    }
+  }
+}

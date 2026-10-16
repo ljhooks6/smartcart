@@ -14,6 +14,7 @@ type IngredientItem = {
 };
 
 type MealPlanItem = {
+  library?: {schemaVersion:number;provenance:string;recipeId:string;cacheKey:string};
   dbId?: number | string;
   user_id: string;
   day: string;
@@ -27,6 +28,7 @@ type MealPlanItem = {
 };
 
 type GeneratedDessert = {
+  library?: MealPlanItem["library"];
   title: string;
   description: string;
   ingredients: IngredientItem[];
@@ -201,7 +203,7 @@ export function SmartCartMealSections({
                     </button></>}
 
                       onAddToWeek={() => onToggleDessertSave(dessert, index)}
-                      onSaveToVault={() => void onArchiveMeal({ user_id: safeTrim(userId), day: `Sweet Treat ${index + 1}`, name: dessert.title, servings: householdSize || 2, notes: "", description: dessert.description, dietaryRestrictions: "dietaryRestrictions" in dessert ? dessert.dietaryRestrictions as string : undefined, ingredients: dessert.ingredients, imageUrl: dessert.imageUrl })}
+                      onSaveToVault={() => void onArchiveMeal({ user_id: safeTrim(userId), day: `Sweet Treat ${index + 1}`, name: dessert.title, servings: householdSize || 2, notes: "", description: dessert.description, dietaryRestrictions: "dietaryRestrictions" in dessert ? dessert.dietaryRestrictions as string : undefined, ingredients: dessert.ingredients, imageUrl: dessert.imageUrl, ...(dessert.library?{library:dessert.library}:{}) })}
                     />
 
                   </div>

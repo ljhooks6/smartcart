@@ -1,5 +1,6 @@
 .next
 .next-auth-lab
+.next-allergy-lab
 node_modules
 .env
 .env.local

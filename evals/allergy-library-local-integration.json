@@ -1,0 +1,60 @@
+{
+  "environment": "Loopback-only disposable PostgreSQL database, cached PostgREST and existing unlinked local GoTrue; no shared project",
+  "results": [
+    {
+      "name": "free actual Auth → route → PostgREST → PostgreSQL generation",
+      "passed": true
+    },
+    {
+      "name": "free retry / reopening consumes one allowance",
+      "passed": true
+    },
+    {
+      "name": "free authenticated Vault and week save / reopen",
+      "passed": true
+    },
+    {
+      "name": "free direct REST ownership and quota bypass denied",
+      "passed": true
+    },
+    {
+      "name": "free forged provenance and changed grocery list rejected",
+      "passed": true
+    },
+    {
+      "name": "plus actual Auth → route → PostgREST → PostgreSQL generation",
+      "passed": true
+    },
+    {
+      "name": "plus retry / reopening consumes one allowance",
+      "passed": true
+    },
+    {
+      "name": "plus authenticated Vault and week save / reopen",
+      "passed": true
+    },
+    {
+      "name": "plus direct REST ownership and quota bypass denied",
+      "passed": true
+    },
+    {
+      "name": "plus forged provenance and changed grocery list rejected",
+      "passed": true
+    },
+    {
+      "name": "profiles / subscription fixture unchanged",
+      "passed": true
+    },
+    {
+      "name": "ordinary six-tab browser journeys on Free and Plus",
+      "passed": true
+    },
+    {
+      "name": "browser journeys preserve profiles and subscription fixture",
+      "passed": true
+    }
+  ],
+  "providerCalls": 0,
+  "externalEmails": 0,
+  "productionChanges": 0
+}

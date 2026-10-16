@@ -1,0 +1,13 @@
+// Local compiled-production process only; does not reach a hosted deployment.
+import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import {spawn,spawnSync} from 'node:child_process';
+const root=path.resolve('.next/static');
+function scan(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())scan(file);else if(file.endsWith('.js')){const text=fs.readFileSync(file,'utf8');for(const name of ['MEALCADDIE_ALLERGY_LOCAL_SERVICE_KEY','MEALCADDIE_ALLERGY_LOCAL_SIGNING_KEY','MEALCADDIE_ALLERGY_LOCAL_KEY_RING'])assert.equal(text.includes(name),false,'Server signing/service configuration must not enter client chunks');}}}scan(root);
+const env={...process.env,NODE_ENV:'production',MEALCADDIE_ALLERGY_LAB:'true',MEALCADDIE_ALLERGY_INTEGRATION:'true',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321',NEXT_PUBLIC_SUPABASE_ANON_KEY:'local-test-placeholder',SUPABASE_SERVICE_ROLE_KEY:'unused-local-placeholder',OPENAI_API_KEY:'unused-local-placeholder'};delete env.VERCEL;delete env.VERCEL_ENV;
+const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port','3012'],{env,stdio:'ignore',windowsHide:true});let failed=false;server.on('error',()=>{failed=true;});const results=[];
+try{
+ for(let i=0;i<60;i++){if(failed)throw Error('Local compiled server failed');try{if((await fetch('http://127.0.0.1:3012/labs/allergy-aware/app')).status===404)break;}catch{}if(i===59)throw Error('Compiled local server unavailable');await new Promise(r=>setTimeout(r,250));}
+ for(const [method,route] of [['GET','/labs/allergy-aware'],['GET','/labs/allergy-aware/app'],['GET','/api/labs/allergy-library'],['POST','/api/labs/allergy-library'],['POST','/api/labs/allergy-aware']]){
+  const r=await fetch('http://127.0.0.1:3012'+route,{method,redirect:'manual',...(method==='POST'?{headers:{Origin:'http://127.0.0.1:3012','Content-Type':'application/json'},body:'{}'}:{})});assert.equal(r.status,404,method+' '+route);results.push({method,route,status:r.status});
+ }
+ fs.writeFileSync('evals/allergy-library-production-denial.json',JSON.stringify({environment:'Local compiled production mode, both lab flags deliberately true; no hosted deployment',serverSecretsAbsentFromClientChunks:true,results,providerCalls:0},null,2)+'\n');console.log(JSON.stringify({productionModeDenials:results.length,serverSecretsAbsentFromClientChunks:true,providerCalls:0}));
+}finally{if(server.pid){if(process.platform==='win32')spawnSync('taskkill',['/PID',String(server.pid),'/T','/F'],{stdio:'ignore',windowsHide:true});else server.kill('SIGTERM');}}

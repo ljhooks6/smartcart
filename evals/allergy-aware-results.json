@@ -1,0 +1,1393 @@
+{
+  "method": "Offline reference-recipe planning, adversarial mutation and replay of previously paid synthetic provider responses. No clinical, manufacturer, cooking or new live-model validation.",
+  "catalogVersion": "2026-10-16.1",
+  "authoredRecipes": 18,
+  "plainFoodProfiles": 56,
+  "homemadeComponents": 2,
+  "sourceExclusions": [
+    "Milk",
+    "Eggs",
+    "Fish",
+    "Crustacean shellfish",
+    "Tree nuts",
+    "Peanuts",
+    "Wheat",
+    "Soy",
+    "Sesame"
+  ],
+  "scenarios": [
+    {
+      "id": "single-Milk",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "single-Eggs",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "single-Fish",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "single-Crustacean shellfish",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "single-Tree nuts",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "single-Peanuts",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "single-Wheat",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "single-Soy",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "single-Sesame",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "milk-egg-peanut-sesame",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "all-nine-sources",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "vegan-seven-dinners",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Chickpea and tomato stew with rice",
+        "Red lentil and carrot soup",
+        "Black bean and sweet potato chili",
+        "Quinoa and chickpea salad with lemon dressing",
+        "Roasted chickpea and vegetable plate",
+        "Red lentil and spinach dal with rice",
+        "Sweet potato wedges with tomato black beans",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 32.764,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "lactose-separated-from-allergy",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Lemon chicken with potato wedges and broccoli",
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Pork chops with apple and cabbage",
+        "Black bean and sweet potato chili",
+        "Garlic beef and zucchini with rice",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 41.732,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "ingredient-avoidance",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Chickpea and tomato stew with rice",
+        "Turkey and cabbage skillet with potatoes",
+        "Red lentil and carrot soup",
+        "Cinnamon baked apples"
+      ],
+      "estimatedIngredientCost": 15.332,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "pantry-only-exact-quantities",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Chickpea and tomato stew with rice"
+      ],
+      "estimatedIngredientCost": 0,
+      "quarantinedPantry": []
+    },
+    {
+      "id": "pantry-conflict-quarantined",
+      "expected": true,
+      "accepted": true,
+      "menu": [
+        "Chickpea and tomato stew with rice"
+      ],
+      "estimatedIngredientCost": 0,
+      "quarantinedPantry": [
+        "SOURCE_CONFLICT",
+        "COMPOSITION_UNKNOWN"
+      ]
+    },
+    {
+      "id": "pantry-shortage-not-hidden",
+      "expected": false,
+      "accepted": false,
+      "findings": [
+        {
+          "code": "CONSTRAINTS_UNMET",
+          "message": "The selected recipes do not meet the requested count, pantry quantities, budget, time or equipment. No constraint was relaxed.",
+          "path": "plan"
+        }
+      ]
+    },
+    {
+      "id": "unattainable-budget",
+      "expected": false,
+      "accepted": false,
+      "findings": [
+        {
+          "code": "CONSTRAINTS_UNMET",
+          "message": "There are not enough reviewed recipes for these restrictions and planning limits. Try fewer meals or review pantry quantities, equipment, time or budget. Keep genuine restrictions entered.",
+          "path": "plan"
+        }
+      ]
+    },
+    {
+      "id": "unattainable-time",
+      "expected": false,
+      "accepted": false,
+      "findings": [
+        {
+          "code": "CONSTRAINTS_UNMET",
+          "message": "There are not enough reviewed recipes for these restrictions and planning limits. Try fewer meals or review pantry quantities, equipment, time or budget. Keep genuine restrictions entered.",
+          "path": "plan"
+        }
+      ]
+    },
+    {
+      "id": "custom-kiwi-allergy",
+      "expected": false,
+      "accepted": false,
+      "findings": [
+        {
+          "code": "CUSTOM_UNSUPPORTED",
+          "path": "restrictions",
+          "message": "Custom allergies do not yet have a complete ingredient-source catalog. Planning remains restricted for this entry."
+        }
+      ]
+    },
+    {
+      "id": "medical-renal-diet",
+      "expected": false,
+      "accepted": false,
+      "findings": [
+        {
+          "code": "MEDICAL_UNSUPPORTED",
+          "path": "restrictions",
+          "message": "Medical diets require validation beyond ingredient exclusions and are not supported by this experiment."
+        }
+      ]
+    },
+    {
+      "id": "celiac-gluten-claim",
+      "expected": false,
+      "accepted": false,
+      "findings": [
+        {
+          "code": "PREFERENCE_UNSUPPORTED",
+          "path": "restrictions",
+          "message": "This experiment supports Vegetarian and Vegan ingredient preferences only. Gluten-free, nutrient targets and religious certification require separate checks."
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-nut-free",
+      "expected": false,
+      "accepted": false,
+      "findings": [
+        {
+          "code": "LEGACY_CONFIRMATION",
+          "path": "restrictions",
+          "message": "Clarify the original entry using the separate allergy, intolerance and preference controls. Ambiguous entries remain restricted."
+        }
+      ]
+    },
+    {
+      "id": "legacy-allergy-needs-confirmation",
+      "expected": false,
+      "accepted": false,
+      "findings": [
+        {
+          "code": "LEGACY_CONFIRMATION",
+          "path": "restrictions",
+          "message": "Confirm Soy in the food-allergy controls; the original entry remains restricted."
+        }
+      ]
+    }
+  ],
+  "negativeDrafts": [
+    {
+      "id": "milk-in-recipe",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0]",
+          "message": "Milk: Milk. This ingredient is excluded from this plan."
+        },
+        {
+          "code": "TEXT_SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0].name",
+          "message": "Recipe text mentions excluded Milk; it cannot override ingredient checks."
+        }
+      ]
+    },
+    {
+      "id": "tahini-replacement",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0]",
+          "message": "Sesame: Tahini. This ingredient is excluded from this plan."
+        },
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.ingredients[0]",
+          "message": "Composition unresolved: Tahini. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        },
+        {
+          "code": "TEXT_SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0].name",
+          "message": "Recipe text mentions excluded Sesame; it cannot override ingredient checks."
+        }
+      ]
+    },
+    {
+      "id": "peanut-dessert",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "TEXT_SOURCE_CONFLICT",
+          "path": "candidate.desserts[0].title",
+          "message": "Recipe text mentions excluded Peanuts; it cannot override ingredient checks."
+        },
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.desserts[0].ingredients[0]",
+          "message": "Peanuts: Groundnuts. This ingredient is excluded from this plan."
+        }
+      ]
+    },
+    {
+      "id": "milk-restock",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.restock_items[0]",
+          "message": "Milk: Milk [RESTOCK]. This ingredient is excluded from this plan."
+        },
+        {
+          "code": "UNREVIEWED_FIELD",
+          "path": "candidate.restock_items[0].item",
+          "message": "Unreviewed candidate text or an alternative cannot silently bypass ingredient checks."
+        }
+      ]
+    },
+    {
+      "id": "soy-tofu",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0]",
+          "message": "Soy: Tofu. This ingredient is excluded from this plan."
+        },
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.ingredients[0]",
+          "message": "Composition unresolved: Tofu. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        }
+      ]
+    },
+    {
+      "id": "shellfish-prawns",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0]",
+          "message": "Crustacean shellfish: Prawns. This ingredient is excluded from this plan."
+        }
+      ]
+    },
+    {
+      "id": "milk-caseinate",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0]",
+          "message": "Milk: Sodium caseinate. This ingredient is excluded from this plan."
+        },
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.ingredients[0]",
+          "message": "Composition unresolved: Sodium caseinate. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        }
+      ]
+    },
+    {
+      "id": "unknown-pesto",
+      "status": "uncertain",
+      "findings": [
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.ingredients[0]",
+          "message": "Composition unresolved: Pesto. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        }
+      ]
+    },
+    {
+      "id": "compound-sauce",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0]",
+          "message": "Fish: Worcestershire sauce. This ingredient is excluded from this plan."
+        },
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.ingredients[0]",
+          "message": "Composition unresolved: Worcestershire sauce. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        }
+      ]
+    },
+    {
+      "id": "hidden-stock",
+      "status": "uncertain",
+      "findings": [
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.ingredients[0]",
+          "message": "Composition unresolved: Chicken stock. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        }
+      ]
+    },
+    {
+      "id": "plant-alternative-unknown",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0]",
+          "message": "Tree nuts: Dairy-free almond milk. This ingredient is excluded from this plan."
+        },
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.ingredients[0]",
+          "message": "Composition unresolved: Dairy-free almond milk. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        }
+      ]
+    },
+    {
+      "id": "adversarial-id-spoof",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0]",
+          "message": "Milk: Milk. This ingredient is excluded from this plan."
+        },
+        {
+          "code": "TEXT_SOURCE_CONFLICT",
+          "path": "candidate.ingredients[0].name",
+          "message": "Recipe text mentions excluded Milk; it cannot override ingredient checks."
+        },
+        {
+          "code": "UNREVIEWED_FIELD",
+          "path": "candidate.ingredients[0].foodId",
+          "message": "Unreviewed candidate text or an alternative cannot silently bypass ingredient checks."
+        }
+      ]
+    },
+    {
+      "id": "self-reported-composition",
+      "status": "uncertain",
+      "findings": [
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.ingredients[0]",
+          "message": "Composition unresolved: White sauce. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        },
+        {
+          "code": "UNREVIEWED_FIELD",
+          "path": "candidate.ingredients[0].components[0]",
+          "message": "Unreviewed candidate text or an alternative cannot silently bypass ingredient checks."
+        }
+      ]
+    },
+    {
+      "id": "step-only-substitution",
+      "status": "conflict",
+      "findings": [
+        {
+          "code": "TEXT_SOURCE_CONFLICT",
+          "path": "candidate.steps[0]",
+          "message": "Recipe text mentions excluded Sesame; it cannot override ingredient checks."
+        },
+        {
+          "code": "UNBOUND_INSTRUCTIONS",
+          "path": "candidate.steps[0]",
+          "message": "Free-form instructions can add undeclared ingredients. Use the server-owned recipe steps; this draft cannot be released as checked."
+        }
+      ]
+    },
+    {
+      "id": "unlisted-step-food",
+      "status": "uncertain",
+      "findings": [
+        {
+          "code": "UNBOUND_INSTRUCTIONS",
+          "path": "candidate.steps[0]",
+          "message": "Free-form instructions can add undeclared ingredients. Use the server-owned recipe steps; this draft cannot be released as checked."
+        }
+      ]
+    },
+    {
+      "id": "unknown-grocery",
+      "status": "uncertain",
+      "findings": [
+        {
+          "code": "COMPOSITION_UNKNOWN",
+          "path": "candidate.grocery_list[0]",
+          "message": "Composition unresolved: Creamy dressing. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+        },
+        {
+          "code": "UNREVIEWED_FIELD",
+          "path": "candidate.grocery_list[0].item",
+          "message": "Unreviewed candidate text or an alternative cannot silently bypass ingredient checks."
+        }
+      ]
+    },
+    {
+      "id": "unsupported-assurance",
+      "status": "uncertain",
+      "findings": [
+        {
+          "code": "UNSUPPORTED_ASSURANCE",
+          "path": "candidate.description",
+          "message": "An unsupported safety assurance must not be presented as evidence."
+        }
+      ]
+    },
+    {
+      "id": "incomplete-recipe",
+      "status": "uncertain",
+      "findings": [
+        {
+          "code": "INGREDIENT_MISSING",
+          "path": "candidate",
+          "message": "A complete ingredient list is required."
+        }
+      ]
+    }
+  ],
+  "acceptedRecipeExamples": [
+    {
+      "id": "lemon-chicken",
+      "revision": 1,
+      "name": "Lemon chicken with potato wedges and broccoli",
+      "description": "Golden chicken and potato wedges with broccoli and a fresh lemon-parsley dressing.",
+      "servings": 2,
+      "minutes": 40,
+      "kind": "dinner",
+      "ingredients": [
+        {
+          "foodId": "chicken",
+          "name": "Chicken breast",
+          "quantity": 320,
+          "unit": "g",
+          "estimatedCost": 3.84
+        },
+        {
+          "foodId": "potato",
+          "name": "Potatoes",
+          "quantity": 400,
+          "unit": "g",
+          "estimatedCost": 1.2
+        },
+        {
+          "foodId": "broccoli",
+          "name": "Broccoli",
+          "quantity": 300,
+          "unit": "g",
+          "estimatedCost": 1.5
+        },
+        {
+          "foodId": "olive-oil",
+          "name": "Olive oil",
+          "quantity": 10,
+          "unit": "ml",
+          "estimatedCost": 0.08
+        },
+        {
+          "foodId": "lemon",
+          "name": "Lemon",
+          "quantity": 0.5,
+          "unit": "each",
+          "estimatedCost": 0.3
+        },
+        {
+          "foodId": "parsley",
+          "name": "Parsley",
+          "quantity": 6,
+          "unit": "g",
+          "estimatedCost": 0.18
+        },
+        {
+          "foodId": "salt",
+          "name": "Salt",
+          "quantity": 1,
+          "unit": "g",
+          "estimatedCost": 0.001
+        }
+      ],
+      "steps": [
+        "Heat the oven to 425°F / 220°C. Cut potatoes into wedges and broccoli into florets. Separate raw chicken from the vegetables and ready-to-eat ingredients.",
+        "Reserve half the olive oil and lemon for the dressing. Toss potatoes with the remaining oil and salt; roast for 10 minutes. Add the chicken and broccoli and roast until the chicken reaches 165°F / 74°C on a food thermometer and potatoes are tender.",
+        "Combine the reserved oil and lemon with the parsley. Divide all cooked food and dressing evenly among the specified servings. Do not add a bottled dressing or an unlisted garnish."
+      ]
+    },
+    {
+      "id": "chickpea-tomato-stew",
+      "revision": 1,
+      "name": "Chickpea and tomato stew with rice",
+      "description": "A hearty tomato-garlic stew over fluffy rice.",
+      "servings": 2,
+      "minutes": 30,
+      "kind": "dinner",
+      "ingredients": [
+        {
+          "foodId": "chickpeas",
+          "name": "Cooked plain chickpeas",
+          "quantity": 360,
+          "unit": "g",
+          "estimatedCost": 1.44
+        },
+        {
+          "foodId": "rice",
+          "name": "White rice",
+          "quantity": 130,
+          "unit": "g",
+          "estimatedCost": 0.39
+        },
+        {
+          "foodId": "water",
+          "name": "Water",
+          "quantity": 520,
+          "unit": "ml",
+          "estimatedCost": 0
+        },
+        {
+          "foodId": "tomato",
+          "name": "Tomatoes",
+          "quantity": 360,
+          "unit": "g",
+          "estimatedCost": 1.8
+        },
+        {
+          "foodId": "garlic",
+          "name": "Garlic",
+          "quantity": 8,
+          "unit": "g",
+          "estimatedCost": 0.08
+        },
+        {
+          "foodId": "olive-oil",
+          "name": "Olive oil",
+          "quantity": 10,
+          "unit": "ml",
+          "estimatedCost": 0.08
+        },
+        {
+          "foodId": "onion",
+          "name": "Onions",
+          "quantity": 100,
+          "unit": "g",
+          "estimatedCost": 0.3
+        },
+        {
+          "foodId": "oregano",
+          "name": "Oregano",
+          "quantity": 1,
+          "unit": "g",
+          "estimatedCost": 0.03
+        },
+        {
+          "foodId": "salt",
+          "name": "Salt",
+          "quantity": 1,
+          "unit": "g",
+          "estimatedCost": 0.001
+        }
+      ],
+      "steps": [
+        "Cook the rice in half the water in a covered saucepan until tender, about 18 minutes.",
+        "Dice the tomatoes and onion. Soften the onion and garlic in the olive oil; add tomatoes, oregano, salt and the remaining water. Simmer for 10 minutes.",
+        "Add the plain cooked chickpeas and simmer for 5 minutes until steaming throughout. Divide the stew and rice among the specified servings. The homemade sauce uses only the listed ingredients."
+      ]
+    },
+    {
+      "id": "berry-oat-crisp",
+      "revision": 1,
+      "name": "Blueberry oat crisp",
+      "description": "Juicy blueberries under a crisp oat and cinnamon topping.",
+      "servings": 2,
+      "minutes": 35,
+      "kind": "dessert",
+      "ingredients": [
+        {
+          "foodId": "berries",
+          "name": "Blueberries",
+          "quantity": 240,
+          "unit": "g",
+          "estimatedCost": 2.88
+        },
+        {
+          "foodId": "oats",
+          "name": "Rolled oats",
+          "quantity": 70,
+          "unit": "g",
+          "estimatedCost": 0.35
+        },
+        {
+          "foodId": "sugar",
+          "name": "Sugar",
+          "quantity": 24,
+          "unit": "g",
+          "estimatedCost": 0.048
+        },
+        {
+          "foodId": "olive-oil",
+          "name": "Olive oil",
+          "quantity": 16,
+          "unit": "ml",
+          "estimatedCost": 0.128
+        },
+        {
+          "foodId": "cinnamon",
+          "name": "Cinnamon",
+          "quantity": 1,
+          "unit": "g",
+          "estimatedCost": 0.025
+        },
+        {
+          "foodId": "water",
+          "name": "Water",
+          "quantity": 30,
+          "unit": "ml",
+          "estimatedCost": 0
+        }
+      ],
+      "steps": [
+        "Heat oven to 375°F / 190°C. Place blueberries and water in a small baking dish.",
+        "Mix the rolled oats, sugar, olive oil and cinnamon; scatter over the berries.",
+        "Bake for about 25 minutes until bubbling and lightly browned. Divide among the specified servings. Oats are not certified against grain cross-contact."
+      ]
+    }
+  ],
+  "offlineReplay": {
+    "evidenceSHA256": "44de58aa430124278476d7a955e4a412bccbbeaf09eedd4202ae890530d259a4",
+    "uniqueParsedProviderResponses": 50,
+    "originalAllergyResponses": 6,
+    "ingredientEntries": 3381,
+    "exactCatalogResolved": 2735,
+    "unresolvedMostFrequent": [
+      {
+        "name": "Butter",
+        "count": 76
+      },
+      {
+        "name": "Black beans",
+        "count": 52
+      },
+      {
+        "name": "Flour",
+        "count": 40
+      },
+      {
+        "name": "Soy Sauce",
+        "count": 27
+      },
+      {
+        "name": "80/20 Ground Beef",
+        "count": 26
+      },
+      {
+        "name": "Black Beans",
+        "count": 21
+      },
+      {
+        "name": "Fresh Ginger",
+        "count": 14
+      },
+      {
+        "name": "Flour Tortillas",
+        "count": 12
+      },
+      {
+        "name": "Cheddar Cheese",
+        "count": 12
+      },
+      {
+        "name": "Scallions",
+        "count": 10
+      },
+      {
+        "name": "Spaghetti",
+        "count": 10
+      },
+      {
+        "name": "Extra-Firm Tofu",
+        "count": 10
+      },
+      {
+        "name": "Frozen Broccoli Florets",
+        "count": 10
+      },
+      {
+        "name": "Frozen Green Peas",
+        "count": 9
+      },
+      {
+        "name": "Frozen Peas",
+        "count": 9
+      },
+      {
+        "name": "Boneless Pork Chops",
+        "count": 9
+      },
+      {
+        "name": "Soy sauce",
+        "count": 8
+      },
+      {
+        "name": "Fresh ginger",
+        "count": 7
+      },
+      {
+        "name": "Tilapia Fillets",
+        "count": 6
+      },
+      {
+        "name": "Red Bell Peppers",
+        "count": 6
+      }
+    ],
+    "originalAllergyReplay": [
+      {
+        "case": "common-allergen/free/after",
+        "responseSHA256": "e32002a8d23ba8527ebcca9f2e3170c5afa99c146cac9564bc2577cf24c5d650",
+        "oldCandidateAccepted": false,
+        "ingredientAuditStatus": "conflict",
+        "releaseEligible": false,
+        "issues": [
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[1].ingredients[1]",
+            "message": "Composition unresolved: Black Beans. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[2].ingredients[3]",
+            "message": "Composition unresolved: Butter. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[0]",
+            "message": "Composition unresolved: Beef Sirloin or Flank Steak. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[5]",
+            "message": "Composition unresolved: Soy Sauce. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[0]",
+            "message": "Composition unresolved: Salmon Fillets. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[5].ingredients[8]",
+            "message": "Composition unresolved: Dried Italian Herbs. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "TEXT_SOURCE_CONFLICT",
+            "path": "candidate.meals[6].notes",
+            "message": "Recipe text mentions excluded Eggs; it cannot override ingredient checks."
+          },
+          {
+            "code": "SOURCE_CONFLICT",
+            "path": "candidate.meals[6].ingredients[0]",
+            "message": "Eggs: Eggs. This ingredient is excluded from this plan."
+          },
+          {
+            "code": "TEXT_SOURCE_CONFLICT",
+            "path": "candidate.meals[6].ingredients[0].name",
+            "message": "Recipe text mentions excluded Eggs; it cannot override ingredient checks."
+          }
+        ],
+        "fullIssueCount": 9,
+        "menu": [
+          "Lemon Herb Roasted Chicken Breast with Garlic Potatoes and Carrots",
+          "Vegetarian Black Bean and Rice Skillet with Tomato Salsa",
+          "Pan-Seared Pork Chops with Sautéed Garlic Green Beans and Mashed Potatoes",
+          "Simple Beef and Vegetable Stir-Fry over Rice",
+          "Oven-Baked Salmon with Paprika Roasted Potatoes and Lemon Carrot Slaw",
+          "Chicken and Tomato Rice Bake with Onions and Herbs",
+          "Vegetable Frittata with Sautéed Potatoes and Onions"
+        ],
+        "desserts": []
+      },
+      {
+        "case": "common-allergen/free/after",
+        "responseSHA256": "bb4135bc38d89d5c1fea654b9058ab0e1fb83d6181c77849e13a6b9df5cc40d3",
+        "oldCandidateAccepted": false,
+        "ingredientAuditStatus": "uncertain",
+        "releaseEligible": false,
+        "issues": [
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[1].ingredients[0]",
+            "message": "Composition unresolved: Black Beans. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[0]",
+            "message": "Composition unresolved: Firm Tofu. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[6]",
+            "message": "Composition unresolved: Soy Sauce. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[0]",
+            "message": "Composition unresolved: 80/20 Ground Beef. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[6].ingredients[0]",
+            "message": "Composition unresolved: White Fish Fillets (such as Tilapia or Cod). Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[6].ingredients[2]",
+            "message": "Composition unresolved: Butter. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          }
+        ],
+        "fullIssueCount": 6,
+        "menu": [
+          "Lemon Herb Roasted Chicken Breast with Garlic Potatoes and Carrots",
+          "Black Bean and Tomato Rice Skillet",
+          "Pan-Seared Pork Chops with Sautéed Carrots and Onion",
+          "Vegetable Stir-Fry with Tofu and Rice",
+          "Classic Beef and Potato Hash with Onions",
+          "Chicken and Tomato Rice Bake",
+          "Simple Fish Fillets with Lemon Butter, Rice, and Sautéed Vegetables"
+        ],
+        "desserts": []
+      },
+      {
+        "case": "multiple-restrictions/free/after",
+        "responseSHA256": "c0bd8945bc1c3e489466306ff6adb2d7de219ad3757078aecb2d2e3f41b6985d",
+        "oldCandidateAccepted": false,
+        "ingredientAuditStatus": "conflict",
+        "releaseEligible": false,
+        "issues": [
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[1].ingredients[0]",
+            "message": "Composition unresolved: 80/20 Ground Beef. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "TEXT_SOURCE_CONFLICT",
+            "path": "candidate.meals[3].name",
+            "message": "Recipe text mentions excluded Milk; it cannot override ingredient checks."
+          },
+          {
+            "code": "TEXT_SOURCE_CONFLICT",
+            "path": "candidate.meals[3].description",
+            "message": "Recipe text mentions excluded Milk; it cannot override ingredient checks."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[0]",
+            "message": "Composition unresolved: Tilapia Fillets. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "SOURCE_CONFLICT",
+            "path": "candidate.meals[3].ingredients[1]",
+            "message": "Milk: Butter. This ingredient is excluded from this plan."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[1]",
+            "message": "Composition unresolved: Butter. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "TEXT_SOURCE_CONFLICT",
+            "path": "candidate.meals[3].ingredients[1].name",
+            "message": "Recipe text mentions excluded Milk; it cannot override ingredient checks."
+          },
+          {
+            "code": "TEXT_SOURCE_CONFLICT",
+            "path": "candidate.meals[4].description",
+            "message": "Recipe text mentions excluded Milk; it cannot override ingredient checks."
+          },
+          {
+            "code": "TEXT_SOURCE_CONFLICT",
+            "path": "candidate.meals[4].notes",
+            "message": "Recipe text mentions excluded Milk; it cannot override ingredient checks."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[0]",
+            "message": "Composition unresolved: Flour Tortillas. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[1]",
+            "message": "Composition unresolved: Black Beans. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "SOURCE_CONFLICT",
+            "path": "candidate.meals[4].ingredients[3]",
+            "message": "Milk: Shredded Cheddar Cheese. This ingredient is excluded from this plan."
+          }
+        ],
+        "fullIssueCount": 21,
+        "menu": [
+          "Lemon Herb Chicken Breast with Roasted Potatoes and Carrots",
+          "Beef and Tomato Rice Skillet",
+          "Vegetable Fried Rice with Scrambled Eggs",
+          "Oven-Baked Tilapia with Garlic Butter and Sautéed Green Beans",
+          "Black Bean and Tomato Quesadillas with Simple Salsa",
+          "Pork Chops with Pan Gravy, Mashed Potatoes, and Sautéed Carrots",
+          "Simple Shakshuka with Crusty Bread"
+        ],
+        "desserts": []
+      },
+      {
+        "case": "multiple-restrictions/free/after",
+        "responseSHA256": "1772dae47a2c3b233823fa0464e8d85ed72cf6952240fcf8d092100bfe93b51f",
+        "oldCandidateAccepted": false,
+        "ingredientAuditStatus": "uncertain",
+        "releaseEligible": false,
+        "issues": [
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[2].ingredients[0]",
+            "message": "Composition unresolved: Black Beans. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[3]",
+            "message": "Composition unresolved: Scallions. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[5].ingredients[0]",
+            "message": "Composition unresolved: Salmon Fillets. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          }
+        ],
+        "fullIssueCount": 3,
+        "menu": [
+          "Lemon Herb Chicken Breast with Roasted Potatoes and Carrots",
+          "Vegetable Fried Rice with Egg",
+          "Black Bean and Tomato Stew with Rice",
+          "Pan-Seared Pork Chops with Garlic Sautéed Green Beans and Potatoes",
+          "Egg Fried Rice with Scallions and Carrots",
+          "Simple Baked Salmon with Lemon and Roasted Vegetables",
+          "Turkey and Vegetable Skillet with Rice"
+        ],
+        "desserts": []
+      },
+      {
+        "case": "common-allergen/plus/after",
+        "responseSHA256": "352111eb438d7516e2038ab5fac1de782688bd71e5e7ab94eb7b9d7b186b4398",
+        "oldCandidateAccepted": false,
+        "ingredientAuditStatus": "uncertain",
+        "releaseEligible": false,
+        "issues": [
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[1].ingredients[0]",
+            "message": "Composition unresolved: Boneless Pork Chops. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[1].ingredients[4]",
+            "message": "Composition unresolved: Butter. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[1].ingredients[5]",
+            "message": "Composition unresolved: Flour. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[2].ingredients[0]",
+            "message": "Composition unresolved: 85/15 Ground Beef. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[2]",
+            "message": "Composition unresolved: Black beans. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[0]",
+            "message": "Composition unresolved: Extra-Firm Tofu. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[2]",
+            "message": "Composition unresolved: Frozen Broccoli Florets. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[3]",
+            "message": "Composition unresolved: Fresh Ginger. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[4]",
+            "message": "Composition unresolved: Reduced-Sodium Soy Sauce. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[5].ingredients[0]",
+            "message": "Composition unresolved: Black beans. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[5].ingredients[1]",
+            "message": "Composition unresolved: Medium Flour Tortillas. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[5].ingredients[2]",
+            "message": "Composition unresolved: Cheddar Cheese. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          }
+        ],
+        "fullIssueCount": 14,
+        "menu": [
+          "Paprika Roast Chicken with Potatoes and Carrots",
+          "Pork Chops with Mashed Potatoes and Buttered Cabbage",
+          "Mini Beef Meatloaves with Roasted Potatoes and Carrots",
+          "Chicken Fajita Plates with Rice and Black Beans",
+          "Ginger-Soy Tofu and Broccoli over Rice",
+          "Black Bean and Cheddar Quesadillas with Crunchy Slaw",
+          "Mediterranean Shrimp Penne with Tomatoes and Spinach"
+        ],
+        "desserts": []
+      },
+      {
+        "case": "multiple-restrictions/plus/after",
+        "responseSHA256": "36dfb00c9378e96375325716b4882d911f1584bbf1ae459dc23b3769eee4dc10",
+        "oldCandidateAccepted": false,
+        "ingredientAuditStatus": "uncertain",
+        "releaseEligible": false,
+        "issues": [
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[1].ingredients[0]",
+            "message": "Composition unresolved: 85/15 Ground Beef. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[1].ingredients[1]",
+            "message": "Composition unresolved: Spaghetti. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[2].ingredients[0]",
+            "message": "Composition unresolved: Boneless Pork Chops. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[2].ingredients[2]",
+            "message": "Composition unresolved: Frozen Green Beans. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[1]",
+            "message": "Composition unresolved: Corn Tortillas. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[3].ingredients[2]",
+            "message": "Composition unresolved: Green Bell Peppers. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[0]",
+            "message": "Composition unresolved: Plain Tilapia Fillets. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[2]",
+            "message": "Composition unresolved: Frozen Broccoli Florets. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[3]",
+            "message": "Composition unresolved: Fresh Ginger. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[4].ingredients[5]",
+            "message": "Composition unresolved: Reduced-Sodium Soy Sauce. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[5].ingredients[0]",
+            "message": "Composition unresolved: Black beans. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          },
+          {
+            "code": "COMPOSITION_UNKNOWN",
+            "path": "candidate.meals[6].ingredients[5]",
+            "message": "Composition unresolved: Tomato Paste. Use a cataloged plain ingredient or the exact server-owned homemade component; a label claim or model-supplied ingredient list is not verification."
+          }
+        ],
+        "fullIssueCount": 12,
+        "menu": [
+          "Paprika Roast Chicken with Potatoes and Carrots",
+          "Spaghetti with Beef and Zucchini Ragù",
+          "Pork Chops with Rustic Mashed Potatoes and Green Beans",
+          "Chicken Fajitas with Peppers and Onions",
+          "Ginger-Soy Tilapia with Rice and Broccoli",
+          "Black Bean Shakshuka with Rice",
+          "Turkey Mini Meatloaves with Roasted Potatoes and Carrots"
+        ],
+        "desserts": []
+      }
+    ],
+    "sameScenarioRebuild": [
+      {
+        "case": "common-allergen/free/after",
+        "method": "New deterministic reviewed-recipe plan under original source exclusions/budget/household/equipment/time; NOT corrected AI output or independent model evaluation",
+        "accepted": true,
+        "menu": [
+          "Lemon chicken with potato wedges and broccoli",
+          "Chickpea and tomato stew with rice",
+          "Turkey and cabbage skillet with potatoes",
+          "Red lentil and carrot soup",
+          "Pork chops with apple and cabbage",
+          "Black bean and sweet potato chili",
+          "Garlic beef and zucchini with rice"
+        ],
+        "estimatedIngredientCost": 40.235
+      },
+      {
+        "case": "multiple-restrictions/free/after",
+        "method": "New deterministic reviewed-recipe plan under original source exclusions/budget/household/equipment/time; NOT corrected AI output or independent model evaluation",
+        "accepted": true,
+        "menu": [
+          "Lemon chicken with potato wedges and broccoli",
+          "Chickpea and tomato stew with rice",
+          "Turkey and cabbage skillet with potatoes",
+          "Red lentil and carrot soup",
+          "Pork chops with apple and cabbage",
+          "Black bean and sweet potato chili",
+          "Garlic beef and zucchini with rice"
+        ],
+        "estimatedIngredientCost": 40.235
+      },
+      {
+        "case": "common-allergen/plus/after",
+        "method": "New deterministic reviewed-recipe plan under original source exclusions/budget/household/equipment/time; NOT corrected AI output or independent model evaluation",
+        "accepted": true,
+        "menu": [
+          "Lemon chicken with potato wedges and broccoli",
+          "Chickpea and tomato stew with rice",
+          "Turkey and cabbage skillet with potatoes",
+          "Red lentil and carrot soup",
+          "Pork chops with apple and cabbage",
+          "Black bean and sweet potato chili",
+          "Garlic beef and zucchini with rice"
+        ],
+        "estimatedIngredientCost": 40.235
+      },
+      {
+        "case": "multiple-restrictions/plus/after",
+        "method": "New deterministic reviewed-recipe plan under original source exclusions/budget/household/equipment/time; NOT corrected AI output or independent model evaluation",
+        "accepted": true,
+        "menu": [
+          "Lemon chicken with potato wedges and broccoli",
+          "Chickpea and tomato stew with rice",
+          "Turkey and cabbage skillet with potatoes",
+          "Red lentil and carrot soup",
+          "Pork chops with apple and cabbage",
+          "Black bean and sweet potato chili",
+          "Garlic beef and zucchini with rice"
+        ],
+        "estimatedIngredientCost": 40.235
+      }
+    ]
+  },
+  "newProviderCalls": 0,
+  "newAiCostUSD": 0,
+  "releaseRecommendation": "Local engineering review only. Consider a reviewed-recipe source-exclusion pilot after qualified catalog/recipe review and owner approval; do not enable unconstrained AI allergy generation."
+}

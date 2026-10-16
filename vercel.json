@@ -1,7 +1,8 @@
 {
   "git": {
     "deploymentEnabled": {
-      "feature/recipe-quality-dietary-controls": false
+      "feature/recipe-quality-dietary-controls": false,
+      "feature/allergy-aware-candidate": false
     }
   },
   "functions": {

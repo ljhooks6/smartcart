@@ -1,0 +1,32 @@
+{
+  "environment": "Local compiled production mode, both lab flags deliberately true; no hosted deployment",
+  "serverSecretsAbsentFromClientChunks": true,
+  "results": [
+    {
+      "method": "GET",
+      "route": "/labs/allergy-aware",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "route": "/labs/allergy-aware/app",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "route": "/api/labs/allergy-library",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "route": "/api/labs/allergy-library",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "route": "/api/labs/allergy-aware",
+      "status": 404
+    }
+  ],
+  "providerCalls": 0
+}

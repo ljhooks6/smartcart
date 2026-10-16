@@ -8,6 +8,13 @@ import { usePathname } from "next/navigation";
 type State = { profile: PersonalProfile | null; loading: boolean; error: string; refresh: () => Promise<void> };
 const Context = createContext<State>({ profile: null, loading: true, error: "", refresh: async () => {} });
 export function PersonalizationProvider({ children }: { children: ReactNode }) {
+  const pathname=usePathname();
+  // Local engineering screens must not restore a shared-project session or
+  // request a production profile through the ordinary personalization provider.
+  if(pathname.startsWith("/labs/allergy-aware"))return <>{children}</>;
+  return <AccountPersonalizationProvider>{children}</AccountPersonalizationProvider>;
+}
+function AccountPersonalizationProvider({children}:{children:ReactNode}){
   const [profile, setProfile] = useState<PersonalProfile | null>(null), [loading, setLoading] = useState(true), [error, setError] = useState("");
   const version = useRef(0);
   const pathname = usePathname(); const profileId = profile?.userId;

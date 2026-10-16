@@ -40,7 +40,7 @@ export function mealTitles(value: unknown, limit = 14): string[] {
   }).map(title => title.replace(/[\r\n\t]/g, " ").trim().slice(0, 180)).filter(Boolean).slice(0, limit);
 }
 
-export type MealVarietyContext = { recentPlans?: string[][] };
+export type MealVarietyContext = { recentPlans?: string[][]; recentRejectedMeals?:string[] };
 type VarietyInput = { existingMeals?: string; recentRejectedMeals?: string[]; mustHaveIngredient?: string; mealSourceMode?: string };
 const titleList = (value?: string) => mealTitles(value?.split(/[,;\n]/) || []);
 
