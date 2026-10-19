@@ -4,6 +4,7 @@ export type ShoppingProgress = {
   removed: string[];
   restored: string[];
   custom: CustomShoppingItem[];
+  fingerprints?: Record<string,string>;
 };
 export type ShoppingState = ShoppingProgress & { undo: { previous: ShoppingProgress; message: string } | null };
 export type ShoppingAction =
@@ -15,6 +16,7 @@ export type ShoppingAction =
   | { type: "custom-check"; id: string; checked: boolean }
   | { type: "custom-remove"; id: string }
   | { type: "load"; progress: ShoppingProgress }
+  | {type:"reconcile";requirements:Record<string,string>}
   | { type: "undo" }
   | { type: "reset" };
 
@@ -25,6 +27,10 @@ export function emptyShoppingState(): ShoppingState {
 export function shoppingReducer(state: ShoppingState, action: ShoppingAction): ShoppingState {
   if (action.type === "reset") return emptyShoppingState();
   if (action.type === "load") return { ...action.progress, undo: null };
+  if(action.type==="reconcile"){
+    const valid=(keys:string[])=>keys.filter(key=>action.requirements[key]!==undefined&&(!state.fingerprints?.[key]||state.fingerprints[key]===action.requirements[key]));
+    return {...state,checked:valid(state.checked),removed:valid(state.removed),fingerprints:action.requirements,undo:null};
+  }
   if (action.type === "undo") return state.undo ? { ...state.undo.previous, undo: null } : state;
   const { undo: _undo, ...previous } = state;
   let next: ShoppingProgress = previous;
@@ -68,5 +74,6 @@ export function parseShoppingProgress(value: unknown): ShoppingProgress {
   return {
     checked: strings(stored.checked), removed: strings(stored.removed), restored: strings(stored.restored),
     custom: Array.isArray(stored.custom) ? stored.custom.filter(item => item && typeof item.id === "string" && typeof item.name === "string" && typeof item.isChecked === "boolean") : [],
+    ...(stored.fingerprints&&typeof stored.fingerprints==="object"?{fingerprints:Object.fromEntries(Object.entries(stored.fingerprints).filter(([k,v])=>k.length<300&&typeof v==="string"&&v.length<10000))}:{}),
   };
 }

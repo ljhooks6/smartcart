@@ -222,7 +222,7 @@ export function SmartCartLibrarySections({
               },
               {
                 title: "More planning flexibility",
-                copy: "Free includes 5 weekly AI plans; Plus includes 20. Breakfast and lunch options are available on both.",
+                copy: "Free includes 5 weekly AI plans; Plus includes 20. Breakfast and lunch planning are planned for a future update. Existing saved meals remain available.",
               },
             ].map((feature) => (
               <div

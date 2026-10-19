@@ -4,6 +4,9 @@ import { DietarySafetySummary } from "./dietary-safety-summary";
 import { DietarySettings } from "./dietary-settings";
 
 import { FormEvent } from "react";
+import {SmartCartPantryEditor} from "./smart-cart-pantry-editor";
+import type {PantryEntry} from "../lib/pantry";
+import type {GroceryListItem} from "../lib/grocery-list";
 import type { SmartCartPlan } from "@/lib/smart-cart-membership";
 
 type SmartCartFormState = {
@@ -24,6 +27,9 @@ type SmartCartFormState = {
 };
 
 type SmartCartContextFormProps = {
+  pantryEntries?:PantryEntry[];
+  onPantryEntriesChange?:(entries:PantryEntry[])=>void;
+  pantryRequirements?:GroceryListItem[];
   adventureLevelOptions: readonly string[];
   combinedPantryItems: string[];
   equipmentOptions: readonly string[];
@@ -64,6 +70,7 @@ type SmartCartContextFormProps = {
 
 export function SmartCartContextForm({
   adventureLevelOptions,
+  pantryEntries=[],onPantryEntriesChange=()=>{},pantryRequirements=[],
   combinedPantryItems,
   equipmentOptions,
   featureError,
@@ -121,8 +128,8 @@ export function SmartCartContextForm({
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
             ["Dinner", "Included"],
-            ["Breakfast", "Optional · everyone"],
-            ["Lunch", "Optional · everyone"],
+            ["Breakfast", "Planned for a future update"],
+            ["Lunch", "Planned for a future update"],
           ].map(([mealType, status]) => {
             const isReady = mealType === "Dinner";
 
@@ -160,8 +167,7 @@ export function SmartCartContextForm({
           })}
         </div>
         <p className="mt-4 text-sm leading-6 text-ink/70">
-          Start with dinner, then add optional breakfast and lunch picks to carry more of the week.
-          Available on every plan.
+          Dinner and dessert planning are available now. Breakfast and lunch planning are paused for every account while we improve them.
         </p>
       </div>
 
@@ -363,88 +369,7 @@ export function SmartCartContextForm({
           </div>
         </div>
 
-        <div className="rounded-[1.75rem] border border-orange-200 bg-gradient-to-r from-orange-50 via-white to-amber-50 shadow-md ring-1 ring-orange-100">
-          <button
-            className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
-            onClick={onTogglePantrySelectionOpen}
-            type="button"
-          >
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-sm">
-                Pantry
-              </div>
-              <div>
-              <p className="text-sm font-semibold text-ink">Pantry Quick-Select</p>
-              <p className="mt-1 text-sm leading-6 text-ink/65">
-                Tap common staples to add them before typing anything custom.
-              </p>
-              </div>
-            </div>
-            <span className="rounded-full bg-white/85 px-3 py-1 text-xs uppercase tracking-[0.2em] text-orange-700 shadow-sm">
-              {isPantrySelectionOpen ? "Hide" : "Select Pantry Items"}
-            </span>
-          </button>
-          {isPantrySelectionOpen ? (
-            <div className="hidden border-t border-stone-200 px-6 pb-5 pt-4 md:block">
-              <div className="mb-4 space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
-                <p>
-                  <strong>
-                    <span
-                      aria-hidden="true"
-                      className="mr-1 inline-block h-4 w-4 rounded border border-green-800 bg-green-700 align-middle shadow-sm"
-                    />
-                    Clicked (Owned):
-                  </strong>{" "}
-                  You have a good amount. (App will <strong>SKIP</strong> buying this).
-                </p>
-                <p>
-                  <strong>
-                    <span
-                      aria-hidden="true"
-                      className="mr-1 inline-block h-4 w-4 rounded border border-gray-300 bg-white align-middle shadow-sm"
-                    />
-                    Unclicked (Need to Buy):
-                  </strong>{" "}
-                  Leave unclicked if you have none OR very little. (App will <strong>ADD</strong>{" "}
-                  it to your list).
-                </p>
-              </div>
-              <div className="space-y-3">
-                {Object.entries(pantryQuickSelectOptions).map(([category, items]) => (
-                  <div
-                    key={category}
-                    className={`rounded-3xl border p-4 ${
-                      pantryCategoryStyles[category] ?? "border-stone-200 bg-white"
-                    }`}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                      {category}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {items.map((item) => {
-                        const isFullyStocked = fullyStocked.has(item);
-                        const stateClass = isFullyStocked
-                          ? "border-green-800 bg-green-700 text-white"
-                          : "border-gray-300 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
-
-                        return (
-                          <button
-                            key={item}
-                            className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${stateClass}`}
-                            onClick={() => onToggleQuickItem(item)}
-                            type="button"
-                          >
-                            {item}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
+        <section className="rounded-3xl border border-orange-200 bg-orange-50 p-4"><button type="button" aria-expanded={isPantrySelectionOpen} onClick={onTogglePantrySelectionOpen} className="flex min-h-12 w-full items-center justify-between gap-3 text-left font-semibold text-pine"><span>Pantry Quick-Select</span><span>{isPantrySelectionOpen?"Hide":"Search ingredients"}</span></button>{isPantrySelectionOpen?<SmartCartPantryEditor entries={pantryEntries} options={pantryQuickSelectOptions} onChange={onPantryEntriesChange} requirements={pantryRequirements}/>:null}</section>
 
         {isEquipmentSheetOpen ? (
           <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-10 md:hidden">
@@ -535,62 +460,14 @@ export function SmartCartContextForm({
           />
         </label>
 
-        <div className="rounded-[1.75rem] border border-pine/10 bg-pine text-cream">
-          <button
-            className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
-            onClick={onTogglePantryOpen}
-            type="button"
-          >
-            <span className="font-display text-xl">Pantry Snapshot</span>
-            <span className="text-xs uppercase tracking-[0.2em] text-cream/70">
-              {isPantryOpen ? "Hide" : "View Pantry Snapshot"}
-            </span>
-          </button>
-          {isPantryOpen ? (
-            <div className="border-t border-white/10 px-6 pb-5 pt-4">
-              <div className="flex flex-wrap gap-2">
-                {combinedPantryItems.length > 0 ? (
-                  combinedPantryItems.map((item) => (
-                    <span
-                      key={item}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm"
-                    >
-                      <span>{item}</span>
-                      <button
-                        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-white/10 text-xs text-cream transition hover:bg-white/20"
-                        onClick={() => onRemovePantryItem(item)}
-                        type="button"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-cream/80">
-                    Add a few pantry ingredients and they&apos;ll show up here.
-                  </span>
-                )}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <label className="space-y-2">
-          <span className="text-sm font-semibold text-ink">Pantry Check</span>
-          <textarea
-            className="min-h-32 w-full rounded-3xl border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
-            onChange={(event) => onPantryItemsChange(event.target.value)}
-            placeholder="Type any additional ingredients you have that are not listed above (e.g., leftover chicken, half an onion)..."
-            value={formState.pantryItems}
-          />
-        </label>
+        <section className="rounded-3xl border border-pine/20 bg-white p-4"><button type="button" aria-expanded={isPantryOpen} onClick={onTogglePantryOpen} className="flex min-h-12 w-full items-center justify-between gap-3 text-left font-semibold text-pine"><span>Pantry Snapshot · {pantryEntries.length} ingredients</span><span>{isPantryOpen?"Hide":"Open"}</span></button>{isPantryOpen?<SmartCartPantryEditor entries={pantryEntries} options={pantryQuickSelectOptions} onChange={onPantryEntriesChange} requirements={pantryRequirements}/>:null}</section>
 
         <fieldset className="rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
           <legend className="px-2 text-sm font-semibold text-ink">Meals to plan</legend>
-          <p className="text-sm leading-6 text-ink/70">Seven dinner picks included. Optional breakfast and lunch are available to everyone.</p>
+          <p className="text-sm leading-6 text-ink/70">Seven dinner picks included. Breakfast and lunch are planned for a future update. Existing saved meals remain available.</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" checked={formState.includeBreakfast} onChange={(event) => onIncludeBreakfastChange(event.target.checked)} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Include breakfast · 3 options</span></label>
-            <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" checked={formState.includeLunch} onChange={(event) => onIncludeLunchChange(event.target.checked)} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Include lunch · 3 options</span></label>
+            <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" disabled checked={false} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Breakfast · future update</span></label>
+            <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" disabled checked={false} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Lunch · future update</span></label>
           </div>
           <p className="hidden md:block mt-3 text-xs leading-5 text-ink/60">Only meals you add to This Week go onto your shopping list. The budget covers all selected meal types.</p>
         </fieldset>
@@ -632,82 +509,6 @@ export function SmartCartContextForm({
         </div>
       </form>
 
-        {isPantrySelectionOpen ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-10 md:hidden">
-          <div className="mx-auto flex max-h-[72vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
-            <div className="flex justify-center pt-3">
-              <span className="h-1.5 w-12 rounded-full bg-stone-300" />
-            </div>
-            <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 pb-4 pt-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/55">
-                  Pantry
-                </p>
-                <p className="mt-1 font-display text-2xl text-ink">Quick-select staples</p>
-              </div>
-              <button
-                className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink"
-                onClick={onTogglePantrySelectionOpen}
-                type="button"
-              >
-                Close
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
-              <div className="space-y-2 rounded-md bg-gray-50 p-3 text-xs text-gray-700">
-                <p>
-                  <strong>Clicked:</strong> you have enough and we skip buying it.
-                </p>
-                <p>
-                  <strong>Unclicked:</strong> we add it to your shopping list.
-                </p>
-              </div>
-              <div className="mt-4 space-y-3 pr-1">
-              {Object.entries(pantryQuickSelectOptions).map(([category, items]) => (
-                <div
-                  key={`mobile-${category}`}
-                  className={`rounded-3xl border p-4 ${
-                    pantryCategoryStyles[category] ?? "border-stone-200 bg-white"
-                  }`}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-berry/70">
-                    {category}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {items.map((item) => {
-                      const isFullyStocked = fullyStocked.has(item);
-                      const stateClass = isFullyStocked
-                        ? "border-green-800 bg-green-700 text-white"
-                        : "border-gray-300 bg-white text-ink hover:border-orange-300 hover:bg-orange-50";
-
-                      return (
-                        <button
-                          key={`mobile-${item}`}
-                          className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${stateClass}`}
-                          onClick={() => onToggleQuickItem(item)}
-                          type="button"
-                        >
-                          {item}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-              </div>
-            </div>
-            <div className="border-t border-stone-200 px-5 py-4">
-              <button
-                className="w-full rounded-full bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"
-                onClick={onTogglePantrySelectionOpen}
-                type="button"
-              >
-                Finish Pantry Selection
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

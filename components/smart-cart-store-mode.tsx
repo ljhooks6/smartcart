@@ -89,12 +89,13 @@ export function SmartCartStoreMode({ open, onClose, groups, checkedItems, custom
                 return <li key={item.item_key} className="rounded-2xl border border-stone-200 bg-white p-4">
                   <label className="flex min-h-14 cursor-pointer items-center gap-4">
                     <input type="checkbox" aria-label={`Collect ${item.name}`} checked={checked} onChange={() => onToggleItem(item.item_key)} className="h-8 w-8 shrink-0 accent-pine" />
-                    <span><span className={`block text-lg font-semibold ${checked ? "text-ink/50 line-through" : "text-ink"}`}>{item.name}</span><span className="mt-1 block text-sm text-ink/65">{item.needed_amount ? `Need ${item.needed_amount}` : ""}{item.buy_amount ? `${item.needed_amount ? " · " : ""}Buy ${item.buy_amount}` : ""}</span></span>
+                    <span><span className={`block text-lg font-semibold ${checked ? "text-ink/50 line-through" : "text-ink"}`}>{item.name}</span><span className="mt-1 block text-sm text-ink/65">{item.needed_amount ? `Recipes use ${item.needed_amount}` : ""}{item.shortage_amount ? ` · Still need ${item.shortage_amount}` : ""}{item.buy_amount ? ` · Buy ${item.buy_amount}` : ""}</span></span>
                   </label>
                   <div className="mt-3 flex items-start justify-between gap-3">
                     <details className="min-w-0 flex-1 text-sm text-ink/65"><summary className="min-h-11 cursor-pointer py-3 font-semibold text-pine">Meal & ingredient details</summary>
                       {item.meal_names?.length ? <p className="py-2">For: {item.meal_names.join(", ")}</p> : <p className="py-2">Pantry restock item.</p>}
                       {item.usage_notes?.map(note => <p key={note.meal} className="mb-2 leading-6"><strong>{note.meal}:</strong> {note.usage}</p>)}
+                      {item.pantry_note ? <p className="py-2">{item.pantry_note}</p> : null}
                       {item.flexibility_note ? <p className="py-2">{item.flexibility_note}</p> : null}
                     </details>
                     <button type="button" aria-label={`Remove ${item.name}`} onClick={() => onRemoveItem(item.item_key)} className="min-h-11 px-2 text-sm font-semibold text-red-700">Remove</button>

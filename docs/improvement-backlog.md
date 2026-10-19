@@ -16,3 +16,16 @@ Recommendations found during normal development. These are **not approved work**
 - **Potential ongoing costs:** No new paid service, AI calls or storage. Minor copy, accessibility and regression-test maintenance.
 
 No unrelated enhancement is authorized by this document.
+
+## IMP-004 — Reconcile measured pantry stock after cooking
+
+- **Status:** Proposed; awaiting owner consideration. Not implemented in this workstream.
+- **Evidence / confidence:** Confirmed during the quantity-accounting work: “Cooked It” removes a meal from This Week but does not measure what was actually used or update physical pantry inventory. Automatic deduction would also be unreliable when users change portions, substitute ingredients or skip cooking steps.
+- **Problem / opportunity:** A quantity snapshot can become stale after cooking, producing an understated shortage for a later plan unless the user updates it.
+- **Recommendation / user benefit:** Offer an optional, editable “Review pantry used” step after cooking. Show proposed compatible deductions once, require confirmation, and allow correction/undo. Never infer consumption merely from opening a recipe or regenerating a grocery list. This would help keep later shopping requirements accurate.
+- **Implementation complexity:** Medium.
+- **Priority:** Medium.
+- **Beneficiaries:** Both tiers for current-session pantry use; Plus for persistent inventory.
+- **Dependencies:** Owner approval; stable quantity model; idempotent owner-scoped consumption records and concurrency review before persistent updates. The current work explicitly tells users to update their snapshot after cooking.
+- **Risks:** Incorrect automatic deductions, double consumption, stale cross-device quantities and accidental inventory loss. Existing food/dietary checks must not be replaced by inventory estimates.
+- **Potential ongoing costs:** No paid ingredient API required. Possible small database/storage cost and continued conversion/undo regression maintenance.

@@ -19,10 +19,11 @@ type Props = FirstUseGuidanceProps & {
   onRemoveFromWeeklyMenu: (meal: MealPlanItem) => void | Promise<void>;
   onToggleCardDetails: (key: string) => void;
   onScheduleMeal: (meal: MealPlanItem, day: CookingDay | undefined) => void;
+  onManageSchedule?: (meal:MealPlanItem)=>void;
   recipeLoadingMeal: string | null; savedDesserts: MealPlanItem[]; weeklyMenu: MealPlanItem[];
 };
 
-export function SmartCartCookSections({ showGuidance, onDismissGuidance, expandedDetailCards, onArchiveMeal, onGetRecipe, onRemoveFromWeeklyMenu, onToggleCardDetails, onScheduleMeal, recipeLoadingMeal, savedDesserts, weeklyMenu }: Props) {
+export function SmartCartCookSections({ showGuidance, onDismissGuidance, expandedDetailCards, onArchiveMeal, onGetRecipe, onRemoveFromWeeklyMenu, onToggleCardDetails, onScheduleMeal,onManageSchedule, recipeLoadingMeal, savedDesserts, weeklyMenu }: Props) {
   const total = weeklyMenu.length + savedDesserts.length;
   const renderMeal = (meal: MealPlanItem) => {
     const key = `saved-${meal.day}::${meal.name}`;
@@ -30,7 +31,7 @@ export function SmartCartCookSections({ showGuidance, onDismissGuidance, expande
       <p className="text-xs font-semibold uppercase tracking-wide text-berry">{mealKindLabel(getMealKind(meal))} · {meal.scheduledDay ?? "Flexible"}</p>
       <h3 className="mt-2 font-display text-xl text-ink">{meal.name}</h3>
       <p className="mt-2 text-sm text-ink/70">Serves {meal.servings}</p>
-      <div className="mt-4"><SmartCartDayPicker value={meal.scheduledDay} onChange={(day) => onScheduleMeal(meal, day)} /></div>
+      <div className="mt-4"><SmartCartDayPicker value={meal.scheduledDay} meals={weeklyMenu} meal={meal} onChange={(day) => onScheduleMeal(meal, day)} />{onManageSchedule?<button type="button" onClick={()=>onManageSchedule(meal)} className="mt-2 min-h-11 text-sm font-semibold text-pine underline">Move or swap days</button>:null}</div>
       <div className="mt-4"><SmartCartMealActions inThisWeek recipeLoading={recipeLoadingMeal === meal.name} onViewRecipe={() => void onGetRecipe(meal)} onSaveToVault={() => void onArchiveMeal(meal)} more={<>
         <SmartCartMealDetails expanded={expandedDetailCards.has(key)} onToggle={() => onToggleCardDetails(key)} description={meal.description} notes={meal.notes} />
         <button type="button" onClick={() => void onRemoveFromWeeklyMenu(meal)} className="min-h-11 w-full rounded-xl border border-pine/20 px-3 py-3 text-left text-sm font-semibold text-pine">Cooked It</button>

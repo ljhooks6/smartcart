@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import {normalizePantry,type PantryEntry} from "./pantry";
 
 export const SMART_CART_FORM_STORAGE_KEY = "smartcart-smart-context-form";
 export const SMART_CART_WEEKLY_MENU_STORAGE_KEY = "smartcart-weekly-menu";
@@ -94,6 +95,12 @@ export async function fetchOwnedPantryItems(userId: string) {
     .map((item: PantryInventoryRow) => item.ingredient_name)
     .filter((ingredientName): ingredientName is string => typeof ingredientName === "string");
 }
+export async function fetchPantrySnapshot(userId:string):Promise<{entries:PantryEntry[];supportsQuantities:boolean}>{
+  if(!userId)return {entries:[],supportsQuantities:false};
+  const {data,error}=await supabase.from("pantry_inventory").select("ingredient_name,is_owned,quantity,quantity_unit,stock_status").eq("user_id",userId);
+  if(error){if(["42703","PGRST204"].includes(error.code))return {entries:normalizePantry(await fetchOwnedPantryItems(userId)),supportsQuantities:false};throw error;}
+  return {entries:normalizePantry((data??[]).filter(r=>r.is_owned||r.stock_status==="restock").map(r=>({name:r.ingredient_name,quantity:r.quantity==null?undefined:Number(r.quantity),unit:r.quantity_unit,status:r.stock_status}))),supportsQuantities:true};
+}
 
 export async function fetchSavedMealRows(userId: string) {
   if (!userId) {
@@ -133,7 +140,7 @@ export async function fetchArchivedMealRows(userId: string) {
 export async function saveWeekToCloud(
   userId: string,
   weeklyMenuRows: Array<Record<string, unknown>>,
-  pantryItems: string[] | null,
+  pantryItems: string[] | Array<Record<string,unknown>> | null,
 ) {
   if (!userId) {
     return;

@@ -1,4 +1,5 @@
 import { foodSafetyResponse } from "@/lib/food-safety-response";
+import {optionalMealPauseResponse} from "@/lib/meal-availability";
 import { requireProductAccess } from "@/lib/product-access";
 import { requireAgreements } from "@/lib/legal-agreements";
 import { assessDiet, ingredientTexts } from "@/lib/dietary-safety";
@@ -99,6 +100,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const paused=optionalMealPauseResponse(payload);if(paused)return paused;
   const parsedRequest = mealPlanRequestSchema.safeParse(payload);
 
   if (!parsedRequest.success) {

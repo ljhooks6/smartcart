@@ -13,6 +13,7 @@ type Props = {
   collectedCount: number;
   pantryCount: number;
   estimatedCost: string;
+  pricingIncomplete?: boolean;
   budget: string;
   overBudget: boolean;
   hasIngredients: boolean;
@@ -21,7 +22,7 @@ type Props = {
   onNavigate: (stage: "plan" | "meals" | "shop" | "cook" | "vault") => void;
 };
 
-export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, groceryCount, collectedCount, pantryCount, estimatedCost, budget, overBudget, hasIngredients, hasOptions, vaultCount, onNavigate }: Props) {
+export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, groceryCount, collectedCount, pantryCount, estimatedCost, pricingIncomplete=false, budget, overBudget, hasIngredients, hasOptions, vaultCount, onNavigate }: Props) {
   const titleId = useId();
   const readyCount = dinners.length + desserts.length;
   const chosenSummary = (["breakfast", "lunch", "dinner"] as const).map((kind) => {
@@ -54,7 +55,7 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
         </div>
         {groceryCount > 0 ? <progress aria-label="Grocery collection progress" value={collectedCount} max={groceryCount} className="brand-progress mt-3 h-2 w-full" /> : null}
         <p className="mt-3 text-sm text-ink/65">Estimated groceries <strong className="text-ink">{estimatedCost}</strong> · {budget} budget</p>
-        <p className={`mt-1 text-xs leading-5 ${overBudget ? "font-semibold text-red-700" : "text-ink/70"}`}>{overBudget ? "Above your budget. Review your meals or shopping list." : "Approximate prices; household extras are excluded."}</p>
+        <p className={`mt-1 text-xs leading-5 ${overBudget ? "font-semibold text-red-700" : "text-ink/70"}`}>{pricingIncomplete ? "Package prices are unavailable. Confirm sizes and store prices before comparing the list with your budget." : overBudget ? "Above your budget. Review your meals or shopping list." : "Approximate prices; household extras are excluded."}</p>
       </div> : null}
 
       {readyCount > 0 ? <div className="mt-5">

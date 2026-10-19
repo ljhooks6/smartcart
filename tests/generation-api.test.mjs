@@ -15,7 +15,7 @@ function loader(mocks) {
     function resolve(name) {
       for(const [key,value] of Object.entries(mocks))if(name===key||name.endsWith('/'+key))return value;
       if(name==='next/server')return {NextResponse:{json:(body,init)=>Response.json(body,init)}};
-      if(name.startsWith('@/')||name.startsWith('.'))return load((name.startsWith('@/')?path.join(root,name.slice(2)):path.resolve(path.dirname(file),name))+'.ts');
+      if(name.startsWith('@/')||name.startsWith('.'))return load((name.startsWith('@/')?path.join(root,name.slice(2)):path.resolve(path.dirname(file),name))+(name.endsWith('.ts')?'':'.ts'));
       return require(name);
     }
     new Function('require','module','exports',source)(resolve,module,module.exports);cache.set(file,module.exports);return module.exports;

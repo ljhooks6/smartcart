@@ -16,6 +16,8 @@ import { SmartCartContextForm } from "./smart-cart-context-form";
 import { SmartCartStoreMode } from "./smart-cart-store-mode";
 import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
 import { deriveGroceryLists } from "../lib/grocery-list";
+import {normalizePantry,readOwnedPantry,pantryStorageKey,pantryNames,pantryCloudPayload,type PantryEntry} from "../lib/pantry";
+import {getIngredientKey} from "../lib/grocery-list";
 import { restoreMealAtPosition, undoCookedEntry } from "../lib/meal-recovery";
 import { countCookedThisWeek } from "../lib/week-progress";
 import { getMealKind, mealKindLabel, hasRoomForMeal } from "../lib/meal-types";
@@ -27,7 +29,7 @@ import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
 import { SmartCartHeroHeader } from "./smart-cart-hero-header";
 import { SmartCartAccountDialog } from "./smart-cart-account-dialog";
 import { SmartCartScheduleDialog } from "./smart-cart-schedule-dialog";
-import { normalizeCookingDay, setCookingDay, type CookingDay } from "../lib/meal-schedule";
+import { bindNewMealOwner, mealsForOwner, assignCookingDay, normalizeCookingDay, setCookingDay, type CookingDay } from "../lib/meal-schedule";
 import { SmartCartWelcome } from "./smart-cart-welcome";
 import { SmartCartLibrarySections } from "./smart-cart-library-sections";
 import { SmartCartMealSections } from "./smart-cart-meal-sections";
@@ -43,7 +45,7 @@ import {
 import {
   clearStoredJson,
   fetchArchivedMealRows,
-  fetchOwnedPantryItems,
+  fetchPantrySnapshot,
   fetchSavedMealRows,
   saveWeekToCloud,
   saveStoredJson,
@@ -603,6 +605,8 @@ function mergeAmounts(baseAmount: string | undefined, nextAmount: string) {
   return `${displayValue} ${baseParts.unit}`;
 }
 
+type LegacyPantryForm = Partial<FormState> & {selectedQuickItems?:string[];fullyStocked?:string[];runningLow?:string[];restock?:string[]};
+
 export function SmartCartApp() {
   const firstUseGuidance = useFirstUseGuidance();
   type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -646,6 +650,8 @@ export function SmartCartApp() {
   generationInFlight.current = isLoading;
   const [generatedPlan, setGeneratedPlan] =
     useState<GenerateListResponse | null>(null);
+  const [pantrySnapshot,setPantrySnapshot]=useState<{owner:string;ready:boolean;entries:PantryEntry[]}>({owner:"",ready:false,entries:[]});
+  const [pantryCloudReady,setPantryCloudReady]=useState(false);
   const [fullyStocked, setFullyStocked] = useState<Set<string>>(new Set());
   const [runningLow, setRunningLow] = useState<Set<string>>(new Set());
   const [restock, setRestock] = useState<Set<string>>(new Set());
@@ -661,9 +667,13 @@ export function SmartCartApp() {
   const [toastTone, setToastTone] = useState<ToastTone>("info");
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog>(null);
   const [confirmDontShowAgain, setConfirmDontShowAgain] = useState(false);
-  const [weeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
-  const [savedDesserts, setSavedDesserts] = useState<MealPlanItem[]>([]);
-  const [archivedMeals, setArchivedMeals] = useState<MealPlanItem[]>([]);
+  const [storedWeeklyMenu, setWeeklyMenu] = useState<MealPlanItem[]>([]);
+  const [storedDesserts, setSavedDesserts] = useState<MealPlanItem[]>([]);
+  const [storedArchivedMeals, setArchivedMeals] = useState<MealPlanItem[]>([]);
+  const currentOwner=user?.id??"";
+  const weeklyMenu=useMemo(()=>mealsForOwner(storedWeeklyMenu,currentOwner),[storedWeeklyMenu,currentOwner]);
+  const savedDesserts=useMemo(()=>mealsForOwner(storedDesserts,currentOwner),[storedDesserts,currentOwner]);
+  const archivedMeals=useMemo(()=>mealsForOwner(storedArchivedMeals,currentOwner),[storedArchivedMeals,currentOwner]);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [replacingMealKey, setReplacingMealKey] = useState<string | null>(null);
   const [replacingDessertKey, setReplacingDessertKey] = useState<string | null>(null);
@@ -674,7 +684,7 @@ export function SmartCartApp() {
   const [hasLoadedGeneratedPlan, setHasLoadedGeneratedPlan] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("week");
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [mealToSchedule, setMealToSchedule] = useState<{ meal: MealPlanItem; fromVault: boolean } | null>(null);
+  const [mealToSchedule, setMealToSchedule] = useState<{ meal: MealPlanItem; fromVault: boolean;editing?:boolean } | null>(null);
   useEffect(() => { setMealToSchedule(null); }, [user?.id]);
   const mobileScrollPositions = useRef<Partial<Record<MobileTab, number>>>({});
   const [isStoreMode, setIsStoreMode] = useState(false);
@@ -852,14 +862,7 @@ export function SmartCartApp() {
         });
       }
 
-      const parsed = loadStoredJson<
-        Partial<FormState> & {
-          selectedQuickItems?: string[];
-          fullyStocked?: string[];
-          runningLow?: string[];
-          restock?: string[];
-        }
-      >(SMART_CART_FORM_STORAGE_KEY);
+      const parsed = loadStoredJson<LegacyPantryForm>(SMART_CART_FORM_STORAGE_KEY);
 
       if (!parsed) {
         return;
@@ -873,14 +876,14 @@ export function SmartCartApp() {
         householdSize: parsed.householdSize ?? current.householdSize,
         mealSourceMode:
           parsed.mealSourceMode === "pantry-only" ? "pantry-only" : "pantry-and-store",
-        pantryItems: parsed.pantryItems ?? current.pantryItems,
+        pantryItems: "",
         mustHaveIngredient:
           parsed.mustHaveIngredient ?? current.mustHaveIngredient,
         avoidIngredients:
           parsed.avoidIngredients ?? current.avoidIngredients,
         includeDessert: parsed.includeDessert ?? current.includeDessert,
-        includeBreakfast: parsed.includeBreakfast ?? false,
-        includeLunch: parsed.includeLunch ?? false,
+        includeBreakfast: false,
+        includeLunch: false,
         prepTime: parsed.prepTime ?? current.prepTime,
         adventureLevel: parsed.adventureLevel ?? current.adventureLevel,
         isBudgetTight: parsed.isBudgetTight ?? current.isBudgetTight,
@@ -888,15 +891,9 @@ export function SmartCartApp() {
           parsed.availableEquipment ?? current.availableEquipment,
       }));
 
-      if (parsed.fullyStocked || parsed.runningLow) {
-        setFullyStocked(new Set(parsed.fullyStocked ?? []));
-        setRunningLow(new Set());
-        setRestock(new Set());
-      } else {
-        setFullyStocked(new Set(parsed.selectedQuickItems ?? []));
-        setRunningLow(new Set());
-        setRestock(new Set());
-      }
+      // The legacy global pantry has no owner. Preserve it privately, but do
+      // not assign one account's pantry to the next person using this browser.
+      if(!loadStoredJson("mealcaddie-legacy-pantry-unclaimed-v1")&&(parsed.pantryItems||parsed.fullyStocked?.length||parsed.selectedQuickItems?.length||parsed.runningLow?.length||parsed.restock?.length))saveStoredJson("mealcaddie-legacy-pantry-unclaimed-v1",{pantryItems:parsed.pantryItems,fullyStocked:parsed.fullyStocked,selectedQuickItems:parsed.selectedQuickItems,runningLow:parsed.runningLow,restock:parsed.restock});
     } catch {
       clearStoredJson(SMART_CART_FORM_STORAGE_KEY);
     }
@@ -911,14 +908,16 @@ export function SmartCartApp() {
       return;
     }
 
+    const legacyPantryForm=loadStoredJson<LegacyPantryForm>(SMART_CART_FORM_STORAGE_KEY);
     saveStoredJson(
       SMART_CART_FORM_STORAGE_KEY,
       {
         ...formState,
-        pantryItems: canPersistPantryMemory ? formState.pantryItems : "",
-        fullyStocked: canPersistPantryMemory ? Array.from(fullyStocked) : [],
-        runningLow: canPersistPantryMemory ? Array.from(runningLow) : [],
-        restock: canPersistPantryMemory ? Array.from(restock) : [],
+        pantryItems: legacyPantryForm?.pantryItems??"",
+        selectedQuickItems: legacyPantryForm?.selectedQuickItems??[],
+        fullyStocked: legacyPantryForm?.fullyStocked??[],
+        runningLow: legacyPantryForm?.runningLow??[],
+        restock: legacyPantryForm?.restock??[],
       },
     );
   }, [
@@ -1007,22 +1006,16 @@ export function SmartCartApp() {
     window.scrollTo({ top: mobileScrollPositions.current[activeMobileTab] ?? 0, behavior: "instant" });
   }, [activeMobileTab]);
 
-  const combinedPantryItems = useMemo(() => {
-    const typedItems = formState.pantryItems
-      .split(",")
-      .filter((item) => typeof item === "string")
-      .map((item) => safeTrim(item))
-      .filter(Boolean);
+  const pantryEntries=useMemo(()=>pantrySnapshot.owner===planOwner&&pantrySnapshot.ready?normalizePantry([...Array.from(fullyStocked,name=>({name,status:"stocked"})),...Array.from(runningLow,name=>({name,status:"low"})),...Array.from(restock,name=>({name,status:"restock"})),...formState.pantryItems.split(",").map(v=>v.trim()).filter(Boolean),...pantrySnapshot.entries]):[],[pantrySnapshot,planOwner,fullyStocked,runningLow,restock,formState.pantryItems]);
+  const combinedPantryItems=useMemo(()=>pantryNames(pantryEntries),[pantryEntries]);
+  const pantryPayload=useMemo(()=>pantryCloudPayload(pantryEntries),[pantryEntries]);
+  function changePantryEntries(entries:PantryEntry[]){
+    setPantrySnapshot({owner:planOwner,ready:true,entries:normalizePantry(entries)});
+    setFullyStocked(new Set());setRunningLow(new Set());setRestock(new Set());
+    setFormState(current=>({...current,pantryItems:""}));
+  }
 
-    return Array.from(
-      new Set([
-        ...Array.from(fullyStocked),
-        ...typedItems,
-      ]),
-    );
-  }, [formState.pantryItems, fullyStocked]);
-
-  const currentSnapshot = weekSnapshot(weeklyMenu, savedDesserts, canPersistPantryMemory ? combinedPantryItems : null);
+  const currentSnapshot = weekSnapshot(weeklyMenu, savedDesserts, canPersistPantryMemory ? pantryPayload : null);
   const currentSnapshotRef = useRef(currentSnapshot);
   currentSnapshotRef.current = currentSnapshot;
 
@@ -1031,7 +1024,7 @@ export function SmartCartApp() {
     const dirty = currentSnapshot !== savedSnapshot;
     const stored = saveStoredJson(weekDraftKey(user.id), {
       userId: user.id, dinners: weeklyMenu, desserts: savedDesserts,
-      pantry: canPersistPantryMemory ? combinedPantryItems : [], dirty,
+      pantry: canPersistPantryMemory ? combinedPantryItems : [], pantryEntries:canPersistPantryMemory?pantryPayload:[],dirty,
     });
     setLocalSaveFailed(!stored);
     if (saveStatus !== "saving" && saveStatus !== "error") {
@@ -1040,7 +1033,7 @@ export function SmartCartApp() {
         ? stored ? "Changes saved on this computer. Save to sync them across devices." : "This browser could not keep a draft. Save to cloud before leaving."
         : canPersistPantryMemory ? "Your week and pantry are saved to cloud." : "Your week is saved to cloud. Pantry memory is a Plus feature.");
     }
-  }, [user?.id, loadedCloudUser, recoveredDraftUser, currentSnapshot, savedSnapshot, weeklyMenu, savedDesserts, canPersistPantryMemory, combinedPantryItems, saveStatus]);
+  }, [user?.id, loadedCloudUser, recoveredDraftUser, currentSnapshot, savedSnapshot, weeklyMenu, savedDesserts, canPersistPantryMemory, combinedPantryItems,pantryPayload, saveStatus]);
 
   useEffect(() => {
     setLoadedCloudUser(null);
@@ -1049,7 +1042,11 @@ export function SmartCartApp() {
     setSaveStatus("idle");
     setCloudSyncMessage("");
     setArchivedMeals([]);
+    setMealToSchedule(null);
     setVaultLoadError(null);
+    setPantrySnapshot({owner:user?.id||"guest",ready:false,entries:[]});setPantryCloudReady(false);
+    setFullyStocked(new Set());setRunningLow(new Set());setRestock(new Set());
+    setFormState(current=>({...current,pantryItems:""}));
     if (user?.id) {
       setGuestStorageReady(false);
       setWeeklyMenu([]);
@@ -1059,10 +1056,14 @@ export function SmartCartApp() {
     }
   }, [user?.id]);
 
-  const selectedPantryItems = useMemo(
-    () => Array.from(fullyStocked).map((item) => safeTrim(item)).filter(Boolean),
-    [fullyStocked],
-  );
+  useEffect(()=>{
+    if(!hasResolvedAuthSession||isProfileLoading)return;
+    const restored=canPersistPantryMemory?readOwnedPantry(loadStoredJson(pantryStorageKey(planOwner)),planOwner):[];
+    setPantrySnapshot(current=>current.owner===planOwner&&current.ready?current:{owner:planOwner,ready:true,entries:restored});
+  },[planOwner,canPersistPantryMemory,hasResolvedAuthSession,isProfileLoading]);
+  useEffect(()=>{
+    if(pantrySnapshot.owner===planOwner&&pantrySnapshot.ready&&canPersistPantryMemory)saveStoredJson(pantryStorageKey(planOwner),{owner:planOwner,entries:pantrySnapshot.entries});
+  },[pantrySnapshot,planOwner,canPersistPantryMemory]);
   const {
     checkedItems,
     copied,
@@ -1079,7 +1080,7 @@ export function SmartCartApp() {
     setNewCustomItem,
     skippedGroceriesByCategory,
     toggleCheckedItem,
-    totalCost,
+    totalCost,hasUnknownPrices,pantryRequirements,
     removeCustomItem,
     removeGroceryItem,
     removeRestoredItem,
@@ -1090,7 +1091,7 @@ export function SmartCartApp() {
     userId: safeTrim(user?.id),
     formatCurrency,
     fullyStocked,
-    pantryItems: combinedPantryItems,
+    pantryItems: [],pantryEntries,
     onCopyError: (message) => setRequestError(message),
     restock,
     runningLow,
@@ -1142,19 +1143,19 @@ export function SmartCartApp() {
   const rawBudgetPercentage = (totalCost / targetBudget) * 100;
   const budgetPercentage = Math.min(rawBudgetPercentage, 100);
   const budgetProgressBarClass =
-    rawBudgetPercentage > 100
+    hasUnknownPrices ? "bg-stone-400" : rawBudgetPercentage > 100
       ? "bg-red-500"
       : rawBudgetPercentage >= 80
         ? "bg-yellow-500"
         : "bg-green-500";
   const budgetStatusLabel =
-    rawBudgetPercentage > 100
+    hasUnknownPrices ? "Budget check pending" : rawBudgetPercentage > 100
       ? "Over Budget"
       : rawBudgetPercentage >= 80
         ? "Nearing Limit"
         : "On Track";
   const budgetStatusTextClass =
-    rawBudgetPercentage > 100
+    hasUnknownPrices ? "text-ink/65" : rawBudgetPercentage > 100
       ? "text-red-600"
       : rawBudgetPercentage >= 80
         ? "text-yellow-600"
@@ -1185,6 +1186,7 @@ export function SmartCartApp() {
   }
   const grocerySidebar = (
     <SmartCartGrocerySidebar
+      hasUnknownPrices={hasUnknownPrices}
                 {...firstUseGuidance.propsFor("shop")}
                 onEnterStoreMode={() => setIsStoreMode(true)}
                 undoMessage={undoMessage}
@@ -1220,15 +1222,15 @@ export function SmartCartApp() {
   const weekDashboard = <SmartCartWeekDashboard
     dinners={weeklyMenu} desserts={savedDesserts} cookedCount={cookedCount}
     groceryCount={groceryCount} collectedCount={collectedCount} pantryCount={pantryCount}
-    estimatedCost={formatCurrency(totalCost)} budget={formatCurrency(parsedBudget || 0)}
+    estimatedCost={hasUnknownPrices?"Estimate unavailable":formatCurrency(totalCost)} pricingIncomplete={hasUnknownPrices} budget={formatCurrency(parsedBudget || 0)}
     overBudget={totalCost > (parsedBudget || 0)}
     hasIngredients={[...weeklyMenu, ...savedDesserts].every(meal => Boolean(meal.ingredients?.length))}
     hasOptions={hasMealSurfaceContent} vaultCount={archivedMeals.length} onNavigate={navigateToStage}
   />;
-  const candidatePlan = useMemo(() => deriveGroceryLists({ fullyStocked, runningLow, restock, pantryItems: combinedPantryItems,
+  const candidatePlan = useMemo(() => deriveGroceryLists({ fullyStocked, runningLow, restock, pantryEntries, pantryItems: [],
     weeklyMenu: [...weeklyMenu, ...(generatedPlan?.meals ?? [])],
     savedDesserts: [...savedDesserts, ...(generatedPlan?.desserts ?? []).map(dessert => ({ name: dessert.title, ingredients: dessert.ingredients }))],
-  }), [fullyStocked, runningLow, restock, combinedPantryItems, weeklyMenu, savedDesserts, generatedPlan]);
+  }), [fullyStocked, runningLow, restock, pantryEntries, weeklyMenu, savedDesserts, generatedPlan]);
   const generationHandoff = generatedPlan ? <div className="mb-5 rounded-2xl border border-pine/20 bg-white p-5 lg:col-span-12" role="status">
     <p className="hidden md:block text-sm font-semibold text-pine">{(["dinner", "breakfast", "lunch"] as const).map((kind) => { const count = [...generatedPlan.meals, ...weeklyMenu].filter((meal) => getMealKind(meal) === kind).length; return count ? `${count} ${kind} options` : null; }).filter(Boolean).join(" · ")} · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
     <p className="text-sm font-semibold text-pine md:hidden">Your meal options are ready.</p>
@@ -1281,8 +1283,8 @@ export function SmartCartApp() {
           mustHaveIngredient: safeTrim(formState.mustHaveIngredient),
           avoidIngredients: safeTrim(formState.avoidIngredients),
           includeDessert: formState.includeDessert,
-          includeBreakfast: formState.includeBreakfast,
-          includeLunch: formState.includeLunch,
+          includeBreakfast: false,
+          includeLunch: false,
           adventureLevel: formState.adventureLevel,
           prepTime: formState.prepTime,
           availableEquipment: formState.availableEquipment,
@@ -1420,6 +1422,9 @@ export function SmartCartApp() {
   }
 
   function performSaveToWeeklyMenu(meal: MealPlanItem) {
+    const bound=bindNewMealOwner(meal,safeTrim(user?.id));
+    if(!bound)return;
+    meal=bound;
     const mealKey = `${meal.day}::${meal.name}`;
     const sweetTreat = isSweetTreatMeal(meal);
     const currentLineup = sweetTreat ? savedDesserts : weeklyMenu;
@@ -1450,13 +1455,17 @@ export function SmartCartApp() {
   }
 
   function handleSaveToWeeklyMenu(meal: MealPlanItem) {
-    setMealToSchedule({ meal, fromVault: false });
+    const bound=bindNewMealOwner(meal,safeTrim(user?.id));
+    if(!bound)return;
+    setMealToSchedule({ meal:bound, fromVault: false });
   }
 
-  function handleScheduleMeal(meal: MealPlanItem, day: CookingDay | undefined) {
-    const update = (current: MealPlanItem[]) => current.map(item => item.day === meal.day && item.name === meal.name ? setCookingDay(item, day) : item);
-    if (isSweetTreatMeal(meal)) setSavedDesserts(update);
-    else setWeeklyMenu(update);
+  function handleScheduleMeal(meal: MealPlanItem, day: CookingDay | undefined,mode:"move"|"swap"="move") {
+    if(meal.user_id!==safeTrim(user?.id))return;
+    const lineup=isSweetTreatMeal(meal)?savedDesserts:weeklyMenu;
+    const result=assignCookingDay(lineup,meal,day,mode);
+    if(!result.ok){showToast(result.message,"info");return;}
+    if(isSweetTreatMeal(meal))setSavedDesserts(result.meals);else setWeeklyMenu(result.meals);
   }
 
   function performRemoveFromWeeklyMenu(meal: MealPlanItem) {
@@ -1812,6 +1821,7 @@ export function SmartCartApp() {
     const userId = user?.id || "";
 
     setFormState(clearedFormState);
+    setPantrySnapshot({owner:planOwner,ready:true,entries:[]});
     setValidationError(null);
     setRequestError(null);
     setGeneratedPlan(null);
@@ -2078,9 +2088,9 @@ export function SmartCartApp() {
     return {
       dbId: fallback.dbId,
       user_id: safeTrim(
-        ("user_id" in (record ?? {})
+        fallback.user_id ?? ("user_id" in (record ?? {})
           ? (record as Partial<MealPlanItem>).user_id
-          : undefined) ?? fallback.user_id,
+          : undefined),
       ),
       day: safeTrim(
         ("day" in (record ?? {}) ? (record as Partial<MealPlanItem>).day : undefined) ??
@@ -2163,13 +2173,13 @@ export function SmartCartApp() {
     if (draft?.dirty) {
       setWeeklyMenu(draft.dinners);
       setSavedDesserts(draft.desserts);
-      if (canPersistPantryMemory) setFullyStocked(new Set(draft.pantry));
+      if (canPersistPantryMemory) setPantrySnapshot({owner:userId,ready:true,entries:normalizePantry(draft.pantryEntries??draft.pantry)});
     }
     setCloudSyncMessage("Loading your saved week...");
     try {
       const [ownedPantryItems, { dinners: hydratedDinners, desserts: hydratedDesserts }] =
         await Promise.all([
-          canPersistPantryMemory ? fetchOwnedPantryItems(userId) : Promise.resolve([]),
+          canPersistPantryMemory ? fetchPantrySnapshot(userId) : Promise.resolve({entries:[],supportsQuantities:false}),
           fetchSavedMeals(userId),
         ]);
 
@@ -2182,15 +2192,10 @@ export function SmartCartApp() {
       const recoverLegacy = !draft && (ownedLegacyDinners.length > 0 || ownedLegacyDesserts.length > 0);
       const resolvedWeeklyMenu = draft?.dirty ? draft.dinners : recoverLegacy ? ownedLegacyDinners : hydratedDinners;
       const resolvedSavedDesserts = draft?.dirty ? draft.desserts : recoverLegacy ? ownedLegacyDesserts : hydratedDesserts;
-      const resolvedPantryItems = ownedPantryItems
-        .map((ingredientName) => safeTrim(ingredientName))
-        .filter(Boolean);
-
-      if (canPersistPantryMemory) {
-        setFullyStocked(new Set(draft?.dirty ? draft.pantry : resolvedPantryItems));
-        setRunningLow(new Set());
-        setRestock(new Set());
-      }
+      const resolvedPantryEntries=ownedPantryItems.entries;
+      const resolvedPantryItems=pantryCloudPayload(resolvedPantryEntries);
+      setPantryCloudReady(ownedPantryItems.supportsQuantities);
+      if(canPersistPantryMemory){setPantrySnapshot({owner:userId,ready:true,entries:draft?.dirty?normalizePantry(draft.pantryEntries??draft.pantry):resolvedPantryEntries});setFullyStocked(new Set());setRunningLow(new Set());setRestock(new Set());}
 
       setWeeklyMenu(resolvedWeeklyMenu);
       setSavedDesserts(resolvedSavedDesserts);
@@ -2304,7 +2309,8 @@ export function SmartCartApp() {
         ...activeDessertRows,
       ];
 
-      await saveWeekToCloud(userId, weeklyMenuRows, canPersistPantryMemory ? combinedPantryItems : null);
+      if(canPersistPantryMemory&&!pantryCloudReady)throw new Error("Pantry quantity storage is not yet available. Your device draft is preserved; the reviewed database update is required before cloud sync.");
+      await saveWeekToCloud(userId, weeklyMenuRows, canPersistPantryMemory ? pantryPayload : null);
       if (currentUserId.current !== userId) return;
       setSavedSnapshot(snapshotBeingSaved);
       const stillSaved = currentSnapshotRef.current === snapshotBeingSaved;
@@ -2600,7 +2606,12 @@ export function SmartCartApp() {
         toastMessage={toastMessage}
         toastTone={toastTone}
       />
-      {mealToSchedule ? <SmartCartScheduleDialog key={`${mealToSchedule.meal.day}::${mealToSchedule.meal.name}`} meal={mealToSchedule.meal} onClose={() => setMealToSchedule(null)} onAdd={(day) => {
+      {mealToSchedule ? <SmartCartScheduleDialog key={`${mealToSchedule.meal.day}::${mealToSchedule.meal.name}`} meal={mealToSchedule.meal} meals={weeklyMenu} editing={mealToSchedule.editing} onClose={() => setMealToSchedule(null)} onAdd={(day,mode="move") => {
+        if(mealToSchedule.editing){handleScheduleMeal(mealToSchedule.meal,day,mode);setMealToSchedule(null);return;}
+        if(!isSweetTreatMeal(mealToSchedule.meal)&&!hasRoomForMeal(weeklyMenu,mealToSchedule.meal)){showToast("Your weekly meal selection is full. Remove a meal before adding another.","info");return;}
+        const result=assignCookingDay(weeklyMenu,mealToSchedule.meal,day,mode);
+        if(!result.ok){showToast(result.message,"info");return;}
+        if(mode==="swap"&&!isSweetTreatMeal(mealToSchedule.meal))setWeeklyMenu(result.meals.filter(item=>!(item.day===mealToSchedule.meal.day&&item.name===mealToSchedule.meal.name)));
         const meal = setCookingDay(mealToSchedule.meal, day);
         const fromVault = mealToSchedule.fromVault;
         setMealToSchedule(null);
@@ -2647,7 +2658,8 @@ export function SmartCartApp() {
             <div className="md:hidden"><DietarySafetySummary compact diet={formState.diet} value={generatedPlan} /></div>
             <SmartCartContextForm
               adventureLevelOptions={adventureLevelOptions}
-              combinedPantryItems={combinedPantryItems}
+              pantryEntries={pantryEntries} onPantryEntriesChange={changePantryEntries} pantryRequirements={pantryRequirements}
+            combinedPantryItems={combinedPantryItems}
               equipmentOptions={equipmentOptions}
               featureError={validationError || requestError}
               formState={formState}
@@ -2827,7 +2839,7 @@ export function SmartCartApp() {
                 recipeLoadingMeal={recipeLoadingMeal}
                 savedDesserts={savedDesserts}
                 weeklyMenu={weeklyMenu}
-                onScheduleMeal={handleScheduleMeal}
+                onScheduleMeal={handleScheduleMeal} onManageSchedule={meal=>setMealToSchedule({meal,fromVault:false,editing:true})}
               />
             </section>
 
@@ -2872,6 +2884,7 @@ export function SmartCartApp() {
           <div id="desktop-plan" className="scroll-mt-8" />
           <SmartCartContextForm
             adventureLevelOptions={adventureLevelOptions}
+            pantryEntries={pantryEntries} onPantryEntriesChange={changePantryEntries} pantryRequirements={pantryRequirements}
             combinedPantryItems={combinedPantryItems}
             equipmentOptions={equipmentOptions}
             featureError={validationError || requestError}
@@ -3021,7 +3034,7 @@ export function SmartCartApp() {
                 recipeLoadingMeal={recipeLoadingMeal}
                 savedDesserts={savedDesserts}
                 weeklyMenu={weeklyMenu}
-                onScheduleMeal={handleScheduleMeal}
+                onScheduleMeal={handleScheduleMeal} onManageSchedule={meal=>setMealToSchedule({meal,fromVault:false,editing:true})}
               />
             </div>
             <div id="desktop-vault" className="scroll-mt-8" />

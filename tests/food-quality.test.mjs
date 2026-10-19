@@ -13,7 +13,7 @@ function fixture({plan='free',invalid=false,outage=false,responses=[]}={}) {
  function load(file) {
   if(cache.has(file))return cache.get(file);const module={exports:{}};
   const code=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
-  const resolve=name=>name==='openai'?OpenAI:name==='next/server'?{NextResponse:{json:(body,init)=>Response.json(body,init)}}:name.endsWith('supabase-admin')?{getSupabaseAdminClient:()=>admin}:name.startsWith('@/')||name.startsWith('.')?load((name.startsWith('@/')?path.join(root,name.slice(2)):path.resolve(path.dirname(file),name))+'.ts'):require(name);
+  const resolve=name=>name==='openai'?OpenAI:name==='next/server'?{NextResponse:{json:(body,init)=>Response.json(body,init)}}:name.endsWith('supabase-admin')?{getSupabaseAdminClient:()=>admin}:name.startsWith('@/')||name.startsWith('.')?load((name.startsWith('@/')?path.join(root,name.slice(2)):path.resolve(path.dirname(file),name))+(name.endsWith('.ts')?'':'.ts')):require(name);
   new Function('require','module','exports',code)(resolve,module,module.exports);cache.set(file,module.exports);return module.exports;
  }
  return {calls,load,post:async(endpoint,input,token)=>load(path.join(root,'app/api',endpoint,'route.ts')).POST(new Request('http://test.local',{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(input)}))};

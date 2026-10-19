@@ -4,6 +4,7 @@ import { useEffect, useMemo, useReducer, useState } from "react";
 import { deriveGroceryLists, getIngredientKey, sortGroceryGroups, type GroceryListItem } from "../lib/grocery-list";
 
 import { emptyShoppingState, parseShoppingProgress, shoppingReducer } from "../lib/shopping-progress";
+import type {PantryEntry} from "../lib/pantry";
 
 type IngredientItem = {
   name: string;
@@ -23,6 +24,7 @@ type UseSmartCartGroceryArgs = {
   fullyStocked: Set<string>;
   onCopyError: (message: string) => void;
   pantryItems: string[];
+  pantryEntries?:PantryEntry[];
   restock: Set<string>;
   runningLow: Set<string>;
   savedDesserts: MealPlanItem[];
@@ -37,6 +39,7 @@ export function useSmartCartGrocery({
   fullyStocked,
   onCopyError,
   pantryItems,
+  pantryEntries,
   restock,
   runningLow,
   savedDesserts,
@@ -56,26 +59,32 @@ export function useSmartCartGrocery({
     const { undo: _undo, ...progress } = shopping;
     try { window.localStorage.setItem(storageKey, JSON.stringify(progress)); } catch { /* Keep this visit usable. */ }
   }, [shopping, loadedStorageKey, storageKey]);
-  const checkedItems = useMemo(() => new Set(shopping.checked), [shopping.checked]);
-  const restoredItems = shopping.restored;
-  const removedGroceryItems = shopping.removed;
-  const customItems = shopping.custom;
+  const ownedShopping=loadedStorageKey===storageKey?shopping:emptyShoppingState();
+  const restoredItems = ownedShopping.restored;
+  const removedGroceryItems = ownedShopping.removed;
+  const customItems = ownedShopping.custom;
   const [copied, setCopied] = useState(false);
   const [isGroceryOpen, setIsGroceryOpen] = useState(false);
   const [newCustomItem, setNewCustomItem] = useState("");
 
-  const { derivedGroceryList, skippedGroceryList } = useMemo(() => deriveGroceryLists({
-    fullyStocked, runningLow, restock, weeklyMenu, savedDesserts, pantryItems, restoredItems, removedGroceryItems,
+  const complete = useMemo(() => deriveGroceryLists({
+    fullyStocked, runningLow, restock, weeklyMenu, savedDesserts, pantryItems,pantryEntries, restoredItems,
   }), [
     fullyStocked,
     pantryItems,
-    removedGroceryItems,
+    pantryEntries,
     restock,
     restoredItems,
     runningLow,
     savedDesserts,
     weeklyMenu,
   ]);
+  const requirementFingerprints=Object.fromEntries([...complete.derivedGroceryList,...complete.skippedGroceryList].map(i=>[i.item_key,JSON.stringify([i.requirement_key,i.shortage_amount])]));
+  const checkedItems=new Set(ownedShopping.checked.filter(key=>!ownedShopping.fingerprints?.[key]||ownedShopping.fingerprints[key]===requirementFingerprints[key]));
+  const requirementContext=JSON.stringify(requirementFingerprints);
+  useEffect(()=>{if(loadedStorageKey===storageKey)dispatchShopping({type:"reconcile",requirements:JSON.parse(requirementContext)});},[requirementContext,loadedStorageKey,storageKey]);
+  const derivedGroceryList=complete.derivedGroceryList.filter(i=>!removedGroceryItems.includes(i.item_key)||(ownedShopping.fingerprints?.[i.item_key]&&ownedShopping.fingerprints[i.item_key]!==requirementFingerprints[i.item_key]));
+  const skippedGroceryList=complete.skippedGroceryList;
 
   const displayGroceriesByCategory = useMemo(() => {
     const grouped = derivedGroceryList.reduce<Record<string, GroceryListItem[]>>(
@@ -115,7 +124,7 @@ export function useSmartCartGrocery({
         `${category}\n${items
           .map(
             (item) =>
-              `- ${item.name}${item.needed_amount ? ` | Need: ${item.needed_amount}` : ""}${item.buy_amount ? ` | Buy: ${item.buy_amount}` : ""}${item.meal_names?.length ? ` | For: ${item.meal_names.join(", ")}` : ""}${item.usage_notes?.length ? ` | How used: ${item.usage_notes.map((note) => `${note.meal}: ${note.usage}`).join(" ")}` : ""} (${formatCurrency(item.estimated_price)})`,
+              `- ${item.name}${item.needed_amount ? ` | Recipes use: ${item.needed_amount}` : ""}${item.shortage_amount ? ` | Still need: ${item.shortage_amount}` : ""}${item.buy_amount ? ` | Buy: ${item.buy_amount}` : ""}${item.meal_names?.length ? ` | For: ${item.meal_names.join(", ")}` : ""}${item.pantry_note?` | ${item.pantry_note}`:""} (${item.price_status==="unavailable"?"Estimate unavailable":formatCurrency(item.estimated_price)})`,
           )
           .join("\n")}`,
       )
@@ -181,13 +190,15 @@ export function useSmartCartGrocery({
     resetGroceryState,
     restoredItems,
     setCustomItemChecked: (id: string, isChecked: boolean) => dispatchShopping({ type: "custom-check", id, checked: isChecked }),
-    undoMessage: shopping.undo?.message ?? null,
+    undoMessage: ownedShopping.undo?.message ?? null,
     undoLastGroceryAction: () => dispatchShopping({ type: "undo" }),
     setGroceryOpen: setIsGroceryOpen,
     setNewCustomItem,
     skippedGroceriesByCategory,
     toggleCheckedItem,
     totalCost,
+    hasUnknownPrices:derivedGroceryList.some(i=>i.price_status==="unavailable"),
+    pantryRequirements:complete.pantryRequirements,
     removeCustomItem: (id: string) => dispatchShopping({ type: "custom-remove", id }),
     removeGroceryItem: (itemKey: string) => dispatchShopping({ type: "remove", key: itemKey, name: derivedGroceryList.find(item => item.item_key === itemKey)?.name || "Item" }),
     removeRestoredItem: (name: string) => dispatchShopping({ type: "unrestore", key: getIngredientKey(name), name }),

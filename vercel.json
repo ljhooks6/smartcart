@@ -1,6 +1,7 @@
 {
   "git": {
     "deploymentEnabled": {
+      "feature/pantry-grocery-scheduling": false,
       "feature/recipe-quality-dietary-controls": false
     }
   },

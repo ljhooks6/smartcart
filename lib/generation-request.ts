@@ -8,7 +8,7 @@ export const generationRequestSchema = z.object({
   combinedPantryItems: text,
   fullyStocked: items.optional(), runningLow: items.optional(), restock: items.optional(),
   mustHaveIngredient: text.optional(), avoidIngredients: text.optional(),
-  includeDessert: z.boolean().optional(), includeBreakfast: z.boolean().optional(), includeLunch: z.boolean().optional(),
+  includeDessert: z.boolean().optional(), includeBreakfast: z.literal(false).optional(), includeLunch: z.literal(false).optional(),
   adventureLevel: z.string().max(200).optional(), cuisinePreference: z.string().max(200).optional(),
   apply_upgrades: z.boolean().optional(), existingMeals: text.optional(),
   recentRejectedMeals: z.array(z.string().min(1).max(180)).max(12).optional(),
