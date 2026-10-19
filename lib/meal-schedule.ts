@@ -36,3 +36,10 @@ export function mealsForOwner<T extends {user_id?:string}>(meals:T[],owner:strin
 export function bindNewMealOwner<T extends {user_id?:string}>(meal:T,owner:string):(T&{user_id:string})|null{
  return meal.user_id&&meal.user_id!==owner?null:{...meal,user_id:owner};
 }
+
+// Use the latest saved assignment, including changes made while replacement was
+// pending. Recipe fields come from the replacement; do not retain stale steps.
+export function replaceScheduledRecipe<T extends ScheduledMeal>(current:T,replacement:T):T{
+ if(current.user_id!==replacement.user_id||current.day!==replacement.day)return current;
+ return {...replacement,scheduledDay:current.scheduledDay};
+}

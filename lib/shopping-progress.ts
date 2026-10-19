@@ -16,7 +16,7 @@ export type ShoppingAction =
   | { type: "custom-check"; id: string; checked: boolean }
   | { type: "custom-remove"; id: string }
   | { type: "load"; progress: ShoppingProgress }
-  | {type:"reconcile";requirements:Record<string,string>}
+  | {type:"reconcile";requirements:Record<string,string>;ready?:boolean}
   | { type: "undo" }
   | { type: "reset" };
 
@@ -28,6 +28,7 @@ export function shoppingReducer(state: ShoppingState, action: ShoppingAction): S
   if (action.type === "reset") return emptyShoppingState();
   if (action.type === "load") return { ...action.progress, undo: null };
   if(action.type==="reconcile"){
+    if(action.ready===false)return state;
     const valid=(keys:string[])=>keys.filter(key=>action.requirements[key]!==undefined&&(!state.fingerprints?.[key]||state.fingerprints[key]===action.requirements[key]));
     return {...state,checked:valid(state.checked),removed:valid(state.removed),fingerprints:action.requirements,undo:null};
   }

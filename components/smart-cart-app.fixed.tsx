@@ -29,7 +29,8 @@ import { SmartCartGrocerySidebar } from "./smart-cart-grocery-sidebar";
 import { SmartCartHeroHeader } from "./smart-cart-hero-header";
 import { SmartCartAccountDialog } from "./smart-cart-account-dialog";
 import { SmartCartScheduleDialog } from "./smart-cart-schedule-dialog";
-import { bindNewMealOwner, mealsForOwner, assignCookingDay, normalizeCookingDay, setCookingDay, type CookingDay } from "../lib/meal-schedule";
+import { bindNewMealOwner, mealsForOwner, assignCookingDay, normalizeCookingDay, setCookingDay, replaceScheduledRecipe, type CookingDay } from "../lib/meal-schedule";
+import { replacementIngredientItems } from "../lib/recipe-ingredients";
 import { SmartCartWelcome } from "./smart-cart-welcome";
 import { SmartCartLibrarySections } from "./smart-cart-library-sections";
 import { SmartCartMealSections } from "./smart-cart-meal-sections";
@@ -523,45 +524,6 @@ function isSweetTreatMeal(meal: MealPlanItem) {
   return safeTrim(meal.day).toLowerCase().startsWith("sweet treat");
 }
 
-function estimateRestockPrice(itemName: string) {
-  const normalized = safeTrim(itemName).toLowerCase();
-  let estimate = 3;
-
-  if (
-    normalized.includes("steak") ||
-    normalized.includes("salmon") ||
-    normalized.includes("shrimp") ||
-    normalized.includes("seafood")
-  ) {
-    estimate = 10;
-  } else if (
-    normalized.includes("chicken") ||
-    normalized.includes("pork") ||
-    normalized.includes("beef") ||
-    normalized.includes("cheese")
-  ) {
-    estimate = 6;
-  } else if (
-    normalized.includes("oil") ||
-    normalized.includes("sauce") ||
-    normalized.includes("butter") ||
-    normalized.includes("milk")
-  ) {
-    estimate = 4;
-  } else if (
-    normalized.includes("rice") ||
-    normalized.includes("pasta") ||
-    normalized.includes("beans") ||
-    normalized.includes("carrots") ||
-    normalized.includes("produce") ||
-    normalized.includes("potatoes")
-  ) {
-    estimate = 2;
-  }
-
-  return Math.max(1, estimate);
-}
-
 function normalizeIngredientName(itemName: string) {
   return safeTrim(itemName).toLowerCase();
 }
@@ -760,6 +722,8 @@ export function SmartCartApp() {
   }, []);
 
   const planOwner = user?.id || "guest";
+  const currentPlanOwner = useRef(planOwner);
+  currentPlanOwner.current = planOwner;
   const rejectionStorageKey = `mealcaddie-rejected-meals:${planOwner}`;
   const recentRejectedMeals = rejectedHistory.owner === planOwner
     ? recentRejections(rejectedHistory.entries).map(entry => entry.title) : [];
@@ -1089,6 +1053,7 @@ export function SmartCartApp() {
     undoLastGroceryAction,
   } = useSmartCartGrocery({
     userId: safeTrim(user?.id),
+    requirementsReady: hasResolvedAuthSession && (user ? loadedCloudUser===user.id : guestStorageReady),
     formatCurrency,
     fullyStocked,
     pantryItems: [],pantryEntries,
@@ -2433,6 +2398,8 @@ export function SmartCartApp() {
         error?: string;
       };
 
+      if (currentPlanOwner.current !== planOwner) return;
+
       if (!response.ok) {
         setRequestError(`Error ${response.status}: ${data.error || "Request failed."}`);
         return;
@@ -2446,11 +2413,7 @@ export function SmartCartApp() {
         description: data.description,
         dietaryRestrictions: formState.diet,
         notes: `Approx. prep time: ${data.prepTime} minutes.`,
-        ingredients: data.ingredients.map((ingredient) => ({
-          name: ingredient,
-          amount: "1 pack",
-          price: Math.max(1, estimateRestockPrice(ingredient)),
-        })),
+        ingredients: replacementIngredientItems(data.ingredients),
       };
 
       setGeneratedPlan((current) => {
@@ -2459,6 +2422,7 @@ export function SmartCartApp() {
         }
 
         const nextMeals = [...current.meals];
+        if (currentPlanOwner.current !== planOwner) return current;
         nextMeals[index] = replacementMeal;
 
         const nextPlan = {
@@ -2473,7 +2437,7 @@ export function SmartCartApp() {
       setWeeklyMenu((current) =>
         current.map((savedMeal) =>
           `${savedMeal.day}::${savedMeal.name}` === mealKey
-            ? replacementMeal
+            ? replaceScheduledRecipe(savedMeal,replacementMeal)
             : savedMeal,
         ),
       );
@@ -2482,7 +2446,7 @@ export function SmartCartApp() {
         activeRecipeMeal &&
         `${activeRecipeMeal.day}::${activeRecipeMeal.name}` === mealKey
       ) {
-        setActiveRecipeMeal(replacementMeal);
+        setActiveRecipeMeal(current=>current&&`${current.day}::${current.name}`===mealKey?replaceScheduledRecipe(current,replacementMeal):current);
       }
     } catch (error) {
       setRequestError(

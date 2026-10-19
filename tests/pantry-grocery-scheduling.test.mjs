@@ -6,10 +6,22 @@ import {convertQuantity,parseIngredient} from '../lib/ingredient-quantity.ts';
 import {bindNewMealOwner,mealsForOwner,assignCookingDay,dinnerDayOccupancy,setCookingDay} from '../lib/meal-schedule.ts';
 import {emptyShoppingState,shoppingReducer,parseShoppingProgress} from '../lib/shopping-progress.ts';
 import {optionalMealPauseResponse} from '../lib/meal-availability.ts';
+import {replacementIngredientItems} from '../lib/recipe-ingredients.ts';
 const meal=(name,ingredients,extra={})=>({name,day:name,user_id:'synthetic-owner',ingredients:ingredients.map(([name,amount])=>({name,amount})),...extra});
 const derive=(extra={})=>deriveGroceryLists({fullyStocked:new Set(),runningLow:new Set(),restock:new Set(),weeklyMenu:[],savedDesserts:[],...extra});
 const item=(result,name)=>[...result.derivedGroceryList,...result.skippedGroceryList].find(i=>i.item_key===getIngredientKey(name));
 const week=[meal('Soup',[['Carrots','2'],['Rice','1 cup'],['Garlic powder','1/2 tsp']]),meal('Roast',[['1 carrot, grated','1 carrot'],['Rice','1/2 cup'],['Garlic powder','1/4 tsp']])];
+
+test('replacement ingredient lines retain actual amounts rather than invented packs or prices',()=>{
+ const replacement={...week[0],name:'Skillet',ingredients:replacementIngredientItems(['3 carrots','1/2 cup rice','1/4 tsp garlic powder','1 can chickpeas','salt to taste'])};
+ const r=derive({weeklyMenu:[replacement,week[1]],savedDesserts:[meal('Pudding',[['Rice','1/2 cup']])],pantryEntries:normalizePantry([{name:'Carrot',quantity:2,unit:'each'},{name:'Rice',quantity:1,unit:'cup'}])});
+ assert.equal(item(r,'Carrot').needed_amount,'4');assert.equal(item(r,'Carrot').shortage_amount,'2');
+ assert.equal(item(r,'Rice').needed_amount,'1.5 cups');assert.equal(item(r,'Rice').shortage_amount,'0.5 cups');
+ assert.equal(item(r,'Garlic powder').needed_amount,'0.5 tsp');
+ assert.equal(item(r,'Salt').needed_amount,'to taste');
+ assert.ok([...r.derivedGroceryList,...r.skippedGroceryList].every(i=>i.estimated_price===0&&!i.review_required));
+ assert.deepEqual(replacementIngredientItems(['mystery sauce']),[{name:'mystery sauce',amount:'',price:0}]);
+});
 
 test('aggregate all dinners and desserts before subtracting each pantry amount once',()=>{
  const result=derive({weeklyMenu:week,savedDesserts:[meal('Pudding',[['Rice','1/2 cup']])],pantryEntries:normalizePantry([{name:'Carrot',quantity:2,unit:'each'},{name:'Rice',quantity:1,unit:'cup'}])});

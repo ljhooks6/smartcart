@@ -1,6 +1,6 @@
 # Mobile verification — 2026-10-19
 
-Status: **responsive browser checks completed except the generated-meal replacement flow**. PR #10 remains draft and is not ready for release approval until that gap is resolved. All testing used normal Windows Chrome through the existing extension, the actual local built application, loopback-only synthetic auth/REST fixtures, and disposable data. No real accounts, hosted services, emails or paid AI calls were used.
+Status: **requested responsive browser checks, including generated-meal replacement, completed**. PR #10 remains draft and must not be marked ready for merge without owner approval. All testing used normal Windows Chrome through the existing extension, the actual local built application, loopback-only synthetic auth/REST/provider fixtures, and disposable data. No real accounts, hosted services, emails or paid AI calls were used.
 
 ## Results
 
@@ -17,7 +17,7 @@ Status: **responsive browser checks completed except the generated-meal replacem
 | Scheduling | All seven days show availability or the assigned dinner. Quick selector disables occupied days. Explicit swap moves Soup to Tuesday and Roast to Monday; subsequent move to Saturday and removal of Potato's assignment work. Save/reload preserves metadata. Historical breakfast/lunch remain visible. |
 | Keyboard | Enter opens scheduler; focus enters its Close button. Escape dismisses and restores focus to Move or swap days. Quantity Tab reaches its native unit select. |
 | Tier behavior / pause | Free displays 5 plans/week and ten Vault recipes; Plus displays its existing policy and persistent pantry. Breakfast/lunch controls disabled with future-update text for guest/Free/Plus. Server/admin bypass rejection and ownership enforcement covered by automated tests, not inferred from mock REST. |
-| Replacement browser flow | **Blocked:** local planning returns `Please start planning from MealCaddie` from the existing request-origin guard before reaching the generation fixture. No guard was weakened and no live generation was attempted. Actual generated-option replacement, and its end-to-end grocery refresh, still need a supported matching-origin local test. Automated replacement/reconciliation coverage passes. |
+| Replacement browser flow | **Pass:** authenticated Free at 320px and Plus at 390px. Real route validation/membership checks run before loopback provider responses. Selected dinner replacement updates quantities, preserves Monday and other occupied days, clears changed rice marks, retains unchanged ingredient/manual-extra marks, and survives Save Week/reload. |
 
 ## Confirmed regression fixed
 
@@ -32,14 +32,40 @@ After rebuilding, all 24 Free/Plus tab/width combinations fit: document width �
 ## Verification and evidence
 
 - Fresh standard `.next` production build: **pass**, exit 0; no source hashes, status, HEAD or branch changed during build. Owner ran the guarded helper in normal non-admin PowerShell because the earlier Codex filesystem EPERM remains unresolved.
-- After the layout correction: **299 tests passed, 0 failed, 0 skipped**; standalone TypeScript and standard Next lint passed. Build also ran lint/type validation. Existing next-lint deprecation and local queue-region fallback notices remain.
-- Browser console contained earlier fixture CORS errors, corrected before the successful account tests; no new application error was attributed to those historical entries. The request-origin rejection above is a separate, recorded limitation.
+- After the layout correction: **302 tests passed, 0 failed, 0 skipped**; standalone TypeScript and standard Next lint passed. Build also ran lint/type validation. Existing next-lint deprecation and local queue-region fallback notices remain.
+- Browser console contained earlier fixture CORS errors, corrected before the successful account tests; no new application error was attributed to those historical entries. The request-origin rejection was resolved by matching the localhost fixture/browser origin; application origin validation was unchanged.
 - Full local evidence outside the repository: `outputs/pantry-mobile-final-tab-matrix.json`, `pantry-mobile-plus-shop.txt`, `pantry-mobile-*.jpg/.png`, `pantry-grocery-mobile-fix-build.log`, `pantry-grocery-mobile-fix-after.json`, and `pantry-grocery-mobile-{regression,types,lint}.log`.
 - Disposable REST fixtures exercise browser behavior; they do not prove hosted Supabase RLS or substitute for the existing database authorization suite.
 
+## Final replacement acceptance and corrections
+
+Installed Next.js 15.5.14 `NextURL` normalizes 127.0.0.1 to localhost; `NextRequest.url` uses that normalized value. Chrome was sending Origin http://127.0.0.1:3012 while the handler compared http://localhost:3012. A direct installed-framework check confirmed 127.0.0.1 and a foreign origin fail the unchanged guard, while localhost matches.
+
+The supported local setup uses browser/application/fixture-CORS origin **http://localhost:3012**, with the server still bound only to 127.0.0.1. The same disposable service at 127.0.0.1:3013 supplies auth/REST and an OpenAI-compatible replacement response. The installed SDK's supported OPENAI_BASE_URL points only to that loopback provider route, with a dummy key. No URL-normalization flag, rewritten Origin, guard bypass, production key, shared migration, installation or hosted setting was needed. Normal-terminal restart was owner-assisted because of the established execution-context restriction.
+
+Actual verification exposed and corrected three related defects:
+
+- Replacement discarded the saved scheduledDay. It now preserves the latest current assignment and owner, while replacing recipe fields and rejecting a different owner/day. A stale response after an account switch cannot update the next account's generated plan.
+- Replacement ingredient strings were assigned an invented 1 pack and guessed price. They now retain their actual measurement/preparation line for the shared conservative parser; unverified prices remain unavailable.
+- Reload reconciled stored shopping marks against empty requirements before the saved week had loaded. Reconciliation now waits for the current owner's requirements. Real changes still clear stale marks.
+
+| Final acceptance | Before replacement | After replacement and Save Week/reload |
+|---|---|---|
+| Free, 320×900 | Monday Soup: 2 carrots, 1 cup rice, .5 tsp garlic powder; separate Sunday Pasta | Monday Tomato Chickpea Skillet: 3 carrots, .5 cup rice, .25 tsp garlic powder; lime removed, chickpeas/tomatoes added. Pasta and manual napkin checkmarks survive; changed rice mark clears. 2 of 7 collected. |
+| Plus, 390×900 | Selected dinners/dessert total 3 carrots, 2 cups rice, .75 tsp garlic powder; measured pantry 2 carrots, 1 cup rice, .25 tsp garlic powder | Gross 4 carrots/1.5 cups rice/.5 tsp garlic powder; shortages 2 carrots/.5 cup rice/.25 tsp garlic powder. Monday retained; Tuesday Roast and Wednesday Potato remain occupied. Potato/manual-extra marks survive reload; rice clears. 2 of 12 collected. |
+
+Both widths fit without horizontal overflow (document 305/375px with normal vertical scrollbar). Repeat navigation/reload does not subtract inventory again. Unknown can sizes still show Confirm package size and prices remain unavailable. These are engineering fixtures, not meal-quality/allergen-safety evaluations.
+
+![Replacement grocery refresh at 320px](evidence/pantry-replacement-320.jpg)
+
+![Replacement grocery refresh at 390px](evidence/pantry-replacement-390.jpg)
+
+Final evidence: `outputs/pantry-replacement-final-{320,390}.txt/.jpg`; `pantry-grocery-replacement-final-{build.log,after.json,tests.log,types.log,lint.log}`. Standard production build, **302/302 tests**, standalone TypeScript and lint passed on the final source. Build changed no source hashes/status/HEAD. Final fixture audit recorded one Free and one Plus mock replacement response, no external provider calls or emails, a Free save with pantry omitted and Plus save with its own snapshot. These in-memory fixture saves are not shared database writes.
+
+The separate [read-only migration review](pantry-quantity-migration-review.md) leaves the migration checksum/SQL unchanged. No shared preflight or migration execution is claimed.
 ## Remaining gates
 
-1. Resolve the local matching-origin fixture setup through supported development configuration and verify generated meal replacement at both widths. Do not loosen the origin guard.
+1. Owner review/approval remains required; keep PR #10 draft. Requested responsive browser verification is complete.
 2. Separate shared pantry migration review/approval remains required; it has **not** been applied.
 3. Physical-device and full screen-reader checks remain separate; desktop responsive emulation is not a claim of VoiceOver/TalkBack/NVDA completion.
 4. PR stays draft, with branch deployment disabled. No merge or deployment is authorized. PR #9 and production remain untouched.

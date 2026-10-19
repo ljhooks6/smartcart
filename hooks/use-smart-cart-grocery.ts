@@ -29,6 +29,7 @@ type UseSmartCartGroceryArgs = {
   runningLow: Set<string>;
   savedDesserts: MealPlanItem[];
   weeklyMenu: MealPlanItem[];
+  requirementsReady?:boolean;
 };
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
@@ -44,6 +45,7 @@ export function useSmartCartGrocery({
   runningLow,
   savedDesserts,
   weeklyMenu,
+  requirementsReady=true,
 }: UseSmartCartGroceryArgs) {
   const [shopping, dispatchShopping] = useReducer(shoppingReducer, undefined, emptyShoppingState);
   const storageKey = `mealcaddie-shopping-v1-${userId || "guest"}`;
@@ -82,7 +84,7 @@ export function useSmartCartGrocery({
   const requirementFingerprints=Object.fromEntries([...complete.derivedGroceryList,...complete.skippedGroceryList].map(i=>[i.item_key,JSON.stringify([i.requirement_key,i.shortage_amount])]));
   const checkedItems=new Set(ownedShopping.checked.filter(key=>!ownedShopping.fingerprints?.[key]||ownedShopping.fingerprints[key]===requirementFingerprints[key]));
   const requirementContext=JSON.stringify(requirementFingerprints);
-  useEffect(()=>{if(loadedStorageKey===storageKey)dispatchShopping({type:"reconcile",requirements:JSON.parse(requirementContext)});},[requirementContext,loadedStorageKey,storageKey]);
+  useEffect(()=>{if(loadedStorageKey===storageKey)dispatchShopping({type:"reconcile",requirements:JSON.parse(requirementContext),ready:requirementsReady});},[requirementContext,loadedStorageKey,storageKey,requirementsReady]);
   const derivedGroceryList=complete.derivedGroceryList.filter(i=>!removedGroceryItems.includes(i.item_key)||(ownedShopping.fingerprints?.[i.item_key]&&ownedShopping.fingerprints[i.item_key]!==requirementFingerprints[i.item_key]));
   const skippedGroceryList=complete.skippedGroceryList;
 
