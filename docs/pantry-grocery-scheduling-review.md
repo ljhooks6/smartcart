@@ -1,6 +1,6 @@
 # Pantry, grocery accuracy and scheduling — implementation review
 
-Status: source implementation complete; standard build, 299 regression tests, TypeScript and lint verified on 2026-10-19. Actual browser review remains incomplete. The owner authorized draft publication with that limitation documented on `feature/pantry-grocery-scheduling`, based on production `b6909d07cb1808c5d427864d56aff8224059c2e3`. No merge, deployment, shared migration, paid AI calls or customer-record changes. PR #9's allergy-library candidate remains separate and untouched. This branch has a Vercel Git deployment hold.
+Status: source implementation complete; standard build, 299 regression tests, TypeScript and lint verified on 2026-10-19. Responsive Chrome review at 320px/390px is recorded in the mobile review; the generated-meal replacement flow remains blocked by the local request-origin guard. A discovered 320px Cook overflow is corrected and rebuilt. The owner authorized draft publication with that limitation documented on `feature/pantry-grocery-scheduling`, based on production `b6909d07cb1808c5d427864d56aff8224059c2e3`. No merge, deployment, shared migration, paid AI calls or customer-record changes. PR #9's allergy-library candidate remains separate and untouched. This branch has a Vercel Git deployment hold.
 
 ## Confirmed causes and corrections
 
