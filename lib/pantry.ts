@@ -1,4 +1,5 @@
 import { ingredientKey, parseIngredient, normalizeUnit, parseQuantity } from "./ingredient-quantity.ts";
+import { searchIngredientNames } from "./ingredient-search.ts";
 export type PantryEntry = {
     name: string;
     quantity?: number;
@@ -32,8 +33,6 @@ export function readOwnedPantry(value: unknown, owner: string) { if (!value || t
 export function pantryNames(entries: PantryEntry[]) { return entries.filter(e => e.quantity !== 0 && (e.status !== "restock" || (e.quantity ?? 0) > 0)).map(e => e.name); }
 export function pantryCloudPayload(entries: PantryEntry[]) { return entries.map(({ name, quantity, unit, status }) => ({ name, ...(quantity !== undefined ? { quantity } : {}), ...(unit ? { unit } : {}), status })); }
 export function addPantryEntry(entries: PantryEntry[], name: string) { const key = ingredientKey(name); return entries.some(e => ingredientKey(e.name) === key) ? entries : normalizePantry([...entries, { name, status: "owned" }]); }
-export function searchPantry(options: readonly string[], entries: PantryEntry[], query: string) { const byKey = new Map<string, string>(); for (const name of [...entries.map(e => e.name), ...options]) {
-    const k = ingredientKey(name);
-    if (k && !byKey.has(k))
-        byKey.set(k, name);
-} const needle = ingredientKey(query); return [...byKey.values()].filter(n => !needle || ingredientKey(n).includes(needle) || n.toLowerCase().includes(query.trim().toLowerCase())).sort((a, b) => a.localeCompare(b)); }
+export function searchPantry(options: readonly string[], entries: PantryEntry[], query: string) {
+    return searchIngredientNames(options, entries, query);
+}

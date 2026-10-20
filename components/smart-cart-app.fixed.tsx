@@ -1,4 +1,5 @@
 "use client";
+import { PANTRY_INGREDIENT_OPTIONS as pantryQuickSelectOptions } from "../lib/ingredient-catalog";
 import { DietarySafetySummary } from "./dietary-safety-summary";
 
 import { getMealRequestHeaders } from "../lib/meal-request-headers";
@@ -199,151 +200,6 @@ const equipmentOptions = [
   "Blender",
 ] as const;
 
-const pantryQuickSelectOptions = {
-  "Proteins (Freezer & Fridge)": [
-    "Chicken breast",
-    "Chicken thighs",
-    "Chicken wings",
-    "Ground chicken",
-    "Ground beef",
-    "Ground pork",
-    "Steak",
-    "Pork chops",
-    "Sausage",
-    "Ground turkey",
-    "Bacon",
-    "Shrimp",
-    "Salmon",
-    "Tilapia",
-    "Canned tuna",
-    "Tofu",
-  ],
-  "DAIRY & REFRIGERATED": [
-    "Milk",
-    "Heavy cream",
-    "Half-and-half",
-    "Cheddar cheese",
-    "Parmesan",
-    "Mozzarella",
-    "Yogurt",
-    "Sour cream",
-    "Cream cheese",
-    "Cottage cheese",
-    "Eggs",
-    "Butter",
-  ],
-  "Oils & Condiments": [
-    "Olive oil",
-    "Vegetable oil",
-    "Sesame oil",
-    "Soy sauce",
-    "Vinegar",
-    "Mustard",
-    "Dijon mustard",
-    "Worcestershire sauce",
-    "Barbecue sauce",
-    "Hot sauce",
-    "Ketchup",
-    "Mayo",
-    "Ranch dressing",
-    "Salsa",
-    "Honey",
-    "Maple syrup",
-  ],
-  "Spices & Seasonings": [
-    "Salt",
-    "Black pepper",
-    "Garlic powder",
-    "Onion powder",
-    "Paprika",
-    "Smoked paprika",
-    "Cumin",
-    "Chili powder",
-    "Cayenne",
-    "Red pepper flakes",
-    "Basil",
-    "Thyme",
-    "Parsley",
-    "Curry powder",
-    "Cinnamon",
-    "Oregano",
-    "Italian seasoning",
-  ],
-  "Baking Staples": [
-    "White sugar",
-    "Brown sugar",
-    "All-purpose flour",
-    "Cornstarch",
-    "Baking powder",
-    "Baking soda",
-    "Cocoa powder",
-    "Powdered sugar",
-    "Chocolate chips",
-    "Yeast",
-    "Vanilla extract",
-  ],
-  "Canned & Jarred": [
-    "Canned tomatoes",
-    "Diced tomatoes",
-    "Tomato paste",
-    "Marinara sauce",
-    "Black beans",
-    "Chickpeas",
-    "Corn",
-    "Green chiles",
-    "Refried beans",
-    "Coconut milk",
-    "Peanut butter",
-    "Chicken broth",
-    "Chicken stock",
-    "Vegetable broth",
-    "Vegetable stock",
-  ],
-  "Grains & Carbs": [
-    "White rice",
-    "Jasmine rice",
-    "Basmati rice",
-    "Brown rice",
-    "Pasta",
-    "Spaghetti",
-    "Penne",
-    "Oats",
-    "Breadcrumbs",
-    "Panko",
-    "Quinoa",
-    "Tortillas",
-    "Bread",
-    "Ramen noodles",
-  ],
-  VEGETABLES: [
-    "Onions",
-    "Garlic cloves",
-    "Potatoes",
-    "Sweet potatoes",
-    "Carrots",
-    "Celery",
-    "Bell peppers",
-    "Tomatoes",
-    "Spinach",
-    "Broccoli",
-    "Mushrooms",
-    "Zucchini",
-    "Green beans",
-    "Lettuce",
-    "Cucumbers",
-  ],
-  FRUITS: [
-    "Lemons",
-    "Limes",
-    "Apples",
-    "Bananas",
-    "Berries",
-    "Avocados",
-    "Oranges",
-    "Grapes",
-    "Pineapple",
-  ],
-} as const;
 
 const SMART_CART_WAITLIST_ENDPOINT = "https://formspree.io/f/mqegdoly";
 const pantryCategoryStyles: Record<string, string> = {
@@ -619,8 +475,6 @@ export function SmartCartApp() {
   const [restock, setRestock] = useState<Set<string>>(new Set());
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [isEquipmentSheetOpen, setIsEquipmentSheetOpen] = useState(false);
-  const [isPantryOpen, setIsPantryOpen] = useState(false);
-  const [isPantrySelectionOpen, setIsPantrySelectionOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
     "idle" | "submitting" | "success" | "error"
@@ -1810,8 +1664,6 @@ export function SmartCartApp() {
     setCloudSyncMessage("");
     setSaveStatus("idle");
     setIsEquipmentSheetOpen(false);
-    setIsPantryOpen(false);
-    setIsPantrySelectionOpen(false);
     setActiveMobileTab("plan");
 
     clearStoredJson(
@@ -2631,8 +2483,6 @@ export function SmartCartApp() {
                 isEquipmentSheetOpen={isEquipmentSheetOpen}
                 isBudgetValid={isBudgetValid}
               isLoading={isLoading}
-              isPantryOpen={isPantryOpen}
-              isPantrySelectionOpen={isPantrySelectionOpen}
               onBudgetChange={(value) =>
                 setFormState((current) => ({
                   ...current,
@@ -2715,10 +2565,6 @@ export function SmartCartApp() {
                 onToggleEquipmentSheetOpen={() =>
                   setIsEquipmentSheetOpen((current) => !current)
                 }
-                onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
-              onTogglePantrySelectionOpen={() =>
-                setIsPantrySelectionOpen((current) => !current)
-              }
               onToggleQuickItem={toggleQuickItem}
               pantryCategoryStyles={pantryCategoryStyles}
               pantryQuickSelectOptions={pantryQuickSelectOptions}
@@ -2857,8 +2703,6 @@ export function SmartCartApp() {
             isEquipmentSheetOpen={isEquipmentSheetOpen}
             isBudgetValid={isBudgetValid}
             isLoading={isLoading}
-            isPantryOpen={isPantryOpen}
-            isPantrySelectionOpen={isPantrySelectionOpen}
             onBudgetChange={(value) =>
               setFormState((current) => ({
                 ...current,
@@ -2940,10 +2784,6 @@ export function SmartCartApp() {
             }
             onToggleEquipmentSheetOpen={() =>
               setIsEquipmentSheetOpen((current) => !current)
-            }
-            onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
-            onTogglePantrySelectionOpen={() =>
-              setIsPantrySelectionOpen((current) => !current)
             }
             onToggleQuickItem={toggleQuickItem}
             pantryCategoryStyles={pantryCategoryStyles}
