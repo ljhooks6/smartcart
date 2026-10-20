@@ -13,7 +13,7 @@ test('picker searches inventory and suggestions using existing aliases without c
  assert.equal(pantryPickerMatches(entries,options,'carrot')[0].entry,undefined);
  assert.equal(JSON.stringify(entries),before);
 });
-test('already added matches sort first and explicit add prevents alias duplicates',()=>{
+test('already added exact matches rank first and explicit add prevents alias duplicates',()=>{
  const entries=[{name:'Rice',status:'owned'}];
  assert.equal(pantryPickerMatches(entries,options,'rice')[0].entry,entries[0]);
  const withAlias=[{name:'Scallions',status:'owned',quantity:3,unit:'each'}];
@@ -26,7 +26,8 @@ test('grouping preserves custom data and quantities without conflating formulati
  const before=JSON.stringify(entries),groups=pantryGroups(entries,options);
  assert.deepEqual(groups.find(g=>g.name==='Produce').entries.map(e=>e.name),['Garlic cloves','Scallions']);
  assert.equal(groups.find(g=>g.name==='Spices').entries.length,1);
- assert.equal(groups.find(g=>g.name==='Other & custom').entries.length,5);
+ assert.deepEqual(groups.find(g=>g.name==='Other & custom').entries.map(e=>e.name),['Family spice mix']);
+ assert.equal(groups.flatMap(g=>g.entries).length,entries.length);
  assert.equal(JSON.stringify(entries),before);
 });
 test('summary distinguishes unknown amount, zero, measured stock and labels',()=>{

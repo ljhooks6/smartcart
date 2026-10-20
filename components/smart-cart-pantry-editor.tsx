@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useEffect, useRef } from "react";
+import { useId, useState, useEffect, useRef, useMemo } from "react";
 import { normalizePantry, addPantryEntry, type PantryEntry } from "../lib/pantry";
 import { ingredientKey, parseQuantity, isPackageUnit } from "../lib/ingredient-quantity";
 import { PANTRY_PAGE_SIZE, pantryGroups, pantryPickerMatches, pantrySummary } from "../lib/pantry-picker";
@@ -100,10 +100,10 @@ export function SmartCartPantryEditor({ entries, options, onChange, requirements
   const id = useId();
   const searchRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLUListElement>(null);
-  const groups = pantryGroups(entries, options);
+  const groups = useMemo(() => pantryGroups(entries, options), [entries, options]);
   const searching = !!query.trim();
   const matches = searching ? pantryPickerMatches(entries, options, query) : [];
-  const canAddCustom = searching && !!ingredientKey(query) && !matches.some(match => match.key === ingredientKey(query));
+  const canAddCustom = searching && !!ingredientKey(query) && !matches.some(match => match.exact);
 
   function add(name: string) {
     const next = addPantryEntry(entries, name);
@@ -141,7 +141,7 @@ export function SmartCartPantryEditor({ entries, options, onChange, requirements
         }} placeholder="Search your pantry and ingredient suggestions" />
     </label>
     <p id={`${id}-help`} className="text-xs leading-5 text-ink/75">Search by name or alias, then choose Edit or Add. Amount unknown means the ingredient is on hand, not that you have enough. Update quantities after cooking.</p>
-    <p id={`${id}-status`} role="status" aria-live="polite" className="text-sm">{message || (searching ? `${matches.length} matches. Already-added ingredients appear first.` : "Open a category to view or edit ingredients.")}</p>
+    <p id={`${id}-status`} role="status" aria-live="polite" className="text-sm">{message || (searching ? `${matches.length} matches, ordered by relevance. Already-added ingredients have Edit.` : "Open a category to view or edit ingredients.")}</p>
     {searching ? <div onKeyDown={event => { if (event.key === "Escape" && event.target instanceof HTMLButtonElement) { event.preventDefault(); setQuery(""); setExpanded(null); searchRef.current?.focus(); } }}>
       <ul id={`${id}-results`} ref={resultsRef} aria-label="Ingredient search results" className="space-y-2">
         {matches.slice(0, searchLimit).map(match => match.entry ? row(match.entry) : <li key={match.key}>

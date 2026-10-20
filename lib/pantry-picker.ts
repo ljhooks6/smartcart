@@ -1,5 +1,6 @@
 import { ingredientKey, formatQuantity } from "./ingredient-quantity.ts";
 import { searchPantry, type PantryEntry } from "./pantry.ts";
+import { catalogSuggestion, isExactIngredientMatch } from "./ingredient-search.ts";
 
 export const PANTRY_PAGE_SIZE = 12;
 
@@ -12,7 +13,7 @@ export function pantryGroups(entries: PantryEntry[], options: Record<string, rea
   }
   const grouped = new Map<string, PantryEntry[]>();
   for (const entry of entries) {
-    const category = categories.get(ingredientKey(entry.name)) ?? "Other & custom";
+    const category = categories.get(ingredientKey(entry.name)) ?? catalogSuggestion(entry.name)?.category ?? "Other & custom";
     grouped.set(category, [...(grouped.get(category) ?? []), entry]);
   }
   return [...grouped].sort(([a], [b]) => a.localeCompare(b)).map(([name, items]) => ({
@@ -23,8 +24,8 @@ export function pantryGroups(entries: PantryEntry[], options: Record<string, rea
 export function pantryPickerMatches(entries: PantryEntry[], options: Record<string, readonly string[]>, query: string) {
   const inventory = new Map(entries.map(entry => [ingredientKey(entry.name), entry]));
   return searchPantry(Object.values(options).flat(), entries, query).map(name => ({
-    name, key: ingredientKey(name), entry: inventory.get(ingredientKey(name)),
-  })).sort((a, b) => Number(!!b.entry) - Number(!!a.entry) || a.name.localeCompare(b.name));
+    name, key: ingredientKey(name), entry: inventory.get(ingredientKey(name)), exact: isExactIngredientMatch(name, query),
+  }));
 }
 
 export function pantrySummary(entry: PantryEntry) {
