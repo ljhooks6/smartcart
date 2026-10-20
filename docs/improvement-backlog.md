@@ -17,6 +17,17 @@ Recommendations found during normal development. These are **not approved work**
 
 No unrelated enhancement is authorized by this document.
 
+## IMP-005 — Review grocery identity aliases separately from search discovery
+
+- **Status:** Proposed; awaiting owner consideration. Not implemented in PR #11.
+- **Evidence / confidence:** Confirmed by focused code tests: search can find an existing Bicarb entry using Baking soda, while the unchanged grocery `ingredientKey` produces different keys for those stored names. A search alias alone does not authorize a grocery equivalence or stock conversion.
+- **Problem / opportunity:** Some alternate pantry labels can be discoverable in the picker but still fail to offset a recipe requirement bearing another name.
+- **Recommendation / user benefit:** Separately review a small, explicit set of true ingredient-identity aliases, then reconcile recipe/pantry matches conservatively while preserving existing stored names, quantity dimensions and user review of ambiguous formulations. This could reduce avoidable shopping duplicates.
+- **Implementation complexity:** Medium. **Priority:** Medium. **Beneficiaries:** Both Free and Plus.
+- **Dependencies:** Owner approval; reviewed equivalence data; compatibility tests for stored grocery keys, shopping marks, owner isolation, quantities and dietary qualifiers.
+- **Risks:** Broad synonym merging could conflate formulations, fresh/dried forms or uncertain package contents. Search ranking must never establish allergen safety or authorize substitutions.
+- **Potential ongoing costs:** No paid API required; ongoing alias curation and regression maintenance. Any storage migration would require separate review and approval.
+
 ## IMP-004 — Reconcile measured pantry stock after cooking
 
 - **Status:** Proposed; awaiting owner consideration. Not implemented in this workstream.

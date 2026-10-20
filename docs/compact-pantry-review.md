@@ -1,5 +1,7 @@
 # Compact pantry review
 
+**2026-10-20 search follow-up:** the expanded catalog and relevance ranking supersede the original small suggestion list and inventory-first ordering. See [ingredient catalog, focused checks and updated Preview screenshots](ingredient-catalog.md). The layout/persistence results below remain the original PR #11 evidence.
+
 Branch: `feature/compact-pantry`, based on production main `9f3f9b2573f3f7882ba50d736a9fbf96617d3497`. Review only; no production release authorized.
 
 ## Result

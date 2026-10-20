@@ -37,3 +37,36 @@ There is no fetch, paid ingredient API, AI request, new dependency or keystroke 
 60 focused tests pass, including the reported queries, rank order, owned Salmon, accent/decomposed-Unicode matching, aliases, existing-entry Edit lookup, custom eligibility, distinct formulations, deterministic ordering and bounded catalog size. Existing pantry quantity, grocery, account isolation, membership, compact rendering and production allergy-restriction regressions also pass. TypeScript and lint pass. The prior complete PR #11 layout/persistence verification is retained in [compact pantry review](compact-pantry-review.md); this follow-up does not rerun unrelated database or recovery work.
 
 PR #11 stays draft. No migration, production data/configuration change, billing, AI-generation rule or PR #9 change is included. Production merge/deployment needs separate owner approval.
+
+## Actual protected Preview evidence — 2026-10-20
+
+Vercel built application commit `b91772a5c05c842c4e9e49a35998c67a0bfcff81` successfully in 43 seconds: deployment `dpl_3YtZjPadgFZPHVeWX8wS1kLLFp1X`, **Ready / Preview**. The existing branch Preview URL remains https://smartcart-git-feature-compact-pantry-ljhooks6s-projects.vercel.app/planner. No environment variables or protection settings were changed.
+
+The actual Preview was tested through connected normal Chrome at 320×900 and 390×900 using an initially empty guest pantry. Only temporary guest-local Salmon, Jalapeño and Grandma test spice were added explicitly, then removed. No account sign-in, shared record write, generation request or paid AI call occurred. The original empty pantry was restored and viewport override reset. Prior persistence/quantity/account tests are reused, not claimed as freshly exercised against real users.
+
+| Acceptance case | Actual result |
+|---|---|
+| `almo` at 320px | Almond butter, Almond extract, Almond flour, Almond milk and Almonds precede the owned Salmon. Enter in search leaves the count at one. |
+| `jell` at 390px | Jelly plus Apple, Blackberry, Grape, Pepper, Raspberry and Strawberry jelly; flavored gelatin dessert mix is a separately labeled alias result. |
+| `cilan` | Cilantro first, Dried cilantro second; no conflation with Ground coriander. |
+| `ja` | Jalapeño and Jasmine rice both appear in the first twelve results. Progressive display remains available. |
+| `jalapeno` | Jalapeño first, Pickled jalapeños separately. No redundant custom button for this exact accent-insensitive match. |
+| Existing inventory | After explicit guest addition, `jalapeno` shows Jalapeño / Already added / Edit, without a duplicate Jalapeño Add button. Enter opens one editor and focuses Quantity. |
+| Custom ingredient | Unmatched Grandma test spice offers a custom Add button; explicit add and remove succeed. |
+| Keyboard / layout | ArrowDown focuses the first result, Escape returns to search, typing/Enter never add, row Enter focuses quantity. Document widths 305/375px respectively including normal vertical scrollbar space; no horizontal overflow. |
+
+![Almond suggestions ahead of owned Salmon at 320px](evidence/ingredient-search-320-almo.png)
+
+![Jelly suggestions at 390px](evidence/ingredient-search-390-jell.png)
+
+![Cilantro suggestions](evidence/ingredient-search-390-cilan.png)
+
+![Jalapeño and Jasmine rice in the first page](evidence/ingredient-search-390-ja.png)
+
+![Accent-insensitive Jalapeño](evidence/ingredient-search-390-jalapeno.png)
+
+![Existing ingredient offers Edit](evidence/ingredient-search-390-existing.png)
+
+![Custom addition remains explicit](evidence/ingredient-search-390-custom.png)
+
+Sanitized local receipt: `outputs/ingredient-search-browser-results.json`. Full NVDA/VoiceOver/TalkBack and physical-device coverage remain separate. Newly recorded IMP-005 proposes a separately reviewed grocery-identity alias improvement; no such grocery change is included here.
