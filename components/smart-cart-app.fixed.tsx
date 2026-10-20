@@ -619,8 +619,6 @@ export function SmartCartApp() {
   const [restock, setRestock] = useState<Set<string>>(new Set());
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
   const [isEquipmentSheetOpen, setIsEquipmentSheetOpen] = useState(false);
-  const [isPantryOpen, setIsPantryOpen] = useState(false);
-  const [isPantrySelectionOpen, setIsPantrySelectionOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
     "idle" | "submitting" | "success" | "error"
@@ -1810,8 +1808,6 @@ export function SmartCartApp() {
     setCloudSyncMessage("");
     setSaveStatus("idle");
     setIsEquipmentSheetOpen(false);
-    setIsPantryOpen(false);
-    setIsPantrySelectionOpen(false);
     setActiveMobileTab("plan");
 
     clearStoredJson(
@@ -2631,8 +2627,6 @@ export function SmartCartApp() {
                 isEquipmentSheetOpen={isEquipmentSheetOpen}
                 isBudgetValid={isBudgetValid}
               isLoading={isLoading}
-              isPantryOpen={isPantryOpen}
-              isPantrySelectionOpen={isPantrySelectionOpen}
               onBudgetChange={(value) =>
                 setFormState((current) => ({
                   ...current,
@@ -2715,10 +2709,6 @@ export function SmartCartApp() {
                 onToggleEquipmentSheetOpen={() =>
                   setIsEquipmentSheetOpen((current) => !current)
                 }
-                onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
-              onTogglePantrySelectionOpen={() =>
-                setIsPantrySelectionOpen((current) => !current)
-              }
               onToggleQuickItem={toggleQuickItem}
               pantryCategoryStyles={pantryCategoryStyles}
               pantryQuickSelectOptions={pantryQuickSelectOptions}
@@ -2857,8 +2847,6 @@ export function SmartCartApp() {
             isEquipmentSheetOpen={isEquipmentSheetOpen}
             isBudgetValid={isBudgetValid}
             isLoading={isLoading}
-            isPantryOpen={isPantryOpen}
-            isPantrySelectionOpen={isPantrySelectionOpen}
             onBudgetChange={(value) =>
               setFormState((current) => ({
                 ...current,
@@ -2940,10 +2928,6 @@ export function SmartCartApp() {
             }
             onToggleEquipmentSheetOpen={() =>
               setIsEquipmentSheetOpen((current) => !current)
-            }
-            onTogglePantryOpen={() => setIsPantryOpen((current) => !current)}
-            onTogglePantrySelectionOpen={() =>
-              setIsPantrySelectionOpen((current) => !current)
             }
             onToggleQuickItem={toggleQuickItem}
             pantryCategoryStyles={pantryCategoryStyles}

@@ -10,22 +10,33 @@ const require=createRequire(import.meta.url);
 function load(file){const module={exports:{}};const source=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;new Function('require','module','exports',source)(name=>{if(name.startsWith('.')||name.startsWith('@/')){const base=name.startsWith('@/')?path.resolve(name.slice(2)):path.resolve(path.dirname(file),name);return load(/\.tsx?$/.test(base)?base:existsSync(base+'.tsx')?base+'.tsx':base+'.ts');}return require(name);},module,module.exports);return module.exports;}
 const noop=()=>{};
 
-test('both Plan surfaces use the same searchable editor and leave breakfast/lunch disabled for every tier',()=>{
+test('Plan has one unified pantry picker and leaves breakfast/lunch disabled for every tier',()=>{
  const {SmartCartContextForm}=load(path.resolve('components/smart-cart-context-form.tsx'));
  for(const userPlan of ['guest','free','plus']){
   const props=new Proxy({userPlan,pantryEntries:[],combinedPantryItems:[],fullyStocked:new Set(),adventureLevelOptions:[],equipmentOptions:[],prepTimeOptions:[],pantryCategoryStyles:{},pantryQuickSelectOptions:{Staples:['Rice']},isPantryOpen:true,isPantrySelectionOpen:true,formState:{budget:'60',householdSize:'2',diet:'No preference',cuisinePreference:'',mealSourceMode:'pantry-and-store',pantryItems:'',mustHaveIngredient:'',avoidIngredients:'',includeDessert:false,includeBreakfast:true,includeLunch:true,prepTime:'',adventureLevel:'',availableEquipment:['Stovetop']}},{get:(o,k)=>typeof k==='string'&&k.startsWith('on')?noop:o[k]});
   const html=renderToStaticMarkup(React.createElement(SmartCartContextForm,props));
-  assert.equal((html.match(/Search pantry ingredients/g)||[]).length,2);assert.doesNotMatch(html,/Pantry Check/);
+  assert.equal((html.match(/Search or add ingredients/g)||[]).length,1);assert.doesNotMatch(html,/Pantry Check|Pantry Quick-Select|Pantry Snapshot/);
   assert.equal((html.match(/type="checkbox" disabled=""/g)||[]).length,2);assert.doesNotMatch(html,/type="checkbox" disabled=""[^>]*checked/);
   assert.match(html,/planned for a future update/);assert.match(html,/legal\/safety/);
  }
 });
 
-test('pantry controls identify ingredient, unknown amount, quantity, unit and sufficiency without hiding limitations',()=>{
+test('pantry starts compact with unknown-amount guidance, without mounting edit forms',()=>{
  const {SmartCartPantryEditor}=load(path.resolve('components/smart-cart-pantry-editor.tsx'));
  const html=renderToStaticMarkup(React.createElement(SmartCartPantryEditor,{entries:[{name:'Rice',status:'owned'}],options:{Staples:['Rice']},onChange:noop,requirements:[{item_key:'rice',needed_amount:'2 cups',requirement_key:'current'}]}));
- assert.match(html,/Amount unknown/);assert.match(html,/Quantity \(optional\)/);assert.match(html,/cup \(US\)/);assert.match(html,/I have enough for this week/);assert.match(html,/Remove Rice from pantry/);
+ assert.match(html,/Amount unknown/);assert.match(html,/not that you have enough/);assert.match(html,/Staples/);assert.match(html,/aria-expanded="false"/);
+ assert.doesNotMatch(html,/Quantity \(optional\)|<select|Remove Rice from pantry/);
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length);
+});
+
+test('71 pantry entries render category disclosures rather than 71 hidden editors',()=>{
+ const {SmartCartPantryEditor}=load(path.resolve('components/smart-cart-pantry-editor.tsx'));
+ const entries=Array.from({length:71},(_,i)=>({name:`Custom ingredient ${i}`,status:'owned',quantity:i,unit:'each'}));
+ const html=renderToStaticMarkup(React.createElement(SmartCartPantryEditor,{entries,options:{},onChange:noop}));
+ assert.match(html,/71 ingredients/);assert.match(html,/Other &amp; custom/);
+ assert.equal((html.match(/<input/g)||[]).length,1);
+ assert.doesNotMatch(html,/<select|Custom ingredient 70|Quantity \(optional\)/);
+ assert.doesNotMatch(html,/overflow-y-auto|max-h-/);
 });
 
 test('day controls expose occupancy and the explicit swap, including a way to remove assignments',()=>{

@@ -39,8 +39,6 @@ type SmartCartContextFormProps = {
   isEquipmentSheetOpen: boolean;
   isBudgetValid: boolean;
   isLoading: boolean;
-  isPantryOpen: boolean;
-  isPantrySelectionOpen: boolean;
   onBudgetChange: (value: string) => void;
   onClearForm: () => void;
   onCuisinePreferenceChange: (value: string) => void;
@@ -59,8 +57,6 @@ type SmartCartContextFormProps = {
   onToggleEquipment: (equipment: string) => void;
   onToggleFeatureLevel: (value: string) => void;
   onToggleEquipmentSheetOpen: () => void;
-  onTogglePantryOpen: () => void;
-  onTogglePantrySelectionOpen: () => void;
   onToggleQuickItem: (item: string) => void;
   pantryCategoryStyles: Record<string, string>;
   pantryQuickSelectOptions: Record<string, readonly string[]>;
@@ -79,8 +75,6 @@ export function SmartCartContextForm({
   isEquipmentSheetOpen,
   isBudgetValid,
   isLoading,
-  isPantryOpen,
-  isPantrySelectionOpen,
   onBudgetChange,
   onClearForm,
   onCuisinePreferenceChange,
@@ -99,8 +93,6 @@ export function SmartCartContextForm({
   onToggleEquipment,
   onToggleFeatureLevel,
   onToggleEquipmentSheetOpen,
-  onTogglePantryOpen,
-  onTogglePantrySelectionOpen,
   onToggleQuickItem,
   pantryCategoryStyles,
   pantryQuickSelectOptions,
@@ -368,8 +360,7 @@ export function SmartCartContextForm({
             })}
           </div>
         </div>
-
-        <section className="rounded-3xl border border-orange-200 bg-orange-50 p-4"><button type="button" aria-expanded={isPantrySelectionOpen} onClick={onTogglePantrySelectionOpen} className="flex min-h-12 w-full items-center justify-between gap-3 text-left font-semibold text-pine"><span>Pantry Quick-Select</span><span>{isPantrySelectionOpen?"Hide":"Search ingredients"}</span></button>{isPantrySelectionOpen?<SmartCartPantryEditor entries={pantryEntries} options={pantryQuickSelectOptions} onChange={onPantryEntriesChange} requirements={pantryRequirements}/>:null}</section>
+        <section className="min-w-0 rounded-3xl border border-pine/20 bg-white p-4"><SmartCartPantryEditor entries={pantryEntries} options={pantryQuickSelectOptions} onChange={onPantryEntriesChange} requirements={pantryRequirements}/></section>
 
         {isEquipmentSheetOpen ? (
           <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-10 md:hidden">
@@ -459,8 +450,6 @@ export function SmartCartContextForm({
             value={formState.avoidIngredients}
           />
         </label>
-
-        <section className="rounded-3xl border border-pine/20 bg-white p-4"><button type="button" aria-expanded={isPantryOpen} onClick={onTogglePantryOpen} className="flex min-h-12 w-full items-center justify-between gap-3 text-left font-semibold text-pine"><span>Pantry Snapshot · {pantryEntries.length} ingredients</span><span>{isPantryOpen?"Hide":"Open"}</span></button>{isPantryOpen?<SmartCartPantryEditor entries={pantryEntries} options={pantryQuickSelectOptions} onChange={onPantryEntriesChange} requirements={pantryRequirements}/>:null}</section>
 
         <fieldset className="rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
           <legend className="px-2 text-sm font-semibold text-ink">Meals to plan</legend>
