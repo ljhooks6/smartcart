@@ -66,7 +66,7 @@ test('weekly route validates desserts, preserves descriptions and never exceeds 
  const input={budget:50,householdSize:2,diet:'No preference',combinedPantryItems:'Rice',availableEquipment:['Stovetop']};
  let r=await server.generateMealPlan(input,'free');assert.equal(r.status,200);let result=await r.json();assert.match(result.meals[0].description,/Tender/);assert.equal(result.meals[0].dietaryRestrictions,input.diet);assert.equal(calls,1);
  answer={...answer,breakfasts:answer.meals.slice(0,3),lunches:answer.meals.slice(0,3)};
- r=await server.generateMealPlan({...input,includeBreakfast:true,includeLunch:true},'free');assert.equal(r.status,200);result=await r.json();assert.equal(result.meals.length,13);assert.ok(result.meals.every(m=>m.description&&m.dietaryRestrictions===input.diet));
+ r=await server.generateMealPlan({...input,includeBreakfast:true,includeLunch:true},'free');assert.equal(r.status,422);result=await r.json();assert.equal(result.code,'MEAL_TYPE_PAUSED');assert.equal(calls,1);
  calls=0;answer={...answer,desserts:[{title:'Carrot dessert',description:'Sweet carrot dessert with a tender crumb.',ingredients:[{name:'Carrots',amount:'1',price:1}]}]};r=await server.generateMealPlan({...input,avoidIngredients:'carrots',includeDessert:true},'free');assert.ok(r.status>=400);assert.ok(calls<=3);
 });
 

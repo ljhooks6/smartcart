@@ -3,6 +3,7 @@ export type WeekDraft<Meal> = {
   dinners: Meal[];
   desserts: Meal[];
   pantry: string[];
+  pantryEntries?:unknown[];
   dirty: boolean;
 };
 
@@ -19,8 +20,8 @@ export function recoverWeekDraft<Meal>(value: unknown, userId: string): WeekDraf
   return draft;
 }
 
-export function weekSnapshot(dinners: unknown[], desserts: unknown[], pantry: string[] | null) {
-  return JSON.stringify({ dinners, desserts, pantry: pantry === null ? null : [...pantry].sort() });
+export function weekSnapshot(dinners: unknown[], desserts: unknown[], pantry: unknown[] | null) {
+  return JSON.stringify({ dinners, desserts, pantry: pantry === null ? null : [...pantry].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))) });
 }
 
 export function saveErrorMessage(error: unknown) {

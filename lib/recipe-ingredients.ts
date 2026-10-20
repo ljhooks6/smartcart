@@ -1,5 +1,11 @@
 type RecipeIngredient = { name: string; amount: string };
 
+// Replacement responses provide complete ingredient lines. Keep those lines for
+// the shared conservative parser; a missing measurement is never "1 pack".
+export function replacementIngredientItems(lines:string[]){
+  return lines.map(name=>({name:name.trim(),amount:"",price:0}));
+}
+
 type RecipeSource = {
   name: string;
   notes?: string;

@@ -35,7 +35,8 @@ test("true duplicates combine without losing the recipe shopping name or meal li
   ]);
   assert.equal(list.length, 2);
   assert.equal(find(list, "Yellow onion").needed_amount, "3");
-  assert.equal(find(list, "Yellow onion").name, "Yellow onion, diced");
+  assert.equal(find(list, "Yellow onion").name, "Yellow onion");
+  assert.deepEqual(find(list, "Yellow onion").preparation_notes, ["diced"]);
   assert.deepEqual(find(list, "Yellow onion").meal_names, ["Chili", "Soup"]);
   assert.equal(find(list, "Macaroni").needed_amount, "1 lb");
 });
@@ -60,7 +61,7 @@ test("ambiguous quantities are retained, including identical repeated packages",
 
 test("owning one food does not hide related but different shopping ingredients", () => {
   const result = derive({
-    fullyStocked: new Set(["Whole milk", "Garlic", "Chicken breast", "Spaghetti", "Red onions"]),
+    pantryEntries: [{name:"Whole milk",quantity:1,unit:"cup",status:"owned"},{name:"Garlic",quantity:2,unit:"clove",status:"owned"},{name:"Red onions",quantity:1,unit:"each",status:"owned"}],
     weeklyMenu: [meal("Dinner", [
       ["Whole milk", "1 cup"], ["Garlic cloves, minced", "2 cloves"], ["Red onion, diced", "1"],
       ["Coconut milk", "1 can"], ["Garlic powder", "1 tsp"], ["Chicken broth", "2 cups"], ["Macaroni", "8 oz"],
@@ -72,7 +73,7 @@ test("owning one food does not hide related but different shopping ingredients",
 
 test("restoring and removing an owned variety affects only that grocery item", () => {
   const args = {
-    fullyStocked: new Set(["Jasmine rice", "Basmati rice"]),
+    pantryEntries: ["Jasmine rice","Basmati rice"].map(name=>({name,quantity:1,unit:"cup",status:"owned"})),
     weeklyMenu: [meal("Rice bowls", [["Jasmine rice", "1 cup"], ["Basmati rice", "1 cup"]])],
     restoredItems: [getIngredientKey("Jasmine rice")],
   };
@@ -83,12 +84,13 @@ test("restoring and removing an owned variety affects only that grocery item", (
   assert.equal(derive({ ...args, restoredItems: [] }).skippedGroceryList.length, 2);
 });
 
-test("typed pantry ingredients are excluded just like quick-select ingredients", () => {
+test("typed name-only pantry ingredients need explicit quantity or sufficiency confirmation", () => {
   const result = derive({ pantryItems: ["rice", "canned black beans", "olive oil"], weeklyMenu: [
     meal("Rice and beans", [["Rice", "1 cup"], ["Canned Black Beans", "1 can"], ["Olive Oil", "1 tbsp"], ["Yellow Onion", "1"]]),
   ] });
-  assert.deepEqual(result.derivedGroceryList.map(item => item.name), ["Yellow Onion"]);
-  assert.equal(result.skippedGroceryList.length, 3);
+  assert.equal(result.derivedGroceryList.length, 4);
+  assert.equal(result.skippedGroceryList.length, 0);
+  assert.match(find(result.derivedGroceryList,"Rice").pantry_note,/Amount unknown/);
 });
 
 test("restock overrides owned status and avoids a duplicate recipe/restock row", () => {
@@ -126,7 +128,7 @@ test("a complete five-dinner week plus two treats retains every required ingredi
     meal("Cookies", [["All-purpose flour", "1½ cups"], ["Butter", "4 tbsp"], ["Whole milk", "½ cup"]]),
     meal("Rice pudding", [["Jasmine rice", "½ cup"], ["Whole milk", "2 cups"], ["Sugar", "½ cup"]]),
   ];
-  const result = derive({ weeklyMenu, savedDesserts, fullyStocked: new Set(["Garlic", "Butter", "Sugar"]) });
+  const result = derive({ weeklyMenu, savedDesserts, pantryEntries: [{name:"Garlic",quantity:5,unit:"clove",status:"owned"},{name:"Butter",quantity:6,unit:"tbsp",status:"owned"},{name:"Sugar",quantity:0.5,unit:"cup",status:"owned"}] });
   assert.equal(result.derivedGroceryList.length, 16);
   assert.equal(result.skippedGroceryList.length, 3);
   assert.equal(find(result.derivedGroceryList, "Whole milk").needed_amount, "3.5 cups");

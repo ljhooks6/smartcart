@@ -8,6 +8,7 @@ import { generationIdentity } from "@/lib/generation-identity";
 import { generationRequestSchema } from "@/lib/generation-request";
 import { publicGenerationJob, readGenerationJob, reserveGenerationJob } from "@/lib/generation-jobs";
 import { dispatchGenerationJob } from "@/lib/generation-dispatch";
+import { optionalMealPauseResponse } from "@/lib/meal-availability";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -24,7 +25,8 @@ export async function POST(request: Request) {
   try {
     const text = await request.text();
     if (text.length > 32000) return reply({ error: "Your planning preferences are too long." }, 400);
-    input = generationRequestSchema.safeParse(JSON.parse(text));
+    const raw=JSON.parse(text);const paused=optionalMealPauseResponse(raw);if(paused)return paused;
+    input = generationRequestSchema.safeParse(raw);
   } catch { return reply({ error: "Request body must be valid JSON." }, 400); }
   if (!input.success) return reply({ error: "Check your budget, household size, pantry, and planning preferences." }, 400);
   const safetyResponse = foodSafetyResponse(input.data, true); if (safetyResponse) return safetyResponse;

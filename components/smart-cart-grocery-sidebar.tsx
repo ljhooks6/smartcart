@@ -4,17 +4,7 @@ import { SmartCartFirstUseGuide, type FirstUseGuidanceProps } from "./smart-cart
 
 import { useState } from "react";
 
-type GroceryListItem = {
-  category: string;
-  buy_amount?: string;
-  flexibility_note?: string;
-  name: string;
-  item_key: string;
-  estimated_price: number;
-  meal_names?: string[];
-  usage_notes?: Array<{ meal: string; usage: string }>;
-  needed_amount?: string;
-};
+import type { GroceryListItem } from "../lib/grocery-list";
 
 type CustomItem = {
   id: string;
@@ -52,6 +42,7 @@ type SmartCartGrocerySidebarProps = FirstUseGuidanceProps & {
   rawBudgetPercentage: number;
   skippedGroceriesByCategory: [string, GroceryListItem[]][];
   totalCost: number;
+  hasUnknownPrices?: boolean;
 };
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
@@ -96,6 +87,7 @@ export function SmartCartGrocerySidebar({
   restoredItems,
   skippedGroceriesByCategory,
   totalCost,
+  hasUnknownPrices=false,
 }: SmartCartGrocerySidebarProps) {
   const [expandedUsageItems, setExpandedUsageItems] = useState<Set<string>>(new Set());
 
@@ -139,13 +131,10 @@ export function SmartCartGrocerySidebar({
             <details className="mt-2 text-sm text-ink/60">
             <summary className="min-h-11 cursor-pointer py-2">About quantities & price estimates</summary>
             <p className="mt-2 text-sm italic leading-6 text-gray-500">
-              Prices reflect estimated standard package costs, not exact recipe-use cost.
-              Actual totals may still vary by store and location.
+              Recipes use shows the total across all selected meals. Still need subtracts only compatible known pantry amounts, once per ingredient.
             </p>
             <p className="mb-4 mt-2 text-xs italic text-gray-500">
-              *Need shows what your selected meals use. Buy shows the likely package you
-              would grab at the store when the quantity is known. Check package sizes
-              against the full amount needed for your week.*
+              Package size and store prices must be confirmed. Unknown pantry amounts remain on the list until you confirm sufficiency in Pantry Snapshot.
             </p>
             </details>
 
@@ -178,16 +167,18 @@ export function SmartCartGrocerySidebar({
                           return (
                             <li
                               key={`${category}-${item.item_key}`}
-                              className="flex items-start justify-between gap-4"
+                              className="flex flex-wrap items-start justify-between gap-3"
                             >
-                              <label className="flex items-start gap-3">
+                              <div className="flex min-w-0 items-start gap-3">
+                                <label className="flex min-h-11 min-w-11 items-start justify-center pt-1"><span className="sr-only">Collect {displayName}</span>
                                 <input
                                   checked={checkedItems.has(item.item_key)}
                                   className="mt-0.5 h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
                                   onChange={() => onToggleCheckedItem(item.item_key)}
                                   type="checkbox"
                                 />
-                                <span className="flex flex-col">
+                                </label>
+                                <span className="flex min-w-0 flex-col break-words">
                                   <span
                                     className={`flex items-center gap-2 text-sm font-medium text-ink ${
                                     checkedItems.has(item.item_key)
@@ -213,11 +204,13 @@ export function SmartCartGrocerySidebar({
                                   </span>
                                   {(item.needed_amount || item.buy_amount) && (
                                     <span className="mt-1 text-xs text-ink/55">
-                                      {item.needed_amount ? `Need ${item.needed_amount}` : ""}
-                                      {item.needed_amount && item.buy_amount ? " • " : ""}
+                                      {item.needed_amount ? `Recipes use ${item.needed_amount}` : ""}
+                                      {item.shortage_amount ? ` · Still need ${item.shortage_amount}` : ""}
+                                      {item.buy_amount ? " · " : ""}
                                       {item.buy_amount ? `Buy ${item.buy_amount}` : ""}
                                     </span>
                                   )}
+                                  {item.pantry_note ? <span className="mt-1 text-xs leading-5 text-ink/70">{item.pantry_note}</span> : null}
                                   {item.flexibility_note ? (
                                     <span className="mt-1 text-[11px] leading-5 text-ink/45">
                                       {item.flexibility_note}
@@ -226,7 +219,8 @@ export function SmartCartGrocerySidebar({
                                   {(item.meal_names?.length || item.usage_notes?.length) ? (
                                     <>
                                       <button
-                                        className="mt-1 w-fit text-xs font-semibold text-pine transition hover:text-pine/75"
+                                        className="mt-1 min-h-11 w-fit text-xs font-semibold text-pine transition hover:text-pine/75"
+                                        aria-expanded={isUsageExpanded}
                                         onClick={() => toggleUsageItem(item.item_key)}
                                         type="button"
                                       >
@@ -256,17 +250,17 @@ export function SmartCartGrocerySidebar({
                                     </>
                                   ) : null}
                                   <button
-                                    className="mt-1 w-fit text-xs font-semibold text-red-400 transition hover:text-red-500"
+                                    className="mt-1 min-h-11 w-fit text-xs font-semibold text-red-400 transition hover:text-red-500"
                                     onClick={() => onRemoveGroceryItem(item.item_key)}
                                     type="button"
                                   >
                                     Remove from list
                                   </button>
                                 </span>
-                              </label>
+                              </div>
                               <span className="flex shrink-0 flex-col items-end text-right">
                                 <span className="text-sm font-semibold text-pine">
-                                  {formatCurrency(item.estimated_price)}
+                                  {item.price_status === "unavailable" ? "Estimate unavailable" : formatCurrency(item.estimated_price)}
                                 </span>
                                 <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink/35">
                                   Pkg est.
@@ -289,9 +283,7 @@ export function SmartCartGrocerySidebar({
                 </h4>
                 <div className="my-3 border-l-4 border-blue-500 bg-blue-50 p-3 text-xs text-blue-900">
                   <strong>Double-Check Your Kitchen!</strong> We skipped buying these items
-                  because you marked them as owned. The amounts listed below are exactly what
-                  you need to cook your selected meals. If your current stash is smaller than
-                  the amount shown, click <strong>[+ Add Back]</strong> so you do not run out.
+                  because compatible measured inventory covers the requirement, or you confirmed enough for this selection. Check labels and available quantities; use <strong>+ Add Back</strong> if anything changes.
                 </div>
                 <div className="space-y-4">
                   {skippedGroceriesByCategory.map(([category, items]) => (
@@ -307,7 +299,7 @@ export function SmartCartGrocerySidebar({
                               <span className="font-medium">{item.name}</span>
                               {(item.needed_amount || item.buy_amount) && (
                                 <span className="mt-1 text-xs text-gray-400">
-                                  {item.needed_amount ? `Need ${item.needed_amount}` : ""}
+                                  {item.needed_amount ? `Recipes use ${item.needed_amount}` : ""}
                                   {item.needed_amount && item.buy_amount ? " • " : ""}
                                   {item.buy_amount ? `Buy ${item.buy_amount}` : ""}
                                 </span>
@@ -319,7 +311,7 @@ export function SmartCartGrocerySidebar({
                               ) : null}
                               {(item.meal_names?.length || item.usage_notes?.length) ? (
                                 <button
-                                  className="mt-1 w-fit text-xs font-semibold text-gray-500 transition hover:text-gray-600"
+                                  className="mt-1 min-h-11 w-fit text-xs font-semibold text-gray-500 transition hover:text-gray-600"
                                   onClick={() => toggleUsageItem(`skipped-${item.item_key}`)}
                                   type="button"
                                 >
@@ -403,7 +395,7 @@ export function SmartCartGrocerySidebar({
               )}
               <div className="mt-2 flex gap-2">
                 <input
-                  className="flex-1 rounded border px-2 py-1 text-sm"
+                  className="min-w-0 flex-1 rounded border px-2 py-1 text-base" aria-label="Add a shopping extra"
                   onChange={(event) => onChangeCustomItem(event.target.value)}
                   placeholder="Add snacks, paper towels..."
                   type="text"
@@ -426,21 +418,21 @@ export function SmartCartGrocerySidebar({
                     Budget Progress
                   </p>
                   <p className="mt-1 text-base font-bold text-ink">
-                    {formatCurrency(totalCost)} / {formatCurrency(parsedBudget)}
+                    {hasUnknownPrices ? "Estimate unavailable" : formatCurrency(totalCost)} / {formatCurrency(parsedBudget)}
                   </p>
                 </div>
                 <span className={`text-sm font-semibold ${budgetStatusTextClass}`}>
                   {budgetStatusLabel}
                 </span>
               </div>
-              <div className="mt-4 h-4 w-full overflow-hidden rounded-full bg-gray-200">
+              {!hasUnknownPrices ? <div className="mt-4 h-4 w-full overflow-hidden rounded-full bg-gray-200">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${budgetProgressBarClass}`}
                   style={{ width: `${budgetPercentage}%` }}
                 />
-              </div>
+              </div> : <p className="mt-3 text-sm leading-6 text-ink/70">Confirm package sizes and prices at your store. An incomplete estimate cannot verify your budget.</p>}
               <div className="mt-3 flex items-center justify-between text-xs font-medium text-ink/60">
-                <span>{Math.round(rawBudgetPercentage)}% of budget used</span>
+                <span>{hasUnknownPrices ? "Prices not yet verified" : `${Math.round(rawBudgetPercentage)}% of budget used`}</span>
                 <span className={budgetStatusTextClass}>{budgetStatusLabel}</span>
               </div>
             </div>

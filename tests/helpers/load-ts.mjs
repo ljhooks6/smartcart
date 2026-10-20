@@ -13,7 +13,7 @@ export function loader(overrides = {}) {
     function resolve(name) {
       if (name in overrides) return overrides[name];
       if (name === 'next/server') return { NextResponse: { json: (body, init) => Response.json(body, init) } };
-      if (name.startsWith('@/') || name.startsWith('.')) return load((name.startsWith('@/') ? path.join(root, name.slice(2)) : path.resolve(path.dirname(file), name)) + '.ts');
+      if (name.startsWith('@/') || name.startsWith('.')) { const target=name.startsWith('@/') ? path.join(root,name.slice(2)) : path.resolve(path.dirname(file),name); return load(target.endsWith('.ts')?target:target+'.ts'); }
       return require(name);
     }
     new Function('require', 'module', 'exports', source)(resolve, module, module.exports);

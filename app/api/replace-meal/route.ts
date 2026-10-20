@@ -1,3 +1,4 @@
+import {optionalMealPauseResponse} from "@/lib/meal-availability";
 import { candidateOutputResponse } from "@/lib/food-safety-response";
 import { pantryViolations } from "@/lib/ai-food-constraints";
 import { foodTermMatches, equipmentRequirementText } from "@/lib/meal-quality";
@@ -206,6 +207,8 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  const paused=optionalMealPauseResponse(body);if(paused)return paused;
 
   const {
     budget,

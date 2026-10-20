@@ -14,7 +14,7 @@ function loadComponent(file) {
   new Function('require', 'module', 'exports', source)(name => {
     if (name.startsWith('@/') || name.startsWith('.')) {
       const base = name.startsWith('@/') ? path.resolve(name.slice(2)) : path.resolve(path.dirname(file), name);
-      return loadComponent(existsSync(base + '.tsx') ? base + '.tsx' : base + '.ts');
+      return loadComponent(/\.tsx?$/.test(base)?base:existsSync(base + '.tsx') ? base + '.tsx' : base + '.ts');
     }
     return require(name);
   }, module, module.exports);

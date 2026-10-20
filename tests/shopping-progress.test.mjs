@@ -37,6 +37,17 @@ test("reload validates progress and reset cannot undo a previous plan", () => {
   assert.equal(shoppingReducer(state, { type: "load", progress: parseShoppingProgress(state) }).undo, null);
 });
 
+test("hydration does not erase saved marks before authoritative requirements arrive",()=>{
+  const stored={checked:['potato','rice'],removed:['lime'],restored:[],custom:[{id:'extra',name:'Napkins',isChecked:true}],fingerprints:{potato:'2',rice:'1 cup',lime:'1'}};
+  let state=shoppingReducer(emptyShoppingState(),{type:'load',progress:parseShoppingProgress(stored)});
+  assert.equal(shoppingReducer(state,{type:'reconcile',requirements:{},ready:false}),state);
+  state=shoppingReducer(state,{type:'reconcile',requirements:{potato:'2',rice:'0.5 cups'},ready:true});
+  assert.deepEqual(state.checked,['potato']);
+  assert.deepEqual(state.removed,[]);
+  assert.deepEqual(state.custom,stored.custom);
+  assert.deepEqual(parseShoppingProgress(JSON.parse(JSON.stringify(state))).checked,['potato']);
+});
+
 test("removed collected rows do not inflate active shopping progress, and undo recovers them", () => {
   const derive = state => deriveGroceryLists({
     fullyStocked: new Set(), runningLow: new Set(), restock: new Set(), savedDesserts: [],

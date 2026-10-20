@@ -1,4 +1,5 @@
 import { culinaryReview, planConstraintIssues, foodTermMatches, equipmentRequirementText } from "./meal-quality";
+import {optionalMealPauseResponse} from "./meal-availability";
 import { candidateOutputResponse } from "./food-safety-response";
 import { foodSafetyResponse } from "./food-safety-response";
 import { assessDiet, allergyConflicts, ingredientTexts } from "@/lib/dietary-safety";
@@ -404,6 +405,7 @@ function countCuisineAlignedMeals(
 }
 
 export async function generateMealPlan(body: unknown, plan: "free" | "plus", onUsage?: (details: unknown) => void, varietyContext: MealVarietyContext = {}) {
+  const paused=optionalMealPauseResponse(body);if(paused)return paused;
   const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const {
     budget,
