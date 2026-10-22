@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 
 type ProductScreenshotProps = {
   src: string;
@@ -28,12 +28,24 @@ export function ProductScreenshot({ src, alt, title, width, height, sizes, prior
     closeButton.current?.focus();
   }
 
+  function containFocus(event: KeyboardEvent<HTMLDialogElement>) {
+    if (event.key !== "Tab") return;
+    const controls = event.currentTarget.querySelectorAll<HTMLElement>("button:not([disabled]), a[href]");
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault(); last?.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first?.focus();
+    }
+  }
+
   return <>
     <button ref={trigger} type="button" aria-label={`Enlarge ${title} screenshot`} aria-haspopup="dialog" onClick={enlarge} className="group block w-full cursor-zoom-in rounded-xl text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pine">
       <Image src={src} alt={alt} width={width} height={height} sizes={sizes} priority={priority} className={className} />
       <span className="block bg-white px-3 py-2 text-center text-xs font-semibold text-pine underline group-hover:bg-cream">Tap or click to enlarge</span>
     </button>
-    <dialog ref={dialog} aria-labelledby={headingId} aria-describedby={descriptionId} onClose={() => { setOpened(false); trigger.current?.focus({ preventScroll: true }); }} className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-5xl overflow-y-auto overscroll-contain rounded-2xl bg-white p-0 text-ink shadow-halo backdrop:bg-black/70">
+    <dialog ref={dialog} aria-labelledby={headingId} aria-describedby={descriptionId} onKeyDown={containFocus} onClose={() => { setOpened(false); trigger.current?.focus({ preventScroll: true }); }} className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-5xl overflow-y-auto overscroll-contain rounded-2xl bg-white p-0 text-ink shadow-halo backdrop:bg-black/70">
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-pine/20 bg-white px-4 py-3">
         <h2 id={headingId} className="text-lg font-bold text-pine">{title} preview</h2>
         <button ref={closeButton} type="button" onClick={() => dialog.current?.close()} className="min-h-11 rounded-lg bg-pine px-4 py-2 font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine">Close</button>
