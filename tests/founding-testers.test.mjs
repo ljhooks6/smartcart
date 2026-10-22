@@ -103,3 +103,23 @@ test('rendered retryable error is an alert and leaves form answers available', (
   assert.match(html, /name="email"/);
   assert.doesNotMatch(html, /Thanks for raising your hand/);
 });
+test('each product screenshot has a keyboard trigger and a closed named native dialog', () => {
+  const html = render();
+  for (const title of ['Shop', 'Pantry', 'Cook']) assert.match(html, new RegExp(`aria-label="Enlarge ${title} screenshot" aria-haspopup="dialog"`));
+  assert.equal((html.match(/<dialog\b/g) ?? []).length, 3);
+  assert.equal((html.match(/<dialog[^>]*\bopen(?:=|\s|>)/g) ?? []).length, 0);
+  assert.equal((html.match(/aria-labelledby="[^"]+" aria-describedby="[^"]+"/g) ?? []).length, 3);
+  // Full-resolution copies are mounted only on opening; the closed page keeps three thumbnails.
+  assert.equal((html.match(/<img[^>]*alt="[^"]+"/g) ?? []).length, 3);
+});
+test('hero and post-FAQ CTA share the existing form and keep closed applications disabled', () => {
+  for (const accepting of [true, false]) {
+    const html = render(accepting);
+    const links = [...html.matchAll(/<a[^>]*href="([^"]+)"[^>]*>Apply to Be a Founding Tester<\/a>/g)];
+    assert.deepEqual(links.map(link => link[1]), ['#apply', '#apply']);
+    assert.ok(html.indexOf('Apply after reading the FAQ') > html.indexOf('id="faq-heading"'));
+    assert.ok(html.indexOf('Apply after reading the FAQ') < html.indexOf('id="apply"'));
+    if (!accepting) assert.match(html, /Applications are currently closed; submission remains disabled/);
+    assert.equal((html.match(/id="apply"/g) ?? []).length, 1);
+  }
+});
