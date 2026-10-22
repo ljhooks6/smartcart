@@ -10,13 +10,15 @@ import { loader, root } from './helpers/load-ts.mjs';
 
 // Render the real components; replace only framework/resource boundaries for isolated SSR.
 const require = createRequire(import.meta.url);
-function componentLoader() {
+function componentLoader(states) {
+  let stateIndex = 0;
   const cache = new Map();
   function load(file) {
     if (cache.has(file)) return cache.get(file);
     const module = { exports: {} };
     const output = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
     function resolve(name) {
+      if (name === 'react' && states) return { ...React, useState: initial => [states[stateIndex++] ?? initial, () => {}] };
       if (name === 'next/link') return { default: ({ children, ...props }) => React.createElement('a', props, children), __esModule: true };
       if (name === 'next/image') return { default: ({ priority, ...props }) => React.createElement('img', props), __esModule: true };
       if (name === 'next/script') return { default: () => null, __esModule: true };
@@ -84,4 +86,20 @@ test('bounded campaign attribution preserves sources and rejects arbitrary or ov
   assert.deepEqual(betaAttribution('?utm_source=facebook&utm_campaign=wave-1', true), { source: 'facebook', campaign: 'wave-1' });
   assert.deepEqual(betaAttribution('?source=friends&utm_source=instagram&utm_campaign=', true), { source: 'friends', campaign: '' });
   for (const campaign of ['https://private.invalid', 'x'.repeat(81), '<script>']) assert.deepEqual(betaAttribution('?source=untrusted&utm_campaign=' + encodeURIComponent(campaign), true), { source: 'other', campaign: '' });
+});
+test('rendered success is generic for new or duplicate applicants and never claims activation', () => {
+  const { BetaApplication: Completed } = componentLoader(['', false, '', true, 'friends', 'founding-testers'])('components/beta-application.tsx');
+  const html = renderToStaticMarkup(React.createElement(Completed, { accepting: true, embedded: true, siteKey: '' }));
+  assert.match(html, /Thanks for raising your hand/);
+  assert.match(html, /does not create another place or change an existing review decision/);
+  assert.match(html, /does not create an account or activate beta access/);
+  assert.doesNotMatch(html, /<form\b|existing application remains in review/);
+});
+test('rendered retryable error is an alert and leaves form answers available', () => {
+  const { BetaApplication: Failed } = componentLoader(['', false, 'We couldn’t connect. Your answers are still here; please retry.', false, 'direct', 'founding-testers'])('components/beta-application.tsx');
+  const html = renderToStaticMarkup(React.createElement(Failed, { accepting: true, embedded: true, siteKey: '' }));
+  assert.match(html, /role="alert"[^>]*>We couldn’t connect/);
+  assert.match(html, /<form\b/);
+  assert.match(html, /name="email"/);
+  assert.doesNotMatch(html, /Thanks for raising your hand/);
 });

@@ -49,3 +49,24 @@ The screenshots visibly identify synthetic test profiles where shown. No real cu
 5. Recruitment delivery/social publication, applicant approvals, invitation delivery, participation activation and any auth-rate change remain separate decisions. Applying alone grants none of them.
 
 No new paid service or ongoing cost introduced. Full screen-reader/physical-device testing remains a separate launch gate; browser responsive and keyboard checks do not substitute for it.
+
+## Verified review results (October 22, 2026)
+
+| Check | Result |
+| --- | --- |
+| Focused automated coverage | **48 distinct tests pass** across focused runs: 8 real-component SSR/attribution/success/error tests, existing intake API and disposable PGlite database tests, and 19 existing product/access tests. Updated the old public CTA source assertion to follow the shared component; no authorization expectation was removed. Initial two assertion mismatches were corrected and affected tests rerun. No unrelated full suite. |
+| TypeScript / lint | Pass. Next lint reports its existing future deprecation notice; no lint warnings/errors. |
+| Production build, Preview only | Vercel READY, Preview deployment `dpl_2ExTzL4zo1wqDM99Vpyq5dUoCbub`, commit `4883808`, 35 seconds. Subsequent copy/evidence update gets its normal branch Preview build; see PR for final check. No local build retry or dependency operation. |
+| Actual Chrome desktop | 1280×960, document width 1265px (vertical scrollbar); all three product screenshots load, one H1, clear CTA. `docs/evidence/founding-testers-desktop.jpg`. |
+| Actual Chrome 320px | 320×900, document width 305px; no horizontal overflow. Keyboard CTA reaches `#apply`; native email type mismatch detected. Tab from challenges reaches first interest; Space toggles it. Required beta consent and optional unchecked marketing remain separate. Disabled submit cannot dispatch. `docs/evidence/founding-testers-320-form.jpg`. Only synthetic `.invalid` input was typed. |
+| Actual Chrome 390px | 390×900, document width 375px; no horizontal overflow. CTA, editable form, routine selector and `utm_source=friends` display work. FAQ opens with Enter. CDP screenshot capture timed out; no successful 390px image is claimed. Desktop and 320px evidence are retained. Temporary viewport override reset. |
+| Protected Preview | `/beta` works after existing Vercel session authentication. Anonymous HEAD returns HTTP 302 to Vercel SSO; no share/bypass link used. Preview applications are closed and submit remains disabled. |
+| Public-home integration | Shared presentation is wired into existing `PublicBetaHome`, with existing `AuthHome` routing unchanged. Under this Preview’s unchanged product-gate settings, `/` still renders the existing guest planner. `/beta` is the review entry point. No flag was changed merely to demonstrate the home presentation. |
+| Submission/access isolation | API and transactional duplicates, spam/Turnstile/rate failures, consent validation, private admin authorization, preserved accounts and denied unauthorized product use pass isolated tests. No hosted submission, inbox delivery, invitation redemption or new signup was performed. A functional shared Preview submission needs the separate bounded test/Turnstile/notification approval above. |
+| Scope diff | API routes, database/migrations, food-safety response, product access, auth/account setup, dependencies, lockfile and deployment configuration unchanged. No production writes, emails, paid AI calls, beta activation or PR #9 changes. |
+
+Protected review URL: `https://smartcart-git-feature-founding-testers-ljhooks6s-projects.vercel.app/beta`. Draft PR: https://github.com/ljhooks6/smartcart/pull/12.
+
+![Desktop recruitment preview](evidence/founding-testers-desktop.jpg)
+
+![320px synthetic form review](evidence/founding-testers-320-form.jpg)
