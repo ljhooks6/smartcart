@@ -10,6 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("Missing Supabase environment variables");
 }
 
+// Capture only a navigation hint before the SDK consumes the callback fragment.
+// No tokens are retained here; every password update still requires a verified caller.
+export const initialRecoveryCallback = typeof window !== "undefined" && new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery";
 export const supabase = createClient(
   supabaseUrl || fallbackSupabaseUrl,
   supabaseAnonKey || fallbackSupabaseAnonKey,

@@ -53,7 +53,7 @@ export async function invitationReview(request: Request) {
   const row = result.data;
   if (!row) return betaJson({ state: "unavailable" });
   const applicant = row.beta_applications as unknown as { email: string; cohort: string; status: string };
-  if (!pilotIdentityAllowed(access.user.id, access.user.email) || applicant.email !== access.user.email?.toLowerCase() || row.bound_user_id !== access.user.id) return betaJson({ state: "wrong_account" });
+  if (!pilotIdentityAllowed(access.user.id, access.user.email) || applicant.email !== access.user.email?.toLowerCase() || (row.bound_user_id !== null && row.bound_user_id !== access.user.id)) return betaJson({ state: "wrong_account" });
   const state = row.state === "consumed" ? "accepted" : row.state === "revoked" ? "revoked" : row.state !== "issued" || new Date(row.expires_at).getTime() <= Date.now() ? "expired" : "ready";
   return betaJson({ state, cohort: applicant.cohort, expiresAt: row.expires_at });
 }

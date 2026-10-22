@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { MealCaddieLogo } from "./mealcaddie-logo";
+import { usePersonalization } from "./account-personalization";
 import { signInPath } from "@/lib/auth-destination";
 import { accountRequest, rememberDestination, saveInvitationReturn, takeInvitationReturn, clearInvitationReturn } from "@/lib/account-client";
 
@@ -20,6 +21,7 @@ const button = "min-h-12 rounded-xl bg-pine px-4 py-3 font-semibold text-white f
 const areas = [["onboarding", "Signup, sign-in and beta onboarding"], ["planning", "Meal planning"], ["cooking", "Recipes and cooking"], ["groceries", "Groceries and shopping"], ["pantry", "Pantry (Plus saving)"], ["vault", "Recipe Vault"], ["other", "General, pricing or upgrade experience"]];
 
 export function BetaParticipant({ accept = false, enabled }: { accept?: boolean; enabled: boolean }) {
+  const { profile } = usePersonalization();
   const invitation = useRef(""); const feedbackKey = useRef<string | null>(null);
   const authUser = useRef<string | null | undefined>(undefined); const version = useRef(0); const saving = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -82,6 +84,7 @@ export function BetaParticipant({ accept = false, enabled }: { accept?: boolean;
     <header className="mb-6 flex flex-wrap items-center justify-between gap-3"><MealCaddieLogo /><Link className="min-h-11 py-3 font-semibold text-pine underline" href="/">MealCaddie home</Link></header>
     <h1 ref={heading} tabIndex={-1} className="text-3xl font-bold text-pine">{active ? "You're in! Welcome to the MealCaddie beta." : accept ? "Your beta invitation" : "Your MealCaddie beta"}</h1>
     <p className="mt-3">Help us make everyday meal planning easier. Participation requires no payment information and creates no subscription.</p>
+    {active && profile?.onboardingAvailable && !profile.householdComplete ? <Link className={`${button} mt-4 inline-flex items-center`} href="/account/onboarding?next=%2Fplanner">Set up your first dinner plan</Link> : null}
     <p role="status" aria-live="polite" className="my-3 text-pine">{message || (enabled && loading ? "Checking your account and beta access…" : "")}</p><p role="alert" className="my-3 text-berry">{error}</p>
     {!enabled ? <p className="rounded-2xl bg-white p-5">Beta onboarding is disabled in this environment.</p> : null}
     {overview ? <p className="my-4 break-words">Signed in as: <strong>{overview.verifiedEmail}</strong></p> : null}

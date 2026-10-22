@@ -29,6 +29,7 @@ export function FoundingTestersLanding({ accepting, children }: { accepting: boo
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink/85">A little less dinner guesswork. A little more room for your week. Plan dinners, organize what’s in your pantry and bring a clearer list to the grocery store.</p>
         <p className="mt-5 max-w-xl leading-relaxed">Help us build something useful for real households. Try MealCaddie, tell us where it helps and show us where it gets in your way.</p>
         <a href={applicationHref} className={`${actionClass} mt-7 w-full sm:w-auto`}>Apply to Be a Founding Tester</a>
+        <Link href="/explore" className="mt-3 inline-flex min-h-11 items-center py-3 font-semibold text-pine underline sm:ml-4">Explore a sample dinner</Link>
         <p className="mt-4 text-sm leading-relaxed">Invitation-only beta · Free early access · No payment information</p>
         <p role="status" className="mt-2 max-w-xl text-sm text-pine">{accepting ? "Applications are open. Applying does not guarantee selection or immediate access." : "Applications are currently closed. You can review the experience below; submission is disabled."}</p>
       </div>
