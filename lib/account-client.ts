@@ -1,8 +1,9 @@
 import { supabase } from "./supabase";
-export type PersonalProfile = { userId: string; name: string; prefill: string; complete: boolean; newAccount: boolean };
-export async function accountRequest(path: string, body?: unknown, method = "POST") {
+export type PersonalProfile = { userId: string; name: string; prefill: string; complete: boolean; newAccount: boolean; onboardingAvailable?: boolean; householdComplete?: boolean };
+export async function accountRequest(path: string, body?: unknown, method = "POST", expectedOwner?: string) {
   const { data, error } = await supabase.auth.getSession();
   if (error || !data.session) throw Error("Please sign in to your existing MealCaddie account.");
+  if (expectedOwner && data.session.user.id !== expectedOwner) throw Error("Your account changed. Reopen setup for your current account.");
   const response = await fetch(path, { cache: "no-store", credentials: "same-origin", method: body === undefined ? "GET" : method, headers: { Authorization: `Bearer ${data.session.access_token}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
   const result = await response.json(); if (!response.ok) throw Error(result.error ?? "Please retry in a moment."); return result;
 }

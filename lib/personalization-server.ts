@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { boundedJson, betaJson } from "./beta-server";
 import { personalProfile, preferredName } from "./personalization";
+import { accountExperienceEnabled, readHousehold } from "./account-experience";
 export async function personAccess(request: Request) {
   const origin = request.headers.get("origin");
   if ((origin && origin !== new URL(request.url).origin) || request.headers.get("sec-fetch-site") === "cross-site") return { response: betaJson({ error: "Use MealCaddie on this website." }, 403) };
@@ -15,7 +16,7 @@ export async function personAccess(request: Request) {
 }
 export async function profileGet(request: Request) {
   const access = await personAccess(request); if ("response" in access) return access.response;
-  return betaJson({ userId: access.user.id, ...personalProfile(access.user) });
+  return betaJson({ userId: access.user.id, ...personalProfile(access.user), onboardingAvailable: accountExperienceEnabled(), householdComplete: readHousehold(access.user.user_metadata).complete });
 }
 export async function profilePut(request: Request) {
   const access = await personAccess(request); if ("response" in access) return access.response;

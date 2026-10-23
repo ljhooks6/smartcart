@@ -22,7 +22,7 @@ export const betaChangeSchema = z.object({
 }).strict();
 export const betaTargetsSchema = z.object({ free: z.number().int().min(0).max(10000), plus: z.number().int().min(0).max(10000), reserve: z.number().int().min(0).max(10000) }).strict();
 export function betaPagesEnabled(env: Record<string, string | undefined> = process.env) {
-  if (env.VERCEL_ENV === "production") return env.BETA_PUBLIC_LAUNCH_APPROVED === "true" && env.BETA_APPLICATIONS_ENABLED === "true" && env.BETA_PRIVACY_REVIEW_APPROVED === "true" && env.BETA_CONTACT_MAILBOXES_VERIFIED === "true";
+  if (env.VERCEL_ENV === "production") return env.BETA_PUBLIC_LAUNCH_APPROVED === "true" && env.BETA_PRIVACY_REVIEW_APPROVED === "true" && env.BETA_CONTACT_MAILBOXES_VERIFIED === "true";
   return !env.VERCEL || env.VERCEL_ENV === "preview" || env.VERCEL_ENV === "development";
 }
 export function betaSubmissionsEnabled(env: Record<string, string | undefined> = process.env) {

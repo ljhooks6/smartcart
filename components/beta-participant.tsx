@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { MealCaddieLogo } from "./mealcaddie-logo";
+import { usePersonalization } from "./account-personalization";
 import { signInPath } from "@/lib/auth-destination";
 import { accountRequest, rememberDestination, saveInvitationReturn, takeInvitationReturn, clearInvitationReturn } from "@/lib/account-client";
 
@@ -20,6 +21,7 @@ const button = "min-h-12 rounded-xl bg-pine px-4 py-3 font-semibold text-white f
 const areas = [["onboarding", "Signup, sign-in and beta onboarding"], ["planning", "Meal planning"], ["cooking", "Recipes and cooking"], ["groceries", "Groceries and shopping"], ["pantry", "Pantry (Plus saving)"], ["vault", "Recipe Vault"], ["other", "General, pricing or upgrade experience"]];
 
 export function BetaParticipant({ accept = false, enabled }: { accept?: boolean; enabled: boolean }) {
+  const { profile } = usePersonalization();
   const invitation = useRef(""); const feedbackKey = useRef<string | null>(null);
   const authUser = useRef<string | null | undefined>(undefined); const version = useRef(0); const saving = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -69,11 +71,11 @@ export function BetaParticipant({ accept = false, enabled }: { accept?: boolean;
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Unable to save. Your input has been kept."); }
     finally { saving.current = false; setBusy(false); }
   }
-  async function signIn(switchAccount = false) {
+  async function signIn(switchAccount = false, register = false) {
     try {
       await rememberDestination(accept ? "/beta/accept" : "/beta/participant", invitation.current || undefined);
       if (switchAccount) { const result = await supabase.auth.signOut({ scope: "local" }); if (result.error) throw result.error; }
-      window.location.assign(signInPath(accept ? "/beta/accept" : "/beta/participant"));
+      window.location.assign(register && accept ? "/auth/register?next=%2Fbeta%2Faccept" : signInPath(accept ? "/beta/accept" : "/beta/participant"));
     } catch { setError("We couldn't preserve your invitation. Please try again."); }
   }
   const participant = overview?.participation;
@@ -82,10 +84,11 @@ export function BetaParticipant({ accept = false, enabled }: { accept?: boolean;
     <header className="mb-6 flex flex-wrap items-center justify-between gap-3"><MealCaddieLogo /><Link className="min-h-11 py-3 font-semibold text-pine underline" href="/">MealCaddie home</Link></header>
     <h1 ref={heading} tabIndex={-1} className="text-3xl font-bold text-pine">{active ? "You're in! Welcome to the MealCaddie beta." : accept ? "Your beta invitation" : "Your MealCaddie beta"}</h1>
     <p className="mt-3">Help us make everyday meal planning easier. Participation requires no payment information and creates no subscription.</p>
+    {active && profile?.onboardingAvailable && !profile.householdComplete ? <Link className={`${button} mt-4 inline-flex items-center`} href="/account/onboarding?next=%2Fplanner">Set up your first dinner plan</Link> : null}
     <p role="status" aria-live="polite" className="my-3 text-pine">{message || (enabled && loading ? "Checking your account and beta access…" : "")}</p><p role="alert" className="my-3 text-berry">{error}</p>
     {!enabled ? <p className="rounded-2xl bg-white p-5">Beta onboarding is disabled in this environment.</p> : null}
     {overview ? <p className="my-4 break-words">Signed in as: <strong>{overview.verifiedEmail}</strong></p> : null}
-    {enabled && signedIn === false ? <section className="my-5 rounded-2xl bg-white p-5"><h2 className="text-xl font-semibold">{accept ? "Sign in to accept your invitation." : "Sign in to view your beta participation."}</h2><p className="my-3">Use the verified account that received your invitation. We will return you here after sign-in.</p><button className={button} onClick={() => void signIn()}>Sign in to MealCaddie</button></section> : null}
+    {enabled && signedIn === false ? <section className="my-5 space-y-3 rounded-2xl bg-white p-5"><h2 className="text-xl font-semibold">{accept ? "Sign in to accept your invitation." : "Sign in to view your beta participation."}</h2><p>Already have an account? Use its existing password, Google or email-link sign-in. Do not create a replacement account. We will return you here after sign-in.</p><button className={button} onClick={() => void signIn()}>Sign in to MealCaddie</button>{accept ? <><p>New invited tester? Create an account with username, email and password, then verify the exact email that received your invitation. New Google and email-link registration are not available in this phase. Return to this invitation and explicitly accept the beta notice; registration alone does not activate access.</p><button className={button} onClick={() => void signIn(false, true)}>Create my invited account</button></> : null}</section> : null}
     {review?.state === "wrong_account" ? <section className="my-5 rounded-2xl bg-white p-5"><h2 className="text-xl font-semibold">You are signed in with a different MealCaddie account.</h2><p className="my-3">Switch to the verified account that received this invitation. Your invitation will be preserved.</p><button className={button} onClick={() => void signIn(true)}>Switch accounts</button></section> : null}
     {review && ["expired", "revoked", "unavailable"].includes(review.state) && !participant ? <p role="status" className="my-5 rounded-2xl bg-white p-5">{review.state === "revoked" ? "This invitation was revoked." : review.state === "expired" ? "This invitation has expired or is no longer available." : "This invitation is unavailable."} Contact the beta team for help.</p> : null}
     {accept && !participant && review?.state === "ready" ? <section className="my-5 space-y-4 rounded-2xl bg-white p-5" aria-label="Accept invitation">

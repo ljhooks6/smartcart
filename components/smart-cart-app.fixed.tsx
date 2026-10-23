@@ -1,6 +1,7 @@
 "use client";
 import { PANTRY_INGREDIENT_OPTIONS as pantryQuickSelectOptions } from "../lib/ingredient-catalog";
 import { DietarySafetySummary } from "./dietary-safety-summary";
+import { readHousehold, householdPlanDefaults } from "../lib/account-experience";
 
 import { getMealRequestHeaders } from "../lib/meal-request-headers";
 
@@ -437,6 +438,21 @@ export function SmartCartApp() {
     | null;
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [user, setUser] = useState<User | null>(null);
+  const householdApplied = useRef("");
+  useEffect(() => {
+    if (!user) { householdApplied.current = ""; return; }
+    if (householdApplied.current === user.id) return;
+    const preferences = readHousehold(user.user_metadata);
+    if (!preferences.complete) return;
+    householdApplied.current = user.id;
+    // Explicit owner-scoped setup handoff only. Never replace an existing saved plan.
+    try {
+      if (sessionStorage.getItem(`mealcaddie-household-ready:${user.id}`) !== "yes") return;
+      sessionStorage.removeItem(`mealcaddie-household-ready:${user.id}`);
+    } catch { return; }
+    setFormState({ ...initialFormState, ...householdPlanDefaults(preferences) });
+    setActiveMobileTab("plan");
+  }, [user]);
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [hasResolvedAuthSession, setHasResolvedAuthSession] = useState(false);

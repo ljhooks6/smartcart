@@ -41,6 +41,7 @@ function render({participation=null,accept=true,review=null,signedIn=true,recove
  if(name.includes('mealcaddie-logo'))return {MealCaddieLogo:()=>React.createElement('span',null,'MealCaddie')};
  if(name.includes('auth-destination'))return {signInPath:next=>'/auth/sign-in?next='+encodeURIComponent(next)};
  if(name.includes('account-client'))return {};
+ if(name.includes('account-personalization'))return {usePersonalization:()=>({profile:null})};
  if(name.includes('supabase'))return {supabase:{}};
  throw Error(name);
  },module,module.exports);
