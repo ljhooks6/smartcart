@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { initialAuthFailure, supabase } from "@/lib/supabase";
 import { signInMealCaddieEmail, signInMealCaddieGoogle } from "@/lib/auth-redirect";
 import { requestedDestination } from "@/lib/auth-destination";
 import { accountRequest, rememberDestination } from "@/lib/account-client";
@@ -13,7 +13,7 @@ const control = "mt-2 min-h-12 w-full rounded-xl border border-pine bg-white px-
 const button = "min-h-12 w-full rounded-xl bg-pine px-4 py-3 font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine disabled:opacity-50";
 export function CredentialAccess({ mode, enabled }: { mode: CredentialMode; enabled: boolean }) {
   const router = useRouter(), { finishRecovery, recovering, profile } = usePersonalization();
-  const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState(""), [failure, setFailure] = useState("");
+  const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState(""), [failure, setFailure] = useState(initialAuthFailure ? "Sign-in could not finish. Google and email links are for existing accounts. New invited testers must use Set up your account with username, email and password. If you already have an account, use its usual sign-in method; do not create a replacement." : "");
   const [identifier, setIdentifier] = useState(""), [username, setUsername] = useState(""), [password, setPassword] = useState(""), [confirmation, setConfirmation] = useState("");
   const destination = useRef("/planner"), alert = useRef<HTMLParagraphElement>(null);
   useEffect(() => { destination.current = requestedDestination(window.location.search); let alive = true; void accountRequest("/api/account/profile").then(async () => { if (mode === "login") { await rememberDestination(destination.current); if (alive) router.replace("/"); } }).catch(() => {}).finally(() => { if (alive) setReady(true); }); return () => { alive = false; }; }, [router, mode]);
@@ -23,7 +23,7 @@ export function CredentialAccess({ mode, enabled }: { mode: CredentialMode; enab
     try {
       await rememberDestination(destination.current);
       const result = google ? await signInMealCaddieGoogle(supabase.auth, window.location.origin) : await signInMealCaddieEmail(supabase.auth, identifier, window.location.origin);
-      if (result.error) throw Error("Sign-in couldn’t start. Please retry using your usual account.");
+      if (result.error) throw Error("Sign-in couldn’t start. Google and email links are for existing accounts only. New invited testers should use Set up your account with username, email and password. Existing users should retry their usual sign-in method, without creating another account.");
       setMessage(google ? "Continuing to Google…" : "Check your inbox. Reopen your invitation after verification if needed.");
     } catch (error) { setFailure(error instanceof Error ? error.message : "Please try again."); }
     finally { setBusy(false); }
@@ -50,7 +50,7 @@ export function CredentialAccess({ mode, enabled }: { mode: CredentialMode; enab
   }
   const title = { login: "Welcome back to MealCaddie", register: "Your invitation. Your account.", recover: "Let’s get you back in", reset: "Choose a new password" }[mode];
   return <main className="min-h-screen bg-cream px-4 py-8 text-ink"><div className="mx-auto max-w-md space-y-5 rounded-3xl bg-white p-6 sm:p-8"><MealCaddieLogo /><h1 className="font-display text-3xl font-bold text-pine">{title}</h1>
-    <p>{mode === "register" ? "Account registration is for personally invited testers. Use the exact email that received your invitation. Applying or creating an account does not activate beta access." : mode === "recover" ? "Enter your account email. If eligible, a verification link will help you choose a new password." : mode === "reset" ? "Use the recovery link from your email first. We never ask for your password by email." : "Use your username or email and password, or continue with the same Google account you used before."}</p>
+    <p>{mode === "register" ? "New invited testers create an account with a username, email and password, then verify their email. Use the exact email that received your invitation. Google and email-link registration are not available in this phase. Already have a MealCaddie account? Return to sign-in and use your existing method; do not create a replacement account. Creating an account does not accept your invitation or activate beta access." : mode === "recover" ? "Enter your account email. If eligible, a verification link will help you choose a new password." : mode === "reset" ? "Use the recovery link from your email first. We never ask for your password by email." : "Use your username or email and password, or continue with the same Google account you used before. Google and email links sign in to established accounts only; new invited testers must first set up an account with username, verified email and password."}</p>
     {!enabled ? <p role="status" className="rounded-xl bg-parchment p-3 text-sm">Password registration and recovery are disabled in this review environment. Existing Google and email-link access is unchanged.</p> : null}
     {mode === "login" ? <button type="button" disabled={!ready || busy} className={button} onClick={() => void existing(true)}>Continue with Google</button> : null}
     <form onSubmit={submit} className="space-y-4" aria-busy={busy}>

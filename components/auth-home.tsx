@@ -6,10 +6,11 @@ import { accountRequest, saveInvitationReturn } from "@/lib/account-client";
 import { authDestination, settledAuthDestination } from "@/lib/auth-destination";
 import { SmartCartApp } from "./smart-cart-app.fixed";
 import Link from "next/link";
+import { initialAuthFailure } from "@/lib/supabase";
 export function AuthHome({ publicContent }: { publicContent?: ReactNode } = {}) {
   const { profile, loading, error, refresh, recovering } = usePersonalization(); const router = useRouter();
   const pathname = usePathname();
-  const processed = useRef<string | null>(null); const [returning, setReturning] = useState(false), [failure, setFailure] = useState("");
+  const processed = useRef<string | null>(null); const [returning, setReturning] = useState(false), [failure, setFailure] = useState(initialAuthFailure ? "Sign-in could not finish. Google and email links sign in to established accounts only. New invited testers must set up an account with username, verified email and password. If you already have an account, use its usual sign-in method; do not create a replacement." : "");
   const userId = profile?.userId; const newAccount = profile?.newAccount;
   useEffect(() => {
     if (recovering) { router.replace("/auth/reset"); return; }

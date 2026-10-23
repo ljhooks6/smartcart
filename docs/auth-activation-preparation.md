@@ -1,5 +1,7 @@
 # Controlled hosted Auth preparation — hosted activation not executed
 
+> Superseded release decision: the owner approved password-first NEW registration and waived the hosted rehearsal. Google/email-link remain existing-account sign-in methods. No new Google/OTP enrollment is included. See [coordinated release controls](password-first-release.md); the earlier isolated-test proposal below is historical and must not be reopened or provisioned.
+
 This reviewed preparation is published on `feature/auth-onboarding-integration` in draft PR #13 with a protected Preview. Publication does not apply either migration, attach an Auth hook or enable password/setup endpoints. PR #12's approved design and PR #9 are untouched. Existing integration/regression evidence is reused. No customer record, hosted flag, Auth setting, migration or email was changed.
 
 ## Preferred hosted test: separate disposable project
