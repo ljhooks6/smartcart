@@ -9,7 +9,7 @@ create table public.account_usernames (
 );
 alter table public.account_usernames enable row level security;
 create policy deny_browser on public.account_usernames as restrictive for all to anon,authenticated using(false) with check(false);
-revoke all on public.account_usernames from public,anon,authenticated;
+revoke all on public.account_usernames from public,anon,authenticated,service_role;
 grant select,insert on public.account_usernames to service_role;
 -- Immutable first claim. Only a server-verified confirmed identity may claim a name.
 create function public.account_claim_username(p_user uuid,p_username text) returns text

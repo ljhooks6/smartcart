@@ -1,5 +1,7 @@
 # Authentication and household integration review
 
+> Activation preparation supersedes the original migration checksum/security gap described below. See [controlled Auth preparation](auth-activation-preparation.md) for the corrected username SQL, provider hook/permit migration, exact new checksums and hosted approval gates. The original `b8e7409` test/review evidence below is retained; its earlier checksum is not the execution target.
+
 ## Review scope
 
 `feature/auth-onboarding-integration` is stacked on approved Founding Testers commit `beb92f8a4da9f353e211c865f130f853b2ab2209` / draft PR #12. Its approved layout, screenshot viewer, captions, FAQ, application controls and consent remain intact. The only landing addition is an offline sample link. No PR #9 code is included. No hosted flags, Auth configuration, customer records or production schema were changed.

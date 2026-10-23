@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { setTimeout as pause } from "node:timers/promises";
 import { betaJson, betaStorageClient, boundedJson, betaNetworkHash } from "./beta-server";
 import { accountExperienceEnabled, credentialSchema, usernameSchema } from "./account-experience";
@@ -64,8 +64,19 @@ export async function credentialPost(request: Request) {
       if (row.error) return betaJson({ error: "Account setup is temporarily unavailable." }, 503);
       const applicant = row.data?.beta_applications as unknown as { email: string; status: string } | undefined;
       if (row.data?.state === "issued" && !row.data.bound_user_id && Date.parse(row.data.expires_at) > Date.now() && applicant?.status === "invited" && applicant.email === input.email) {
-        const result = await auth.signUp({ email: input.email, password: input.password, options: { emailRedirectTo: emailAuthRedirect(new URL(request.url).origin), data: { requested_username: input.username } } });
-        if (result.data.session) return betaJson({ error: "Email verification must be enabled before registration can continue. Contact support." }, 503);
+        const permit = randomBytes(32).toString("base64url");
+        const permitHash = createHash("sha256").update(permit).digest("hex");
+        const prepared = await admin.rpc("account_prepare_signup", { p_email: input.email, p_invitation_hash: createHash("sha256").update(token).digest("hex"), p_permit_hash: permitHash });
+        if (prepared.error) return betaJson({ error: "Account setup is temporarily unavailable." }, 503);
+        if (!prepared.data) return betaJson({ message: generic });
+        try {
+          const result = await auth.signUp({ email: input.email, password: input.password, options: { emailRedirectTo: emailAuthRedirect(new URL(request.url).origin), data: { requested_username: input.username, account_signup_permit: permit } } });
+          if (result.data.session) return betaJson({ error: "Email verification must be enabled before registration can continue. Contact support." }, 503);
+        } finally {
+          // Normally already consumed by the Auth hook. A crashed cleanup cannot
+          // extend the two-minute DB expiry; never log the capability or payload.
+          try { const revoked = await admin.rpc("account_revoke_signup_permit", { p_permit_hash: permitHash }); if (revoked.error) console.error("signup_permit_cleanup_unavailable"); } catch { console.error("signup_permit_cleanup_unavailable"); }
+        }
       }
     }
     return betaJson({ message: generic });

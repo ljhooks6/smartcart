@@ -35,6 +35,8 @@ test('unknown usernames and wrong passwords have identical generic failures and 
 test('signup requires an unexpired invitation, exact recipient and no existing bound account, without granting participation',async()=>withEnv(env,async()=>{
  const valid={action:'register',email,username:'invited_tester',password:'disposable-password-123'};
  const f=fixture();assert.equal((await f.post(f.request(valid))).status,200);assert.equal(f.calls.filter(c=>c[0]==='signup').length,1);
+ const proof=f.calls.find(c=>c[0]==='signup')[1].options.data.account_signup_permit;assert.match(proof,/^[A-Za-z0-9_-]{43}$/);assert.notEqual(proof,token);
+ const permitHash=createHash('sha256').update(proof).digest('hex');assert.equal(f.calls.find(c=>c[0]==='account_prepare_signup')[1].p_permit_hash,permitHash);assert.equal(f.calls.find(c=>c[0]==='account_revoke_signup_permit')[1].p_permit_hash,permitHash);
  for(const [options,body,req] of [[{},valid,{withCookie:false}],[{expired:true},valid,{}],[{state:'consumed'},valid,{}],[{bound:uid},valid,{}],[{}, {...valid,email:'wrong@example.invalid'},{}]]){const invalid=fixture(options);assert.equal((await invalid.post(invalid.request(body,req))).status,200);assert.equal(invalid.calls.filter(c=>c[0]==='signup').length,0);}
  assert.equal(f.calls.some(v=>/accept_invitation|participation|grant|subscription/.test(v[0])),false);
 }));
