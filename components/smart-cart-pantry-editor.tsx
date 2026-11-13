@@ -126,7 +126,9 @@ export function SmartCartPantryEditor({ entries, options, onChange, requirements
     const removal = pendingRemoval.current;
     if (!removal) return;
     pendingRemoval.current = null;
-    const target = removal.targets.find(button => button.isConnected) ??
+    const nearby = removal.targets.find(button => button.isConnected);
+    const replacement = resultsRef.current?.querySelector<HTMLButtonElement>("[data-pantry-suggestion]");
+    const target = nearby ?? replacement ??
       inventoryRef.current?.querySelector<HTMLButtonElement>("[data-pantry-category]") ?? searchRef.current;
     target?.focus({ preventScroll: true });
     window.scrollTo({ top: removal.top, behavior: "instant" });
@@ -142,9 +144,8 @@ export function SmartCartPantryEditor({ entries, options, onChange, requirements
     const rows = Array.from(openRow?.closest("ul")?.querySelectorAll<HTMLButtonElement>("[data-pantry-row]") ?? []);
     const index = openRow ? rows.indexOf(openRow) : -1;
     const category = openRow?.closest("[data-pantry-group]")?.querySelector<HTMLButtonElement>("[data-pantry-category]");
-    const clear = inventoryRef.current?.querySelector<HTMLButtonElement>("[data-clear-pantry-search]");
     pendingRemoval.current = {
-      targets: [rows[index + 1], rows[index - 1], category, clear].filter((target): target is HTMLButtonElement => !!target),
+      targets: [rows[index + 1], rows[index - 1], category].filter((target): target is HTMLButtonElement => !!target),
       top: window.scrollY,
     };
     onChange(entries.filter(item => ingredientKey(item.name) !== key));
@@ -160,7 +161,7 @@ export function SmartCartPantryEditor({ entries, options, onChange, requirements
       onRemove={() => remove(entry, key)} />;
   }
 
-  return <section ref={inventoryRef} className="min-w-0 space-y-3 text-ink" aria-label="Pantry ingredients">
+  return <section ref={inventoryRef} className="min-w-0 space-y-3 text-ink [overflow-anchor:none]" aria-label="Pantry ingredients">
     <div className="flex flex-wrap items-baseline justify-between gap-2"><h3 className="font-display text-xl text-pine">Your pantry</h3><p className="text-xs text-ink/75">{entries.length} ingredients</p></div>
     <label htmlFor={id} className="block text-sm font-semibold">Search or add ingredients
       <input ref={searchRef} id={id} className={`${control} mt-1`} type="search" value={query} maxLength={200}
@@ -177,7 +178,7 @@ export function SmartCartPantryEditor({ entries, options, onChange, requirements
     {searching ? <div onKeyDown={event => { if (event.key === "Escape" && event.target instanceof HTMLButtonElement) { event.preventDefault(); setQuery(""); setExpanded(null); searchRef.current?.focus(); } }}>
       <ul id={`${id}-results`} ref={resultsRef} aria-label="Ingredient search results" className="space-y-2">
         {matches.slice(0, searchLimit).map(match => match.entry ? row(match.entry) : <li key={match.key}>
-          <button type="button" onClick={() => add(match.name)} className={`${button} flex w-full min-w-0 items-center justify-between gap-3 border border-pine/20 bg-white text-left`}>
+          <button type="button" data-pantry-suggestion onClick={() => add(match.name)} className={`${button} flex w-full min-w-0 items-center justify-between gap-3 border border-pine/20 bg-white text-left`}>
             <span className="min-w-0 break-words">{match.name}</span><span className="shrink-0">Add<span className="sr-only"> {match.name} to pantry</span></span>
           </button>
         </li>)}
@@ -186,7 +187,7 @@ export function SmartCartPantryEditor({ entries, options, onChange, requirements
       {matches.some(match => !!match.entry) ? <p className="mt-2 text-xs text-ink/75">Ingredients with Edit are already added to your pantry.</p> : null}
       {matches.length > searchLimit ? <button type="button" className={`${button} mt-2 underline`} onClick={() => setSearchLimit(current => current + PANTRY_PAGE_SIZE)}>Show more matches ({matches.length - searchLimit} remaining)</button> : null}
       {!matches.length && !canAddCustom ? <p className="text-sm">Enter an ingredient name to see suggestions.</p> : null}
-      <button type="button" data-clear-pantry-search className={`${button} mt-2 underline`} onClick={() => { setQuery(""); setExpanded(null); searchRef.current?.focus(); }}>Clear search</button>
+      <button type="button" className={`${button} mt-2 underline`} onClick={() => { setQuery(""); setExpanded(null); searchRef.current?.focus(); }}>Clear search</button>
     </div> : <div className="space-y-2">
       {!entries.length ? <p className="rounded-xl bg-cream p-3 text-sm">Your pantry is empty. Search above to add an ingredient.</p> : null}
       {groups.map((group, index) => {

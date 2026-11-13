@@ -214,7 +214,7 @@ export function useSmartCartGrocery({
     skippedGroceriesByCategory,
     toggleCheckedItem,
     totalCost,
-    hasUnknownPrices:derivedGroceryList.some(i=>i.price_status==="unavailable"),
+    hasUnknownPrices:checkPantryItems.length > 0 || derivedGroceryList.some(i=>i.price_status==="unavailable"),
     pantryRequirements:complete.pantryRequirements,
     removeCustomItem: (id: string) => dispatchShopping({ type: "custom-remove", id }),
     removeGroceryItem: (itemKey: string) => dispatchShopping({ type: "remove", key: itemKey, name: derivedGroceryList.find(item => item.item_key === itemKey)?.name || "Item" }),
