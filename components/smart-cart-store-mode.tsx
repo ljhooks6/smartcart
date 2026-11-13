@@ -7,6 +7,7 @@ import type { CustomShoppingItem } from "../lib/shopping-progress";
 type Props = {
   open: boolean;
   onClose: () => void;
+  pantryCheck?: React.ReactNode;
   groups: [string, GroceryListItem[]][];
   checkedItems: Set<string>;
   customItems: CustomShoppingItem[];
@@ -18,7 +19,7 @@ type Props = {
   onUndo: () => void;
 };
 
-export function SmartCartStoreMode({ open, onClose, groups, checkedItems, customItems, onToggleItem, onRemoveItem, onCheckCustom, onRemoveCustom, undoMessage, onUndo }: Props) {
+export function SmartCartStoreMode({ open, onClose, pantryCheck, groups, checkedItems, customItems, onToggleItem, onRemoveItem, onCheckCustom, onRemoveCustom, undoMessage, onUndo }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const departmentNavRef = useRef<HTMLElement>(null);
@@ -80,6 +81,7 @@ export function SmartCartStoreMode({ open, onClose, groups, checkedItems, custom
         </nav>
         <label className="mt-2 flex min-h-11 shrink-0 items-center gap-3 text-sm text-ink/70"><input type="checkbox" checked={onlyRemaining} onChange={event => setOnlyRemaining(event.target.checked)} className="h-5 w-5 accent-pine" />Only show items to collect</label>
         <div ref={listRef} className="mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
+          {pantryCheck ? <div className="mb-4">{pantryCheck}</div> : null}
           {active ? <>
             <h2 className="font-display text-2xl text-pine">{active.name}</h2>
             <p className="mt-1 text-sm text-ink/65">{remainingInDepartment} remaining in this department</p>
@@ -109,7 +111,7 @@ export function SmartCartStoreMode({ open, onClose, groups, checkedItems, custom
         </div>
         <footer className="shrink-0 border-t border-stone-200 pt-3">
           {undoMessage ? <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-white p-3"><p role="status" className="text-sm text-ink/70">{undoMessage}</p><button type="button" onClick={onUndo} className="min-h-11 px-3 font-semibold text-pine underline underline-offset-4">Undo</button></div> : null}
-          {total > 0 && collected === total ? <p className="mb-3 text-center font-semibold text-pine">Everything on your list is collected.</p> : null}
+          {total > 0 && collected === total ? <p className="mb-3 text-center font-semibold text-pine">All purchase items are collected.</p> : null}
           <div className="flex gap-3"><button type="button" disabled={activeIndex <= 0} onClick={() => chooseDepartment(departments[activeIndex - 1].key)} className="min-h-12 flex-1 rounded-full border border-pine/20 bg-white px-4 text-sm font-semibold text-pine disabled:opacity-40">Previous</button><button type="button" disabled={activeIndex < 0 || activeIndex >= departments.length - 1} onClick={() => chooseDepartment(departments[activeIndex + 1].key)} className="min-h-12 flex-1 rounded-full bg-pine px-4 text-sm font-semibold text-white disabled:opacity-40">Next department</button></div>
         </footer>
       </div>

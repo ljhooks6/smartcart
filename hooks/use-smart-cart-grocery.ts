@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { deriveGroceryLists, getIngredientKey, sortGroceryGroups, type GroceryListItem } from "../lib/grocery-list";
 
-import { emptyShoppingState, parseShoppingProgress, shoppingReducer } from "../lib/shopping-progress";
+import { emptyShoppingState, parseShoppingProgress, shoppingReducer, type PantryAnswer } from "../lib/shopping-progress";
 import type {PantryEntry} from "../lib/pantry";
 
 type IngredientItem = {
@@ -70,23 +70,32 @@ export function useSmartCartGrocery({
   const [newCustomItem, setNewCustomItem] = useState("");
 
   const complete = useMemo(() => deriveGroceryLists({
-    fullyStocked, runningLow, restock, weeklyMenu, savedDesserts, pantryItems,pantryEntries, restoredItems,
+    fullyStocked, runningLow, restock, weeklyMenu, savedDesserts, pantryItems,pantryEntries, restoredItems, pantryDecisions: ownedShopping.pantryDecisions,
   }), [
     fullyStocked,
     pantryItems,
     pantryEntries,
     restock,
     restoredItems,
+    ownedShopping.pantryDecisions,
     runningLow,
     savedDesserts,
     weeklyMenu,
   ]);
-  const requirementFingerprints=Object.fromEntries([...complete.derivedGroceryList,...complete.skippedGroceryList].map(i=>[i.item_key,JSON.stringify([i.requirement_key,i.shortage_amount])]));
+  const requirementFingerprints=Object.fromEntries([...complete.derivedGroceryList,...complete.checkPantryList,...complete.skippedGroceryList].map(i=>[i.item_key,JSON.stringify([i.requirement_key,i.shortage_amount ?? i.needed_amount])]));
   const checkedItems=new Set(ownedShopping.checked.filter(key=>!ownedShopping.fingerprints?.[key]||ownedShopping.fingerprints[key]===requirementFingerprints[key]));
   const requirementContext=JSON.stringify(requirementFingerprints);
-  useEffect(()=>{if(loadedStorageKey===storageKey)dispatchShopping({type:"reconcile",requirements:JSON.parse(requirementContext),ready:requirementsReady});},[requirementContext,loadedStorageKey,storageKey,requirementsReady]);
+  const pantryDecisionContext = JSON.stringify(Object.fromEntries(complete.pantryRequirements.map(item => [item.item_key, item.pantry_decision_key])));
+  useEffect(()=>{if(loadedStorageKey===storageKey)dispatchShopping({type:"reconcile",requirements:JSON.parse(requirementContext),pantryRequirements:JSON.parse(pantryDecisionContext),ready:requirementsReady});},[requirementContext,loadedStorageKey,storageKey,requirementsReady,pantryDecisionContext]);
   const derivedGroceryList=complete.derivedGroceryList.filter(i=>!removedGroceryItems.includes(i.item_key)||(ownedShopping.fingerprints?.[i.item_key]&&ownedShopping.fingerprints[i.item_key]!==requirementFingerprints[i.item_key]));
   const skippedGroceryList=complete.skippedGroceryList;
+  const checkPantryItems = complete.checkPantryList.filter(item => !removedGroceryItems.includes(item.item_key)
+    || (ownedShopping.fingerprints?.[item.item_key] && ownedShopping.fingerprints[item.item_key] !== requirementFingerprints[item.item_key]));
+
+  function answerPantry(item: GroceryListItem, answer: PantryAnswer) {
+    if (loadedStorageKey !== storageKey || !requirementsReady || !item.pantry_decision_key) return;
+    dispatchShopping({ type: "pantry-answer", key: item.item_key, decision: { answer, requirement: item.pantry_decision_key } });
+  }
 
   const displayGroceriesByCategory = useMemo(() => {
     const grouped = derivedGroceryList.reduce<Record<string, GroceryListItem[]>>(
@@ -132,6 +141,10 @@ export function useSmartCartGrocery({
       )
       .join("\n\n");
 
+    if (checkPantryItems.length) {
+      listText += "\n\nCHECK PANTRY (not a purchase list):\n" + checkPantryItems.map(item => `- ${item.name} | Recipes use: ${item.needed_amount}`).join("\n");
+    }
+
     if (customItems.length > 0) {
       listText += "\n\nEXTRAS & HOUSEHOLD:\n";
       listText += customItems
@@ -140,7 +153,7 @@ export function useSmartCartGrocery({
     }
 
     return listText;
-  }, [customItems, displayGroceriesByCategory, formatCurrency]);
+  }, [checkPantryItems, customItems, displayGroceriesByCategory, formatCurrency]);
 
   const totalCost = useMemo(
     () => derivedGroceryList.reduce((sum, item) => sum + item.estimated_price, 0),
@@ -181,6 +194,8 @@ export function useSmartCartGrocery({
   }
 
   return {
+    answerPantry,
+    checkPantryItems,
     checkedItems,
     copied,
     customItems,
@@ -199,7 +214,7 @@ export function useSmartCartGrocery({
     skippedGroceriesByCategory,
     toggleCheckedItem,
     totalCost,
-    hasUnknownPrices:derivedGroceryList.some(i=>i.price_status==="unavailable"),
+    hasUnknownPrices:checkPantryItems.length > 0 || derivedGroceryList.some(i=>i.price_status==="unavailable"),
     pantryRequirements:complete.pantryRequirements,
     removeCustomItem: (id: string) => dispatchShopping({ type: "custom-remove", id }),
     removeGroceryItem: (itemKey: string) => dispatchShopping({ type: "remove", key: itemKey, name: derivedGroceryList.find(item => item.item_key === itemKey)?.name || "Item" }),

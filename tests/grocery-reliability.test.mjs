@@ -88,9 +88,10 @@ test("typed name-only pantry ingredients need explicit quantity or sufficiency c
   const result = derive({ pantryItems: ["rice", "canned black beans", "olive oil"], weeklyMenu: [
     meal("Rice and beans", [["Rice", "1 cup"], ["Canned Black Beans", "1 can"], ["Olive Oil", "1 tbsp"], ["Yellow Onion", "1"]]),
   ] });
-  assert.equal(result.derivedGroceryList.length, 4);
+  assert.equal(result.derivedGroceryList.length, 1);
+  assert.equal(result.checkPantryList.length, 3);
   assert.equal(result.skippedGroceryList.length, 0);
-  assert.match(find(result.derivedGroceryList,"Rice").pantry_note,/Amount unknown/);
+  assert.match(find(result.checkPantryList,"Rice").pantry_note,/Amount unknown/);
 });
 
 test("restock overrides owned status and avoids a duplicate recipe/restock row", () => {

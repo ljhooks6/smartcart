@@ -23,6 +23,7 @@ type SmartCartGrocerySidebarProps = FirstUseGuidanceProps & {
   checkedItems: Set<string>;
   copied: boolean;
   customItems: CustomItem[];
+  pantryCheck?: React.ReactNode;
   displayGroceriesByCategory: [string, GroceryListItem[]][];
   formatCurrency: (value: number) => string;
   isGroceryOpen: boolean;
@@ -69,6 +70,7 @@ export function SmartCartGrocerySidebar({
   copied,
   customItems,
   displayGroceriesByCategory,
+  pantryCheck,
   formatCurrency,
   isGroceryOpen,
   newCustomItem,
@@ -120,11 +122,13 @@ export function SmartCartGrocerySidebar({
         <SmartCartFirstUseGuide area="shop" showGuidance={showGuidance} onDismissGuidance={onDismissGuidance} />
 
         <button type="button" onClick={onEnterStoreMode}
-          disabled={!displayGroceriesByCategory.length && !customItems.length}
+          disabled={!displayGroceriesByCategory.length && !customItems.length && !pantryCheck}
           className="mt-4 min-h-12 w-full rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">
           Enter Store Mode
         </button>
         {undoMessage ? <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white p-3"><p role="status" className="text-sm text-ink/70">{undoMessage}</p><button type="button" onClick={onUndo} className="min-h-11 px-3 font-semibold text-pine underline underline-offset-4">Undo</button></div> : null}
+
+        {pantryCheck ? <div className="mt-4">{pantryCheck}</div> : null}
 
         {isGroceryOpen && (
           <>
@@ -134,14 +138,14 @@ export function SmartCartGrocerySidebar({
               Recipes use shows the total across all selected meals. Still need subtracts only compatible known pantry amounts, once per ingredient.
             </p>
             <p className="mb-4 mt-2 text-xs italic text-gray-500">
-              Package size and store prices must be confirmed. Unknown pantry amounts remain on the list until you confirm sufficiency in Pantry Snapshot.
+              Package size and store prices must be confirmed. Review uncertain amounts in Check Pantry.
             </p>
             </details>
 
             <div className="mt-6 space-y-5">
               <section className="rounded-3xl border border-stone-200 bg-white p-4 shadow-lg">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="font-display text-xl text-pine">Meal Ingredients</p>
+                  <p className="font-display text-xl text-pine">Need to Buy</p>
                 </div>
 
                 <div className="mt-4 space-y-5">
@@ -150,7 +154,7 @@ export function SmartCartGrocerySidebar({
                       <p className="font-display text-lg text-pine">{category}</p>
                       <ul className="mt-4 space-y-3">
                         {items.map((item) => {
-                          const isRestock = item.name.includes("(Includes Restock)");
+                          const isRestock = item.restock_requested || item.category === "Restock";
                           const isUsageExpanded = expandedUsageItems.has(item.item_key);
                           const bellPepperPattern = /bell pepper/i;
                           const bellPepperColorPattern = /\b(red|green|yellow|orange)\b/i;
@@ -279,7 +283,7 @@ export function SmartCartGrocerySidebar({
             {skippedGroceriesByCategory.length > 0 && (
               <div className="mt-6 border-t border-stone-200 pt-6">
                 <h4 className="mb-2 mt-6 text-sm font-bold uppercase text-gray-500">
-                  Skipped (In Your Pantry)
+                  Already Covered
                 </h4>
                 <div className="my-3 border-l-4 border-blue-500 bg-blue-50 p-3 text-xs text-blue-900">
                   <strong>Double-Check Your Kitchen!</strong> We skipped buying these items

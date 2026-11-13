@@ -1,4 +1,5 @@
 import { ingredientKey, parseIngredient, parseQuantity, combineQuantities, formatQuantity, convertQuantity, isPackageUnit, type Quantity } from "./ingredient-quantity.ts";
+import type { PantryDecision } from "./shopping-progress.ts";
 import { normalizePantry, type PantryEntry } from "./pantry.ts";
 import { getGroceryDepartment, inferIngredientUsage } from "./grocery-department.ts";
 export { mergeAmounts } from "./ingredient-quantity.ts";
@@ -33,6 +34,10 @@ export type GroceryListItem = {
     pantry_note?: string;
     review_required?: boolean;
     preparation_notes?: string[];
+    pantry_question?: "unknown" | "low" | "incompatible";
+    restock_requested?: boolean;
+    pantry_decision_key?: string;
+    pantry_answer?: PantryDecision["answer"];
 };
 export type GroceryIngredientSource = IngredientItem & {
     mealName: string;
@@ -83,7 +88,7 @@ export function sortGroceryGroups(groups: Record<string, GroceryListItem[]>) { r
     string,
     GroceryListItem[]
 ]).sort(([a], [b]) => ((departments.indexOf(a) + 1) || 99) - ((departments.indexOf(b) + 1) || 99) || a.localeCompare(b)); }
-export function deriveGroceryLists({ fullyStocked, runningLow, restock, weeklyMenu, savedDesserts, pantryItems = [], pantryEntries = [], restoredItems = [], removedGroceryItems = [] }: {
+export function deriveGroceryLists({ fullyStocked, runningLow, restock, weeklyMenu, savedDesserts, pantryItems = [], pantryEntries = [], restoredItems = [], removedGroceryItems = [], pantryDecisions = {} }: {
     fullyStocked: Set<string>;
     runningLow: Set<string>;
     restock: Set<string>;
@@ -93,40 +98,68 @@ export function deriveGroceryLists({ fullyStocked, runningLow, restock, weeklyMe
     pantryEntries?: PantryEntry[];
     restoredItems?: string[];
     removedGroceryItems?: string[];
+    pantryDecisions?: Record<string, PantryDecision>;
 }) {
     const entries = normalizePantry([...pantryItems, ...[...fullyStocked].map(name => ({ name, status: "stocked" })), ...[...runningLow].map(name => ({ name, status: "low" })), ...[...restock].map(name => ({ name, status: "restock" })), ...pantryEntries]);
     const pantry = new Map(entries.map(e => [getIngredientKey(e.name), e]));
     const all = aggregateIngredientItems([...weeklyMenu, ...savedDesserts].flatMap(m => (m.ingredients ?? []).map(i => ({ ...i, mealName: m.name || "Selected meal", mealNotes: m.notes || "" }))));
-    const derivedGroceryList: GroceryListItem[] = [], skippedGroceryList: GroceryListItem[] = [];
+    const derivedGroceryList: GroceryListItem[] = [], skippedGroceryList: GroceryListItem[] = [], checkPantryList: GroceryListItem[] = [];
     for (const item of all) {
         const entry = pantry.get(item.item_key), forced = restoredItems.includes(item.item_key), quantities = item.requirements ?? [];
-        let remaining = quantities.map(q => ({ ...q })), note = "", covered = false;
+        const decisionKey = JSON.stringify([item.requirement_key, entry?.quantity, entry?.unit, entry?.status]);
+        item.pantry_decision_key = decisionKey;
+        const storedDecision = pantryDecisions[item.item_key];
+        const decision = storedDecision?.requirement === decisionKey ? storedDecision.answer : undefined;
+        const remaining = quantities.map(q => ({ ...q }));
         const qualitative = item.needed_amount !== quantities.map(formatQuantity).join(" + ");
+        let note = "", covered = false;
+        let question: GroceryListItem["pantry_question"] = item.review_required ? "incompatible" : undefined;
+        const restockRequested = entry?.status === "restock";
+
         if (entry && !forced && !item.review_required) {
-            if (entry.confirmedFor === item.requirement_key) {
+            if (decision === "enough" || (!decision && entry.confirmedFor === item.requirement_key)) {
                 covered = true;
-                note = "You confirmed enough for these selected recipes; amount remains unknown.";
-            }
-            else if (entry.quantity !== undefined) {
-                const unit = entry.unit ?? "", index = remaining.findIndex(q => convertQuantity({ value: entry.quantity!, unit }, q.unit) !== null);
-                if (index >= 0) {
-                    const q = remaining[index], available = convertQuantity({ value: entry.quantity, unit }, q.unit)!;
-                    remaining[index] = { ...q, value: Math.max(0, Number((q.value - available).toFixed(6))) };
-                    note = `Pantry: ${formatQuantity({ value: entry.quantity, unit })} available. Applied once across the whole week.`;
+                note = "You confirmed enough for these selected recipes.";
+            } else if (entry.quantity === undefined) {
+                question = entry.status === "low" ? "low" : "unknown";
+                note = "Amount unknown. Stock labels do not measure inventory.";
+            } else {
+                const index = remaining.findIndex(q => convertQuantity({ value: entry.quantity!, unit: entry.unit ?? "" }, q.unit) !== null);
+                if (index >= 0 || entry.quantity === 0) {
+                    if (index >= 0) {
+                        const q = remaining[index];
+                        const available = convertQuantity({ value: entry.quantity, unit: entry.unit ?? "" }, q.unit)!;
+                        remaining[index] = { ...q, value: Math.max(0, Number((q.value - available).toFixed(6))) };
+                    }
+                    note = `Pantry: ${formatQuantity({ value: entry.quantity, unit: entry.unit ?? "" })} available.`;
                     covered = !qualitative && remaining.every(q => q.value <= .000001);
+                    if (entry.quantity > 0 && (qualitative || remaining.some((q, i) => i !== index && q.value > 0))) question = "incompatible";
+                } else {
+                    question = "incompatible";
+                    note = "Pantry quantity cannot be compared with recipe units. Check the package or measurement.";
                 }
-                else
-                    note = "Pantry quantity cannot be compared with recipe units. Confirm size/amount or update the measurement.";
             }
-            else
-                note = "Amount unknown — confirm enough for this week or enter a quantity. Stock labels do not measure inventory.";
         }
-        const shortage = covered ? "0" : remaining.filter(q => q.value > .000001).map(formatQuantity).join(" + ") + (qualitative ? (remaining.some(q => q.value > .000001) ? " + " : "") + (item.needed_amount?.split(" + ").filter(s => !parseQuantity(s)).join(" + ") || "Amount unspecified") : "");
-        const result = { ...item, pantry_note: note || undefined, shortage_amount: shortage || item.needed_amount };
-        if (covered)
+
+        const needsReview = question && !forced && decision !== "buy" && !restockRequested && !covered;
+        const shortage = [
+            ...remaining.filter(q => q.value > .000001).map(formatQuantity),
+            ...(qualitative ? item.needed_amount?.split(" + ").filter(amount => !parseQuantity(amount)) ?? [] : []),
+        ].join(" + ");
+        const result = {
+            ...item,
+            pantry_note: note || undefined,
+            pantry_question: needsReview ? question : undefined,
+            pantry_answer: decision,
+            restock_requested: restockRequested,
+            shortage_amount: needsReview || question ? undefined : covered ? restockRequested ? undefined : "0" : shortage || item.needed_amount,
+        };
+        if (covered && !restockRequested) {
             skippedGroceryList.push(result);
-        else if (!removedGroceryItems.includes(item.item_key))
-            derivedGroceryList.push(result);
+        } else if (!removedGroceryItems.includes(item.item_key)) {
+            if (needsReview) checkPantryList.push(result);
+            else derivedGroceryList.push(result);
+        }
     }
     const recipeKeys = new Set(all.map(i => i.item_key));
     for (const entry of entries.filter(e => e.status === "restock")) {
@@ -135,5 +168,5 @@ export function deriveGroceryLists({ fullyStocked, runningLow, restock, weeklyMe
             continue;
         derivedGroceryList.push({ name: entry.name, item_key, category: "Restock", estimated_price: 0, price_status: "unavailable", needed_amount: "Restock requested", shortage_amount: "Confirm quantity", flexibility_note: "Confirm package size", requirement_key: JSON.stringify([item_key, entry.quantity, entry.unit]) });
     }
-    return { derivedGroceryList, skippedGroceryList, pantryRequirements: all };
+    return { derivedGroceryList, checkPantryList, skippedGroceryList, pantryRequirements: all };
 }

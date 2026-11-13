@@ -1,4 +1,5 @@
 import { usableDescription } from "./recipe-description";
+import { cookingTimeLimitMinutes } from "./cooking-time.ts";
 type Ingredient = { name: string; amount?: string; price: number };
 type Dish = { name?: string; title?: string; notes?: string; description?: string; ingredients: Ingredient[]; prepTime?: number; prep_time_minutes?: number; servings?: number };
 type Plan = { meals: Dish[]; breakfasts?: Dish[]; lunches?: Dish[]; desserts?: Dish[] };
@@ -26,10 +27,17 @@ export function equipmentRequirementText(text: string) {
 export function planConstraintIssues(plan: Plan, input: { budget: number; householdSize: number; mealSourceMode?: string; combinedPantryItems?: string; fullyStocked?: string[]; runningLow?: string[]; restock?: string[]; prepTime?: string }) {
   const dishes=[...plan.meals,...(plan.breakfasts||[]),...(plan.lunches||[]),...(plan.desserts||[])];
   const issues: string[]=[];
-  const limits=(input.prepTime?.match(/\d+/g)||[]).map(Number);const maximum=limits.length?Math.max(...limits):null;
+  const maximum = cookingTimeLimitMinutes(input.prepTime);
   for(const dish of dishes) {
     if(dish.servings && dish.servings!==input.householdSize)issues.push("Recipe servings do not match the household size.");
-    if(maximum && (!dish.prep_time_minutes || dish.prep_time_minutes>maximum))issues.push("Cooking time is missing or exceeds the selected time limit.");
+    if (maximum !== null) {
+      const minutes = dish.prep_time_minutes;
+      if (minutes === undefined || !Number.isInteger(minutes) || minutes <= 0) {
+        issues.push("At least one recipe was missing a valid total cooking time. Try generating again with the same preferences.");
+      } else if (minutes > maximum) {
+        issues.push(`At least one recipe needs more than your ${maximum}-minute limit. Try again for faster dishes or choose a longer time in Preferences.`);
+      }
+    }
     const title=dish.name||dish.title||"",names=dish.ingredients.map(i=>i.name.toLowerCase()).join(" ");
     for(const [named,required] of [[/streusel/i,/flour|oat/],[/chocolate/i,/chocolate|cocoa/],[/lemon/i,/lemon/],[/blueberry/i,/blueberr/],[/pumpkin/i,/pumpkin/],[/pesto/i,/pesto|basil/],[/gnocchi/i,/gnocchi/]] as const)if(named.test(title)&&!required.test(names))issues.push("Named component lacks supporting ingredients: "+title);
   }

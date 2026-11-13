@@ -30,6 +30,6 @@ export function pantryPickerMatches(entries: PantryEntry[], options: Record<stri
 
 export function pantrySummary(entry: PantryEntry) {
   const amount = entry.quantity === undefined ? "Amount unknown" : formatQuantity({ value: entry.quantity, unit: entry.unit || "each" });
-  const status = { owned: "", stocked: "Fully stocked label", low: "Running low", restock: "Restock" }[entry.status];
+  const status = { owned: "Have some", stocked: "Have some", low: "Running low", restock: "Need to buy" }[entry.status];
   return [amount, status].filter(Boolean).join(" · ");
 }

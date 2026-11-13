@@ -1,3 +1,12 @@
+import { cookingTimeLimitMinutes } from "./cooking-time.ts";
+
+function cookingTimeRules(preference?: string): string[] {
+  const maximum = cookingTimeLimitMinutes(preference);
+  return maximum === null ? [] : [
+    `- Every dinner and any sweet treat must include prep_time_minutes as a positive integer no greater than ${maximum}. Count all elapsed prep, cooking, and any required resting or chilling before serving. Choose genuinely faster dishes if needed. Sweet treats may be omitted if none fit.`,
+  ];
+}
+
 type GeneratePromptArgs = {
   adventureGuidance: string;
   adventureLevel: string;
@@ -171,6 +180,7 @@ export function buildGenerateListPrompts({
     "- Respect the budget strictly. Include a realistic prep_time_minutes for every dish, covering preparation plus cooking until ready to serve; never compress a long braise or yeast rise into a short time limit.",
     "- Respect the diet exactly.",
     `- Respect the user's prep-time preference: ${prepTime || "No preference provided"}.`,
+    ...cookingTimeRules(prepTime),
     "- This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.",
     "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes. Use a natural recognizable dish name; a coherent soup, pasta or one-pan dish can already be a complete meal. Describe complementary sides without attaching unrelated rice to every dish.",
     `- Avoid repeating these current meal titles: ${existingMeals || "None provided"}. A specifically requested repeat or a hard pantry-only constraint can take precedence; this is not a permanent ban.`,

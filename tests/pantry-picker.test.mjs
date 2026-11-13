@@ -31,10 +31,10 @@ test('grouping preserves custom data and quantities without conflating formulati
  assert.equal(JSON.stringify(entries),before);
 });
 test('summary distinguishes unknown amount, zero, measured stock and labels',()=>{
- assert.equal(pantrySummary({name:'Rice',status:'owned'}),'Amount unknown');
- assert.equal(pantrySummary({name:'Rice',status:'stocked'}),'Amount unknown · Fully stocked label');
+ assert.equal(pantrySummary({name:'Rice',status:'owned'}),'Amount unknown · Have some');
+ assert.equal(pantrySummary({name:'Rice',status:'stocked'}),'Amount unknown · Have some');
  assert.equal(pantrySummary({name:'Rice',status:'low',quantity:0,unit:'cup'}),'0 cups · Running low');
- assert.equal(pantrySummary({name:'Oil',status:'restock',quantity:1,unit:'bottle'}),'1 bottle · Restock');
+ assert.equal(pantrySummary({name:'Oil',status:'restock',quantity:1,unit:'bottle'}),'1 bottle · Need to buy');
  assert.equal(PANTRY_PAGE_SIZE,12);
 });
 test('edited and custom pantry payloads retain existing owner boundaries and exclude week confirmations',()=>{

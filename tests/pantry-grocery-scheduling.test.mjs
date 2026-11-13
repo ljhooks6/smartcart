@@ -9,7 +9,7 @@ import {optionalMealPauseResponse} from '../lib/meal-availability.ts';
 import {replacementIngredientItems} from '../lib/recipe-ingredients.ts';
 const meal=(name,ingredients,extra={})=>({name,day:name,user_id:'synthetic-owner',ingredients:ingredients.map(([name,amount])=>({name,amount})),...extra});
 const derive=(extra={})=>deriveGroceryLists({fullyStocked:new Set(),runningLow:new Set(),restock:new Set(),weeklyMenu:[],savedDesserts:[],...extra});
-const item=(result,name)=>[...result.derivedGroceryList,...result.skippedGroceryList].find(i=>i.item_key===getIngredientKey(name));
+const item=(result,name)=>[...result.derivedGroceryList,...result.checkPantryList,...result.skippedGroceryList].find(i=>i.item_key===getIngredientKey(name));
 const week=[meal('Soup',[['Carrots','2'],['Rice','1 cup'],['Garlic powder','1/2 tsp']]),meal('Roast',[['1 carrot, grated','1 carrot'],['Rice','1/2 cup'],['Garlic powder','1/4 tsp']])];
 
 test('replacement ingredient lines retain actual amounts rather than invented packs or prices',()=>{
@@ -35,7 +35,7 @@ test('aggregate all dinners and desserts before subtracting each pantry amount o
 
 test('name-only pantry and stock labels never mean unlimited inventory',()=>{
  for(const status of ['owned','stocked','low','restock']){
-  const r=derive({weeklyMenu:week,pantryEntries:normalizePantry([{name:'Rice',status}])});assert.match(item(r,'Rice').pantry_note,/Amount unknown/);assert.equal(item(r,'Rice').shortage_amount,'1.5 cups');assert.equal(r.skippedGroceryList.length,0);
+  const r=derive({weeklyMenu:week,pantryEntries:normalizePantry([{name:'Rice',status}])});assert.match(item(r,'Rice').pantry_note,/Amount unknown/);assert.equal(item(r,'Rice').shortage_amount,undefined);assert.equal(r.checkPantryList.some(i=>i.item_key==='rice'),status!=='restock');assert.equal(r.skippedGroceryList.length,0);
  }
  const legacy=normalizePantry(['Rice','My custom spice']);assert.equal(legacy.length,2);assert.equal(legacy[1].name,'My custom spice');assert.equal(legacy[0].quantity,undefined);
  assert.equal(normalizePantry(['香菜','Jalapeño'])[0].name,'香菜');assert.equal(getIngredientKey('Jalapeño'),getIngredientKey('Jalapeno'));
@@ -75,8 +75,8 @@ test('prep is not a product name; qualitative salt/pepper split without package 
 
 test('restock status remains separate from measured stock and does not duplicate ingredient rows',()=>{
  const r=derive({weeklyMenu:week,pantryEntries:normalizePantry([{name:'Rice',status:'restock',quantity:2,unit:'cup'},{name:'Olive oil',status:'restock'}])});
- assert.equal(r.skippedGroceryList.find(i=>i.item_key==='rice').shortage_amount,'0');
- assert.equal(r.derivedGroceryList.filter(i=>i.name==='Rice').length,0);assert.equal(r.derivedGroceryList.filter(i=>i.name==='Olive oil').length,1);
+ assert.equal(r.derivedGroceryList.find(i=>i.item_key==='rice').restock_requested,true);
+ assert.equal(r.derivedGroceryList.filter(i=>i.name==='Rice').length,1);assert.equal(r.derivedGroceryList.filter(i=>i.name==='Olive oil').length,1);
 });
 
 test('search resolves aliases, deduplicates custom names and preserves owner isolation',()=>{
@@ -130,4 +130,32 @@ test('rendered schedules and grocery inputs never include another account or gue
  for(const owner of ['alice','bob','']){const selected=mealsForOwner(owned,owner);assert.equal(selected.length,1);assert.equal(selected[0].user_id,owner);assert.equal(derive({weeklyMenu:selected}).derivedGroceryList.length,1);}
  assert.deepEqual(mealsForOwner(owned,'new-account'),[]);assert.equal(owned.length,3);
  const generated={day:'Day 1',name:'New meal'};const bound=bindNewMealOwner(generated,'alice');assert.equal(mealsForOwner([bound],'alice').length,1);assert.equal(bindNewMealOwner(owned[1],'alice'),null);assert.equal(generated.user_id,undefined);
+});
+
+test('milk across dinner and dessert is covered, partially short, or a question', () => {
+ const weeklyMenu = [meal('Soup', [['Milk', '2 cups']])];
+ const savedDesserts = [meal('Pudding', [['Milk', '1 cup']])];
+ const withMilk = (quantity, extra = {}) => derive({ weeklyMenu, savedDesserts, pantryEntries: [{name:'Milk',status:'owned',quantity,unit:'cup'}], ...extra });
+ assert.equal(withMilk(5).skippedGroceryList[0].needed_amount, '3 cups');
+ assert.equal(withMilk(1).derivedGroceryList[0].shortage_amount, '2 cups');
+ const question = withMilk().checkPantryList[0];
+ assert.equal(question.needed_amount, '3 cups');
+ assert.equal(question.shortage_amount, undefined);
+ const answer = value => ({pantryDecisions:{milk:{requirement:question.pantry_decision_key,answer:value}}});
+ assert.equal(withMilk(undefined,answer('enough')).skippedGroceryList.length,1);
+ assert.equal(withMilk(undefined,answer('buy')).derivedGroceryList.length,1);
+ assert.equal(withMilk(undefined,answer('later')).checkPantryList[0].pantry_answer,'later');
+ assert.equal(withMilk(undefined,{...answer('enough'),savedDesserts:[meal('Pudding',[['Milk','3 cups']])]}).checkPantryList[0].needed_amount,'5 cups');
+ assert.equal(withMilk(1,answer('enough')).derivedGroceryList[0].shortage_amount,'2 cups');
+ assert.equal(withMilk(undefined,{...answer('enough'),pantryEntries:[]}).derivedGroceryList.length,1);
+});
+
+test('low oil and an unknown bottle do not invent a shortage', () => {
+ const weeklyMenu = [meal('Roast',[['Olive oil','2 tbsp']])];
+ for(const [entry, reason] of [[{status:'low'},'low'],[{status:'owned',quantity:1,unit:'bottle'},'incompatible']]){
+   const result = derive({weeklyMenu,pantryEntries:[{name:'Olive oil',...entry}]});
+   assert.equal(result.derivedGroceryList.length,0);
+   assert.equal(result.checkPantryList[0].pantry_question,reason);
+   assert.equal(result.checkPantryList[0].shortage_amount,undefined);
+ }
 });
