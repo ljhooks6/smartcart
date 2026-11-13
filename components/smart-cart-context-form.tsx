@@ -223,32 +223,6 @@ export function SmartCartContextForm({
           </label>
         </div>
 
-        <label className="space-y-2">
-          <span className="text-sm font-semibold text-ink">
-            Must-Have Ingredient (Optional)
-          </span>
-          <input
-            className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
-            onChange={(event) => onMustHaveIngredientChange(event.target.value)}
-            placeholder="e.g., Chicken breast, heavy cream"
-            type="text"
-            value={formState.mustHaveIngredient}
-          />
-        </label>
-
-        <label className="space-y-2">
-          <span className="text-sm font-semibold text-ink">
-            Do Not Include (Optional)
-          </span>
-          <input
-            className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
-            onChange={(event) => onAvoidIngredientsChange(event.target.value)}
-            placeholder="e.g., honey mustard, stir fry, mushrooms"
-            type="text"
-            value={formState.avoidIngredients}
-          />
-        </label>
-
       </> : null}
       {step === 3 ? <>
         <div className="rounded-[1.75rem] border border-orange-200 bg-gradient-to-br from-white via-orange-50/70 to-cream px-4 py-4 shadow-sm">
@@ -322,13 +296,30 @@ export function SmartCartContextForm({
           <dt>Weekly budget</dt><dd>{validBudget ? "$" + formState.budget : "Needs a budget"}</dd>
           <dt>Servings per dinner</dt><dd>{validSize ? size : "Needs a household size"}</dd>
           <dt>Preferences</dt><dd>{formState.prepTime} · {formState.adventureLevel}{isPlusMember && formState.cuisinePreference ? ` · ${formState.cuisinePreference}` : ""}</dd>
-          <dt>Dietary needs and ingredient preferences</dt><dd>{formState.diet || "None entered"}{formState.mustHaveIngredient ? ` · Include ${formState.mustHaveIngredient}` : ""}{formState.avoidIngredients ? ` · Avoid ${formState.avoidIngredients}` : ""}</dd>
+          <dt>Dietary needs</dt><dd>{formState.diet || "None entered"}</dd>
           <dt>Meal source and equipment</dt><dd>{formState.mealSourceMode === "pantry-only" ? "Pantry only" : "Pantry and store"} · {pantryEntries.length} pantry ingredients · {formState.availableEquipment.join(", ") || "No equipment selected"}</dd>
           <dt>Sweet treats</dt><dd>{formState.includeDessert ? "Include when budget permits" : "Not this week"}</dd>
         </dl>
         <p className="text-sm">Choose meals after generation. MealCaddie will combine their ingredients and ask about uncertain pantry amounts before you shop.</p>
         {formState.mealSourceMode === "pantry-only" ? <p className="text-sm font-semibold">Pantry-only suggestions still need a quantity check before cooking.</p> : null}
         <p className="text-sm">Allergy-dependent generation is restricted. <Link href="/legal/safety" className="underline">Read the dietary safety notice</Link>.</p>
+        <fieldset className="min-w-0 space-y-4 rounded-2xl border border-pine/20 bg-white p-4" aria-describedby={`${id}-final-help ${id}-allergies`}>
+          <legend className="px-1 font-display text-xl text-pine">Any final requests for your week?</legend>
+          <p id={`${id}-final-help`} className="text-sm">These are completely optional. If you don&apos;t have anything specific in mind, leave them blank and let MealCaddie come up with ideas for you.</p>
+          <div className="space-y-1">
+            <label htmlFor={`${id}-include`} className="text-sm font-semibold">Anything you&apos;d like to include? (Optional)</label>
+            <input id={`${id}-include`} type="text" aria-describedby={`${id}-include-help`} className="block min-h-11 w-full min-w-0 rounded-xl border border-pine/30 px-3 py-2 text-base focus-visible:outline-pine"
+              placeholder="e.g., Chicken, pasta, or broccoli" value={formState.mustHaveIngredient} onChange={event => onMustHaveIngredientChange(event.target.value)} />
+            <p id={`${id}-include-help`} className="text-sm">Craving something or have an ingredient you&apos;d like to use? Let us know!</p>
+          </div>
+          <div className="space-y-1">
+            <label htmlFor={`${id}-avoid`} className="text-sm font-semibold">Anything you&apos;d rather avoid? (Optional)</label>
+            <input id={`${id}-avoid`} type="text" aria-describedby={`${id}-avoid-help`} className="block min-h-11 w-full min-w-0 rounded-xl border border-pine/30 px-3 py-2 text-base focus-visible:outline-pine"
+              placeholder="e.g., Mushrooms, seafood, or spicy foods" value={formState.avoidIngredients} onChange={event => onAvoidIngredientsChange(event.target.value)} />
+            <p id={`${id}-avoid-help`} className="text-sm">Tell us what you&apos;d prefer to leave out this week.</p>
+          </div>
+          <p id={`${id}-allergies`} className="text-sm">Enter any food allergies in <button type="button" onClick={() => go(2)} disabled={isLoading} className="min-h-11 font-semibold text-pine underline">Dietary settings</button> under Preferences.</p>
+        </fieldset>
       </> : null}
 
       {featureError ? <p role="alert" className="rounded-xl bg-berry/10 p-3 text-sm text-berry">{featureError}</p> : null}

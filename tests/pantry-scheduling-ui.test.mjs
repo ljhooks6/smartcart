@@ -24,6 +24,25 @@ test('Plan has one unified pantry picker and leaves breakfast/lunch disabled for
  }
 });
 
+test('final requests are editable only on Review and neither field is required', () => {
+ const {SmartCartContextForm}=load(path.resolve('components/smart-cart-context-form.tsx'));
+ const props = {userPlan:'free', prepTimeOptions:[], adventureLevelOptions:[]};
+ const formState = {budget:'60', householdSize:'2', diet:'No preference', prepTime:'Under 1 hour', availableEquipment:[]};
+ const render = (step, mustHaveIngredient, avoidIngredients) => renderToStaticMarkup(React.createElement(
+   SmartCartContextForm, {...props, step, formState:{...formState, mustHaveIngredient, avoidIngredients}},
+ ));
+ assert.doesNotMatch(render(2,'Chicken','Mushrooms'), /Any final requests|e\.g\., Chicken, pasta|e\.g\., Mushrooms, seafood/);
+ for (const [include, avoid] of [['',''],['Chicken',''],['','Mushrooms'],['Chicken','Mushrooms']]) {
+   const html = render(5,include,avoid);
+   const fields = html.match(/<input[^>]*>/g);
+   assert.equal(fields.length,2);
+   assert.ok(fields.every(field => !/\brequired\b/.test(field) && /aria-describedby/.test(field)));
+   assert.match(fields[0],new RegExp(`value="${include}"`));
+   assert.match(fields[1],new RegExp(`value="${avoid}"`));
+   assert.match(html,/Any final requests for your week\?[\s\S]*Enter any food allergies[\s\S]*>Generate<\/button>/);
+ }
+});
+
 test('pantry starts compact with unknown-amount guidance, without mounting edit forms',()=>{
  const {SmartCartPantryEditor}=load(path.resolve('components/smart-cart-pantry-editor.tsx'));
  const html=renderToStaticMarkup(React.createElement(SmartCartPantryEditor,{entries:[{name:'Rice',status:'owned'}],options:{Staples:['Rice']},onChange:noop,requirements:[{item_key:'rice',needed_amount:'2 cups',requirement_key:'current'}]}));

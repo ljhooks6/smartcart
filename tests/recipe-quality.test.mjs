@@ -51,6 +51,48 @@ test('time, household size and named dessert components are constraints rather t
  assert.ok(planConstraintIssues({meals:[],desserts:[meal('Lemon Blueberry Streusel Muffins',[{name:'Sugar',price:1}])]},{budget:60,householdSize:2}).length);
 });
 
+test('weekly generation interprets hour limits as minutes and still checks every dish', async () => {
+ const previousKey = process.env.OPENAI_API_KEY;
+ process.env.OPENAI_API_KEY = 'mock-only';
+ let calls = 0;
+ let dessertTime = 55;
+ const prompts = [];
+ class Provider {
+   chat = { completions: { create: async ({messages}) => {
+     calls++;
+     prompts.push(messages.map(message => message.content).join('\n'));
+     const meals = Array.from({length:7}, (_,index) => ({
+       ...meal(`Chicken dinner ${index}`), day:`Day ${index+1}`, prep_time_minutes:25,
+     }));
+     const desserts = [{title:'Fruit compote', description:'Soft, sweet pears.', ingredients:[{name:'Pears',amount:'2',price:2}], prep_time_minutes:dessertTime}];
+     meals.forEach(dish => { dish.ingredients = [{name:'Chicken breast',amount:'1 lb',price:3}]; });
+     return {choices:[{message:{content:JSON.stringify({meals,desserts,estimated_total_cost:23,budget_summary:'Test',upgrade_available:false})}}]};
+   } } };
+ }
+ try {
+   const {generateMealPlan} = loader({'openai':Provider,'./beta-pilot-ai':{pilotAIBudget:async()=>null}})('lib/meal-generation.ts');
+   const input = {budget:60,householdSize:2,diet:'No preference',combinedPantryItems:'',prepTime:'Under 1 hour',includeDessert:true};
+   assert.equal((await generateMealPlan(input,'free')).status,200);
+   assert.equal(calls,1);
+   assert.match(prompts[0],/no greater than 60/);
+   for (const [minutes, preference, expected] of [
+     [61,'Under 1 hour',/more than your 60-minute limit/],
+     [31,'Under 30 mins',/more than your 30-minute limit/],
+     [undefined,'Under 1 hour',/missing a valid total cooking time.*same preferences/],
+   ]) {
+     calls = 0;
+     dessertTime = minutes;
+     const response = await generateMealPlan({...input,prepTime:preference},'free');
+     assert.equal(response.status,422);
+     assert.match((await response.json()).error,expected);
+     assert.equal(calls,3);
+   }
+ } finally {
+   if (previousKey === undefined) delete process.env.OPENAI_API_KEY;
+   else process.env.OPENAI_API_KEY = previousKey;
+ }
+});
+
 test('saved original restrictions merge without silently discarding either allergy selection',()=>{
  const {mergeDietaryEntries,readDiet}=load('lib/dietary-safety.ts');
  const combined=mergeDietaryEntries(settings(['Milk']),settings(['Sesame']));
