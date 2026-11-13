@@ -14,10 +14,13 @@ test('Plan has one unified pantry picker and leaves breakfast/lunch disabled for
  const {SmartCartContextForm}=load(path.resolve('components/smart-cart-context-form.tsx'));
  for(const userPlan of ['guest','free','plus']){
   const props=new Proxy({userPlan,pantryEntries:[],combinedPantryItems:[],fullyStocked:new Set(),adventureLevelOptions:[],equipmentOptions:[],prepTimeOptions:[],pantryCategoryStyles:{},pantryQuickSelectOptions:{Staples:['Rice']},isPantryOpen:true,isPantrySelectionOpen:true,formState:{budget:'60',householdSize:'2',diet:'No preference',cuisinePreference:'',mealSourceMode:'pantry-and-store',pantryItems:'',mustHaveIngredient:'',avoidIngredients:'',includeDessert:false,includeBreakfast:true,includeLunch:true,prepTime:'',adventureLevel:'',availableEquipment:['Stovetop']}},{get:(o,k)=>typeof k==='string'&&k.startsWith('on')?noop:o[k]});
-  const html=renderToStaticMarkup(React.createElement(SmartCartContextForm,props));
+  const html=renderToStaticMarkup(React.createElement(SmartCartContextForm,{...props,step:3,onStepChange:noop}));
   assert.equal((html.match(/Search or add ingredients/g)||[]).length,1);assert.doesNotMatch(html,/Pantry Check|Pantry Quick-Select|Pantry Snapshot/);
-  assert.equal((html.match(/type="checkbox" disabled=""/g)||[]).length,2);assert.doesNotMatch(html,/type="checkbox" disabled=""[^>]*checked/);
-  assert.match(html,/planned for a future update/);assert.match(html,/legal\/safety/);
+  const treats=renderToStaticMarkup(React.createElement(SmartCartContextForm,{...props,step:4,onStepChange:noop}));
+  assert.match(treats,/planned for a future update/);
+  assert.match(treats,/Include sweet treats/);
+  assert.match(treats,/Not this week/);
+  assert.doesNotMatch(treats,/type="checkbox"|Search or add ingredients/);
  }
 });
 

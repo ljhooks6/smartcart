@@ -14,6 +14,7 @@ import { MealCaddieLogo } from "./mealcaddie-logo";
 import { SmartCartGenerationProgress } from "./smart-cart-generation-progress";
 import { useGenerationJob } from "../hooks/use-generation-job";
 import type { GenerationJob } from "../lib/generation-request";
+import { SmartCartPantryCheck } from "./smart-cart-pantry-check";
 import { SmartCartContextForm } from "./smart-cart-context-form";
 import { SmartCartStoreMode } from "./smart-cart-store-mode";
 import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
@@ -203,18 +204,6 @@ const equipmentOptions = [
 
 
 const SMART_CART_WAITLIST_ENDPOINT = "https://formspree.io/f/mqegdoly";
-const pantryCategoryStyles: Record<string, string> = {
-  "Proteins (Freezer & Fridge)": "border-rose-200 bg-rose-50",
-  "DAIRY & REFRIGERATED": "border-cyan-200 bg-cyan-50",
-  "Oils & Condiments": "border-orange-200 bg-orange-50",
-  "Spices & Seasonings": "border-rose-200 bg-rose-50",
-  "Baking Staples": "border-amber-200 bg-amber-50",
-  "Canned & Jarred": "border-sky-200 bg-sky-50",
-  "Grains & Carbs": "border-violet-200 bg-violet-50",
-  VEGETABLES: "border-emerald-200 bg-emerald-50",
-  FRUITS: "border-lime-200 bg-lime-50",
-};
-
 const mobileTabs: Array<{
   id: MobileTab;
   label: string;
@@ -436,23 +425,19 @@ export function SmartCartApp() {
     | { kind: "saveToMenu"; meal: MealPlanItem }
     | { kind: "stashToVault"; meal: MealPlanItem }
     | null;
-  const [formState, setFormState] = useState<FormState>(initialFormState);
   const [user, setUser] = useState<User | null>(null);
-  const householdApplied = useRef("");
-  useEffect(() => {
-    if (!user) { householdApplied.current = ""; return; }
-    if (householdApplied.current === user.id) return;
-    const preferences = readHousehold(user.user_metadata);
-    if (!preferences.complete) return;
-    householdApplied.current = user.id;
-    // Explicit owner-scoped setup handoff only. Never replace an existing saved plan.
-    try {
-      if (sessionStorage.getItem(`mealcaddie-household-ready:${user.id}`) !== "yes") return;
-      sessionStorage.removeItem(`mealcaddie-household-ready:${user.id}`);
-    } catch { return; }
-    setFormState({ ...initialFormState, ...householdPlanDefaults(preferences) });
-    setActiveMobileTab("plan");
-  }, [user]);
+  const planOwner = user?.id || "guest";
+  const planningKey = `mealcaddie-planning-v1:${planOwner}`;
+  const [planning, setPlanning] = useState<{ owner: string; form: FormState; step: number; returning: boolean } | null>(null);
+  const ownedPlanning = planning?.owner === planOwner ? planning : null;
+  const formState = ownedPlanning?.form ?? initialFormState;
+
+  function setFormState(update: FormState | ((current: FormState) => FormState)) {
+    setPlanning(current => current?.owner === planOwner
+      ? { ...current, form: typeof update === "function" ? update(current.form) : update }
+      : current);
+  }
+
   const [membershipProfile, setMembershipProfile] = useState<SmartCartProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [hasResolvedAuthSession, setHasResolvedAuthSession] = useState(false);
@@ -490,7 +475,6 @@ export function SmartCartApp() {
   const [runningLow, setRunningLow] = useState<Set<string>>(new Set());
   const [restock, setRestock] = useState<Set<string>>(new Set());
   const [hasAppliedUpgrades, setHasAppliedUpgrades] = useState(false);
-  const [isEquipmentSheetOpen, setIsEquipmentSheetOpen] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistStatus, setWaitlistStatus] = useState<
     "idle" | "submitting" | "success" | "error"
@@ -591,7 +575,6 @@ export function SmartCartApp() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  const planOwner = user?.id || "guest";
   const currentPlanOwner = useRef(planOwner);
   currentPlanOwner.current = planOwner;
   const rejectionStorageKey = `mealcaddie-rejected-meals:${planOwner}`;
@@ -702,29 +685,6 @@ export function SmartCartApp() {
         return;
       }
 
-      setFormState((current) => ({
-        ...current,
-        budget: parsed.budget ?? current.budget,
-        diet: parsed.diet ?? current.diet,
-        cuisinePreference: parsed.cuisinePreference ?? current.cuisinePreference,
-        householdSize: parsed.householdSize ?? current.householdSize,
-        mealSourceMode:
-          parsed.mealSourceMode === "pantry-only" ? "pantry-only" : "pantry-and-store",
-        pantryItems: "",
-        mustHaveIngredient:
-          parsed.mustHaveIngredient ?? current.mustHaveIngredient,
-        avoidIngredients:
-          parsed.avoidIngredients ?? current.avoidIngredients,
-        includeDessert: parsed.includeDessert ?? current.includeDessert,
-        includeBreakfast: false,
-        includeLunch: false,
-        prepTime: parsed.prepTime ?? current.prepTime,
-        adventureLevel: parsed.adventureLevel ?? current.adventureLevel,
-        isBudgetTight: parsed.isBudgetTight ?? current.isBudgetTight,
-        availableEquipment:
-          parsed.availableEquipment ?? current.availableEquipment,
-      }));
-
       // The legacy global pantry has no owner. Preserve it privately, but do
       // not assign one account's pantry to the next person using this browser.
       if(!loadStoredJson("mealcaddie-legacy-pantry-unclaimed-v1")&&(parsed.pantryItems||parsed.fullyStocked?.length||parsed.selectedQuickItems?.length||parsed.runningLow?.length||parsed.restock?.length))saveStoredJson("mealcaddie-legacy-pantry-unclaimed-v1",{pantryItems:parsed.pantryItems,fullyStocked:parsed.fullyStocked,selectedQuickItems:parsed.selectedQuickItems,runningLow:parsed.runningLow,restock:parsed.restock});
@@ -738,32 +698,33 @@ export function SmartCartApp() {
   }, [actionGuidance]);
 
   useEffect(() => {
-    if (!hasResolvedAuthSession || (user && isProfileLoading)) {
-      return;
+    if (!hasResolvedAuthSession) return;
+    const stored = loadStoredJson<{ owner: string; form: Partial<FormState>; step: number }>(planningKey);
+    const hasDraft = stored?.owner === planOwner && !!stored.form;
+    const preferences = readHousehold(user?.user_metadata);
+    const defaults = preferences.complete ? householdPlanDefaults(preferences) : {};
+    const form = { ...initialFormState, ...defaults, ...(hasDraft ? stored.form : {}),
+      pantryItems: "", includeBreakfast: false, includeLunch: false };
+    setPlanning(current => current?.owner === planOwner ? current : {
+      owner: planOwner, form, step: hasDraft && Number.isInteger(stored.step) ? Math.min(5, Math.max(0, stored.step)) : 0,
+      returning: hasDraft || preferences.complete,
+    });
+    if (user) {
+      try {
+        const handoffKey = `mealcaddie-household-ready:${user.id}`;
+        if (sessionStorage.getItem(handoffKey) === "yes") {
+          sessionStorage.removeItem(handoffKey);
+          setActiveMobileTab("plan");
+        }
+      } catch { /* Planning remains available without session storage. */ }
     }
+  }, [hasResolvedAuthSession, planOwner, planningKey, user]);
 
-    const legacyPantryForm=loadStoredJson<LegacyPantryForm>(SMART_CART_FORM_STORAGE_KEY);
-    saveStoredJson(
-      SMART_CART_FORM_STORAGE_KEY,
-      {
-        ...formState,
-        pantryItems: legacyPantryForm?.pantryItems??"",
-        selectedQuickItems: legacyPantryForm?.selectedQuickItems??[],
-        fullyStocked: legacyPantryForm?.fullyStocked??[],
-        runningLow: legacyPantryForm?.runningLow??[],
-        restock: legacyPantryForm?.restock??[],
-      },
-    );
-  }, [
-    canPersistPantryMemory,
-    formState,
-    fullyStocked,
-    hasResolvedAuthSession,
-    isProfileLoading,
-    restock,
-    runningLow,
-    user,
-  ]);
+  useEffect(() => {
+    if (ownedPlanning) saveStoredJson(planningKey, {
+      ...ownedPlanning, form: { ...ownedPlanning.form, pantryItems: "" },
+    });
+  }, [ownedPlanning, planningKey]);
 
   useEffect(() => {
     if (!hasResolvedAuthSession || user) return;
@@ -880,13 +841,10 @@ export function SmartCartApp() {
     setVaultLoadError(null);
     setPantrySnapshot({owner:user?.id||"guest",ready:false,entries:[]});setPantryCloudReady(false);
     setFullyStocked(new Set());setRunningLow(new Set());setRestock(new Set());
-    setFormState(current=>({...current,pantryItems:""}));
     if (user?.id) {
       setGuestStorageReady(false);
       setWeeklyMenu([]);
       setSavedDesserts([]);
-      setFullyStocked(new Set());
-      setFormState((current) => ({ ...current, pantryItems: "" }));
     }
   }, [user?.id]);
 
@@ -898,7 +856,12 @@ export function SmartCartApp() {
   useEffect(()=>{
     if(pantrySnapshot.owner===planOwner&&pantrySnapshot.ready&&canPersistPantryMemory)saveStoredJson(pantryStorageKey(planOwner),{owner:planOwner,entries:pantrySnapshot.entries});
   },[pantrySnapshot,planOwner,canPersistPantryMemory]);
+  const shoppingRequirementsReady = hasResolvedAuthSession && (user
+    ? loadedCloudUser === user.id || recoveredDraftUser === user.id
+    : guestStorageReady);
   const {
+    answerPantry,
+    checkPantryItems,
     checkedItems,
     copied,
     customItems,
@@ -923,15 +886,15 @@ export function SmartCartApp() {
     undoLastGroceryAction,
   } = useSmartCartGrocery({
     userId: safeTrim(user?.id),
-    requirementsReady: hasResolvedAuthSession && (user ? loadedCloudUser===user.id : guestStorageReady),
+    requirementsReady: shoppingRequirementsReady,
     formatCurrency,
     fullyStocked,
     pantryItems: [],pantryEntries,
     onCopyError: (message) => setRequestError(message),
     restock,
     runningLow,
-    savedDesserts,
-    weeklyMenu,
+    savedDesserts: shoppingRequirementsReady ? savedDesserts : [],
+    weeklyMenu: shoppingRequirementsReady ? weeklyMenu : [],
   });
 
   const {
@@ -970,10 +933,6 @@ export function SmartCartApp() {
   );
 
   const parsedBudget = Number(formState.budget);
-  const isBudgetValid =
-    safeTrim(formState.budget).length > 0 &&
-    Number.isFinite(parsedBudget) &&
-    parsedBudget > 0;
   const targetBudget = Math.max(parsedBudget || 0, 1);
   const rawBudgetPercentage = (totalCost / targetBudget) * 100;
   const budgetPercentage = Math.min(rawBudgetPercentage, 100);
@@ -1006,7 +965,7 @@ export function SmartCartApp() {
   const groceryCount = activeGroceries.length + customItems.length;
   const collectedCount = activeGroceries.filter(item => checkedItems.has(item.item_key)).length + customItems.filter(item => item.isChecked).length;
   const pantryCount = skippedGroceriesByCategory.reduce((count, [, items]) => count + items.length, 0);
-  const hasShoppingSurfaceContent = Boolean(generatedPlan) || hasCookSurfaceContent || groceryCount > 0;
+  const hasShoppingSurfaceContent = Boolean(generatedPlan) || hasCookSurfaceContent || groceryCount > 0 || checkPantryItems.length > 0;
   const cookedCount = cookedHistory.key === cookedStorageKey
     ? countCookedThisWeek(cookedHistory.entries) : 0;
   function navigateToStage(stage: MobileTab) {
@@ -1019,8 +978,12 @@ export function SmartCartApp() {
       else (document.getElementById(`desktop-${stage}`) ?? document.getElementById("desktop-meals"))?.scrollIntoView({ block: "start", behavior: "instant" });
     });
   }
+  const pantryCheck = checkPantryItems.length
+    ? <SmartCartPantryCheck key={planOwner} items={checkPantryItems} onAnswer={answerPantry} />
+    : undefined;
   const grocerySidebar = (
     <SmartCartGrocerySidebar
+      pantryCheck={pantryCheck}
       hasUnknownPrices={hasUnknownPrices}
                 {...firstUseGuidance.propsFor("shop")}
                 onEnterStoreMode={() => setIsStoreMode(true)}
@@ -1055,6 +1018,7 @@ export function SmartCartApp() {
               />
   );
   const weekDashboard = <SmartCartWeekDashboard
+    pantryCheckCount={checkPantryItems.length}
     dinners={weeklyMenu} desserts={savedDesserts} cookedCount={cookedCount}
     groceryCount={groceryCount} collectedCount={collectedCount} pantryCount={pantryCount}
     estimatedCost={hasUnknownPrices?"Estimate unavailable":formatCurrency(totalCost)} pricingIncomplete={hasUnknownPrices} budget={formatCurrency(parsedBudget || 0)}
@@ -1069,7 +1033,7 @@ export function SmartCartApp() {
   const generationHandoff = generatedPlan ? <div className="mb-5 rounded-2xl border border-pine/20 bg-white p-5 lg:col-span-12" role="status">
     <p className="hidden md:block text-sm font-semibold text-pine">{(["dinner", "breakfast", "lunch"] as const).map((kind) => { const count = [...generatedPlan.meals, ...weeklyMenu].filter((meal) => getMealKind(meal) === kind).length; return count ? `${count} ${kind} options` : null; }).filter(Boolean).join(" · ")} · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
     <p className="text-sm font-semibold text-pine md:hidden">Your meal options are ready.</p>
-    <p className="hidden md:block mt-2 text-sm leading-6 text-ink/65">{candidatePlan.derivedGroceryList.length} grocery items across all options. Choose the meals you want to cook. Your Week tracks your chosen meals and the groceries they need.</p>
+    <p className="hidden md:block mt-2 text-sm leading-6 text-ink/65">Choose the meals you want to cook. Your Week tracks your choices and the groceries they need. Check pantry quantities before cooking.</p>
     <button type="button" onClick={() => navigateToStage("week")} className="mt-4 rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white">Review Your Week</button>
   </div> : null;
 
@@ -1090,18 +1054,18 @@ export function SmartCartApp() {
     const budget = Number(formState.budget);
     const householdSize = Number(formState.householdSize);
 
-    if (!Number.isFinite(budget) || budget <= 0) {
-      setValidationError("Enter a weekly budget greater than $0.");
+    if (!Number.isFinite(budget) || budget <= 0 || budget > 10000) {
+      setValidationError("Enter a weekly budget greater than $0 and at most $10,000.");
       return false;
     }
 
-    if (!Number.isInteger(householdSize) || householdSize <= 0) {
-      setValidationError("Household size must be a whole number greater than 0.");
+    if (!Number.isInteger(householdSize) || householdSize < 1 || householdSize > 30) {
+      setValidationError("Household size must be a whole number from 1 to 30.");
       return false;
     }
 
-    if (combinedPantryItems.length === 0) {
-      setValidationError("Add at least one pantry item before generating a plan.");
+    if (formState.mealSourceMode === "pantry-only" && combinedPantryItems.length === 0) {
+      setValidationError("Add an on-hand ingredient for pantry-only suggestions, or choose pantry and store.");
       return false;
     }
 
@@ -1140,21 +1104,6 @@ export function SmartCartApp() {
     }
   }
 
-  function toggleQuickItem(item: string) {
-    const isFullyStocked = fullyStocked.has(item);
-
-    setFullyStocked((current) => {
-      const next = new Set(current);
-      if (isFullyStocked) {
-        next.delete(item);
-      } else {
-        next.add(item);
-      }
-      return next;
-    });
-    setRunningLow(new Set());
-    setRestock(new Set());
-  }
 
   async function handleReplaceDessert(
     dessert: GenerateListResponse["desserts"][number],
@@ -1629,33 +1578,10 @@ export function SmartCartApp() {
     });
   }
 
-  function handleRemovePantryItem(itemToRemove: string) {
-    const cleanedTarget = safeTrim(itemToRemove);
-
-    setFullyStocked((current) => {
-      const next = new Set(current);
-      next.delete(cleanedTarget);
-      return next;
-    });
-
-    setFormState((current) => {
-      const nextPantryItems = current.pantryItems
-        .split(",")
-        .map((item) => safeTrim(item))
-        .filter((item) => item && item.toLowerCase() !== cleanedTarget.toLowerCase())
-        .join(", ");
-
-      return {
-        ...current,
-        pantryItems: nextPantryItems,
-      };
-    });
-  }
-
   async function performClearForm() {
     const userId = user?.id || "";
 
-    setFormState(clearedFormState);
+    setPlanning({ owner: planOwner, form: clearedFormState, step: 0, returning: false });
     setPantrySnapshot({owner:planOwner,ready:true,entries:[]});
     setValidationError(null);
     setRequestError(null);
@@ -1679,11 +1605,10 @@ export function SmartCartApp() {
     mobileScrollPositions.current = {};
     setCloudSyncMessage("");
     setSaveStatus("idle");
-    setIsEquipmentSheetOpen(false);
     setActiveMobileTab("plan");
 
     clearStoredJson(
-      SMART_CART_FORM_STORAGE_KEY,
+      planningKey,
       SMART_CART_WEEKLY_MENU_STORAGE_KEY,
       SMART_CART_SAVED_DESSERTS_STORAGE_KEY,
       SMART_CART_GENERATED_PLAN_STORAGE_KEY,
@@ -2347,6 +2272,7 @@ export function SmartCartApp() {
         <PersonalizedWelcome />
         <SmartCartStoreMode
           open={isStoreMode} onClose={() => setIsStoreMode(false)}
+          pantryCheck={pantryCheck}
           groups={displayGroceriesByCategory} checkedItems={checkedItems} customItems={customItems}
           onToggleItem={toggleCheckedItem} onRemoveItem={removeGroceryItem}
           onCheckCustom={setCustomItemChecked} onRemoveCustom={removeCustomItem}
@@ -2489,100 +2415,35 @@ export function SmartCartApp() {
             >
             <div className="md:hidden"><DietarySafetySummary compact diet={formState.diet} value={generatedPlan} /></div>
             <SmartCartContextForm
+              key={planOwner}
+              step={ownedPlanning?.step ?? 0}
+              canQuickReview={ownedPlanning?.returning}
+              onStepChange={(step) => setPlanning(current => current?.owner === planOwner ? { ...current, step } : current)}
               adventureLevelOptions={adventureLevelOptions}
-              pantryEntries={pantryEntries} onPantryEntriesChange={changePantryEntries} pantryRequirements={pantryRequirements}
-            combinedPantryItems={combinedPantryItems}
+              pantryEntries={pantryEntries}
+              onPantryEntriesChange={changePantryEntries}
+              pantryRequirements={pantryRequirements}
               equipmentOptions={equipmentOptions}
               featureError={validationError || requestError}
               formState={formState}
-                fullyStocked={fullyStocked}
-                isEquipmentSheetOpen={isEquipmentSheetOpen}
-                isBudgetValid={isBudgetValid}
               isLoading={isLoading}
-              onBudgetChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  budget: value,
-                }))
-              }
+              onBudgetChange={budget => setFormState(current => ({ ...current, budget }))}
+              onCuisinePreferenceChange={cuisinePreference => setFormState(current => ({ ...current, cuisinePreference }))}
+              onDietChange={diet => setFormState(current => ({ ...current, diet }))}
+              onHouseholdSizeChange={householdSize => setFormState(current => ({ ...current, householdSize }))}
+              onMealSourceModeChange={mealSourceMode => setFormState(current => ({ ...current, mealSourceMode }))}
+              onIncludeDessertChange={includeDessert => setFormState(current => ({ ...current, includeDessert }))}
+              onMustHaveIngredientChange={mustHaveIngredient => setFormState(current => ({ ...current, mustHaveIngredient }))}
+              onAvoidIngredientsChange={avoidIngredients => setFormState(current => ({ ...current, avoidIngredients }))}
+              onPrepTimeChange={prepTime => setFormState(current => ({ ...current, prepTime }))}
+              onToggleEquipment={equipment => setFormState(current => ({
+                ...current, availableEquipment: current.availableEquipment.includes(equipment)
+                  ? current.availableEquipment.filter(item => item !== equipment)
+                  : [...current.availableEquipment, equipment],
+              }))}
+              onToggleFeatureLevel={adventureLevel => setFormState(current => ({ ...current, adventureLevel }))}
               onClearForm={handleClearForm}
-              onCuisinePreferenceChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  cuisinePreference: value,
-                }))
-              }
-              onDietChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  diet: value,
-                }))
-              }
-              onHouseholdSizeChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  householdSize: value,
-                }))
-              }
-              onMealSourceModeChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  mealSourceMode: value,
-                }))
-              }
-              onIncludeDessertChange={(checked) =>
-                setFormState((current) => ({
-                  ...current,
-                  includeDessert: checked,
-                }))
-              }
-              onIncludeBreakfastChange={(checked) => setFormState((current) => ({ ...current, includeBreakfast: checked }))}
-              onIncludeLunchChange={(checked) => setFormState((current) => ({ ...current, includeLunch: checked }))}
-              onMustHaveIngredientChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  mustHaveIngredient: value,
-                }))
-              }
-              onAvoidIngredientsChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  avoidIngredients: value,
-                }))
-              }
-              onPantryItemsChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  pantryItems: value,
-                }))
-              }
-              onPrepTimeChange={(value) =>
-                setFormState((current) => ({
-                  ...current,
-                  prepTime: value,
-                }))
-              }
-              onRemovePantryItem={handleRemovePantryItem}
               onSubmit={handleSubmit}
-              onToggleEquipment={(equipment) =>
-                setFormState((current) => ({
-                  ...current,
-                  availableEquipment: current.availableEquipment.includes(equipment)
-                    ? current.availableEquipment.filter((item) => item !== equipment)
-                    : [...current.availableEquipment, equipment],
-                }))
-              }
-                onToggleFeatureLevel={(value) =>
-                  setFormState((current) => ({
-                    ...current,
-                    adventureLevel: value,
-                  }))
-                }
-                onToggleEquipmentSheetOpen={() =>
-                  setIsEquipmentSheetOpen((current) => !current)
-                }
-              onToggleQuickItem={toggleQuickItem}
-              pantryCategoryStyles={pantryCategoryStyles}
               pantryQuickSelectOptions={pantryQuickSelectOptions}
               prepTimeOptions={prepTimeOptions}
               userPlan={userPlan}
@@ -2709,104 +2570,39 @@ export function SmartCartApp() {
           <div id="desktop-week" className="mb-8 scroll-mt-8">{weekDashboard}</div>
           <div id="desktop-plan" className="scroll-mt-8" />
           <SmartCartContextForm
-            adventureLevelOptions={adventureLevelOptions}
-            pantryEntries={pantryEntries} onPantryEntriesChange={changePantryEntries} pantryRequirements={pantryRequirements}
-            combinedPantryItems={combinedPantryItems}
-            equipmentOptions={equipmentOptions}
-            featureError={validationError || requestError}
-            formState={formState}
-            fullyStocked={fullyStocked}
-            isEquipmentSheetOpen={isEquipmentSheetOpen}
-            isBudgetValid={isBudgetValid}
-            isLoading={isLoading}
-            onBudgetChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                budget: value,
-              }))
-            }
-            onClearForm={handleClearForm}
-            onCuisinePreferenceChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                cuisinePreference: value,
-              }))
-            }
-            onDietChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                diet: value,
-              }))
-            }
-            onHouseholdSizeChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                householdSize: value,
-              }))
-            }
-            onMealSourceModeChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                mealSourceMode: value,
-              }))
-            }
-            onIncludeDessertChange={(checked) =>
-              setFormState((current) => ({
-                ...current,
-                includeDessert: checked,
-              }))
-            }
-            onIncludeBreakfastChange={(checked) => setFormState((current) => ({ ...current, includeBreakfast: checked }))}
-            onIncludeLunchChange={(checked) => setFormState((current) => ({ ...current, includeLunch: checked }))}
-            onMustHaveIngredientChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                mustHaveIngredient: value,
-              }))
-            }
-            onAvoidIngredientsChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                avoidIngredients: value,
-              }))
-            }
-            onPantryItemsChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                pantryItems: value,
-              }))
-            }
-            onPrepTimeChange={(value) =>
-              setFormState((current) => ({
-                ...current,
-                prepTime: value,
-              }))
-            }
-            onRemovePantryItem={handleRemovePantryItem}
-            onSubmit={handleSubmit}
-            onToggleEquipment={(equipment) =>
-              setFormState((current) => ({
-                ...current,
-                availableEquipment: current.availableEquipment.includes(equipment)
-                  ? current.availableEquipment.filter((item) => item !== equipment)
+              key={planOwner}
+              step={ownedPlanning?.step ?? 0}
+              canQuickReview={ownedPlanning?.returning}
+              onStepChange={(step) => setPlanning(current => current?.owner === planOwner ? { ...current, step } : current)}
+              adventureLevelOptions={adventureLevelOptions}
+              pantryEntries={pantryEntries}
+              onPantryEntriesChange={changePantryEntries}
+              pantryRequirements={pantryRequirements}
+              equipmentOptions={equipmentOptions}
+              featureError={validationError || requestError}
+              formState={formState}
+              isLoading={isLoading}
+              onBudgetChange={budget => setFormState(current => ({ ...current, budget }))}
+              onCuisinePreferenceChange={cuisinePreference => setFormState(current => ({ ...current, cuisinePreference }))}
+              onDietChange={diet => setFormState(current => ({ ...current, diet }))}
+              onHouseholdSizeChange={householdSize => setFormState(current => ({ ...current, householdSize }))}
+              onMealSourceModeChange={mealSourceMode => setFormState(current => ({ ...current, mealSourceMode }))}
+              onIncludeDessertChange={includeDessert => setFormState(current => ({ ...current, includeDessert }))}
+              onMustHaveIngredientChange={mustHaveIngredient => setFormState(current => ({ ...current, mustHaveIngredient }))}
+              onAvoidIngredientsChange={avoidIngredients => setFormState(current => ({ ...current, avoidIngredients }))}
+              onPrepTimeChange={prepTime => setFormState(current => ({ ...current, prepTime }))}
+              onToggleEquipment={equipment => setFormState(current => ({
+                ...current, availableEquipment: current.availableEquipment.includes(equipment)
+                  ? current.availableEquipment.filter(item => item !== equipment)
                   : [...current.availableEquipment, equipment],
-              }))
-            }
-            onToggleFeatureLevel={(value) =>
-              setFormState((current) => ({
-                ...current,
-                adventureLevel: value,
-              }))
-            }
-            onToggleEquipmentSheetOpen={() =>
-              setIsEquipmentSheetOpen((current) => !current)
-            }
-            onToggleQuickItem={toggleQuickItem}
-            pantryCategoryStyles={pantryCategoryStyles}
-            pantryQuickSelectOptions={pantryQuickSelectOptions}
-            prepTimeOptions={prepTimeOptions}
-            userPlan={userPlan}
-          />
+              }))}
+              onToggleFeatureLevel={adventureLevel => setFormState(current => ({ ...current, adventureLevel }))}
+              onClearForm={handleClearForm}
+              onSubmit={handleSubmit}
+              pantryQuickSelectOptions={pantryQuickSelectOptions}
+              prepTimeOptions={prepTimeOptions}
+              userPlan={userPlan}
+            />
           <section className="mt-10 pb-16">
             {generatedPlan ? (
               <div id="desktop-meals" className="grid scroll-mt-8 grid-cols-1 lg:grid-cols-12 gap-8 items-start">

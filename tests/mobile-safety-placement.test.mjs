@@ -40,7 +40,7 @@ test('the full application layout keeps the planning form inside Plan on mobile,
 test('the actual planning form renders the restriction, saved-content warning and complete safety link together', () => {
   const noop = () => {};
   const props = new Proxy({
-    userPlan: 'free', combinedPantryItems: [], fullyStocked: new Set(),
+    step: 2, userPlan: 'free', combinedPantryItems: [], fullyStocked: new Set(),
     adventureLevelOptions: [], equipmentOptions: [], prepTimeOptions: [], pantryCategoryStyles: {}, pantryQuickSelectOptions: {},
     formState: { budget: '60', householdSize: '2', diet: 'No preference', cuisinePreference: '', mealSourceMode: 'pantry-and-store', pantryItems: '', mustHaveIngredient: '', avoidIngredients: '', includeDessert: false, includeBreakfast: false, includeLunch: false, prepTime: '', adventureLevel: '', availableEquipment: ['Stovetop'] },
   }, { get: (target, key) => typeof key === 'string' && key.startsWith('on') ? noop : target[key] });

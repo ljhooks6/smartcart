@@ -3,7 +3,7 @@ import Link from "next/link";
 import { DietarySafetySummary } from "./dietary-safety-summary";
 import { DietarySettings } from "./dietary-settings";
 
-import { FormEvent } from "react";
+import { type FormEvent, useId, useRef } from "react";
 import {SmartCartPantryEditor} from "./smart-cart-pantry-editor";
 import type {PantryEntry} from "../lib/pantry";
 import type {GroceryListItem} from "../lib/grocery-list";
@@ -31,13 +31,12 @@ type SmartCartContextFormProps = {
   onPantryEntriesChange?:(entries:PantryEntry[])=>void;
   pantryRequirements?:GroceryListItem[];
   adventureLevelOptions: readonly string[];
-  combinedPantryItems: string[];
+  step?: number;
+  onStepChange: (step: number) => void;
+  canQuickReview?: boolean;
   equipmentOptions: readonly string[];
   featureError: string | null;
   formState: SmartCartFormState;
-  fullyStocked: Set<string>;
-  isEquipmentSheetOpen: boolean;
-  isBudgetValid: boolean;
   isLoading: boolean;
   onBudgetChange: (value: string) => void;
   onClearForm: () => void;
@@ -45,20 +44,13 @@ type SmartCartContextFormProps = {
   onDietChange: (value: string) => void;
   onHouseholdSizeChange: (value: string) => void;
   onIncludeDessertChange: (checked: boolean) => void;
-  onIncludeBreakfastChange: (checked: boolean) => void;
-  onIncludeLunchChange: (checked: boolean) => void;
   onMealSourceModeChange: (value: SmartCartFormState["mealSourceMode"]) => void;
   onMustHaveIngredientChange: (value: string) => void;
   onAvoidIngredientsChange: (value: string) => void;
-  onPantryItemsChange: (value: string) => void;
   onPrepTimeChange: (value: string) => void;
-  onRemovePantryItem: (item: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   onToggleEquipment: (equipment: string) => void;
   onToggleFeatureLevel: (value: string) => void;
-  onToggleEquipmentSheetOpen: () => void;
-  onToggleQuickItem: (item: string) => void;
-  pantryCategoryStyles: Record<string, string>;
   pantryQuickSelectOptions: Record<string, readonly string[]>;
   prepTimeOptions: readonly string[];
   userPlan: SmartCartPlan;
@@ -67,13 +59,12 @@ type SmartCartContextFormProps = {
 export function SmartCartContextForm({
   adventureLevelOptions,
   pantryEntries=[],onPantryEntriesChange=()=>{},pantryRequirements=[],
-  combinedPantryItems,
+  step = 0,
+  onStepChange,
+  canQuickReview,
   equipmentOptions,
   featureError,
   formState,
-  fullyStocked,
-  isEquipmentSheetOpen,
-  isBudgetValid,
   isLoading,
   onBudgetChange,
   onClearForm,
@@ -81,90 +72,56 @@ export function SmartCartContextForm({
   onDietChange,
   onHouseholdSizeChange,
   onIncludeDessertChange,
-  onIncludeBreakfastChange,
-  onIncludeLunchChange,
   onMealSourceModeChange,
   onMustHaveIngredientChange,
   onAvoidIngredientsChange,
-  onPantryItemsChange,
   onPrepTimeChange,
-  onRemovePantryItem,
   onSubmit,
   onToggleEquipment,
   onToggleFeatureLevel,
-  onToggleEquipmentSheetOpen,
-  onToggleQuickItem,
-  pantryCategoryStyles,
   pantryQuickSelectOptions,
   prepTimeOptions,
   userPlan,
 }: SmartCartContextFormProps) {
   const isPlusMember = userPlan === "plus";
 
-  return (
-    <div className="md:rounded-[2.25rem] md:border md:border-stone-200 md:bg-[#fcfaf6]/95 md:p-6 md:shadow-xl md:backdrop-blur xl:p-8">
-      <div className="hidden md:block mb-6 rounded-[1.75rem] border border-stone-200/80 bg-white/75 px-5 py-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-berry/70">
-          Planner
-        </p>
-        <p className="mt-2 font-display text-3xl text-ink">Set up your week</p>
-        <p className="mt-2 text-sm leading-6 text-ink/70">
-          Give the planner enough context to keep meals affordable and realistic.
-        </p>
-      </div>
+  const id = useId();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const steps = ["Budget", "Household", "Preferences", "Pantry and equipment", "Dinner and sweet treats", "Review"];
+  const validBudget = Number(formState.budget) >= 0.01 && Number(formState.budget) <= 10000;
+  const size = Number(formState.householdSize);
+  const validSize = Number.isInteger(size) && size >= 1 && size <= 30;
+  const button = "min-h-11 rounded-full border border-pine/25 px-4 py-2 text-sm font-semibold text-pine focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
-      <div className="hidden md:block mb-6 rounded-[1.75rem] border border-pine/10 bg-gradient-to-r from-sage/10 via-white to-cream px-5 py-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-pine/60">
-          Choose what MealCaddie helps with
-        </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {[
-            ["Dinner", "Included"],
-            ["Breakfast", "Planned for a future update"],
-            ["Lunch", "Planned for a future update"],
-          ].map(([mealType, status]) => {
-            const isReady = mealType === "Dinner";
+  function go(next: number) {
+    onStepChange(next);
+    requestAnimationFrame(() => heading.current?.focus());
+  }
 
-            return (
-              <div
-                key={mealType}
-                className={`relative overflow-hidden rounded-2xl border px-4 py-3 ${
-                  isReady
-                    ? "border-orange-300 bg-gradient-to-br from-orange-100 via-white to-amber-50 text-pine shadow-md ring-2 ring-orange-200/70"
-                    : "border-stone-200 bg-white/60 text-ink/60"
-                }`}
-              >
-                {isReady ? (
-                  <span className="absolute right-3 top-3 rounded-full bg-orange-500 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.18em] text-white shadow-sm">
-                    Live
-                  </span>
-                ) : null}
-                <p className={`font-display text-xl ${isReady ? "text-pine" : "text-ink"}`}>
-                  {mealType}
-                </p>
-                <p
-                  className={`mt-1 text-xs font-semibold uppercase tracking-[0.2em] ${
-                    isReady ? "text-orange-700" : "text-ink/45"
-                  }`}
-                >
-                  {status}
-                </p>
-                {isReady ? (
-                  <p className="mt-3 text-sm leading-6 text-ink/70">
-                    Ready to build your weekly dinner plan right now.
-                  </p>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-        <p className="mt-4 text-sm leading-6 text-ink/70">
-          Dinner and dessert planning are available now. Breakfast and lunch planning are paused for every account while we improve them.
-        </p>
-      </div>
+  function advance(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isLoading) return;
+    if (step < 5) {
+      go(step + 1);
+    } else if (!validBudget || !validSize) {
+      go(validBudget ? 1 : 0);
+    } else {
+      void onSubmit(event);
+    }
+  }
 
-      <form className="space-y-5" id="smart-cart-context-form" onSubmit={onSubmit}>
-        <div className="grid grid-cols-2 gap-4">
+  return <section className="min-w-0 rounded-3xl border border-pine/15 bg-[#fcfaf6] p-4 md:p-6" aria-label="Guided weekly planning">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm font-semibold text-pine">Step {step + 1} of {steps.length}</p>
+      <progress aria-label="Planning progress" value={step + 1} max={steps.length} className="w-24 accent-pine" />
+    </div>
+    <h2 ref={heading} tabIndex={-1} className="mt-3 font-display text-2xl text-ink">{steps[step]}</h2>
+    {step > 0 ? <nav className="my-2 flex flex-wrap gap-x-3" aria-label="Earlier planning steps">
+      {steps.slice(0, step).map((label, index) => <button key={label} type="button" disabled={isLoading} className="min-h-11 text-sm font-semibold text-pine underline" onClick={() => go(index)}>{label}</button>)}
+    </nav> : null}
+    <form className="mt-4 space-y-4" id={id} onSubmit={advance}>
+      {step === 0 ? <>
+        <p className="text-sm">Set a target for your selected dinners and any sweet treats. Store prices may be unavailable.</p>
           <label className="space-y-2">
             <span className="text-sm font-semibold text-ink">Weekly Budget</span>
             <div className="relative">
@@ -172,9 +129,9 @@ export function SmartCartContextForm({
                 $
               </span>
               <input
-                className="w-full rounded-full border border-ink/10 bg-white px-8 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+                className="w-full max-w-xs rounded-full border border-ink/10 bg-white px-8 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
                 inputMode="decimal"
-                min="1"
+                min="0.01" max="10000" step="0.01"
                 onChange={(event) => onBudgetChange(event.target.value)}
                 placeholder="75"
                 required
@@ -184,62 +141,22 @@ export function SmartCartContextForm({
             </div>
           </label>
 
+      </> : null}
+      {step === 1 ? <>
+        <p className="text-sm">How many people are you cooking for? This sets the default servings per dinner.</p>
           <label className="space-y-2">
             <span className="text-sm font-semibold text-ink">Household Size</span>
             <input
-              className="w-full rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
-              min="1"
+              className="block w-full max-w-xs rounded-full border border-ink/10 bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-200"
+              min="1" max="30" required
               onChange={(event) => onHouseholdSizeChange(event.target.value)}
               placeholder="2"
               type="number"
               value={formState.householdSize}
             />
           </label>
-        </div>
-
-        <div className="rounded-[1.75rem] border border-orange-200 bg-gradient-to-br from-white via-orange-50/70 to-cream px-4 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-700/80">
-            Meal source
-          </p>
-          <p className="hidden md:block mt-2 text-sm leading-6 text-ink/70">
-            Choose whether MealCaddie can plan around a store trip or should only use what is
-            already in your kitchen.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {[
-              {
-                value: "pantry-and-store" as const,
-                title: "Pantry + store pickup",
-                copy: "Use what you have, then fill the gaps with a smart grocery list.",
-              },
-              {
-                value: "pantry-only" as const,
-                title: "Pantry only",
-                copy: "Generate meals from what you already have. No planned grocery run.",
-              },
-            ].map((option) => {
-              const isSelected = formState.mealSourceMode === option.value;
-
-              return (
-                <button
-                  aria-pressed={isSelected}
-                  className={`min-h-11 rounded-2xl border px-3 py-3 text-sm text-left transition ${
-                    isSelected
-                      ? "border-orange-400 bg-white text-ink shadow-md ring-2 ring-orange-200"
-                      : "border-stone-200 bg-white/60 text-ink/65 hover:border-orange-200 hover:bg-white"
-                  }`}
-                  key={option.value}
-                  onClick={() => onMealSourceModeChange(option.value)}
-                  type="button"
-                >
-                  <span className="block font-semibold">{option.title}</span>
-                  <span className="hidden md:block mt-2 text-sm leading-6">{option.copy}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
+      </> : null}
+      {step === 2 ? <>
         <p role="note" aria-label="Planning allergy safety" className="text-sm leading-6 text-ink">Allergy-dependent or free-from AI generation is temporarily restricted. Keep actual restrictions entered; do not remove them to obtain a plan. Saved recipes and grocery lists are not verified for allergies. Check ingredients, labels and cross-contact independently. <Link className="inline-block min-h-11 py-3 font-semibold text-pine underline" href="/legal/safety">Read the complete dietary safety notice</Link></p>
         <DietarySettings value={formState.diet} onChange={onDietChange} />
         <div className="hidden md:block"><DietarySafetySummary compact diet={formState.diet} value={null} /></div>
@@ -306,125 +223,6 @@ export function SmartCartContextForm({
           </label>
         </div>
 
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm font-semibold text-ink">Available Kitchen Equipment</p>
-            <p className="mt-1 text-sm leading-6 text-ink/65">
-              Recipes will only use the hardware you select here.
-            </p>
-          </div>
-          <button
-            className="flex w-full items-center justify-between rounded-[1.75rem] border border-pine/20 bg-gradient-to-r from-emerald-50 via-white to-amber-50 px-5 py-4 text-left shadow-md ring-1 ring-pine/10 transition hover:-translate-y-0.5 hover:border-pine/30 hover:shadow-lg md:hidden"
-            onClick={onToggleEquipmentSheetOpen}
-            type="button"
-          >
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pine text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-sm">
-                Gear
-              </div>
-              <div>
-              <p className="text-sm font-semibold text-ink">Choose your equipment</p>
-              <p className="mt-1 text-sm leading-6 text-ink/65">
-                {formState.availableEquipment.length > 0
-                  ? `${formState.availableEquipment.length} selected`
-                  : "Tap to select your kitchen setup"}
-              </p>
-              </div>
-            </div>
-            <span className="rounded-full bg-white/85 px-3 py-1 text-xs uppercase tracking-[0.2em] text-pine shadow-sm">
-                {isEquipmentSheetOpen ? "Close" : "Open"}
-            </span>
-          </button>
-          <div className="hidden flex-wrap gap-2 md:flex">
-            {equipmentOptions.map((equipment) => {
-              const isSelected = formState.availableEquipment.includes(equipment);
-
-              return (
-                <label
-                  key={equipment}
-                  className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                    isSelected
-                      ? "border-pine bg-pine text-white"
-                      : "border-ink/10 bg-white text-ink hover:border-orange-300 hover:bg-orange-50"
-                  }`}
-                >
-                  <input
-                    checked={isSelected}
-                    className="sr-only"
-                    onChange={() => onToggleEquipment(equipment)}
-                    type="checkbox"
-                  />
-                  <span>{equipment}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-        <section className="min-w-0 rounded-3xl border border-pine/20 bg-white p-4"><SmartCartPantryEditor entries={pantryEntries} options={pantryQuickSelectOptions} onChange={onPantryEntriesChange} requirements={pantryRequirements}/></section>
-
-        {isEquipmentSheetOpen ? (
-          <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/35 px-3 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-10 md:hidden">
-            <div className="mx-auto flex max-h-[72vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-2xl">
-              <div className="flex justify-center pt-3">
-                <span className="h-1.5 w-12 rounded-full bg-stone-300" />
-              </div>
-              <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 pb-4 pt-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-pine/55">
-                    Equipment
-                  </p>
-                  <p className="mt-1 font-display text-2xl text-ink">Kitchen setup</p>
-                </div>
-                <button
-                  className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-ink"
-                  onClick={onToggleEquipmentSheetOpen}
-                  type="button"
-                >
-                  Close
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-5 pb-5 pt-4">
-                <p className="text-sm leading-6 text-ink/65">
-                  Select the tools you actually want meals to use this week.
-                </p>
-                <div className="mt-5 flex flex-wrap gap-2 pr-1">
-                {equipmentOptions.map((equipment) => {
-                  const isSelected = formState.availableEquipment.includes(equipment);
-
-                  return (
-                    <label
-                      key={`mobile-${equipment}`}
-                      className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-3 text-sm font-medium transition ${
-                        isSelected
-                          ? "border-pine bg-pine text-white"
-                          : "border-ink/10 bg-white text-ink hover:border-orange-300 hover:bg-orange-50"
-                      }`}
-                    >
-                      <input
-                        checked={isSelected}
-                        className="sr-only"
-                        onChange={() => onToggleEquipment(equipment)}
-                        type="checkbox"
-                      />
-                      <span>{equipment}</span>
-                    </label>
-                  );
-                })}
-                </div>
-              </div>
-              <div className="border-t border-stone-200 px-5 py-4">
-                <button
-                  className="w-full rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white transition hover:bg-pine/90"
-                  onClick={onToggleEquipmentSheetOpen}
-                  type="button"
-                >
-                  Finish Equipment Setup
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
         <label className="space-y-2">
           <span className="text-sm font-semibold text-ink">
             Must-Have Ingredient (Optional)
@@ -451,53 +249,97 @@ export function SmartCartContextForm({
           />
         </label>
 
-        <fieldset className="rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
-          <legend className="px-2 text-sm font-semibold text-ink">Meals to plan</legend>
-          <p className="text-sm leading-6 text-ink/70">Seven dinner picks included. Breakfast and lunch are planned for a future update. Existing saved meals remain available.</p>
+      </> : null}
+      {step === 3 ? <>
+        <div className="rounded-[1.75rem] border border-orange-200 bg-gradient-to-br from-white via-orange-50/70 to-cream px-4 py-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-orange-700/80">
+            Meal source
+          </p>
+          <p className="mt-2 text-sm leading-6 text-ink/70">
+            Choose whether MealCaddie can plan around a store trip or should only use what is
+            already in your kitchen.
+          </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" disabled checked={false} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Breakfast · future update</span></label>
-            <label className="flex items-center gap-3 rounded-xl bg-white p-3"><input type="checkbox" disabled checked={false} className="h-5 w-5 accent-pine" /><span className="text-sm font-semibold text-ink">Lunch · future update</span></label>
+            {[
+              {
+                value: "pantry-and-store" as const,
+                title: "Pantry + store pickup",
+                copy: "Use what you have, then fill the gaps with a smart grocery list.",
+              },
+              {
+                value: "pantry-only" as const,
+                title: "Pantry only",
+                copy: "Suggest meals from pantry ingredients. Check quantities before cooking.",
+              },
+            ].map((option) => {
+              const isSelected = formState.mealSourceMode === option.value;
+
+              return (
+                <button
+                  aria-pressed={isSelected}
+                  className={`min-h-11 rounded-2xl border px-3 py-3 text-sm text-left transition ${
+                    isSelected
+                      ? "border-orange-400 bg-white text-ink shadow-md ring-2 ring-orange-200"
+                      : "border-stone-200 bg-white/60 text-ink/65 hover:border-orange-200 hover:bg-white"
+                  }`}
+                  key={option.value}
+                  onClick={() => onMealSourceModeChange(option.value)}
+                  type="button"
+                >
+                  <span className="block font-semibold">{option.title}</span>
+                  <span className="hidden md:block mt-2 text-sm leading-6">{option.copy}</span>
+                </button>
+              );
+            })}
           </div>
-          <p className="hidden md:block mt-3 text-xs leading-5 text-ink/60">Only meals you add to This Week go onto your shopping list. The budget covers all selected meal types.</p>
-        </fieldset>
-
-        <label className="flex items-center gap-3 rounded-[1.5rem] border border-pine/10 bg-cream px-4 py-4">
-          <input
-            checked={formState.includeDessert}
-            className="h-4 w-4 rounded border-pine/30 text-pine focus:ring-pine"
-            onChange={(event) => onIncludeDessertChange(event.target.checked)}
-            type="checkbox"
-          />
-          <span className="text-sm font-semibold text-ink">
-            Include 2 Weekly Dessert Options (If budget allows)
-          </span>
-        </label>
-
-        {featureError ? (
-          <div className="rounded-2xl border border-berry/20 bg-berry/10 px-4 py-3 text-sm text-berry">
-            {featureError}
-          </div>
-        ) : null}
-
-        <div className="flex items-center justify-between gap-4">
-          <button
-            className="flex-1 rounded-full bg-orange-500 px-6 py-4 font-display text-lg text-white transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isLoading || !isBudgetValid}
-            type="submit"
-          >
-            {isLoading ? "Building your meals..." : "Generate"}
-          </button>
-          <button
-            className="shrink-0 text-sm text-gray-500 underline decoration-gray-300 underline-offset-4 transition hover:text-red-500"
-            onClick={onClearForm}
-            disabled={isLoading}
-            type="button"
-          >
-            Clear Form
-          </button>
         </div>
-      </form>
 
-    </div>
-  );
+
+        <fieldset className="space-y-2">
+          <legend className="font-semibold text-pine">Available kitchen equipment</legend>
+          <div className="flex flex-wrap gap-2">{equipmentOptions.map(equipment => <label key={equipment} className="flex min-h-11 items-center gap-2 rounded-xl border border-pine/20 px-3 text-sm">
+            <input type="checkbox" className="accent-pine" checked={formState.availableEquipment.includes(equipment)} onChange={() => onToggleEquipment(equipment)} />
+            {equipment}
+          </label>)}</div>
+        </fieldset>
+        <p className="text-sm">Adding pantry ingredients is optional when you’re open to shopping. Exact amounts are optional.</p>
+        <section className="min-w-0 rounded-3xl border border-pine/20 bg-white p-4"><SmartCartPantryEditor entries={pantryEntries} options={pantryQuickSelectOptions} onChange={onPantryEntriesChange} requirements={pantryRequirements}/></section>
+
+      </> : null}
+      {step === 4 ? <>
+        <p className="text-sm">You’ll choose dinners after generation. Breakfast and lunch are planned for a future update. Existing saved meals remain available.</p>
+        <fieldset className="space-y-2">
+          <legend className="font-semibold text-pine">Would you like something sweet this week?</legend>
+          <p className="text-sm">Up to two dessert suggestions may be included when the budget permits. Only treats you select go on your shopping list.</p>
+          {([true, false] as const).map(include => <label key={String(include)} className="flex min-h-11 items-center gap-3 rounded-xl border border-pine/20 px-3">
+            <input type="radio" name={`${id}-dessert`} checked={formState.includeDessert === include} onChange={() => onIncludeDessertChange(include)} />
+            {include ? "Include sweet treats" : "Not this week"}
+          </label>)}
+        </fieldset>
+      </> : null}
+      {step === 5 ? <>
+        <dl className="space-y-2 rounded-xl bg-white p-4 text-sm [&_dt]:font-semibold [&_dd]:break-words">
+          <dt>Weekly budget</dt><dd>{validBudget ? "$" + formState.budget : "Needs a budget"}</dd>
+          <dt>Servings per dinner</dt><dd>{validSize ? size : "Needs a household size"}</dd>
+          <dt>Preferences</dt><dd>{formState.prepTime} · {formState.adventureLevel}{isPlusMember && formState.cuisinePreference ? ` · ${formState.cuisinePreference}` : ""}</dd>
+          <dt>Dietary needs and ingredient preferences</dt><dd>{formState.diet || "None entered"}{formState.mustHaveIngredient ? ` · Include ${formState.mustHaveIngredient}` : ""}{formState.avoidIngredients ? ` · Avoid ${formState.avoidIngredients}` : ""}</dd>
+          <dt>Meal source and equipment</dt><dd>{formState.mealSourceMode === "pantry-only" ? "Pantry only" : "Pantry and store"} · {pantryEntries.length} pantry ingredients · {formState.availableEquipment.join(", ") || "No equipment selected"}</dd>
+          <dt>Sweet treats</dt><dd>{formState.includeDessert ? "Include when budget permits" : "Not this week"}</dd>
+        </dl>
+        <p className="text-sm">Choose meals after generation. MealCaddie will combine their ingredients and ask about uncertain pantry amounts before you shop.</p>
+        {formState.mealSourceMode === "pantry-only" ? <p className="text-sm font-semibold">Pantry-only suggestions still need a quantity check before cooking.</p> : null}
+        <p className="text-sm">Allergy-dependent generation is restricted. <Link href="/legal/safety" className="underline">Read the dietary safety notice</Link>.</p>
+      </> : null}
+
+      {featureError ? <p role="alert" className="rounded-xl bg-berry/10 p-3 text-sm text-berry">{featureError}</p> : null}
+      <div className="flex flex-wrap gap-2">
+        {step > 0 ? <button className={button} type="button" disabled={isLoading} onClick={() => go(step - 1)}>Back</button> : null}
+        <button className={`${button} bg-pine text-white disabled:opacity-60`} disabled={isLoading} type="submit">
+          {isLoading ? "Building your meals…" : step < 5 ? "Continue" : "Generate"}
+        </button>
+        {step === 0 && canQuickReview && validBudget && validSize ? <button className={button} type="button" disabled={isLoading} onClick={() => go(5)}>Review saved answers</button> : null}
+      </div>
+      {step === 5 ? <button type="button" className="min-h-11 text-sm text-berry underline" onClick={onClearForm} disabled={isLoading}>Clear workspace</button> : null}
+    </form>
+  </section>;
 }
