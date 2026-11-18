@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { DietarySafetySummary } from "./dietary-safety-summary";
 import { DietarySettings } from "./dietary-settings";
+import { DietaryReviewSummary } from "./dietary-review-summary";
 
 import { type FormEvent, useId, useRef } from "react";
 import {SmartCartPantryEditor} from "./smart-cart-pantry-editor";
@@ -296,7 +297,7 @@ export function SmartCartContextForm({
           <dt>Weekly budget</dt><dd>{validBudget ? "$" + formState.budget : "Needs a budget"}</dd>
           <dt>Servings per dinner</dt><dd>{validSize ? size : "Needs a household size"}</dd>
           <dt>Preferences</dt><dd>{formState.prepTime} · {formState.adventureLevel}{isPlusMember && formState.cuisinePreference ? ` · ${formState.cuisinePreference}` : ""}</dd>
-          <dt>Dietary needs</dt><dd>{formState.diet || "None entered"}</dd>
+          <dt>Dietary needs</dt><dd><DietaryReviewSummary value={formState.diet} /></dd>
           <dt>Meal source and equipment</dt><dd>{formState.mealSourceMode === "pantry-only" ? "Pantry only" : "Pantry and store"} · {pantryEntries.length} pantry ingredients · {formState.availableEquipment.join(", ") || "No equipment selected"}</dd>
           <dt>Sweet treats</dt><dd>{formState.includeDessert ? "Include when budget permits" : "Not this week"}</dd>
         </dl>

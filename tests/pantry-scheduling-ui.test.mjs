@@ -10,6 +10,24 @@ const require=createRequire(import.meta.url);
 function load(file){const module={exports:{}};const source=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;new Function('require','module','exports',source)(name=>{if(name.startsWith('.')||name.startsWith('@/')){const base=name.startsWith('@/')?path.resolve(name.slice(2)):path.resolve(path.dirname(file),name);return load(/\.tsx?$/.test(base)?base:existsSync(base+'.tsx')?base+'.tsx':base+'.ts');}return require(name);},module,module.exports);return module.exports;}
 const noop=()=>{};
 
+test('Review renders parsed dietary labels and malformed warnings without exposing serialization',()=>{
+ const {SmartCartContextForm}=load(path.resolve('components/smart-cart-context-form.tsx'));
+ const {DietarySettings}=load(path.resolve('components/dietary-settings.tsx'));
+ const {writeDiet}=load(path.resolve('lib/dietary-safety.ts'));
+ const diet=writeDiet('No mushrooms',{preferences:['Vegetarian'],allergies:['Milk','Sesame'],customAllergies:'Kiwi',intolerances:'Lactose',medical:'Review with clinician'});
+ const props={step:5,formState:{budget:'60',householdSize:'2',diet,availableEquipment:[],mustHaveIngredient:'',avoidIngredients:''}};
+ const html=renderToStaticMarkup(React.createElement(SmartCartContextForm,props));
+ for(const text of ['Preferences: Vegetarian','Allergies: Milk, Sesame','Other allergies: Kiwi','Intolerances: Lactose','No mushrooms'])assert.ok(html.includes(text));
+ assert.doesNotMatch(html,/MealCaddie dietary settings v1|&quot;allergies&quot;/);
+ for(const diet of ['Original\nMealCaddie dietary settings v1: {bad}','MealCaddie dietary settings v1: {bad}']){
+  const review=renderToStaticMarkup(React.createElement(SmartCartContextForm,{...props,formState:{...props.formState,diet}}));
+  assert.match(review,/role="alert"/);assert.doesNotMatch(review,/MealCaddie dietary settings v1|\{bad\}/);
+  const editor=renderToStaticMarkup(React.createElement(DietarySettings,{value:diet,onChange:noop}));
+  assert.match(editor,/readonly=""/i);assert.match(editor,/original data is preserved/i);assert.doesNotMatch(editor,/MealCaddie dietary settings v1|\{bad\}/);
+ }
+ assert.equal(props.formState.diet,diet);
+});
+
 test('Plan has one unified pantry picker and leaves breakfast/lunch disabled for every tier',()=>{
  const {SmartCartContextForm}=load(path.resolve('components/smart-cart-context-form.tsx'));
  for(const userPlan of ['guest','free','plus']){

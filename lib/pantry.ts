@@ -31,6 +31,9 @@ export function pantryStorageKey(owner: string) { return `mealcaddie-pantry-v2:$
 export function readOwnedPantry(value: unknown, owner: string) { if (!value || typeof value !== "object" || !("owner" in value) || value.owner !== owner)
     return []; return normalizePantry("entries" in value ? value.entries : []); }
 export function pantryNames(entries: PantryEntry[]) { return entries.filter(e => e.quantity !== 0 && (e.status !== "restock" || (e.quantity ?? 0) > 0)).map(e => e.name); }
+export function generationPantryNames(entries: PantryEntry[]) {
+    return pantryNames(entries.filter(entry => entry.status !== "restock"));
+}
 export function pantryCloudPayload(entries: PantryEntry[]) { return entries.map(({ name, quantity, unit, status }) => ({ name, ...(quantity !== undefined ? { quantity } : {}), ...(unit ? { unit } : {}), status })); }
 export function addPantryEntry(entries: PantryEntry[], name: string) { const key = ingredientKey(name); return entries.some(e => ingredientKey(e.name) === key) ? entries : normalizePantry([...entries, { name, status: "owned" }]); }
 export function searchPantry(options: readonly string[], entries: PantryEntry[], query: string) {

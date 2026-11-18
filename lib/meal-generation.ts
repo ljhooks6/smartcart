@@ -1,4 +1,5 @@
 import { culinaryReview, planConstraintIssues, foodTermMatches, equipmentRequirementText } from "./meal-quality";
+import { availablePantryNames, distinctPantryDinners } from "./pantry-availability";
 import {optionalMealPauseResponse} from "./meal-availability";
 import { candidateOutputResponse } from "./food-safety-response";
 import { foodSafetyResponse } from "./food-safety-response";
@@ -432,6 +433,19 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     (body as Partial<GenerateListRequest>) ?? {};
   const normalizedMealSourceMode =
     mealSourceMode === "pantry-only" ? "pantry-only" : "pantry-and-store";
+  const pantryOnly = normalizedMealSourceMode === "pantry-only";
+  const available = availablePantryNames({ combinedPantryItems, fullyStocked, runningLow, restock });
+  const dinnerCountInstruction = pantryOnly
+    ? "Return up to 7 distinct feasible dinners, or an empty meals array if none are possible. Never pad the result with renamed duplicates."
+    : "Return exactly 7 dinner meals.";
+  const responseSchema = pantryOnly ? aiGenerateListResponseSchema.extend({
+    meals: z.array(mealSchema.extend({
+      ingredients: z.array(ingredientSchema.extend({ price: z.number().nonnegative().default(0) })).min(1),
+    })).max(7),
+    desserts: z.array(dessertSchema.extend({
+      ingredients: z.array(ingredientSchema.extend({ price: z.number().nonnegative().default(0) })).min(1),
+    })).max(2).default([]),
+  }) : aiGenerateListResponseSchema;
 
   const selectedEquipment =
     Array.isArray(availableEquipment) && availableEquipment.length > 0
@@ -452,6 +466,9 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       },
       { status: 400 },
     );
+  }
+  if (pantryOnly && !available.length) {
+    return NextResponse.json({ code: "PANTRY_INPUT_EMPTY", error: "Add an on-hand pantry ingredient, update items marked Need to buy, or choose Pantry + store pickup.", retryable: false }, { status: 400 });
   }
 
   if (!process.env.OPENAI_API_KEY) {
@@ -533,19 +550,24 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
 
     let rawPlan = await requestMealPlan();
 
-    if (!Array.isArray(rawPlan.meals) || rawPlan.meals.length !== 7 ||
+    if (!Array.isArray(rawPlan.meals) || (pantryOnly ? rawPlan.meals.length > 7 : rawPlan.meals.length !== 7) ||
         (includeBreakfast && rawPlan.breakfasts?.length !== 3) ||
         (includeLunch && rawPlan.lunches?.length !== 3)) {
       rawPlan = await requestMealPlan(
-        `CRITICAL RETRY: Return exactly 7 dinner meals in meals, ${includeBreakfast ? "3" : "0"} breakfasts in breakfasts, and ${includeLunch ? "3" : "0"} lunches in lunches. Desserts are optional and may be 0, 1, or 2 items. Keep all requested constraints.`,
+        `CRITICAL RETRY: ${dinnerCountInstruction} Return ${includeBreakfast ? "3" : "0"} breakfasts in breakfasts, and ${includeLunch ? "3" : "0"} lunches in lunches. Desserts are optional and may be 0, 1, or 2 items. Keep all requested constraints.`,
       );
     }
 
     async function parsePlan(raw: typeof rawPlan) {
-      const validated=aiGenerateListResponseSchema.safeParse({...raw,breakfasts:includeBreakfast?raw.breakfasts:[],lunches:includeLunch?raw.lunches:[],desserts:includeDessert?raw.desserts:[]});
-      if(validated.success)return validated.data;
-      const corrected=await requestMealPlan("SCHEMA CORRECTION: "+validated.error.issues.map(i=>i.path.join(".")+": "+i.message).join("; ")+". Use strictly positive ingredient prices; omit water from priced ingredients. Preserve every original constraint and finished-dish description.");
-      return aiGenerateListResponseSchema.parse({...corrected,breakfasts:includeBreakfast?corrected.breakfasts:[],lunches:includeLunch?corrected.lunches:[],desserts:includeDessert?corrected.desserts:[]});
+      const validated=responseSchema.safeParse({...raw,breakfasts:includeBreakfast?raw.breakfasts:[],lunches:includeLunch?raw.lunches:[],desserts:includeDessert?raw.desserts:[]});
+      const normalize = (value: z.infer<typeof responseSchema>) => pantryOnly ? {
+        ...value,
+        meals: distinctPantryDinners(value.meals).map(meal => ({ ...meal, ingredients: meal.ingredients.map(i => ({ ...i, price: 0 })) })),
+        desserts: value.desserts.map(dessert => ({ ...dessert, ingredients: dessert.ingredients.map(i => ({ ...i, price: 0 })) })),
+      } : value;
+      if(validated.success)return normalize(validated.data);
+      const corrected=await requestMealPlan("SCHEMA CORRECTION: "+validated.error.issues.map(i=>i.path.join(".")+": "+i.message).join("; ")+(pantryOnly ? ". Pantry ingredients have zero additional purchase cost; use price 0." : ". Use strictly positive ingredient prices; omit water from priced ingredients.")+" "+dinnerCountInstruction+" Preserve every original constraint and finished-dish description.");
+      return normalize(responseSchema.parse({...corrected,breakfasts:includeBreakfast?corrected.breakfasts:[],lunches:includeLunch?corrected.lunches:[],desserts:includeDessert?corrected.desserts:[]}));
     }
     let parsed = await parsePlan(rawPlan);
     parsed = {
@@ -573,7 +595,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       equipmentViolations.length > 0
     ) {
       rawPlan = await requestMealPlan(
-        `CRITICAL RETRY: ${constraintIssues.join("; ")} Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. Return exactly 7 dinner meals. Desserts may be 0, 1, or 2 items.`,
+        `CRITICAL RETRY: ${constraintIssues.join("; ")} Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. ${dinnerCountInstruction} Desserts may be 0, 1, or 2 items.`,
       );
       parsed = await parsePlan(rawPlan);
       parsed = {
@@ -596,18 +618,18 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     }
 
     if (
-      isPlusGeneration &&
+      isPlusGeneration && !pantryOnly &&
       (
-        culinaryReview(parsed,normalizedMealSourceMode === "pantry-only").issues.length > 0 ||
-        (normalizedMealSourceMode !== "pantry-only" && repeatedSignatureWords.length > 0) ||
-        (normalizedMealSourceMode !== "pantry-only" && missingSelectedEquipmentUsage.length > 0) ||
+        culinaryReview(parsed).issues.length > 0 ||
+        repeatedSignatureWords.length > 0 ||
+        missingSelectedEquipmentUsage.length > 0 ||
         overusedProteins.length > 0 ||
-        (normalizedMealSourceMode !== "pantry-only" && repeatedMealFamilies.length > 0) ||
-        (Boolean(cuisinePreference?.trim()) && cuisineAlignedMeals < 3 && normalizedMealSourceMode !== "pantry-only")
+        repeatedMealFamilies.length > 0 ||
+        (Boolean(cuisinePreference?.trim()) && cuisineAlignedMeals < 3)
       )
     ) {
       rawPlan = await requestMealPlan(
-        `PLUS REFINEMENT RETRY: ${culinaryReview(parsed,normalizedMealSourceMode === "pantry-only").issues.join("; ")} Keep the same budget, diet, pantry, and prep-time constraints, but improve the weekly plan quality. Fix these soft-quality issues: missing selected special equipment usage: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Overused proteins: ${overusedProteins.join(", ") || "none"}. Repeated meal families: ${repeatedMealFamilies.join(", ") || "none"}. Cuisine alignment count for the requested cuisine vibe is currently ${cuisineAlignedMeals} out of 7 and should fit the requested cuisine when available ingredients support it; constraints outrank diversity. Return a noticeably more varied, balanced weekly plan with exactly 7 dinner meals and valid JSON only. Desserts may be 0, 1, or 2 items.`,
+        `PLUS REFINEMENT RETRY: ${culinaryReview(parsed).issues.join("; ")} Keep the same budget, diet, pantry, and prep-time constraints, but improve the weekly plan quality. Fix these soft-quality issues: missing selected special equipment usage: ${missingSelectedEquipmentUsage.join(", ") || "none"}. Overused proteins: ${overusedProteins.join(", ") || "none"}. Repeated meal families: ${repeatedMealFamilies.join(", ") || "none"}. Cuisine alignment count for the requested cuisine vibe is currently ${cuisineAlignedMeals} out of 7 and should fit the requested cuisine when available ingredients support it; constraints outrank diversity. Return a noticeably more varied, balanced weekly plan with exactly 7 dinner meals and valid JSON only. Desserts may be 0, 1, or 2 items.`,
       );
       parsed = await parsePlan(rawPlan);
       parsed = {
@@ -624,7 +646,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
         parsed.meals,
         selectedEquipmentSet,
       );
-      overusedProteins = normalizedMealSourceMode === "pantry-only" ? [] : findOverusedProteins(parsed.meals);
+      overusedProteins = findOverusedProteins(parsed.meals);
       repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
       cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
     }
@@ -632,28 +654,33 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     const finalDishSet=()=>[...parsed.meals,...parsed.breakfasts,...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))];
     const remainingHardIssues=[...planConstraintIssues(parsed,constraintInput),...equipmentViolations,...blockedMatches];
     if(remainingHardIssues.length && providerCalls<3) {
-      rawPlan=await requestMealPlan("FINAL CONSTRAINT CORRECTION: "+remainingHardIssues.join("; ")+". Do not relax constraints. No blender means no blended or pureed components; choose a recipe using the selected hardware. Preserve actual dish quality, descriptions and positive ingredient prices.");
+      rawPlan=await requestMealPlan("FINAL CONSTRAINT CORRECTION: "+remainingHardIssues.join("; ")+". Do not relax constraints. No blender means no blended or pureed components; choose a recipe using the selected hardware. Preserve actual dish quality and descriptions. "+dinnerCountInstruction+(pantryOnly ? " Use price 0 for on-hand ingredients." : " Preserve positive ingredient prices."));
       parsed=await parsePlan(rawPlan);parsed={...parsed,meals:normalizeGeneratedMeals(parsed.meals,householdSize)};
       blockedMatches=findBlockedContentMatches(finalDishSet(),[...dietaryPreferences.blockedIngredients,...avoidanceGuidance.avoidedItems]).concat(allergyConflicts(parsed,diet));
       equipmentViolations=findEquipmentViolations(finalDishSet(),selectedEquipmentSet);
     }
     constraintIssues = planConstraintIssues(parsed,constraintInput);
-    if (constraintIssues.length) return NextResponse.json({error:"The plan could not meet your constraints. "+constraintIssues.join(" "),retryable:false},{status:422});
+    if (constraintIssues.length) return NextResponse.json({code: constraintIssues.some(issue => issue.startsWith("Pantry-only ingredient unavailable")) ? "PANTRY_INGREDIENT_UNAVAILABLE" : "PLAN_CONSTRAINTS_UNSATISFIED", error:"The plan could not meet your constraints. "+constraintIssues.join(" ")+(pantryOnly ? " Review on-hand ingredients or choose Pantry + store pickup." : ""),retryable:false},{status:422});
+    if (pantryOnly && parsed.meals.length === 0) return NextResponse.json({code:"PANTRY_NO_FEASIBLE_MEALS",error:"No dinner suggestions could be made from the listed ingredients with your current time, equipment and dietary settings. Add more on-hand ingredients or choose Pantry + store pickup. Keep your dietary restrictions entered.",retryable:false},{status:422});
     if (blockedMatches.length > 0) {
       return NextResponse.json(
         {
-          error: `Generated meals violated dietary restrictions or explicit avoid rules by including blocked terms: ${Array.from(new Set(blockedMatches)).join(", ")}`,
+          code: "PLAN_CONSTRAINTS_UNSATISFIED",
+          error: "The generated options could not meet your dietary or ingredient exclusions. Keep those restrictions entered. Try again, or add more compatible on-hand ingredients when using Pantry Only.",
+          retryable: false,
         },
-        { status: 500 },
+        { status: 422 },
       );
     }
 
     if (equipmentViolations.length > 0) {
       return NextResponse.json(
         {
-          error: `Generated meals required unselected equipment after retry: ${equipmentViolations.join(", ")}`,
+          code: "PLAN_CONSTRAINTS_UNSATISFIED",
+          error: "The generated options required equipment you did not select. Review your actual kitchen equipment or try different on-hand ingredients. No incompatible plan was returned.",
+          retryable: false,
         },
-        { status: 500 },
+        { status: 422 },
       );
     }
 
@@ -710,6 +737,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     return NextResponse.json({
       dietarySafety,
       ...parsed,
+      ...(pantryOnly ? { planning_notice: `${parsed.meals.length < 7 ? `Only ${parsed.meals.length} distinct dinner suggestion(s) fit the listed pantry. ` : ""}Check the required amounts before cooking. On-hand names and stock labels do not confirm enough quantity for these meals.`, upgrade_available: false } : {}),
       // No extra provider call or retry is made for this culinary preference.
       varietyReview: reviewMealVariety(parsed.meals.map(meal => meal.name), varietyInput, varietyContext),
       meals: allMeals,
@@ -723,9 +751,8 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: `Schema validation failed: ${error.issues
-            .map((issue) => `${issue.path.join(".") || "root"}: ${issue.message}`)
-            .join("; ")}`,
+          code: "GENERATION_RESPONSE_INVALID",
+          error: "The generated response was missing required recipe information. Please try again with the same dietary restrictions.",
         },
         { status: 500 },
       );
@@ -739,6 +766,6 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       return NextResponse.json({ error: "MealCaddie is busy. Your plan will try again shortly.", retryable: true },
         { status: 503, headers: { "Retry-After": String(Math.max(30, Number.isFinite(seconds) ? seconds : 30)) } });
     }
-    return NextResponse.json({ error: "We couldn't finish this plan. Please try a new plan." }, { status: 500 });
+    return NextResponse.json({ code: error instanceof SyntaxError ? "GENERATION_RESPONSE_INVALID" : "GENERATION_PROVIDER_FAILED", error: "We couldn't finish this plan. Please try a new plan with your dietary restrictions kept in place." }, { status: 500 });
   }
 }
