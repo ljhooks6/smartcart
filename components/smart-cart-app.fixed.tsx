@@ -19,7 +19,7 @@ import { SmartCartContextForm } from "./smart-cart-context-form";
 import { SmartCartStoreMode } from "./smart-cart-store-mode";
 import { SmartCartWeekDashboard } from "./smart-cart-week-dashboard";
 import { deriveGroceryLists } from "../lib/grocery-list";
-import {normalizePantry,readOwnedPantry,pantryStorageKey,pantryNames,pantryCloudPayload,type PantryEntry} from "../lib/pantry";
+import {normalizePantry,readOwnedPantry,pantryStorageKey,pantryNames,generationPantryNames,pantryCloudPayload,type PantryEntry} from "../lib/pantry";
 import {getIngredientKey} from "../lib/grocery-list";
 import { restoreMealAtPosition, undoCookedEntry } from "../lib/meal-recovery";
 import { countCookedThisWeek } from "../lib/week-progress";
@@ -94,6 +94,7 @@ type GroceryListItem = {
 };
 
 type GenerateListResponse = {
+  planning_notice?: string;
   meals: MealPlanItem[];
   restock_items: GroceryListItem[];
   estimated_total_cost: number;
@@ -802,7 +803,7 @@ export function SmartCartApp() {
   }, [activeMobileTab]);
 
   const pantryEntries=useMemo(()=>pantrySnapshot.owner===planOwner&&pantrySnapshot.ready?normalizePantry([...Array.from(fullyStocked,name=>({name,status:"stocked"})),...Array.from(runningLow,name=>({name,status:"low"})),...Array.from(restock,name=>({name,status:"restock"})),...formState.pantryItems.split(",").map(v=>v.trim()).filter(Boolean),...pantrySnapshot.entries]):[],[pantrySnapshot,planOwner,fullyStocked,runningLow,restock,formState.pantryItems]);
-  const combinedPantryItems=useMemo(()=>pantryNames(pantryEntries),[pantryEntries]);
+  const combinedPantryItems=useMemo(()=>formState.mealSourceMode === "pantry-only" ? generationPantryNames(pantryEntries) : pantryNames(pantryEntries),[pantryEntries,formState.mealSourceMode]);
   const pantryPayload=useMemo(()=>pantryCloudPayload(pantryEntries),[pantryEntries]);
   function changePantryEntries(entries:PantryEntry[]){
     setPantrySnapshot({owner:planOwner,ready:true,entries:normalizePantry(entries)});
@@ -1031,6 +1032,7 @@ export function SmartCartApp() {
     savedDesserts: [...savedDesserts, ...(generatedPlan?.desserts ?? []).map(dessert => ({ name: dessert.title, ingredients: dessert.ingredients }))],
   }), [fullyStocked, runningLow, restock, pantryEntries, weeklyMenu, savedDesserts, generatedPlan]);
   const generationHandoff = generatedPlan ? <div className="mb-5 rounded-2xl border border-pine/20 bg-white p-5 lg:col-span-12" role="status">
+    {generatedPlan.planning_notice ? <p className="mb-3 text-sm font-semibold text-pine">{generatedPlan.planning_notice}</p> : null}
     <p className="hidden md:block text-sm font-semibold text-pine">{(["dinner", "breakfast", "lunch"] as const).map((kind) => { const count = [...generatedPlan.meals, ...weeklyMenu].filter((meal) => getMealKind(meal) === kind).length; return count ? `${count} ${kind} options` : null; }).filter(Boolean).join(" · ")} · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
     <p className="text-sm font-semibold text-pine md:hidden">Your meal options are ready.</p>
     <p className="hidden md:block mt-2 text-sm leading-6 text-ink/65">Choose the meals you want to cook. Your Week tracks your choices and the groceries they need. Check pantry quantities before cooking.</p>

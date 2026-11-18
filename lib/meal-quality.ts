@@ -1,5 +1,6 @@
 import { usableDescription } from "./recipe-description";
 import { cookingTimeLimitMinutes } from "./cooking-time.ts";
+import { availablePantryNames, pantryMatchKey, pantryIngredientAvailable } from "./pantry-availability.ts";
 type Ingredient = { name: string; amount?: string; price: number };
 type Dish = { name?: string; title?: string; notes?: string; description?: string; ingredients: Ingredient[]; prepTime?: number; prep_time_minutes?: number; servings?: number };
 type Plan = { meals: Dish[]; breakfasts?: Dish[]; lunches?: Dish[]; desserts?: Dish[] };
@@ -11,7 +12,7 @@ export function culinaryReview(plan: Plan, pantryOnly = false) {
   const issues = [...(!pantryOnly ? repetition.map(p => `Too many ${p} dishes; vary the actual dish format, not just titles.`) : []), ...(missingDescriptions ? [`${missingDescriptions} dishes need a finished-dish description, separate from preparation.`] : [])];
   return { issues, missingDescriptions, repetition };
 }
-export const pantryIngredientKey = (name: string) => name.toLowerCase().replace(/\[[^\]]*\]/g, "").replace(/[^a-z0-9 ]/g," ").replace(/\b(?:fresh|raw|chopped|diced)\b/g,"").trim().replace(/\s+/g," ").replace(/s$/, "");
+export const pantryIngredientKey = pantryMatchKey;
 export function foodTermMatches(text: string, term: string) {
   const words=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
   return (` ${words(text)} `).includes(` ${words(term)} `);
@@ -42,8 +43,8 @@ export function planConstraintIssues(plan: Plan, input: { budget: number; househ
     for(const [named,required] of [[/streusel/i,/flour|oat/],[/chocolate/i,/chocolate|cocoa/],[/lemon/i,/lemon/],[/blueberry/i,/blueberr/],[/pumpkin/i,/pumpkin/],[/pesto/i,/pesto|basil/],[/gnocchi/i,/gnocchi/]] as const)if(named.test(title)&&!required.test(names))issues.push("Named component lacks supporting ingredients: "+title);
   }
   if(input.mealSourceMode === "pantry-only") {
-    const available=new Set([...(input.combinedPantryItems||"").split(/[,;\n]/),...(input.fullyStocked||[]),...(input.runningLow||[])].map(pantryIngredientKey));
-    for(const dish of dishes) for(const i of dish.ingredients) if(!available.has(pantryIngredientKey(i.name)) && pantryIngredientKey(i.name)!=="water") issues.push(`Pantry-only ingredient unavailable: ${i.name}`);
+    const available = new Set(availablePantryNames(input).map(pantryMatchKey));
+    for(const dish of dishes) for(const i of dish.ingredients) if(!pantryIngredientAvailable(i.name, available)) issues.push(`Pantry-only ingredient unavailable: ${i.name}`);
   }
   // Prices retain the existing estimated per-entry semantics; this is not a local cart quote.
   const total=dishes.reduce((sum,d)=>sum+d.ingredients.reduce((s,i)=>s+i.price,0),0);

@@ -1,4 +1,5 @@
 import { cookingTimeLimitMinutes } from "./cooking-time.ts";
+import { availablePantryNames } from "./pantry-availability.ts";
 
 function cookingTimeRules(preference?: string): string[] {
   const maximum = cookingTimeLimitMinutes(preference);
@@ -167,13 +168,13 @@ export function buildGenerateListPrompts({
   const introSection = [
     "You are an experienced home cook and budget-conscious meal planner. Build dishes people want to cook again, not inventories assembled into plates.",
     isPantryOnlyMode
-      ? "Create 7 dinner meal suggestions that can be made from the user's available pantry items without planning a store trip."
+      ? "Create up to 7 distinct dinner suggestions from the available pantry. Return fewer when necessary, or meals: [] if none are feasible. Never rename essentially identical meals to fill a quota."
       : "Create 7 dinner meal suggestions that strictly adhere to the user's budget, diet, household size, and pantry items.",
   ];
 
   const corePlanningRules = [
     "- Build appetizing, recognizable dishes within the full budget. Affordability does not require the cheapest repetitive template or maximum pantry reuse. Do not apply premium upgrades unless requested.",
-    "- Return exactly 7 dinner meals.",
+    isPantryOnlyMode ? "- Return 0 to 7 feasible dinner options. Ingredient, dietary, time and equipment constraints take precedence over count and variety." : "- Return exactly 7 dinner meals.",
     includeBreakfast ? "- Also return exactly 3 practical breakfast options in breakfasts. These are choices, not an automatic seven-day breakfast schedule. Favor quick meals with protein/fiber, realistic household portions, and affordable ingredients." : "- Breakfast is not selected: return an empty breakfasts array.",
     includeLunch ? "- Also return exactly 3 practical lunch options in lunches. These are choices, not an automatic seven-day lunch schedule. Favor balanced, easy lunches with realistic household portions. Any leftover ingredient must also be listed with the amount required; never assume an unchosen dinner will supply it." : "- Lunch is not selected: return an empty lunches array.",
     "- Apply the user's diet, avoidance, pantry-only, equipment, prep-time, and budget constraints to breakfast and lunch too. Include their ingredients in the overall budget. Reuse identical ingredients where practical. Breakfast and lunch may use simple seasonings; do not force dinner-style side dishes, dinner protein-variety rules, or three aromatics into them.",
@@ -216,13 +217,13 @@ export function buildGenerateListPrompts({
     "- Each ingredient object must use this exact format:",
     "  - { \"name\": \"Red Bell Peppers\", \"amount\": \"2\", \"price\": 3.00 }",
     "- Only include ingredients required for that specific meal inside that meal's ingredients array.",
-    "- You MUST be specific with ingredient names (for example \"Red Bell Peppers\" or \"Roma Tomatoes\", not just \"Peppers\").",
+    isPantryOnlyMode ? "- Use the exact available ingredient names or verified equivalents. Do not invent a specific variety, formulation or preparation. Even water, oil and seasonings must be listed as available to be included." : "- You MUST be specific with ingredient names (for example \"Red Bell Peppers\" or \"Roma Tomatoes\", not just \"Peppers\").",
     "- Title-specific shopping rule: if a meal title or description names a specific ingredient format, the ingredient array must use that same shopper-facing specificity. For example, \"Cheesy Macaroni\" must list \"Macaroni\" or \"Elbow Macaroni\", not generic \"Pasta\"; \"Spaghetti\" must list \"Spaghetti\", not generic \"Pasta\"; \"Yellow Onion\" must not become generic \"Onion\".",
     "- NEVER append conversational text like \"(assumed purchase)\" to ingredient names.",
     "- BANNED: Any text like \"1 item\", \"(assumed purchase)\", or \"to taste\". If an amount is small, use \"1 pinch\" or \"1 tsp\".",
     "- You are a professional grocery curator. Preserve useful ingredient types such as \"Red Bell Peppers\", \"English Cucumber\", and \"80/20 Ground Beef\". Every ingredient amount MUST be the quantity actually used by this recipe for the requested household size (for example \"8 oz\", \"1/2 cup\", or \"2\"). Do not round recipe amounts up to a full store package. Use consistent ingredient names across meals when the ingredient is truly identical, including pantry names when using those exact items. Never equate different varieties or forms such as fresh garlic and garlic powder.",
     "- Ingredients must support the named dish and sauce. Do not cram every ingredient into the title or description. No decorative cuisine labels without the corresponding flavor, ingredients and technique.",
-    "- Use realistic positive estimated costs consistently with existing grocery estimates; these are general estimates, not local prices or exact checkout totals. Avoid pricing a full container repeatedly as though each recipe requires a new one.",
+    isPantryOnlyMode ? "- Use price: 0 for on-hand ingredients and estimated_total_cost: 0. No purchase prices are needed. Always list actual recipe amounts; unknown pantry amounts require a check before cooking." : "- Use realistic positive estimated costs consistently with existing grocery estimates; these are general estimates, not local prices or exact checkout totals. Avoid pricing a full container repeatedly as though each recipe requires a new one.",
   ];
 
   const writingAndDessertRules = [
@@ -292,13 +293,13 @@ export function buildGenerateListPrompts({
     varietyGuidance || "",
     pantryAndIngredientRules,
     writingAndDessertRules,
-    adventureRules,
+    isPantryOnlyMode ? ["- Familiar, practical dishes are welcome. Return fewer options rather than duplicating dishes or adding unavailable ingredients to meet adventure or cuisine preferences."] : adventureRules,
     budgetRules,
     safetyAndOutputRules,
   ]);
 
   const userPromptSections = [
-    "Build 7 dinner meal suggestions with localized ingredients using these inputs:",
+    isPantryOnlyMode ? "Build up to 7 distinct feasible dinner suggestions, or none if the pantry cannot support a meal:" : "Build 7 dinner meal suggestions with localized ingredients using these inputs:",
     "",
     `Budget: ${budget}`,
     `Meal Source Mode: ${
@@ -308,9 +309,9 @@ export function buildGenerateListPrompts({
     }`,
     `Diet: ${dietaryPromptBlock.includes("User-entered diet text:") ? dietaryPromptBlock.split("\n")[0].replace("User-entered diet text: ", "") : "None provided"}`,
     `Household Size: ${householdSize}`,
-    `Pantry Items: ${combinedPantryItems || "None provided"}`,
-    `Fully Stocked Pantry Items: ${fullyStocked.length > 0 ? fullyStocked.join(", ") : "None provided"}`,
-    `Running Low Pantry Items: ${runningLow.length > 0 ? runningLow.join(", ") : "None provided"}`,
+    `Pantry Items: ${isPantryOnlyMode ? availablePantryNames({combinedPantryItems,fullyStocked,runningLow,restock}).join(", ") || "None provided" : combinedPantryItems || "None provided"}`,
+    `Fully Stocked Pantry Items: ${!isPantryOnlyMode && fullyStocked.length > 0 ? fullyStocked.join(", ") : "See available Pantry Items above"}`,
+    `Running Low Pantry Items: ${!isPantryOnlyMode && runningLow.length > 0 ? runningLow.join(", ") : "Labels do not establish sufficient quantities"}`,
     `Restock Pantry Items: ${restock.length > 0 ? restock.join(", ") : "None provided"}`,
     `Include Dessert: ${includeDessert ? "Yes" : "No"}`,
     `Include Breakfast Options: ${includeBreakfast ? "Yes, exactly 3" : "No"}`,
