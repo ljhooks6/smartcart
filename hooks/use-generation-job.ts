@@ -58,7 +58,18 @@ export function useGenerationJob({ userId, enabled, onCompleted }: {
           throw new Error("Status unavailable");
         }
         failures = 0;
-        if (epoch === pollEpoch.current && !startLock.current) { setMessage(null); apply(data.job ?? null, owner); }
+        if (epoch === pollEpoch.current && !startLock.current) {
+          if (data.job) {
+            // A real job response supersedes transient polling errors. The apply
+            // function preserves the failed job's actionable error.
+            if (data.job.status !== "failed") setMessage(null);
+            apply(data.job, owner);
+          } else {
+            // A rejected POST creates no job. Polling must not erase that
+            // submission error just because GET returns { job: null }.
+            apply(null, owner);
+          }
+        }
       } catch {
         if (canceled) return;
         if (epoch !== pollEpoch.current || startLock.current) { timer = setTimeout(poll, 4000); return; }
