@@ -1033,7 +1033,7 @@ export function SmartCartApp() {
   }), [fullyStocked, runningLow, restock, pantryEntries, weeklyMenu, savedDesserts, generatedPlan]);
   const generationFailureNotice = generation.message && !isLoading ? (
     <div role="alert" className="mb-5 rounded-2xl border border-berry/30 bg-white p-4 text-sm text-ink">
-      <p className="font-semibold text-berry">Meal planning didn't finish</p>
+      <p className="font-semibold text-berry">Meal planning did not finish</p>
       <p className="mt-2">{generation.message}</p>
       <button type="button" className="mt-3 min-h-11 font-semibold text-pine underline" onClick={() => navigateToStage("plan")}>
         Review your planning choices
