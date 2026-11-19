@@ -1031,6 +1031,15 @@ export function SmartCartApp() {
     weeklyMenu: [...weeklyMenu, ...(generatedPlan?.meals ?? [])],
     savedDesserts: [...savedDesserts, ...(generatedPlan?.desserts ?? []).map(dessert => ({ name: dessert.title, ingredients: dessert.ingredients }))],
   }), [fullyStocked, runningLow, restock, pantryEntries, weeklyMenu, savedDesserts, generatedPlan]);
+  const generationFailureNotice = generation.message && !isLoading ? (
+    <div role="alert" className="mb-5 rounded-2xl border border-berry/30 bg-white p-4 text-sm text-ink">
+      <p className="font-semibold text-berry">Meal planning didn't finish</p>
+      <p className="mt-2">{generation.message}</p>
+      <button type="button" className="mt-3 min-h-11 font-semibold text-pine underline" onClick={() => navigateToStage("plan")}>
+        Review your planning choices
+      </button>
+    </div>
+  ) : null;
   const generationHandoff = generatedPlan ? <div className="mb-5 rounded-2xl border border-pine/20 bg-white p-5 lg:col-span-12" role="status">
     {generatedPlan.planning_notice ? <p className="mb-3 text-sm font-semibold text-pine">{generatedPlan.planning_notice}</p> : null}
     <p className="hidden md:block text-sm font-semibold text-pine">{(["dinner", "breakfast", "lunch"] as const).map((kind) => { const count = [...generatedPlan.meals, ...weeklyMenu].filter((meal) => getMealKind(meal) === kind).length; return count ? `${count} ${kind} options` : null; }).filter(Boolean).join(" · ")} · {generatedPlan.desserts.length + savedDesserts.length} sweet treats · {candidatePlan.skippedGroceryList.length} pantry ingredients used</p>
@@ -2426,7 +2435,7 @@ export function SmartCartApp() {
               onPantryEntriesChange={changePantryEntries}
               pantryRequirements={pantryRequirements}
               equipmentOptions={equipmentOptions}
-              featureError={validationError || requestError}
+              featureError={validationError || requestError || generation.message}
               formState={formState}
               isLoading={isLoading}
               onBudgetChange={budget => setFormState(current => ({ ...current, budget }))}
@@ -2457,6 +2466,7 @@ export function SmartCartApp() {
                 activeMobileTab === "meals" ? `block ${mobileTabs[1].panelClass}` : "hidden"
               }`}
             >
+            {generationFailureNotice}
             {generatedPlan ? (
               <>
               {generationHandoff}
@@ -2581,7 +2591,7 @@ export function SmartCartApp() {
               onPantryEntriesChange={changePantryEntries}
               pantryRequirements={pantryRequirements}
               equipmentOptions={equipmentOptions}
-              featureError={validationError || requestError}
+              featureError={validationError || requestError || generation.message}
               formState={formState}
               isLoading={isLoading}
               onBudgetChange={budget => setFormState(current => ({ ...current, budget }))}
@@ -2606,6 +2616,7 @@ export function SmartCartApp() {
               userPlan={userPlan}
             />
           <section className="mt-10 pb-16">
+            {generationFailureNotice}
             {generatedPlan ? (
               <div id="desktop-meals" className="grid scroll-mt-8 grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 {generationHandoff}
