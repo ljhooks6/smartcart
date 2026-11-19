@@ -14,5 +14,5 @@ test('generation feedback appears beside Review and the Meals area', () => {
   assert.equal((source.match(/featureError=\{validationError \|\| requestError \|\| generation\.message\}/g) || []).length, 2);
   assert.equal((source.match(/\{generationFailureNotice\}/g) || []).length, 2);
   assert.match(source, /const generationFailureNotice = generation\.message && !isLoading/);
-  assert.match(source, /role="alert"[\s\S]*?Meal planning didn't finish/);
+  assert.match(source, /role="alert"[\s\S]*?Meal planning did not finish/);
 });
