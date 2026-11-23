@@ -14,7 +14,7 @@ test('structured review summarizes every restriction without modifying stored in
 });
 test('legacy, empty and malformed entries remain understandable',()=>{
  assert.deepEqual(dietarySummary('Vegan, no mushrooms').rows,['Original entry: Vegan, no mushrooms']);
- assert.deepEqual(dietarySummary('').rows,['No dietary settings entered.']);
+ assert.deepEqual(dietarySummary('').rows,['Original entry: No preference']);
  for(const diet of ['Legacy\nMealCaddie dietary settings v1: {bad}','MealCaddie dietary settings v1: {bad}',writeDiet('Legacy',{allergies:['Invalid']})]){
   const result=dietarySummary(diet);assert.match(result.warning,/original data is preserved/);
   assert.doesNotMatch(result.rows.join(' '),/MealCaddie dietary settings v1|\{|\}|Invalid/);
