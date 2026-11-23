@@ -15,6 +15,7 @@ type GeneratePromptArgs = {
   avoidancePromptBlock: string;
   budget: number;
   combinedPantryItems: string;
+  pantryAmounts?: string;
   cuisinePromptBlock: string;
   dietaryPromptBlock: string;
   existingMeals: string;
@@ -146,6 +147,7 @@ export function buildGenerateListPrompts({
   avoidancePromptBlock,
   budget,
   combinedPantryItems,
+  pantryAmounts,
   cuisinePromptBlock,
   dietaryPromptBlock,
   existingMeals,
@@ -173,6 +175,7 @@ export function buildGenerateListPrompts({
   ];
 
   const corePlanningRules = [
+    ...(isPantryOnlyMode ? [`- Measured pantry snapshot: ${pantryAmounts || "No measured amounts"}. The SUM of all returned dinners and treats must fit these quantities for the requested household size. Include explicit servings for every dinner. Do not assume unknown amounts, package sizes, stock labels or future purchases are sufficient. Return fewer dinners when stock is limited.`] : []),
     "- Build appetizing, recognizable dishes within the full budget. Affordability does not require the cheapest repetitive template or maximum pantry reuse. Do not apply premium upgrades unless requested.",
     isPantryOnlyMode ? "- Return 0 to 7 feasible dinner options. Ingredient, dietary, time and equipment constraints take precedence over count and variety." : "- Return exactly 7 dinner meals.",
     includeBreakfast ? "- Also return exactly 3 practical breakfast options in breakfasts. These are choices, not an automatic seven-day breakfast schedule. Favor quick meals with protein/fiber, realistic household portions, and affordable ingredients." : "- Breakfast is not selected: return an empty breakfasts array.",

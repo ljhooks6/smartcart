@@ -277,7 +277,7 @@ export function SmartCartContextForm({
             {equipment}
           </label>)}</div>
         </fieldset>
-        <p className="text-sm">Adding pantry ingredients is optional when you’re open to shopping. Exact amounts are optional.</p>
+        <p className="text-sm">{formState.mealSourceMode === "pantry-only" ? "Pantry Only uses measured quantities across your dinner options. Enter amounts and compatible units; unknown amounts and package sizes are not treated as enough. Ingredients with unresolved amounts will not be used." : "Adding pantry ingredients is optional when you’re open to shopping. Exact amounts are optional."}</p>
         <section className="min-w-0 rounded-3xl border border-pine/20 bg-white p-4"><SmartCartPantryEditor entries={pantryEntries} options={pantryQuickSelectOptions} onChange={onPantryEntriesChange} requirements={pantryRequirements}/></section>
 
       </> : null}

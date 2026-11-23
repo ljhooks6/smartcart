@@ -3,6 +3,7 @@ import { PANTRY_INGREDIENT_OPTIONS as pantryQuickSelectOptions } from "../lib/in
 import { DietarySafetySummary } from "./dietary-safety-summary";
 import { readHousehold, householdPlanDefaults } from "../lib/account-experience";
 import { dietForGeneration } from "../lib/dietary-request-value";
+import { pantryQuantityProblem } from "../lib/pantry-plan-quantities";
 
 import { getMealRequestHeaders } from "../lib/meal-request-headers";
 
@@ -1081,6 +1082,8 @@ export function SmartCartApp() {
       return false;
     }
 
+    const pantryProblem = pantryQuantityProblem({mealSourceMode:formState.mealSourceMode, combinedPantryItems:combinedPantryItems.join(", "), pantryInventory:pantryPayload});
+    if (pantryProblem) { setValidationError(pantryProblem); return false; }
     return generation.start({
           budget,
           diet: dietForGeneration(formState.diet),
@@ -1088,6 +1091,7 @@ export function SmartCartApp() {
           householdSize,
           mealSourceMode: formState.mealSourceMode,
           combinedPantryItems: combinedPantryItems.join(", "),
+          pantryInventory: pantryPayload,
           fullyStocked: Array.from(fullyStocked),
           runningLow: Array.from(runningLow),
           restock: Array.from(restock),

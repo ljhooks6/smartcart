@@ -1,5 +1,7 @@
 import { culinaryReview, planConstraintIssues, foodTermMatches, equipmentRequirementText } from "./meal-quality";
 import { availablePantryNames, distinctPantryDinners } from "./pantry-availability";
+import { measuredPantry, pantryQuantityProblem, fitPantryPlan } from "./pantry-plan-quantities";
+import type { PantryEntry } from "./pantry";
 import {optionalMealPauseResponse} from "./meal-availability";
 import { candidateOutputResponse } from "./food-safety-response";
 import { foodSafetyResponse } from "./food-safety-response";
@@ -26,6 +28,7 @@ type GenerateListRequest = {
   diet: string;
   householdSize: number;
   combinedPantryItems: string;
+  pantryInventory?: PantryEntry[];
   fullyStocked?: string[];
   runningLow?: string[];
   restock?: string[];
@@ -413,6 +416,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     diet,
     householdSize,
     combinedPantryItems,
+    pantryInventory,
     fullyStocked,
     runningLow,
     restock,
@@ -440,6 +444,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     : "Return exactly 7 dinner meals.";
   const responseSchema = pantryOnly ? aiGenerateListResponseSchema.extend({
     meals: z.array(mealSchema.extend({
+      servings: z.number().int().positive(),
       ingredients: z.array(ingredientSchema.extend({ price: z.number().nonnegative().default(0) })).min(1),
     })).max(7),
     desserts: z.array(dessertSchema.extend({
@@ -479,6 +484,10 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
   }
 
   const safetyResponse=foodSafetyResponse({diet,avoidIngredients},true);if(safetyResponse)return safetyResponse;
+  const pantryInput = { mealSourceMode: normalizedMealSourceMode, combinedPantryItems, fullyStocked, runningLow, restock, pantryInventory };
+  const pantryProblem = pantryQuantityProblem(pantryInput);
+  if (pantryProblem) return NextResponse.json({code:"PANTRY_QUANTITIES_REQUIRED",error:pantryProblem,retryable:false},{status:422});
+  const measured = measuredPantry(pantryInput);
   const isPlusGeneration = plan === "plus";
   const cuisinePreference = isPlusGeneration && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 
@@ -495,12 +504,13 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     applyUpgrades: Boolean(apply_upgrades),
     avoidancePromptBlock: avoidanceGuidance.promptBlock,
     budget,
-    combinedPantryItems,
+    combinedPantryItems: pantryOnly ? measured.map(entry=>entry.name).join(", ") : combinedPantryItems,
+    pantryAmounts: JSON.stringify(measured),
     cuisinePromptBlock: cuisineGuidance.promptBlock,
     dietaryPromptBlock: dietaryPreferences.promptBlock,
     existingMeals: existingMeals?.trim() || "None provided",
     varietyGuidance: buildMealVarietyGuidance(varietyInput, varietyContext),
-    fullyStocked: Array.isArray(fullyStocked) ? fullyStocked : [],
+    fullyStocked: pantryOnly ? [] : Array.isArray(fullyStocked) ? fullyStocked : [],
     householdSize,
     includeDessert: Boolean(includeDessert),
     includeBreakfast: Boolean(includeBreakfast),
@@ -509,7 +519,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     prepTime,
     restock:
       normalizedMealSourceMode === "pantry-only" ? [] : Array.isArray(restock) ? restock : [],
-    runningLow: Array.isArray(runningLow) ? runningLow : [],
+    runningLow: pantryOnly ? [] : Array.isArray(runningLow) ? runningLow : [],
     selectedEquipment,
     mealSourceMode: normalizedMealSourceMode,
   });
@@ -684,6 +694,11 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       );
     }
 
+    const quantityReview = pantryOnly ? fitPantryPlan(parsed.meals, parsed.desserts, pantryInput) : null;
+    if (quantityReview) {
+      if (!quantityReview.meals.length) return NextResponse.json({code:"PANTRY_QUANTITIES_UNSATISFIED",error:"No complete dinner fits the measured pantry amounts with your household settings. "+[...new Set(quantityReview.omitted)].join(" ")+" Update quantities or choose Pantry + store pickup. No additional purchases or incompatible recipes were assumed.",retryable:false},{status:422});
+      parsed = {...parsed, meals:quantityReview.meals, desserts:quantityReview.desserts};
+    }
     const optionalMeals = [
       ...normalizeOptionalMeals(includeBreakfast ? parsed.breakfasts : [], "breakfast", householdSize),
       ...normalizeOptionalMeals(includeLunch ? parsed.lunches : [], "lunch", householdSize),
@@ -737,7 +752,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     return NextResponse.json({
       dietarySafety,
       ...parsed,
-      ...(pantryOnly ? { planning_notice: `${parsed.meals.length < 7 ? `Only ${parsed.meals.length} distinct dinner suggestion(s) fit the listed pantry. ` : ""}Check the required amounts before cooking. On-hand names and stock labels do not confirm enough quantity for these meals.`, upgrade_available: false } : {}),
+      ...(pantryOnly ? { planning_notice: `${parsed.meals.length < 7 ? `Only ${parsed.meals.length} distinct dinner suggestion(s) fit the listed pantry. ` : ""}${quantityReview?.omitted.length ? `${quantityReview.omitted.length} options were omitted because measured stock or compatible units did not cover them. ` : ""}Check the required amounts before cooking. Combined recipe quantities fit the submitted measured snapshot; unknown amounts and package sizes were not assumed sufficient. Update pantry quantities after use or changes.`, pantry_quantity_review: { checkedDinners: parsed.meals.length, omittedOptions: quantityReview?.omitted.length || 0 }, upgrade_available: false } : {}),
       // No extra provider call or retry is made for this culinary preference.
       varietyReview: reviewMealVariety(parsed.meals.map(meal => meal.name), varietyInput, varietyContext),
       meals: allMeals,

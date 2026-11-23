@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loader,withEnv} from './helpers/load-ts.mjs';
 
-const input={budget:60,householdSize:2,diet:'No preference',combinedPantryItems:'Rice, Scallions',mealSourceMode:'pantry-only',availableEquipment:['Stovetop'],prepTime:'Under 30 mins'};
-const dish=(name='Rice with green onion',ingredients=[{name:'Rice',amount:'1 cup',price:0},{name:'Green onion',amount:'1',price:0}])=>({day:'Day 1',name,description:'Tender rice with a crisp onion finish.',prep_time_minutes:20,ingredients});
+const input={budget:60,householdSize:2,diet:'No preference',combinedPantryItems:'Rice, Scallions',pantryInventory:[{name:'Rice',quantity:100,unit:'cup',status:'owned'},{name:'Scallions',quantity:100,unit:'each',status:'owned'}],mealSourceMode:'pantry-only',availableEquipment:['Stovetop'],prepTime:'Under 30 mins'};
+const dish=(name='Rice with green onion',ingredients=[{name:'Rice',amount:'1 cup',price:0},{name:'Green onion',amount:'1',price:0}])=>({day:'Day 1',name,servings:2,description:'Tender rice with a crisp onion finish.',prep_time_minutes:20,ingredients});
 const answer=meals=>({meals,desserts:[],estimated_total_cost:0,budget_summary:'Pantry suggestions',upgrade_available:false});
 async function run(value,extra={},plan='free'){
  return withEnv({OPENAI_API_KEY:'mock-only'},async()=>{
