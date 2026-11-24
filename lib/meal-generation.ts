@@ -1,6 +1,6 @@
 import { culinaryReview, planConstraintIssues, foodTermMatches, equipmentRequirementText } from "./meal-quality";
 import { availablePantryNames, distinctPantryDinners } from "./pantry-availability";
-import { measuredPantry, pantryQuantityProblem, fitPantryPlan } from "./pantry-plan-quantities";
+import { measuredPantry, pantryQuantityProblem, fitPantryPlan, hasGeneratedMeasurementProblem, pantryMeasurementCorrection } from "./pantry-plan-quantities";
 import type { PantryEntry } from "./pantry";
 import {optionalMealPauseResponse} from "./meal-availability";
 import { candidateOutputResponse } from "./food-safety-response";
@@ -599,13 +599,22 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     let overusedProteins = normalizedMealSourceMode === "pantry-only" ? [] : findOverusedProteins(parsed.meals);
     let repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
     let cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
+    let quantityReview = pantryOnly ? fitPantryPlan(parsed.meals, parsed.desserts, pantryInput) : null;
+    let quantityCorrectionAttempted = false;
+    const measurementCorrectionNeeded = () => !!quantityReview && parsed.meals.length > 0 && !quantityReview.meals.length && hasGeneratedMeasurementProblem(quantityReview.rejections);
+    function measurementCorrection() {
+      if (!quantityReview || quantityCorrectionAttempted || !measurementCorrectionNeeded()) return "";
+      quantityCorrectionAttempted = true;
+      return pantryMeasurementCorrection(quantityReview.rejections);
+    }
 
-    if (
+    if (providerCalls < 3 && (
       blockedMatches.length > 0 || constraintIssues.length > 0 ||
-      equipmentViolations.length > 0
-    ) {
+      equipmentViolations.length > 0 || measurementCorrectionNeeded()
+    )) {
+      const measurementInstruction = measurementCorrection();
       rawPlan = await requestMealPlan(
-        `CRITICAL RETRY: ${constraintIssues.join("; ")} Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. ${dinnerCountInstruction} Desserts may be 0, 1, or 2 items.`,
+        `CRITICAL RETRY: ${constraintIssues.join("; ")} Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. ${dinnerCountInstruction} Desserts may be 0, 1, or 2 items. ${measurementInstruction}`,
       );
       parsed = await parsePlan(rawPlan);
       parsed = {
@@ -625,6 +634,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       overusedProteins = normalizedMealSourceMode === "pantry-only" ? [] : findOverusedProteins(parsed.meals);
       repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
       cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
+      quantityReview = pantryOnly ? fitPantryPlan(parsed.meals, parsed.desserts, pantryInput) : null;
     }
 
     if (
@@ -663,8 +673,8 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
 
     const finalDishSet=()=>[...parsed.meals,...parsed.breakfasts,...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))];
     const remainingHardIssues=[...planConstraintIssues(parsed,constraintInput),...equipmentViolations,...blockedMatches];
-    if(remainingHardIssues.length && providerCalls<3) {
-      rawPlan=await requestMealPlan("FINAL CONSTRAINT CORRECTION: "+remainingHardIssues.join("; ")+". Do not relax constraints. No blender means no blended or pureed components; choose a recipe using the selected hardware. Preserve actual dish quality and descriptions. "+dinnerCountInstruction+(pantryOnly ? " Use price 0 for on-hand ingredients." : " Preserve positive ingredient prices."));
+    if((remainingHardIssues.length || (!quantityCorrectionAttempted && measurementCorrectionNeeded())) && providerCalls<3) {
+      rawPlan=await requestMealPlan("FINAL CONSTRAINT CORRECTION: "+remainingHardIssues.join("; ")+". Do not relax constraints. No blender means no blended or pureed components; choose a recipe using the selected hardware. Preserve actual dish quality and descriptions. "+dinnerCountInstruction+(pantryOnly ? " Use price 0 for on-hand ingredients." : " Preserve positive ingredient prices.")+" "+measurementCorrection());
       parsed=await parsePlan(rawPlan);parsed={...parsed,meals:normalizeGeneratedMeals(parsed.meals,householdSize)};
       blockedMatches=findBlockedContentMatches(finalDishSet(),[...dietaryPreferences.blockedIngredients,...avoidanceGuidance.avoidedItems]).concat(allergyConflicts(parsed,diet));
       equipmentViolations=findEquipmentViolations(finalDishSet(),selectedEquipmentSet);
@@ -694,9 +704,12 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       );
     }
 
-    const quantityReview = pantryOnly ? fitPantryPlan(parsed.meals, parsed.desserts, pantryInput) : null;
+    quantityReview = pantryOnly ? fitPantryPlan(parsed.meals, parsed.desserts, pantryInput) : null;
     if (quantityReview) {
-      if (!quantityReview.meals.length) return NextResponse.json({code:"PANTRY_QUANTITIES_UNSATISFIED",error:"No complete dinner fits the measured pantry amounts with your household settings. "+[...new Set(quantityReview.omitted)].join(" ")+" Update quantities or choose Pantry + store pickup. No additional purchases or incompatible recipes were assumed.",retryable:false},{status:422});
+      if (!quantityReview.meals.length) {
+        const incompatible = hasGeneratedMeasurementProblem(quantityReview.rejections);
+        return NextResponse.json({code:incompatible ? "PANTRY_MEASUREMENTS_INCOMPATIBLE" : "PANTRY_QUANTITIES_UNSATISFIED",error:(incompatible ? "The generated ingredient measurements could not be matched reliably to your pantry units. Your pantry amounts were not changed. " : "No complete dinner fits the measured pantry stock for this household. ")+[...new Set(quantityReview.omitted)].join(" ")+(incompatible ? " Review the ingredient forms and units, or choose Pantry + store pickup. This does not mean your pantry is empty." : " Update actual on-hand amounts or choose Pantry + store pickup.")+" Keep your dietary restrictions entered. No additional purchases or incompatible recipes were assumed.",retryable:false},{status:422});
+      }
       parsed = {...parsed, meals:quantityReview.meals, desserts:quantityReview.desserts};
     }
     const optionalMeals = [

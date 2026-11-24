@@ -9,6 +9,7 @@ import {spawn} from 'node:child_process';
 import {startPantryLab} from './pantry-only-server.mjs';
 import {openAttemptBudget,createBoundedProvider,providerLimits} from '../helpers/provider-attempt-budget.mjs';
 import {authorizeLocalJob,measuredFixture} from '../helpers/local-real-provider-scope.mjs';
+import {recordSyntheticQuantityDiagnostics} from '../helpers/synthetic-quantity-diagnostics.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const base=path.join(process.env.USERPROFILE||'', 'Documents','Codex','assignment02d-runs');
 function ordinary(directory){if(!path.resolve(directory).startsWith(path.resolve(base)+path.sep)||fs.lstatSync(directory).isSymbolicLink()||fs.realpathSync(directory)!==path.resolve(directory))throw Error('RUN_DIRECTORY_INVALID');}
@@ -40,7 +41,11 @@ async function main(){
  const transport=request=>fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify(request),redirect:'error',signal:AbortSignal.timeout(40000)});
  const bounded=createBoundedProvider({budget,transport,authorize:prepared=>authorizeLocalJob({budget,lab:lab.lab,prepared})});
  try{
-  lab=await startPantryLab({pantry:measuredFixture,receiptPath:path.join(directory,'journey.json'),installSignalHandlers:false,providerHandler:body=>bounded(body),providerSummary:()=>{const d=budget.read();return {providerReservations:d.attempts.length,completedResponses:d.attempts.filter(a=>a.state==='completed').length,failedResponses:d.attempts.filter(a=>a.state==='failed').length,uncertainAttempts:d.attempts.filter(a=>a.state==='uncertain'||a.state==='dispatching').length};}});
+  lab=await startPantryLab({pantry:measuredFixture,receiptPath:path.join(directory,'journey.json'),installSignalHandlers:false,providerHandler:async body=>{
+   const reply=await bounded(body);
+   if(body.model==='gpt-4.1')recordSyntheticQuantityDiagnostics(path.join(directory,'synthetic-measurements.json'),reply,budget.read().attempts.length);
+   return reply;
+  },providerSummary:()=>{const d=budget.read();return {providerReservations:d.attempts.length,completedResponses:d.attempts.filter(a=>a.state==='completed').length,failedResponses:d.attempts.filter(a=>a.state==='failed').length,uncertainAttempts:d.attempts.filter(a=>a.state==='uncertain'||a.state==='dispatching').length};}});
   const env={};for(const k of ['PATH','Path','SystemRoot','WINDIR','COMSPEC','PATHEXT','USERPROFILE','LOCALAPPDATA','APPDATA','TEMP','TMP'])if(process.env[k])env[k]=process.env[k];
   Object.assign(env,{NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:3053',NEXT_PUBLIC_SUPABASE_ANON_KEY:'local-test-anon-only',SUPABASE_SERVICE_ROLE_KEY:'local-test-service-only',NEXT_PUBLIC_APP_URL:'http://localhost:3052',OPENAI_API_KEY:'local-broker-not-provider-key',OPENAI_BASE_URL:'http://127.0.0.1:3053/openai/v1',BETA_PRODUCT_ACCESS_ENABLED:'true',BETA_ENTITLEMENTS_ENABLED:'false',NEXT_TEST_WASM_DIR:'.\\node_modules\\@next\\swc-wasm-nodejs'});
   child=spawn(process.execPath,[path.join(root,'node_modules/next/dist/bin/next'),'dev','-H','127.0.0.1','-p','3052'],{cwd:root,env,stdio:['ignore','pipe','pipe'],windowsHide:true});
