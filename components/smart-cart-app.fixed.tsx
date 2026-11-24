@@ -2,6 +2,7 @@
 import { PANTRY_INGREDIENT_OPTIONS as pantryQuickSelectOptions } from "../lib/ingredient-catalog";
 import { DietarySafetySummary } from "./dietary-safety-summary";
 import { readHousehold, householdPlanDefaults } from "../lib/account-experience";
+import { dietForGeneration } from "../lib/dietary-request-value";
 
 import { getMealRequestHeaders } from "../lib/meal-request-headers";
 
@@ -151,7 +152,7 @@ type FormState = {
 
 const initialFormState: FormState = {
   budget: "75",
-  diet: "Vegetarian",
+  diet: "No preference",
   cuisinePreference: "",
   householdSize: "2",
   mealSourceMode: "pantry-and-store",
@@ -1082,7 +1083,7 @@ export function SmartCartApp() {
 
     return generation.start({
           budget,
-          diet: safeTrim(formState.diet) || "No specific diet provided",
+          diet: dietForGeneration(formState.diet),
           cuisinePreference: isPlusMember ? safeTrim(formState.cuisinePreference) : "",
           householdSize,
           mealSourceMode: formState.mealSourceMode,
@@ -1138,7 +1139,7 @@ export function SmartCartApp() {
           availableEquipment: formState.availableEquipment,
           prepTime: formState.prepTime,
           budget: Number(formState.budget),
-          diet: safeTrim(formState.diet) || "No specific diet provided",
+          diet: dietForGeneration(formState.diet),
           householdSize: Number(formState.householdSize),
           combinedPantryItems: Array.from(
             new Set([...combinedPantryItems, ...Array.from(runningLow)]),
@@ -2180,7 +2181,7 @@ export function SmartCartApp() {
         headers: await getMealRequestHeaders(user?.id),
           body: JSON.stringify({
             budget,
-            diet: safeTrim(formState.diet) || "No specific diet provided",
+            diet: dietForGeneration(formState.diet),
             cuisinePreference: isPlusMember ? safeTrim(formState.cuisinePreference) : "",
             householdSize,
             combinedPantryItems: combinedPantryItems.join(", "),
