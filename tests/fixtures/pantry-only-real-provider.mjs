@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {createInterface} from 'node:readline/promises';
 import {spawn} from 'node:child_process';
 import {startPantryLab} from './pantry-only-server.mjs';
-import {openAttemptBudget,createBoundedProvider,providerLimits} from '../helpers/provider-attempt-budget.mjs';
+import {openAttemptBudget,createBoundedProvider,providerLimits,measurementLimits} from '../helpers/provider-attempt-budget.mjs';
 import {authorizeLocalJob,measuredFixture} from '../helpers/local-real-provider-scope.mjs';
 import {recordSyntheticQuantityDiagnostics} from '../helpers/synthetic-quantity-diagnostics.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -23,18 +23,21 @@ async function hiddenKey(){
  });
 }
 async function main(){
- if(process.argv[2]==='prepare'){
+ const measurement=['prepare-measurement','serve-measurement'].includes(process.argv[2]);
+ const limits=measurement?measurementLimits:providerLimits;
+ if(['prepare','prepare-measurement'].includes(process.argv[2])){
   const directory=path.join(base,new Date().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID().slice(0,8));fs.mkdirSync(directory,{recursive:true});ordinary(directory);
-  fs.writeFileSync(path.join(directory,'attempts.json'),JSON.stringify({version:1,state:'prepared',runId:path.basename(directory),syntheticDataOnly:true,limits:providerLimits,attempts:[]},null,2),{flag:'wx'});
+  fs.writeFileSync(path.join(directory,'attempts.json'),JSON.stringify({version:1,state:'prepared',runId:path.basename(directory),syntheticDataOnly:true,limits,attempts:[]},null,2),{flag:'wx'});
   console.log('PREPARED; zero provider calls. Run directory: '+directory);return;
  }
- if(process.argv[2]!=='serve'||!process.argv[3])throw Error('USAGE_PREPARE_OR_SERVE_RUN_DIRECTORY');
+ if(!['serve','serve-measurement'].includes(process.argv[2])||!process.argv[3])throw Error('USAGE_PREPARE_OR_SERVE_RUN_DIRECTORY');
  if(process.env.NODE_TLS_REJECT_UNAUTHORIZED==='0'||process.env.NODE_OPTIONS)throw Error('UNREVIEWED_TLS_OR_PRELOAD_OPTIONS');
- const directory=path.resolve(process.argv[3]);ordinary(directory);const budget=openAttemptBudget(directory);if(budget.read().state!=='prepared')throw Error('ONE_SHOT_RUN_ALREADY_STARTED');
+ const directory=path.resolve(process.argv[3]);ordinary(directory);const budget=openAttemptBudget(directory,limits);if(budget.read().state!=='prepared')throw Error('ONE_SHOT_RUN_ALREADY_STARTED');
  for(const name of ['.env','.env.local','.env.development','.env.development.local'])if(fs.existsSync(path.join(root,name)))throw Error('HOSTED_ENV_FILE_PRESENT');
  if(!process.stdin.isTTY||!process.stdout.isTTY)throw Error('PRIVATE_TTY_REQUIRED');
- const prompt=createInterface({input:process.stdin,output:process.stdout});const answer=await prompt.question('Only AFTER explicit chat approval: type APPROVED-LOCAL-FIVE-ATTEMPTS: ');prompt.close();
- if(answer!=='APPROVED-LOCAL-FIVE-ATTEMPTS')throw Error('OWNER_ACKNOWLEDGEMENT_REQUIRED');
+ const acknowledgement=measurement?'APPROVED-TWO-PLANNING-NO-RECIPES':'APPROVED-LOCAL-FIVE-ATTEMPTS';
+ const prompt=createInterface({input:process.stdin,output:process.stdout});const answer=await prompt.question('Only AFTER explicit chat approval: type '+acknowledgement+': ');prompt.close();
+ if(answer!==acknowledgement)throw Error('OWNER_ACKNOWLEDGEMENT_REQUIRED');
  let key=await hiddenKey();if(!/^sk-[A-Za-z0-9_-]{20,}$/.test(key))throw Error('TEST_KEY_FORMAT_INVALID');
  budget.arm();let lab,child;let stopping=false;
  async function stop(){if(stopping)return;stopping=true;child?.kill();if(lab)await lab.close();budget.close();key='';console.log('STOPPED: disposable services closed; sanitized receipts retained. No secret file was written.');}

@@ -4,16 +4,18 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 
 export const providerLimits=Object.freeze({planning:3,recipe:2,total:5,inputBytes:32768,planningOutput:4096,recipeOutput:3500,responseBytes:2000000});
+export const measurementLimits=Object.freeze({...providerLimits,planning:2,recipe:0,total:2});
 export const providerModels=Object.freeze({'gpt-4.1':'planning','gpt-6-luna':'recipe'});
 export class BudgetError extends Error {constructor(code){super(code);this.code=code;}}
-export function openAttemptBudget(directory){
+export function openAttemptBudget(directory,limits=providerLimits){
+ if(Object.keys(providerLimits).some(k=>!Number.isSafeInteger(limits[k])||limits[k]<0||limits[k]>providerLimits[k]||(!['planning','recipe','total'].includes(k)&&limits[k]!==providerLimits[k])))throw new BudgetError('UNAPPROVED_LIMITS');
  const filename=path.join(directory,'attempts.json'),lock=path.join(directory,'attempts.lock');
  function read(){
   const data=JSON.parse(fs.readFileSync(filename,'utf8'));
   if(data.version!==1||!Array.isArray(data.attempts)||!['prepared','armed','closed'].includes(data.state))throw new BudgetError('LEDGER_INVALID');
-  if(data.limits&&Object.keys(providerLimits).some(k=>data.limits[k]!==providerLimits[k]))throw new BudgetError('LEDGER_LIMITS_MISMATCH');
+  if((!data.limits&&limits!==providerLimits)||(data.limits&&Object.keys(limits).some(k=>data.limits[k]!==limits[k])))throw new BudgetError('LEDGER_LIMITS_MISMATCH');
   for(const [index,a] of data.attempts.entries())if(a.ordinal!==index+1||!['planning','recipe'].includes(a.kind)||!['dispatching','completed','failed','uncertain'].includes(a.state))throw new BudgetError('LEDGER_INVALID');
-  if(data.attempts.length>5||data.attempts.filter(a=>a.kind==='planning').length>3||data.attempts.filter(a=>a.kind==='recipe').length>2)throw new BudgetError('LEDGER_INVALID');
+  if(data.attempts.length>limits.total||data.attempts.filter(a=>a.kind==='planning').length>limits.planning||data.attempts.filter(a=>a.kind==='recipe').length>limits.recipe)throw new BudgetError('LEDGER_INVALID');
   return data;
  }
  function change(action){
@@ -29,7 +31,7 @@ export function openAttemptBudget(directory){
   reserve(kind,model,inputBytes,inputHash){return change(d=>{
    if(d.state!=='armed')throw new BudgetError('NOT_ARMED');
    if(d.attempts.some(a=>a.state==='uncertain'||a.state==='dispatching'))throw new BudgetError('UNCERTAIN_OR_ACTIVE_ATTEMPT');
-   if(d.attempts.length>=providerLimits.total||d.attempts.filter(a=>a.kind===kind).length>=providerLimits[kind])throw new BudgetError('ATTEMPT_LIMIT');
+   if(d.attempts.length>=limits.total||d.attempts.filter(a=>a.kind===kind).length>=limits[kind])throw new BudgetError('ATTEMPT_LIMIT');
    const ordinal=d.attempts.length+1;d.attempts.push({ordinal,kind,model,inputBytes,inputHash,state:'dispatching',startedAt:new Date().toISOString()});return ordinal;
   });},
   finish(ordinal,summary){return change(d=>{const a=d.attempts[ordinal-1];if(!a||a.state!=='dispatching')throw new BudgetError('ATTEMPT_STATE');Object.assign(a,summary,{finishedAt:new Date().toISOString()});});},
