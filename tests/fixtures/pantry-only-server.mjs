@@ -5,16 +5,19 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import {writeFile} from 'node:fs/promises';
 import {generationPostgresLab} from '../helpers/generation-postgres-lab.mjs';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
+export async function startPantryLab({providerHandler,providerSummary,pantry,receiptPath=process.env.MEALCADDIE_JOURNEY_RECEIPT,installSignalHandlers=true}={}){
 const lab=await generationPostgresLab(),app='http://localhost:3052',state=new Map();
 const enc=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
 for(const p of lab.people){
  const head=enc({alg:'HS256',typ:'JWT'}),body=enc({sub:p.id,aud:'authenticated',role:'authenticated',email:p.email,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+7200});
  p.token=head+'.'+body+'.'+crypto.createHmac('sha256','synthetic-local-only').update(head+'.'+body).digest('base64url');
  p.user={id:p.id,email:p.email,email_confirmed_at:p.email_confirmed_at,confirmed_at:p.email_confirmed_at,is_anonymous:false,role:'authenticated',aud:'authenticated',app_metadata:{provider:'email',providers:['email']},user_metadata:{preferred_name:'Assignment 02 '+p.key,mealcaddie_setup_complete:true}};
- state.set(p.id,{week:[],vault:[],pantry:[['Rice',3,'cup'],['Canned chickpeas',3,'cup'],['Scallions',4,'each'],['Water',6,'cup'],['Olive oil',6,'tsp'],['Milk',null,null]].map(([ingredient_name,quantity,quantity_unit],i)=>({id:i+1,user_id:p.id,ingredient_name,quantity,quantity_unit,stock_status:'owned',is_owned:true}))});
+ state.set(p.id,{week:[],vault:[],pantry:(pantry||[['Rice',3,'cup'],['Canned chickpeas',3,'cup'],['Scallions',4,'each'],['Water',6,'cup'],['Olive oil',6,'tsp'],['Milk',null,null]]).map(([ingredient_name,quantity,quantity_unit],i)=>({id:i+1,user_id:p.id,ingredient_name,quantity,quantity_unit,stock_status:'owned',is_owned:true}))});
 }
 let providerCalls=0;
-const receipt=async()=>{if(process.env.MEALCADDIE_JOURNEY_RECEIPT)await writeFile(process.env.MEALCADDIE_JOURNEY_RECEIPT,JSON.stringify({syntheticOnly:true,hostedConnections:0,externalProviderCalls:0,mockedProviderCalls:providerCalls,events:lab.events},null,2));};
+const receipt=async()=>{if(receiptPath){await writeFile(receiptPath,JSON.stringify({syntheticOnly:!providerHandler,syntheticDataOnly:true,providerMode:providerHandler?'bounded-real-provider':'loopback-mock',hostedConnections:0,...(providerSummary?providerSummary():{externalProviderCalls:0}),mockedProviderCalls:providerCalls,events:lab.events},null,2));if(providerHandler){const {rows}=await lab.db.query('select id,status,result from public.smartcart_generation_jobs where user_id=$1 order by created_at',[lab.people.find(p=>p.key==='free').id]);await writeFile(path.join(path.dirname(receiptPath),'validated-plans.json'),JSON.stringify({syntheticDataOnly:true,plans:rows.map(r=>({jobId:r.id,status:r.status,result:r.status==='completed'?r.result:null}))},null,2));}}};
 const send=(res,status,body,extra={})=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store',...extra});res.end(status===204?'':JSON.stringify(body));};
 const server=http.createServer(async(req,res)=>{
  try{
@@ -23,9 +26,9 @@ const server=http.createServer(async(req,res)=>{
   res.setHeader('Access-Control-Allow-Origin',app);res.setHeader('Access-Control-Allow-Headers','authorization,apikey,content-type,x-client-info,x-supabase-api-version,accept-profile,content-profile,prefer,range');res.setHeader('Access-Control-Allow-Methods','GET,POST,PATCH,OPTIONS');res.setHeader('Access-Control-Expose-Headers','Content-Range');
   if(req.method==='OPTIONS')return send(res,204,null);
   if(url.pathname==='/fixture'){
-   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end('<!doctype html><meta name="viewport" content="width=device-width"><title>Assignment 02 synthetic lab</title><h1>Synthetic Pantry Only journey</h1><p>Disposable PostgreSQL, fake Auth and mock AI. No production data, external calls or emails.</p>'+lab.people.map(p=>'<p><a href="'+app+'/planner#access_token='+p.token+'&refresh_token=lab-'+p.key+'&expires_in=7200&token_type=bearer&type=magiclink">Open synthetic '+p.key+'</a></p>').join(''));
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end('<!doctype html><meta name="viewport" content="width=device-width"><title>Assignment 02 synthetic lab</title><h1>Synthetic Pantry Only journey</h1><p>'+(providerHandler?'Disposable PostgreSQL and synthetic Auth. LIVE provider requests have an owner-approved five-attempt maximum. Open Free only. No production data or emails.':'Disposable PostgreSQL, fake Auth and mock AI. No production data, external calls or emails.')+'</p>'+lab.people.filter(p=>!providerHandler||p.key==='free').map(p=>'<p><a href="'+app+'/planner#access_token='+p.token+'&refresh_token=lab-'+p.key+'&expires_in=7200&token_type=bearer&type=magiclink">Open synthetic '+p.key+'</a></p>').join(''));
   }
-  if(url.pathname==='/fixture/status')return send(res,200,{syntheticOnly:true,providerCalls,externalCalls:0,events:lab.events});
+  if(url.pathname==='/fixture/status')return send(res,200,{syntheticOnly:!providerHandler,syntheticDataOnly:true,mockedProviderCalls:providerCalls,...(providerSummary?providerSummary():{externalCalls:0}),events:lab.events});
   let text='';for await(const chunk of req){text+=chunk;if(text.length>200000)return send(res,413,{message:'Synthetic limit'});}
   const body=text?JSON.parse(text):{},token=/^Bearer (.+)$/i.exec(req.headers.authorization||'')?.[1],p=lab.people.find(p=>p.token===token),service=token==='local-test-service-only';
   if(url.pathname==='/auth/v1/user')return p?send(res,200,p.user):send(res,401,{message:'Synthetic identity required'});
@@ -33,6 +36,10 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==='/auth/v1/logout')return send(res,204,null);
   if(url.pathname.startsWith('/auth/'))return send(res,403,{message:'No signup, email or OAuth in this lab'});
   if(url.pathname==='/openai/v1/chat/completions'){
+   if(providerHandler){
+    if(token!=='local-broker-not-provider-key')return send(res,403,{error:{message:'Local broker credential required'}});
+    try{const answer=await providerHandler(body,lab);await receipt();return send(res,answer.status,answer.body);}catch(error){await receipt();return send(res,403,{error:{message:'Local live-provider gate stopped this request.',code:/^[A-Z_]+$/.test(error.code||'')?error.code:'LOCAL_PROVIDER_GATE'}});}
+   }
    if(token!=='mock-provider-no-paid-calls')return send(res,403,{error:{message:'Mock key only'}});
    providerCalls++;lab.events.push({stage:'generation',provider:'loopback-mock',externalCalls:0});await receipt();
    const allText=body.messages.map(m=>m.content).join('\n'),servings=Number(/Household Size:\s*(\d+)/.exec(allText)?.[1]||2);
@@ -68,6 +75,10 @@ const server=http.createServer(async(req,res)=>{
   return send(res,404,{message:'Unimplemented synthetic endpoint'});
  }catch(error){lab.events.push({stage:'fixture-error',path:new URL(req.url,'http://127.0.0.1:3053').pathname,category:error.constructor.name});await receipt();send(res,500,{message:'Synthetic fixture failure; inspect lab code, no automatic retries.'});}
 });
-server.listen(3053,'127.0.0.1',()=>console.log('Synthetic PostgreSQL browser lab: http://127.0.0.1:3053/fixture; no external connections or emails.'));
-async function close(){server.close();await receipt();await lab.close();process.exit(0);}
-process.once('SIGINT',close);process.once('SIGTERM',close);
+await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(3053,'127.0.0.1',resolve);});
+console.log('Disposable PostgreSQL lab: http://127.0.0.1:3053/fixture; '+(providerHandler?'bounded live provider enabled by owner':'mock provider; no external calls')+'.');
+async function close(){await new Promise(resolve=>server.close(resolve));await receipt();await lab.close();}
+if(installSignalHandlers){process.once('SIGINT',()=>void close().then(()=>process.exit(0)));process.once('SIGTERM',()=>void close().then(()=>process.exit(0)));}
+return {lab,server,close,state};
+}
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await startPantryLab();

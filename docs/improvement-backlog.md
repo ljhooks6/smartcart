@@ -17,6 +17,17 @@ Recommendations found during normal development. These are **not approved work**
 
 No unrelated enhancement is authorized by this document.
 
+## IMP-006 — Separate pantry exploration from stock-confirmed planning
+
+- **Status:** Proposed during Assignment 02D; not implemented. Owner approval required.
+- **Evidence / confidence:** Confirmed: Pantry Only blocks before reservation when no usable measured amounts exist. A stock label or a list of ingredient names cannot establish enough food for a household. The current combined-suggestions ledger also makes all options compete for the same stock. Whether a distinct exploratory mode improves completion is a product hypothesis, not measured user research.
+- **Problem / opportunity:** Measuring an entire pantry before discovering any useful meal ideas is substantial entry friction, particularly for new Free users. Requiring all suggestions to fit together can also be surprising when users consider them alternatives.
+- **Recommendation / user benefit:** Consider a clearly separate ingredient-based exploration state: show ideas as unverified possibilities, never as purchase-free or confirmed pantry-feasible plans. Ask for compatible amounts only for ingredients in chosen meals, then validate the whole selected household plan before confirming it. Keep unknown quantities visible; no unlimited-stock assumption. Retain the existing strict measured-plan behavior until this separate workflow is designed and approved.
+- **Implementation complexity:** High. **Priority:** High. **Beneficiaries:** Both Free and Plus; persistent inventory remains Plus-only.
+- **Dependencies:** Owner approval of distinct labels, generation/quota semantics and the boundary between ideas and confirmed plans; dietary exclusion guards at every stage; selected-plan stock accounting, shopping/recipe provenance and accessibility regression coverage.
+- **Risks:** Users may mistake exploratory ideas for safe, available or sufficient food. Never weaken allergy restrictions, label unverified ideas allergen-safe, or hide shortages. Revalidating selections must not silently alter saved recipes or double-spend stock/quota.
+- **Potential ongoing costs:** No ingredient service is required. An additional generation stage could add AI usage and must be separately budgeted; deterministic selection/validation can reuse existing quantities and may avoid extra calls. Continued interface and regression maintenance.
+
 ## IMP-005 — Review grocery identity aliases separately from search discovery
 
 - **Status:** Proposed; awaiting owner consideration. Not implemented in PR #11.
