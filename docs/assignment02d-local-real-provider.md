@@ -1,5 +1,7 @@
 # Assignment 02D — bounded local real-provider verification
 
+Historical preparation record. **Assignment 02E has now run once and failed compatible-unit validation after one successful real-provider response. PR17 was released independently; PR18 remains draft.** See `docs/assignment02e-results.md` for current results. The run below is consumed: do not execute its historical startup commands again.
+
 Date: November 23, 2026, America/Chicago. Existing branch: fix/pantry-only-e2e, based on PR18 head b61ef624ed48508cc62a2f2cec6274e7c1beb9f5, stacked on PR17. No new Supabase project/account, paid upgrade, production connection, hosted setting or PR9 change.
 
 ## Implemented, not another infrastructure proposal

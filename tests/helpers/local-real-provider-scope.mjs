@@ -2,9 +2,10 @@ import {createHash} from 'node:crypto';
 import {BudgetError} from './provider-attempt-budget.mjs';
 import {loader} from './load-ts.mjs';
 const {readDiet}=loader()('lib/dietary-safety.ts');
+const {pantryMatchKey}=loader()('lib/pantry-availability.ts');
 export const measuredFixture=[['Rice',8,'cup'],['Black beans',6,'cup'],['Chickpeas',6,'cup'],['Carrots',8,'each'],['Onions',6,'each'],['Tomatoes',6,'each'],['Garlic',12,'clove'],['Olive oil',16,'tbsp'],['Salt',4,'tsp'],['Black pepper',2,'tsp'],['Water',24,'cup']];
 const hash=value=>createHash('sha256').update(value).digest('hex');
-const inventoryKey=entries=>JSON.stringify(entries.map(e=>[e.name,e.quantity,e.unit,e.status]).sort((a,b)=>a[0].localeCompare(b[0])));
+export const inventoryKey=entries=>JSON.stringify(entries.map(e=>[pantryMatchKey(e.name),e.quantity,e.unit,e.status]).sort((a,b)=>a[0].localeCompare(b[0])));
 export async function authorizeLocalJob({budget,lab,prepared}){
  const person=lab.people.find(p=>p.key==='free');
  const {rows}=await lab.db.query('select id,input,result,status from public.smartcart_generation_jobs where owner_key=$1 and user_id=$2 and status=$3 order by created_at desc limit 1',['user:'+person.id,person.id,prepared.kind==='planning'?'running':'completed']);

@@ -9,7 +9,14 @@ import OpenAI from 'openai';
 import {generationPostgresLab} from './helpers/generation-postgres-lab.mjs';
 import {loader,withEnv} from './helpers/load-ts.mjs';
 import {createBoundedProvider,openAttemptBudget} from './helpers/provider-attempt-budget.mjs';
-import {authorizeLocalJob,measuredFixture} from './helpers/local-real-provider-scope.mjs';
+import {authorizeLocalJob,measuredFixture,inventoryKey} from './helpers/local-real-provider-scope.mjs';
+
+test('fixture scope accepts reviewed garlic-clove identity but not garlic powder or altered stock',()=>{
+ const item=name=>[{name,quantity:12,unit:'clove',status:'owned'}];
+ assert.equal(inventoryKey(item('Garlic')),inventoryKey(item('Garlic cloves')));
+ assert.notEqual(inventoryKey(item('Garlic')),inventoryKey(item('Garlic powder')));
+ assert.notEqual(inventoryKey(item('Garlic')),inventoryKey([{...item('Garlic')[0],quantity:13}]));
+});
 
 test('actual SDK and worker cross the bounded bridge; stock, persistence and recipe share one durable budget',async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mc-live-bridge-'));const lab=await generationPostgresLab();const gateErrors=[];
