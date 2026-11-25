@@ -38,6 +38,7 @@ export async function POST(request: Request) {
   const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "Recipe service is unavailable." }, { status: 503 });
   const safetyResponse=foodSafetyResponse(input.data,true);if(safetyResponse)return safetyResponse;
+  if(input.data.mealSourceMode==="pantry-only")return NextResponse.json({error:"Pantry Only treats must be regenerated with the complete measured plan. No replacement or pantry deduction was made."},{status:422});
   const data = input.data;
   const system = `You are a precise, creative dessert planner replacing one rejected dessert.
 Consider bakery-style blondies, brownies with justified swirls, fruit-streusel muffins, cookie bars, sweet breads, rolls, cobblers and chilled desserts. Match fillings and textures to the actual ingredients; never invent garnishes. Descriptions describe the finished dessert rather than cooking commands. Return exactly one practical dessert for the requested household, changing category or flavor when possible. Obey diet, excluded ingredients, available equipment, and prep-time preference. Do not suggest excluded ingredients, optional additions, or unavailable appliances.

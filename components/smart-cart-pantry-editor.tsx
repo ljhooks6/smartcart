@@ -5,6 +5,7 @@ import { normalizePantry, addPantryEntry, type PantryEntry } from "../lib/pantry
 import { ingredientKey, parseQuantity, isPackageUnit } from "../lib/ingredient-quantity";
 import { PANTRY_PAGE_SIZE, pantryGroups, pantryPickerMatches, pantrySummary } from "../lib/pantry-picker";
 import type { GroceryListItem } from "../lib/grocery-list";
+import {preparationChoices,clarifyPreparation} from "../lib/pantry-preparation";
 
 const control = "min-h-11 w-full min-w-0 rounded-xl border border-pine/30 bg-white px-3 py-2 text-base text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine";
 const button = "min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-pine focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine";
@@ -39,6 +40,12 @@ function PantryDetails({ entry, need, onChange, onRemove, onDone }: {
       if (commitAmount()) onDone();
     }
   }}>
+    {preparationChoices(entry.name).length ? <label className="mb-3 block text-sm">Preparation form for {entry.name}
+      <select className={control} value="" onChange={event=>{if(event.target.value)onChange(clarifyPreparation(entry,event.target.value));}}>
+        <option value="">Choose the form you actually measured</option>
+        {preparationChoices(entry.name).map(name=><option key={name} value={name}>{name}</option>)}
+      </select><span className="block text-xs">Choosing a form clears the quantity. Measure and enter that exact form; no dry/cooked or drained-yield conversion is assumed.</span>
+    </label> : null}
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label htmlFor={`${id}-quantity`} className="min-w-0 text-sm">Quantity (optional)
         <input ref={quantityRef} id={`${id}-quantity`} className={control} inputMode="decimal" value={amount} placeholder="Unknown"
@@ -157,7 +164,19 @@ export function SmartCartPantryEditor({ entries, options, onChange, requirements
     const key = ingredientKey(entry.name);
     return <InventoryRow key={key} entry={entry} expanded={expanded === key} searching={searching} need={requirements.find(need => need.item_key === key)}
       onOpen={() => setExpanded(key)} onClose={() => setExpanded(null)}
-      onChange={value => onChange(normalizePantry(entries.map(item => ingredientKey(item.name) === key ? value : item)))}
+      onChange={value => {
+        const next=normalizePantry(entries.map(item => ingredientKey(item.name) === key ? value : item));
+        const nextKey=ingredientKey(value.name);
+        if(nextKey!==key){
+          const group=pantryGroups(next,options).find(g=>g.entries.some(e=>ingredientKey(e.name)===nextKey));
+          if(group){setOpenCategories(current=>({...current,[group.name]:true}));setLimits(current=>({...current,[group.name]:Math.max(current[group.name]??PANTRY_PAGE_SIZE,group.entries.findIndex(e=>ingredientKey(e.name)===nextKey)+1)}));}
+          // Renaming can move a row between categories. Mount its new editor
+          // and focus the quantity that must be measured again.
+          setQuery("");setExpanded(nextKey);
+          setMessage(`${value.name} selected. Enter the amount measured in this form.`);
+        }
+        onChange(next);
+      }}
       onRemove={() => remove(entry, key)} />;
   }
 

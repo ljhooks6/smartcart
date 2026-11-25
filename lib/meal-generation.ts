@@ -2,6 +2,7 @@ import { culinaryReview, planConstraintIssues, foodTermMatches, equipmentRequire
 import { availablePantryNames, distinctPantryDinners } from "./pantry-availability";
 import { measuredPantry, pantryQuantityProblem, fitPantryPlan, hasGeneratedMeasurementProblem, pantryMeasurementCorrection } from "./pantry-plan-quantities";
 import type { PantryEntry } from "./pantry";
+import {quantifiedPantryProse} from "./pantry-recipe-contract";
 import {optionalMealPauseResponse} from "./meal-availability";
 import { candidateOutputResponse } from "./food-safety-response";
 import { foodSafetyResponse } from "./food-safety-response";
@@ -711,6 +712,9 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
         return NextResponse.json({code:incompatible ? "PANTRY_MEASUREMENTS_INCOMPATIBLE" : "PANTRY_QUANTITIES_UNSATISFIED",error:(incompatible ? "The generated ingredient measurements could not be matched reliably to your pantry units. Your pantry amounts were not changed. " : "No complete dinner fits the measured pantry stock for this household. ")+[...new Set(quantityReview.omitted)].join(" ")+(incompatible ? " Review the ingredient forms and units, or choose Pantry + store pickup. This does not mean your pantry is empty." : " Update actual on-hand amounts or choose Pantry + store pickup.")+" Keep your dietary restrictions entered. No additional purchases or incompatible recipes were assumed.",retryable:false},{status:422});
       }
       parsed = {...parsed, meals:quantityReview.meals, desserts:quantityReview.desserts};
+    }
+    if(pantryOnly){
+      parsed={...parsed,budget_summary:"Pantry Only uses only the listed measured quantities. No additional purchases or sides are included.",meals:parsed.meals.map(m=>({...m,...quantifiedPantryProse(m.name,m.ingredients,householdSize),pantryOnly:true})),desserts:parsed.desserts.map(d=>{const prose=quantifiedPantryProse(d.title,d.ingredients,householdSize);return {...d,title:prose.name,description:prose.description,pantryOnly:true};})};
     }
     const optionalMeals = [
       ...normalizeOptionalMeals(includeBreakfast ? parsed.breakfasts : [], "breakfast", householdSize),

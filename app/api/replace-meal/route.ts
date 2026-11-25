@@ -1,6 +1,5 @@
 import {optionalMealPauseResponse} from "@/lib/meal-availability";
 import { candidateOutputResponse } from "@/lib/food-safety-response";
-import { pantryViolations } from "@/lib/ai-food-constraints";
 import { foodTermMatches, equipmentRequirementText } from "@/lib/meal-quality";
 import { foodSafetyResponse } from "@/lib/food-safety-response";
 import { requireProductAccess } from "@/lib/product-access";
@@ -261,6 +260,7 @@ export async function POST(request: Request) {
   const membership = await getRequestMembership(request);
   if ("status" in membership) return NextResponse.json({ error: membership.error }, { status: membership.status });
   const safetyResponse=foodSafetyResponse({diet,avoidIngredients},true);if(safetyResponse)return safetyResponse;
+  if(mealSourceMode==="pantry-only")return NextResponse.json({error:"Pantry Only replacement requires revalidating the complete measured week. Return to Plan to generate a new validated plan; your existing meals are unchanged."},{status:422});
   const pilotBudget = await pilotAIBudget(body); if (pilotBudget) return pilotBudget;
   const isPremiumReplacement = membership.plan === "plus";
   const cuisinePreference = isPremiumReplacement && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
@@ -345,7 +345,7 @@ export async function POST(request: Request) {
       const avoidedMatches = avoidanceGuidance.avoidedItems.filter((blocked) =>
         replacementHaystacks.some((value) => foodTermMatches(value,blocked)),
       );
-      const pantryErrors=mealSourceMode === "pantry-only" ? pantryViolations(candidate.ingredients,combinedPantryItems) : [];
+      const pantryErrors:string[]=[]; // Pantry Only exits before provider work above.
       const equipmentViolations = findReplacementEquipmentViolations(
         candidate.title,
         candidate.description,

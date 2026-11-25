@@ -3,7 +3,11 @@ import { PANTRY_INGREDIENT_OPTIONS as pantryQuickSelectOptions } from "../lib/in
 import { DietarySafetySummary } from "./dietary-safety-summary";
 import { readHousehold, householdPlanDefaults } from "../lib/account-experience";
 import { dietForGeneration } from "../lib/dietary-request-value";
-import { pantryQuantityProblem } from "../lib/pantry-plan-quantities";
+import { pantryQuantityProblem,fitPantryPlan } from "../lib/pantry-plan-quantities";
+import {useActivePlanPantry} from "../hooks/use-active-plan-pantry";
+import {activePantryForPlan,pantryRecoveryForStorage} from "../lib/active-plan-pantry";
+import {cookingTimeLimitMinutes} from "../lib/cooking-time";
+import {pantryMealMetadata} from "../lib/pantry-meal-metadata";
 
 import { getMealRequestHeaders } from "../lib/meal-request-headers";
 
@@ -74,6 +78,7 @@ type IngredientItem = {
 };
 
 type MealPlanItem = {
+  pantryOnly?:boolean;pantryPlanId?:string;pantrySnapshotAt?:string;pantryTimeLimit?:number;prep_time_minutes?:number;
   dbId?: number | string;
   user_id: string;
   day: string;
@@ -96,6 +101,7 @@ type GroceryListItem = {
 };
 
 type GenerateListResponse = {
+  pantryOnly?:boolean;pantryPlanId?:string;pantrySnapshotAt?:string;
   planning_notice?: string;
   meals: MealPlanItem[];
   restock_items: GroceryListItem[];
@@ -469,8 +475,9 @@ export function SmartCartApp() {
   const generation = useGenerationJob({ userId: user?.id, enabled: hasResolvedAuthSession && Boolean(user || hasContinuedAsGuest), onCompleted: handleGenerationCompleted });
   const isLoading = generation.busy;
   const generationInFlight = useRef(false);
+  const newPantryRequest=useRef<number|null>(null);
   generationInFlight.current = isLoading;
-  const [generatedPlan, setGeneratedPlan] =
+  const [storedGeneratedPlan, setGeneratedPlan] =
     useState<GenerateListResponse | null>(null);
   const [pantrySnapshot,setPantrySnapshot]=useState<{owner:string;ready:boolean;entries:PantryEntry[]}>({owner:"",ready:false,entries:[]});
   const [pantryCloudReady,setPantryCloudReady]=useState(false);
@@ -593,6 +600,8 @@ export function SmartCartApp() {
     }
   }, [hasResolvedAuthSession, planOwner, rejectionStorageKey, rejectedHistory]);
   const [loadedPlanOwner, setLoadedPlanOwner] = useState<string | null>(null);
+  const generatedPlan=loadedPlanOwner===planOwner?storedGeneratedPlan:null;
+  const activePantry=useActivePlanPantry(planOwner,hasResolvedAuthSession&&!isProfileLoading);
   const persistGeneratedPlan = useCallback((plan: GenerateListResponse | null) => {
     if (!hasResolvedAuthSession || loadedPlanOwner !== planOwner) return;
     if (!plan) {
@@ -804,10 +813,26 @@ export function SmartCartApp() {
     window.scrollTo({ top: mobileScrollPositions.current[activeMobileTab] ?? 0, behavior: "instant" });
   }, [activeMobileTab]);
 
-  const pantryEntries=useMemo(()=>pantrySnapshot.owner===planOwner&&pantrySnapshot.ready?normalizePantry([...Array.from(fullyStocked,name=>({name,status:"stocked"})),...Array.from(runningLow,name=>({name,status:"low"})),...Array.from(restock,name=>({name,status:"restock"})),...formState.pantryItems.split(",").map(v=>v.trim()).filter(Boolean),...pantrySnapshot.entries]):[],[pantrySnapshot,planOwner,fullyStocked,runningLow,restock,formState.pantryItems]);
+  const pantryScope=!!generatedPlan?.pantryOnly||[...weeklyMenu,...savedDesserts].some(m=>m.pantryOnly)||(formState.mealSourceMode==="pantry-only"&&!!(generatedPlan||weeklyMenu.length||savedDesserts.length));
+  const activePlanIds=[...new Set([generatedPlan?.pantryPlanId,...weeklyMenu.map(m=>m.pantryPlanId),...savedDesserts.map(m=>m.pantryPlanId)].filter((id):id is string=>!!id))];
+  if(pantryScope&&!activePlanIds.length)activePlanIds.push(`legacy:${planOwner}`);
+  const recoveredPantry=activePantryForPlan(activePantry.record,planOwner,activePlanIds);
+  const previousPantryTier=useRef({owner:planOwner,plus:canPersistPantryMemory});
+  useEffect(()=>{
+    if(previousPantryTier.current.owner===planOwner&&previousPantryTier.current.plus&&!canPersistPantryMemory){
+      const limited=recoveredPantry?pantryRecoveryForStorage(recoveredPantry).current:[];
+      if(recoveredPantry)activePantry.edit(limited);
+      setPantrySnapshot({owner:planOwner,ready:true,entries:limited});setFullyStocked(new Set());setRunningLow(new Set());setRestock(new Set());
+    }
+    previousPantryTier.current={owner:planOwner,plus:canPersistPantryMemory};
+  },[planOwner,canPersistPantryMemory,recoveredPantry,activePantry]);
+  const pantryEntries=useMemo(()=>!canPersistPantryMemory&&recoveredPantry?normalizePantry(recoveredPantry.current):pantrySnapshot.owner===planOwner&&pantrySnapshot.ready?normalizePantry([...Array.from(fullyStocked,name=>({name,status:"stocked"})),...Array.from(runningLow,name=>({name,status:"low"})),...Array.from(restock,name=>({name,status:"restock"})),...formState.pantryItems.split(",").map(v=>v.trim()).filter(Boolean),...pantrySnapshot.entries]):[],[canPersistPantryMemory,recoveredPantry,pantrySnapshot,planOwner,fullyStocked,runningLow,restock,formState.pantryItems]);
+  const coverage=pantryScope&&(weeklyMenu.length||savedDesserts.length)?fitPantryPlan(weeklyMenu.map(m=>({ingredients:m.ingredients??[]})),savedDesserts.map(m=>({ingredients:m.ingredients??[]})),{combinedPantryItems:pantryEntries.map(i=>i.name).join(", "),pantryInventory:pantryEntries}):null;
+  const pantryReviewRequired=pantryScope&&(!activePantry.ready||!recoveredPantry||!activePantry.confirmed||!!coverage?.omitted.length);
   const combinedPantryItems=useMemo(()=>formState.mealSourceMode === "pantry-only" ? generationPantryNames(pantryEntries) : pantryNames(pantryEntries),[pantryEntries,formState.mealSourceMode]);
   const pantryPayload=useMemo(()=>pantryCloudPayload(pantryEntries),[pantryEntries]);
   function changePantryEntries(entries:PantryEntry[]){
+    if(recoveredPantry)activePantry.edit(entries);
     setPantrySnapshot({owner:planOwner,ready:true,entries:normalizePantry(entries)});
     setFullyStocked(new Set());setRunningLow(new Set());setRestock(new Set());
     setFormState(current=>({...current,pantryItems:""}));
@@ -835,6 +860,7 @@ export function SmartCartApp() {
 
   useEffect(() => {
     setLoadedCloudUser(null);
+    newPantryRequest.current=null;
     setRecoveredDraftUser(null);
     setSavedSnapshot(null);
     setSaveStatus("idle");
@@ -889,15 +915,15 @@ export function SmartCartApp() {
     undoLastGroceryAction,
   } = useSmartCartGrocery({
     userId: safeTrim(user?.id),
-    requirementsReady: shoppingRequirementsReady,
+    requirementsReady: shoppingRequirementsReady&&!pantryReviewRequired,
     formatCurrency,
     fullyStocked,
     pantryItems: [],pantryEntries,
     onCopyError: (message) => setRequestError(message),
     restock,
     runningLow,
-    savedDesserts: shoppingRequirementsReady ? savedDesserts : [],
-    weeklyMenu: shoppingRequirementsReady ? weeklyMenu : [],
+    savedDesserts: shoppingRequirementsReady&&!pantryReviewRequired ? savedDesserts : [],
+    weeklyMenu: shoppingRequirementsReady&&!pantryReviewRequired ? weeklyMenu : [],
   });
 
   const {
@@ -916,6 +942,7 @@ export function SmartCartApp() {
     diet: formState.diet,
     avoidIngredients: formState.avoidIngredients,
     availableEquipment: formState.availableEquipment,
+    pantryEntries,pantryReviewRequired,mealSourceMode:formState.mealSourceMode,
   });
 
   const savedMealKeys = useMemo(
@@ -984,7 +1011,20 @@ export function SmartCartApp() {
   const pantryCheck = checkPantryItems.length
     ? <SmartCartPantryCheck key={planOwner} items={checkPantryItems} onAnswer={answerPantry} />
     : undefined;
-  const grocerySidebar = (
+  function confirmCurrentPantry(){
+    const issue=pantryQuantityProblem({mealSourceMode:"pantry-only",combinedPantryItems:pantryEntries.map(i=>i.name).join(", "),pantryInventory:pantryEntries});
+    if(issue||coverage?.omitted.length){setRequestError(issue||coverage?.omitted.join(" ")||"Review your pantry.");navigateToStage("plan");return;}
+    const required=new Set([...weeklyMenu,...savedDesserts,...(generatedPlan?.meals??[]),...(generatedPlan?.desserts??[])].flatMap(m=>m.ingredients??[]).map(i=>getIngredientKey(i.name)));
+    activePantry.confirm(activePlanIds[0]??`legacy:${planOwner}`,pantryEntries.filter(e=>required.has(getIngredientKey(e.name))));
+  }
+  const pantryRecoveryNotice=pantryReviewRequired?<section role="status" aria-label="Review active-plan pantry" className="rounded-2xl border border-amber-400 bg-amber-50 p-4 text-ink">
+    <h3 className="font-semibold">Review your pantry before shopping or cooking</h3>
+    <p className="text-sm">{recoveredPantry?`Recovered this plan's current-device quantities. Snapshot: ${recoveredPantry.snapshotAt}.`:"This device has no confirmed pantry record for the active plan."} Historical quantities are not proof of what is still in your kitchen. Missing information is not a purchase requirement.</p>
+    {coverage?.omitted.length?<p className="text-sm">{coverage.omitted.join(" ")}</p>:null}
+    <button type="button" className="min-h-11 underline mr-4" onClick={()=>{setPlanning(current=>current?.owner===planOwner?{...current,step:3}:current);navigateToStage("plan");}}>Review pantry quantities and forms</button>
+    <button type="button" className="min-h-11 underline" onClick={confirmCurrentPantry}>Confirm these amounts are still on hand</button>
+  </section>:activePantry.storageFailed?<p role="alert">This browser could not save active-plan pantry recovery. Keep this page open and review your pantry again if you reload.</p>:null;
+  const grocerySidebar = pantryReviewRequired ? pantryRecoveryNotice : (
     <SmartCartGrocerySidebar
       pantryCheck={pantryCheck}
       hasUnknownPrices={hasUnknownPrices}
@@ -1021,10 +1061,11 @@ export function SmartCartApp() {
               />
   );
   const weekDashboard = <SmartCartWeekDashboard
+    pantryReviewRequired={pantryReviewRequired}
     pantryCheckCount={checkPantryItems.length}
     dinners={weeklyMenu} desserts={savedDesserts} cookedCount={cookedCount}
     groceryCount={groceryCount} collectedCount={collectedCount} pantryCount={pantryCount}
-    estimatedCost={hasUnknownPrices?"Estimate unavailable":formatCurrency(totalCost)} pricingIncomplete={hasUnknownPrices} budget={formatCurrency(parsedBudget || 0)}
+    estimatedCost={pantryReviewRequired?"Pantry review needed":hasUnknownPrices?"Estimate unavailable":formatCurrency(totalCost)} pricingIncomplete={hasUnknownPrices||pantryReviewRequired} budget={formatCurrency(parsedBudget || 0)}
     overBudget={totalCost > (parsedBudget || 0)}
     hasIngredients={[...weeklyMenu, ...savedDesserts].every(meal => Boolean(meal.ingredients?.length))}
     hasOptions={hasMealSurfaceContent} vaultCount={archivedMeals.length} onNavigate={navigateToStage}
@@ -1051,7 +1092,13 @@ export function SmartCartApp() {
   </div> : null;
 
   function handleGenerationCompleted(job: GenerationJob) {
-    const data = job.result as GenerateListResponse;
+    const raw=job.result as GenerateListResponse;
+    const only=job.input.mealSourceMode==="pantry-only";
+    const metadata={pantryOnly:only,pantryPlanId:only?job.id:undefined,pantrySnapshotAt:only?job.created_at:undefined,pantryTimeLimit:cookingTimeLimitMinutes(job.input.prepTime)??240};
+    const data={...raw,...metadata,meals:raw.meals.map(m=>({...m,...metadata})),desserts:raw.desserts.map(d=>({...d,...metadata}))};
+    const required=new Set([...raw.meals,...raw.desserts].flatMap(m=>m.ingredients??[]).map(i=>getIngredientKey(i.name)));
+    if(only){if(activePantry.record?.planId!==job.id)activePantry.start(job.id,job.created_at,(job.input.pantryInventory??[]).filter(e=>required.has(getIngredientKey(e.name))),newPantryRequest.current!==null&&Date.parse(job.created_at)>=newPantryRequest.current-1000);}else activePantry.reset();
+    newPantryRequest.current=null;
     setGeneratedPlan(data);
     persistGeneratedPlan(data);
     setHasAppliedUpgrades(Boolean(job.input.apply_upgrades));
@@ -1084,6 +1131,7 @@ export function SmartCartApp() {
 
     const pantryProblem = pantryQuantityProblem({mealSourceMode:formState.mealSourceMode, combinedPantryItems:combinedPantryItems.join(", "), pantryInventory:pantryPayload});
     if (pantryProblem) { setValidationError(pantryProblem); return false; }
+    newPantryRequest.current=Date.now();
     return generation.start({
           budget,
           diet: dietForGeneration(formState.diet),
@@ -1128,6 +1176,7 @@ export function SmartCartApp() {
     if (!generatedPlan) {
       return;
     }
+    if(generatedPlan.pantryOnly){setRequestError("Return to Plan to regenerate the complete measured Pantry Only plan. Individual replacements cannot change its stock allocation.");return;}
 
     const dessertKey = `${dessert.title}-${index}`;
     setReplacingDessertKey(dessertKey);
@@ -1274,6 +1323,7 @@ export function SmartCartApp() {
     const lineup = sweetTreat ? savedDesserts : weeklyMenu;
     const position = lineup.findIndex((item) => `${item.day}::${item.name}` === mealKey);
     if (position < 0) return;
+    if(meal.pantryOnly)activePantry.invalidate(); // Cooking changes physical stock; do not infer the remainder.
     const entry = { name: meal.name, cookedAt: new Date().toISOString() };
     setMealUndo({ meal: lineup[position], position, sweetTreat, entry, storageKey: cookedStorageKey });
     setCookedHistory((current) => ({ key: cookedStorageKey, entries: [...(current.key === cookedStorageKey ? current.entries : []), entry] }));
@@ -1544,6 +1594,7 @@ export function SmartCartApp() {
       (savedDessert) => savedDessert.name === dessert.title,
     );
     const dessertMeal: MealPlanItem = {
+      ...pantryMealMetadata(dessert),
       user_id: safeTrim(user?.id),
       day: `Sweet Treat ${index + 1}`,
       name: dessert.title,
@@ -1595,6 +1646,7 @@ export function SmartCartApp() {
   }
 
   async function performClearForm() {
+    activePantry.reset();
     const userId = user?.id || "";
 
     setPlanning({ owner: planOwner, form: clearedFormState, step: 0, returning: false });
@@ -1871,6 +1923,10 @@ export function SmartCartApp() {
           fallback.day,
       ),
       name: resolvedName,
+      pantryOnly:record&&"pantryOnly" in record?!!record.pantryOnly:undefined,
+      pantryPlanId:record&&"pantryPlanId" in record?String(record.pantryPlanId??"")||undefined:undefined,
+      pantrySnapshotAt:record&&"pantrySnapshotAt" in record?String(record.pantrySnapshotAt??"")||undefined:undefined,
+      pantryTimeLimit:record&&"pantryTimeLimit" in record?Number(record.pantryTimeLimit)||undefined:undefined,
       servings:
         Number(
           ("servings" in (record ?? {})
@@ -2155,6 +2211,7 @@ export function SmartCartApp() {
   }
 
   async function handleReplaceMeal(meal: MealPlanItem, index: number) {
+    if(meal.pantryOnly||generatedPlan?.pantryOnly){setRequestError("Return to Plan to regenerate the complete measured Pantry Only plan. Individual replacements cannot change its stock allocation.");return;}
     if (!generatedPlan) {
       return;
     }
@@ -2354,6 +2411,7 @@ export function SmartCartApp() {
           <p className="text-sm text-ink/80">{generation.message || (generation.job?.status === "queued" ? "Your plan is saved and waiting to start. You can keep using MealCaddie." : "Your plan is being prepared. You can leave and return to your finished meal options.")}</p>
           {isLoading ? <button type="button" onClick={() => generation.setShowProgress(true)} className="mt-2 text-sm font-semibold text-pine underline">View planning progress</button> : null}
         </div> : null}
+        {pantryRecoveryNotice}
         <SmartCartFeedback
           undoMessage={mealUndo?.storageKey === cookedStorageKey
             ? !mealUndo.sweetTreat && !hasRoomForMeal(weeklyMenu, mealUndo.meal) && !weeklyMenu.some((item) => item.day === mealUndo.meal.day && item.name === mealUndo.meal.name)

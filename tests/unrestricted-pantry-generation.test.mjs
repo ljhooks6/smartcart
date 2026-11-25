@@ -5,7 +5,7 @@ import ts from 'typescript';
 import {loader,withEnv} from './helpers/load-ts.mjs';
 
 const empty={allergies:[],preferences:[],customAllergies:'',intolerances:'',medical:''};
-const base={budget:60,householdSize:2,mealSourceMode:'pantry-only',combinedPantryItems:'Rice, Scallions',pantryInventory:[{name:'Rice',quantity:1,unit:'cup',status:'owned'},{name:'Scallions',quantity:2,unit:'each',status:'owned'}],availableEquipment:['Stovetop'],prepTime:'Under 30 mins'};
+const base={budget:60,householdSize:2,mealSourceMode:'pantry-only',combinedPantryItems:'Dry white rice, Scallions',pantryInventory:[{name:'Dry white rice',quantity:1,unit:'cup',status:'owned'},{name:'Scallions',quantity:2,unit:'each',status:'owned'}],availableEquipment:['Stovetop'],prepTime:'Under 30 mins'};
 const clientSource=readFileSync('components/smart-cart-app.fixed.tsx','utf8');
 // Execute the actual submitPlan dietary expression, not a reconstructed payload.
 const dietExpression=clientSource.slice(clientSource.indexOf('async function submitPlan(')).match(/diet: ([^\r\n]+),/)[1];
@@ -105,7 +105,7 @@ test('fresh/returning Free and Plus accounts restore exact owner drafts and hous
 
 test('unrestricted serialized Pantry Only completes generation with one mocked provider call',async()=>withEnv({OPENAI_API_KEY:'mock-only'},async()=>{
  const load=loader(),{writeDiet}=load('lib/dietary-safety.ts');let calls=0;
- class Provider{chat={completions:{create:async()=>{calls++;return {choices:[{message:{content:JSON.stringify({meals:[{day:'Day 1',name:'Scallion Rice Skillet',servings:2,description:'Tender rice with green onion.',prep_time_minutes:20,ingredients:[{name:'Rice',amount:'1 cup',price:0},{name:'Scallions',amount:'1',price:0}]}],desserts:[],estimated_total_cost:0,budget_summary:'Synthetic pantry options',upgrade_available:false})}}]};}}};}
+ class Provider{chat={completions:{create:async()=>{calls++;return {choices:[{message:{content:JSON.stringify({meals:[{day:'Day 1',name:'Scallion Dry white rice Skillet',servings:2,description:'Tender rice with green onion.',prep_time_minutes:20,ingredients:[{name:'Dry white rice',amount:'1 cup',price:0},{name:'Scallions',amount:'1',price:0}]}],desserts:[],estimated_total_cost:0,budget_summary:'Synthetic pantry options',upgrade_available:false})}}]};}}};}
  const generate=loader({openai:Provider,'./beta-pilot-ai':{pilotAIBudget:async()=>null}})('lib/meal-generation.ts').generateMealPlan;
  const diet=clientDiet(writeDiet('',empty));
  const response=await generate({...base,diet},'free');

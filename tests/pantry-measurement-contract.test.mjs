@@ -16,11 +16,12 @@ const dinner=dish('Chickpea tomato skillet',[ingredient('Chickpeas','2 cup'),ing
 const answer=meals=>({meals,desserts:[],estimated_total_cost:0,budget_summary:'Synthetic pantry test',upgrade_available:false});
 const replaceAmount=(name,amount)=>({...dinner,ingredients:dinner.ingredients.map(i=>i.name===name?{...i,amount}:i)});
 async function generate(responses,extra={},plan='free'){
+ const clarify=value=>typeof value==='string'?value.replace(/\bRice\b/g,'Dry white rice').replace(/\bChickpeas\b/g,'Cooked chickpeas').replace(/\bBlack beans\b/g,'Cooked black beans'):Array.isArray(value)?value.map(clarify):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,clarify(v)])):value;
  const prompts=[];let calls=0;
- class Provider{chat={completions:{create:async({messages})=>{prompts.push(messages.map(m=>m.content).join('\n'));const value=responses[Math.min(calls++,responses.length-1)];return {choices:[{message:{content:JSON.stringify(value)}}]};}}};}
+ class Provider{chat={completions:{create:async({messages})=>{prompts.push(messages.map(m=>m.content).join('\n'));const value=clarify(responses[Math.min(calls++,responses.length-1)]);return {choices:[{message:{content:JSON.stringify(value)}}]};}}};}
  return withEnv({OPENAI_API_KEY:'mock-only'},async()=>{
   const api=loader({openai:Provider,'./beta-pilot-ai':{pilotAIBudget:async()=>null}})('lib/meal-generation.ts');
-  const response=await api.generateMealPlan({...input,...extra},plan);
+  const response=await api.generateMealPlan(clarify({...input,...extra}),plan);
   return {status:response.status,body:await response.json(),calls,prompts};
  });
 }

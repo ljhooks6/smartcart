@@ -5,8 +5,8 @@ import {writeFile} from 'node:fs/promises';
 import {loader,withEnv} from './helpers/load-ts.mjs';
 import {generationPostgresLab} from './helpers/generation-postgres-lab.mjs';
 
-const input={budget:60,diet:'No preference',householdSize:2,combinedPantryItems:'Rice, Scallions',mealSourceMode:'pantry-only',availableEquipment:['Stovetop'],prepTime:'Under 30 mins',pantryInventory:[{name:'Rice',quantity:2,unit:'cup',status:'owned'},{name:'Scallions',quantity:2,unit:'each',status:'owned'}]};
-const fixtureMeal={day:'Day 1',name:'Scallion Rice Skillet',servings:2,description:'Tender rice with green onion. Synthetic integration fixture.',prep_time_minutes:20,ingredients:[{name:'Rice',amount:'1 cup',price:0},{name:'Green onion',amount:'1',price:0}]};
+const input={budget:60,diet:'No preference',householdSize:2,combinedPantryItems:'Dry white rice, Scallions',mealSourceMode:'pantry-only',availableEquipment:['Stovetop'],prepTime:'Under 30 mins',pantryInventory:[{name:'Dry white rice',quantity:2,unit:'cup',status:'owned'},{name:'Scallions',quantity:2,unit:'each',status:'owned'}]};
+const fixtureMeal={day:'Day 1',name:'Scallion Dry white rice Skillet',servings:2,description:'Tender rice with green onion. Synthetic integration fixture.',prep_time_minutes:20,ingredients:[{name:'Dry white rice',amount:'1 cup',price:0},{name:'Green onion',amount:'1',price:0}]};
 test('real API → reservation SQL → dispatch adapter → real worker → PostgreSQL persistence → owner read',async()=>withEnv({VERCEL:'1',OPENAI_API_KEY:'mock-only',BETA_PRODUCT_ACCESS_ENABLED:'true',BETA_ENTITLEMENTS_ENABLED:'false'},async()=>{
  const lab=await generationPostgresLab(),queued=[],seen=new Set();let calls=0,dispatchUnavailable=false,providerFailure=false;
  try{
@@ -17,7 +17,7 @@ test('real API → reservation SQL → dispatch adapter → real worker → Post
   const get=(person,id)=>api.GET(new Request('http://localhost:3052/api/generate-list?id='+id,{headers:{Authorization:'Bearer '+lab.people.find(p=>p.key===person).token}}));
   // Authentication and explicit access are real middleware decisions over fake upstream identities.
   for(const person of [null,'invalid','denied'])assert.ok([401,403].includes((await api.POST(req(person))).status));
-  const unknown=await api.POST(req('free',{...input,pantryInventory:[{name:'Rice',status:'stocked'}]}));
+  const unknown=await api.POST(req('free',{...input,pantryInventory:[{name:'Dry white rice',status:'stocked'}]}));
   assert.equal(unknown.status,422);assert.equal((await unknown.json()).code,'PANTRY_QUANTITIES_REQUIRED');assert.equal(calls,0);
   assert.equal((await lab.db.query('select count(*)::int n from smartcart_generation_jobs')).rows[0].n,0);
   const key=randomUUID(),accepted=await api.POST(req('free',input,key));assert.equal(accepted.status,202);

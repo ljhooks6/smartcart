@@ -1,6 +1,7 @@
 import { normalizePantry, type PantryEntry } from "./pantry.ts";
 import { availablePantryNames, pantryMatchKey, type PantryAvailabilityInput } from "./pantry-availability.ts";
 import { parseIngredient, parseQuantity, convertQuantity, unitDefinition, isPackageUnit } from "./ingredient-quantity.ts";
+import { pantryPreparationProblem } from "./pantry-preparation.ts";
 
 export type PantryPlanInput = PantryAvailabilityInput & { mealSourceMode?: string; pantryInventory?: PantryEntry[] };
 export const pantryQuantityMessage = "Pantry Only needs measured on-hand amounts. Open Pantry and enter quantities with compatible units for the ingredients you want to use. Amount unknown, stock labels and package sizes do not establish enough stock. You can also choose Pantry + store pickup; keep your dietary restrictions entered.";
@@ -15,7 +16,8 @@ export function measuredPantry(input: PantryPlanInput) {
   });
 }
 export function pantryQuantityProblem(input: PantryPlanInput) {
-  return input.mealSourceMode === "pantry-only" && !measuredPantry(input).length ? pantryQuantityMessage : null;
+  if(input.mealSourceMode!=="pantry-only")return null;
+  return !measuredPantry(input).length ? pantryQuantityMessage : pantryPreparationProblem(normalizePantry(input.pantryInventory));
 }
 
 type Dish = { ingredients: { name: string; amount: string }[] };

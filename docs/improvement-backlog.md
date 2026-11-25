@@ -33,7 +33,7 @@ No unrelated enhancement is authorized by this document.
 
 ## IMP-007 — Preserve a usable Free Pantry Only plan after reload
 
-- **Status:** Proposed from Assignment 02G; not implemented. Owner approval required, especially for local-versus-cloud pantry policy.
+- **Status:** Owner-approved in Assignment 02H; implemented as a draft PR #18 candidate. Focused tests and standard build pass; remaining actual browser verification is incomplete because the connected Chrome tab could not be read. See `docs/assignment02h-pantry-recovery.md`. Not released.
 - **Evidence / confidence:** Confirmed in the actual local real-provider journey at PR18 application commit 20a3de6. Two saved meals and their schedule recovered, but the Free inventory became empty and Shop changed from eleven covered rows/$0 to eleven items to buy. The restore effect explicitly gates pantry recovery on Plus. This is a confirmed behavior; whether current-device Free persistence is desired is a product decision.
 - **Recommendation / user benefit:** Review an owner-scoped current-device/per-plan measured snapshot with timestamp and explicit stale-stock confirmation, separate from Plus cloud pantry memory. Avoid turning an accepted purchase-free plan into an unexplained shopping trip after reload. Do not grant Plus, silently change entitlements or assume old stock is still available.
 - **Implementation complexity:** Medium. **Priority:** High. **Beneficiaries:** Primarily Free; consistent snapshot/reconfirmation semantics also benefit Plus.

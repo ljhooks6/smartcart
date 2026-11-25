@@ -12,6 +12,8 @@ import { formatRecipeIngredients } from "@/lib/recipe-ingredients";
 import { getRequestMembership } from "@/lib/server-membership";
 import { ingredientViolations, recipeViolations } from "@/lib/ai-food-constraints";
 import { generateValidatedFood } from "@/lib/validated-food-generation";
+import {pantryActionSchema,pantryRecipeProblems,renderPantryActions,pantryRecipeStockProblems} from "@/lib/pantry-recipe-contract";
+import {pantryQuantityProblem} from "@/lib/pantry-plan-quantities";
 
 export const maxDuration = 150;
 
@@ -23,6 +25,10 @@ const recipeRequestSchema = z.object({
   avoidIngredients: z.string().max(2000).optional(),
   availableEquipment: z.array(z.string().max(100)).max(20).optional(),
   servings: z.number().int().positive().optional(),
+  pantryOnly:z.boolean().optional(),
+  pantryPlanId:z.string().min(1).max(180).optional(),
+  maximumMinutes:z.number().int().min(1).max(240).optional(),
+  pantryInventory:z.array(z.object({name:z.string().min(1).max(150),quantity:z.number().finite().min(0).max(1000000).optional(),unit:z.string().max(30).optional(),status:z.enum(["owned","stocked","low","restock"])})).max(200).optional(),
   ingredients: z.array(z.object({
     name: z.string().trim().min(1),
     amount: z.string().trim().min(1),
@@ -70,6 +76,26 @@ export async function POST(request: Request) {
   const preferences = { diet, avoidIngredients, availableEquipment };
   if (ingredients && ingredientViolations(ingredients.map(i => i.name), preferences).length) return NextResponse.json({ error: "This saved meal conflicts with your current dietary preferences. Replace the meal or update your preferences first." }, { status: 422 });
   const ingredientLines = ingredients ? formatRecipeIngredients(ingredients) : undefined;
+  if(requestResult.data.pantryOnly){
+    const {pantryInventory,pantryPlanId,maximumMinutes}=requestResult.data;
+    if(!ingredients||!servings||!pantryPlanId||!maximumMinutes||!pantryInventory?.length)return NextResponse.json({error:"Review and confirm the current pantry and original plan before opening this Pantry Only recipe."},{status:422});
+    const inventory={mealSourceMode:"pantry-only",combinedPantryItems:pantryInventory.map(i=>i.name).join(", "),pantryInventory};
+    const problem=pantryQuantityProblem(inventory),stock=pantryRecipeStockProblems(ingredients,inventory);
+    if(problem||stock.length)return NextResponse.json({error:problem||stock.join(" ")},{status:422});
+    try{
+      const parsed=await generateValidatedFood(openai,{
+        model:membership.plan==="plus"?"gpt-6.1-sol":"gpt-6-luna",
+        system:'Return JSON only with prep_time_minutes and actions. Each action is a strict object {action,ingredientIds,minutes}. Allowed actions: chop, heat, saute, mix, simmer, rest, serve. Reference only the zero-based ingredient IDs supplied. No prose, ingredients, substitutions, side dishes or extra fields. Use every ingredient in saute/mix/simmer; finish with serve. Repeated references mean the same measured food, never another addition. Dry rice needs a timed simmer with listed water. Respect original forms, household size, selected equipment and maximum elapsed time. Do not understate cooking time.',
+        user:JSON.stringify({mealTitle,ingredients:ingredients.map((i,id)=>({id,...i})),servings,availableEquipment,maximumMinutes}),
+        parse:value=>pantryActionSchema.parse(value),
+        validate:value=>pantryRecipeProblems(value,ingredients,maximumMinutes,availableEquipment??[]),
+      });
+      const output={title:mealTitle,prep_time_minutes:parsed.prep_time_minutes,ingredients:ingredientLines!,steps:renderPantryActions(parsed,ingredients,servings),pantryContractVersion:1,dietarySafety:assessDiet(ingredientLines,diet)};
+      if(recipeViolations(output,ingredients,preferences).length)return NextResponse.json({error:"Cooking instructions did not pass the existing food and equipment checks."},{status:422});
+      const candidateFailure=candidateOutputResponse({diet,avoidIngredients},output);if(candidateFailure)return candidateFailure;
+      return NextResponse.json(output);
+    }catch{return NextResponse.json({error:"The Pantry Only cooking actions could not be verified against the measured ingredients, forms, equipment and time. No unverified instructions were returned."},{status:422});}
+  }
 
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json(

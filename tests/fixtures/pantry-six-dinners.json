@@ -1,0 +1,386 @@
+{
+  "meals": [
+    {
+      "day": "Day 1",
+      "name": "Black Bean and Rice Skillet",
+      "notes": "Balanced and filling; pairs well with a simple side salad if desired.",
+      "servings": 2,
+      "description": "A hearty skillet meal of tender black beans and fluffy rice simmered with sautéed onions, garlic, tomatoes, and carrots for a comforting, one-pan dinner.",
+      "ingredients": [
+        {
+          "name": "Rice",
+          "price": 0,
+          "amount": "1 cup"
+        },
+        {
+          "name": "Black beans",
+          "price": 0,
+          "amount": "1 cup"
+        },
+        {
+          "name": "Onions",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Garlic cloves",
+          "price": 0,
+          "amount": "2 clove"
+        },
+        {
+          "name": "Tomatoes",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Carrots",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Olive oil",
+          "price": 0,
+          "amount": "1 tbsp"
+        },
+        {
+          "name": "Salt",
+          "price": 0,
+          "amount": "0.5 tsp"
+        },
+        {
+          "name": "Black pepper",
+          "price": 0,
+          "amount": "0.25 tsp"
+        },
+        {
+          "name": "Water",
+          "price": 0,
+          "amount": "2 cup"
+        }
+      ],
+      "prep_time_minutes": 40,
+      "dietaryRestrictions": "No preference"
+    },
+    {
+      "day": "Day 2",
+      "name": "Chickpea Tomato Stew",
+      "notes": "Serve with a scoop of rice or enjoy as a hearty bowl.",
+      "servings": 2,
+      "description": "A warming stew of chickpeas simmered with fresh tomatoes, onions, garlic, and carrots, seasoned with olive oil, salt, and black pepper for a simple but satisfying meal.",
+      "ingredients": [
+        {
+          "name": "Chickpeas",
+          "price": 0,
+          "amount": "1 cup"
+        },
+        {
+          "name": "Tomatoes",
+          "price": 0,
+          "amount": "2 each"
+        },
+        {
+          "name": "Onions",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Carrots",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Garlic cloves",
+          "price": 0,
+          "amount": "2 clove"
+        },
+        {
+          "name": "Olive oil",
+          "price": 0,
+          "amount": "1 tbsp"
+        },
+        {
+          "name": "Salt",
+          "price": 0,
+          "amount": "0.5 tsp"
+        },
+        {
+          "name": "Black pepper",
+          "price": 0,
+          "amount": "0.25 tsp"
+        },
+        {
+          "name": "Water",
+          "price": 0,
+          "amount": "1.5 cup"
+        }
+      ],
+      "prep_time_minutes": 45,
+      "dietaryRestrictions": "No preference"
+    },
+    {
+      "day": "Day 3",
+      "name": "Vegetable Chickpea Stir-Fry",
+      "notes": "A great way to use up vegetables and add variety.",
+      "servings": 2,
+      "description": "Chickpeas sautéed with carrots, onions, tomatoes, and garlic in olive oil, served over rice for a quick and colorful stir-fry with a Mediterranean flair.",
+      "ingredients": [
+        {
+          "name": "Chickpeas",
+          "price": 0,
+          "amount": "1 cup"
+        },
+        {
+          "name": "Rice",
+          "price": 0,
+          "amount": "1 cup"
+        },
+        {
+          "name": "Carrots",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Onions",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Tomatoes",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Garlic cloves",
+          "price": 0,
+          "amount": "2 clove"
+        },
+        {
+          "name": "Olive oil",
+          "price": 0,
+          "amount": "1 tbsp"
+        },
+        {
+          "name": "Salt",
+          "price": 0,
+          "amount": "0.5 tsp"
+        },
+        {
+          "name": "Black pepper",
+          "price": 0,
+          "amount": "0.25 tsp"
+        },
+        {
+          "name": "Water",
+          "price": 0,
+          "amount": "2 cup"
+        }
+      ],
+      "prep_time_minutes": 35,
+      "dietaryRestrictions": "No preference"
+    },
+    {
+      "day": "Day 4",
+      "name": "Simple Bean and Vegetable Soup",
+      "notes": "Perfect for a lighter dinner that still satisfies.",
+      "servings": 2,
+      "description": "A comforting soup featuring black beans, carrots, onions, tomatoes, and garlic simmered together with rice for a wholesome, filling meal.",
+      "ingredients": [
+        {
+          "name": "Black beans",
+          "price": 0,
+          "amount": "1 cup"
+        },
+        {
+          "name": "Rice",
+          "price": 0,
+          "amount": "0.5 cup"
+        },
+        {
+          "name": "Carrots",
+          "price": 0,
+          "amount": "2 each"
+        },
+        {
+          "name": "Onions",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Tomatoes",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Garlic cloves",
+          "price": 0,
+          "amount": "2 clove"
+        },
+        {
+          "name": "Olive oil",
+          "price": 0,
+          "amount": "1 tbsp"
+        },
+        {
+          "name": "Salt",
+          "price": 0,
+          "amount": "0.5 tsp"
+        },
+        {
+          "name": "Black pepper",
+          "price": 0,
+          "amount": "0.25 tsp"
+        },
+        {
+          "name": "Water",
+          "price": 0,
+          "amount": "3 cup"
+        }
+      ],
+      "prep_time_minutes": 50,
+      "dietaryRestrictions": "No preference"
+    },
+    {
+      "day": "Day 5",
+      "name": "Chickpea and Carrot Rice Pilaf",
+      "notes": "Easy to prepare and great for leftovers.",
+      "servings": 2,
+      "description": "A fragrant pilaf of rice, chickpeas, carrots, onions, and garlic, all cooked together and finished with a drizzle of olive oil for a satisfying, subtly sweet dinner.",
+      "ingredients": [
+        {
+          "name": "Rice",
+          "price": 0,
+          "amount": "1 cup"
+        },
+        {
+          "name": "Chickpeas",
+          "price": 0,
+          "amount": "1 cup"
+        },
+        {
+          "name": "Carrots",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Onions",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Garlic cloves",
+          "price": 0,
+          "amount": "2 clove"
+        },
+        {
+          "name": "Olive oil",
+          "price": 0,
+          "amount": "1 tbsp"
+        },
+        {
+          "name": "Salt",
+          "price": 0,
+          "amount": "0.5 tsp"
+        },
+        {
+          "name": "Black pepper",
+          "price": 0,
+          "amount": "0.25 tsp"
+        },
+        {
+          "name": "Water",
+          "price": 0,
+          "amount": "2 cup"
+        }
+      ],
+      "prep_time_minutes": 40,
+      "dietaryRestrictions": "No preference"
+    },
+    {
+      "day": "Day 6",
+      "name": "Hearty Tomato and Bean Ragout",
+      "notes": "Serve with rice or enjoy as a thick stew.",
+      "servings": 2,
+      "description": "A rustic ragout of black beans and chickpeas braised with tomatoes, onions, garlic, and carrots, finished with olive oil for a rich and savory stew.",
+      "ingredients": [
+        {
+          "name": "Black beans",
+          "price": 0,
+          "amount": "0.5 cup"
+        },
+        {
+          "name": "Chickpeas",
+          "price": 0,
+          "amount": "0.5 cup"
+        },
+        {
+          "name": "Tomatoes",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Onions",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Carrots",
+          "price": 0,
+          "amount": "1 each"
+        },
+        {
+          "name": "Garlic cloves",
+          "price": 0,
+          "amount": "2 clove"
+        },
+        {
+          "name": "Olive oil",
+          "price": 0,
+          "amount": "1 tbsp"
+        },
+        {
+          "name": "Salt",
+          "price": 0,
+          "amount": "0.5 tsp"
+        },
+        {
+          "name": "Black pepper",
+          "price": 0,
+          "amount": "0.25 tsp"
+        },
+        {
+          "name": "Water",
+          "price": 0,
+          "amount": "1.5 cup"
+        }
+      ],
+      "prep_time_minutes": 45,
+      "dietaryRestrictions": "No preference"
+    }
+  ],
+  "lunches": [],
+  "desserts": [],
+  "breakfasts": [],
+  "dietarySafety": {
+    "notice": "Ingredient checks are limited. Verify every package label, manufacturer information, substitutions, preparation conditions and cross-contact independently. MealCaddie cannot guarantee food safety and does not provide medical or nutritional treatment advice.",
+    "status": "uncertain",
+    "conflicts": [],
+    "uncertainty": [
+      "Legacy dietary text has been preserved. Confirm allergies in the separate allergy controls; this text is not automatically classified."
+    ]
+  },
+  "restock_items": [],
+  "varietyReview": {
+    "pantryOnly": true,
+    "withinPlan": [],
+    "requestedFamily": null,
+    "recentFamilyRepeats": []
+  },
+  "budget_summary": "This plan uses only listed owned ingredients. No additional purchases are required.",
+  "planning_notice": "Only 6 distinct dinner suggestion(s) fit the listed pantry. Check the required amounts before cooking. Combined recipe quantities fit the submitted measured snapshot; unknown amounts and package sizes were not assumed sufficient. Update pantry quantities after use or changes.",
+  "upgrade_available": false,
+  "estimated_total_cost": 0,
+  "pantry_quantity_review": {
+    "checkedDinners": 6,
+    "omittedOptions": 0
+  }
+}

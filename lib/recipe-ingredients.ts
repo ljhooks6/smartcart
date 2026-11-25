@@ -7,6 +7,7 @@ export function replacementIngredientItems(lines:string[]){
 }
 
 type RecipeSource = {
+  pantryOnly?:boolean;pantryPlanId?:string;pantryTimeLimit?:number;
   name: string;
   notes?: string;
   servings?: number;
@@ -19,10 +20,11 @@ export function formatRecipeIngredients(ingredients: RecipeIngredient[]) {
 
 // A title alone cannot identify a recipe after quantities or servings change.
 export function getRecipeSourceKey(meal: RecipeSource) {
-  return JSON.stringify([
+  const original=JSON.stringify([
     meal.name,
     meal.notes ?? "",
     meal.servings,
     meal.ingredients?.map(({ name, amount }) => [name.trim(), amount.trim()]) ?? [],
   ]);
+  return meal.pantryOnly?original+JSON.stringify(["pantry-actions-v1",meal.pantryPlanId,meal.pantryTimeLimit]):original;
 }

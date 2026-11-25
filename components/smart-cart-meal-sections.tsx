@@ -1,6 +1,7 @@
 "use client";
 
 import { SmartCartMealDetails } from "./smart-cart-meal-details";
+import {pantryMealMetadata} from "../lib/pantry-meal-metadata";
 
 import { SmartCartMealActions } from "./smart-cart-meal-actions";
 import { getMealKind, mealKindLabel, hasRoomForMeal } from "../lib/meal-types";
@@ -201,7 +202,7 @@ export function SmartCartMealSections({
                     </button></>}
 
                       onAddToWeek={() => onToggleDessertSave(dessert, index)}
-                      onSaveToVault={() => void onArchiveMeal({ user_id: safeTrim(userId), day: `Sweet Treat ${index + 1}`, name: dessert.title, servings: householdSize || 2, notes: "", description: dessert.description, dietaryRestrictions: "dietaryRestrictions" in dessert ? dessert.dietaryRestrictions as string : undefined, ingredients: dessert.ingredients, imageUrl: dessert.imageUrl })}
+                      onSaveToVault={() => void onArchiveMeal({ ...pantryMealMetadata(dessert),user_id: safeTrim(userId), day: `Sweet Treat ${index + 1}`, name: dessert.title, servings: householdSize || 2, notes: "", description: dessert.description, dietaryRestrictions: "dietaryRestrictions" in dessert ? dessert.dietaryRestrictions as string : undefined, ingredients: dessert.ingredients, imageUrl: dessert.imageUrl })}
                     />
 
                   </div>

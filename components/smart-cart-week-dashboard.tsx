@@ -6,6 +6,7 @@ import { sortScheduledMeals } from "../lib/meal-schedule";
 
 type WeekMeal = { day: string; name: string; scheduledDay?: string };
 type Props = {
+  pantryReviewRequired?:boolean;
   dinners: WeekMeal[];
   desserts: WeekMeal[];
   cookedCount: number;
@@ -23,7 +24,7 @@ type Props = {
   onNavigate: (stage: "plan" | "meals" | "shop" | "cook" | "vault") => void;
 };
 
-export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, groceryCount, collectedCount, pantryCount, pantryCheckCount = 0, estimatedCost, pricingIncomplete=false, budget, overBudget, hasIngredients, hasOptions, vaultCount, onNavigate }: Props) {
+export function SmartCartWeekDashboard({ pantryReviewRequired=false,dinners, desserts, cookedCount, groceryCount, collectedCount, pantryCount, pantryCheckCount = 0, estimatedCost, pricingIncomplete=false, budget, overBudget, hasIngredients, hasOptions, vaultCount, onNavigate }: Props) {
   const titleId = useId();
   const readyCount = dinners.length + desserts.length;
   const chosenSummary = (["breakfast", "lunch", "dinner"] as const).map((kind) => {
@@ -31,10 +32,10 @@ export function SmartCartWeekDashboard({ dinners, desserts, cookedCount, grocery
     return count ? `${count} ${kind}${count === 1 ? "" : "s"}` : "";
   }).filter(Boolean).concat(desserts.length ? [`${desserts.length} sweet treat${desserts.length === 1 ? "" : "s"}`] : []).join(", ");
   const remaining = groceryCount - collectedCount;
-  const nextStage = readyCount ? (remaining > 0 || pantryCheckCount > 0 ? "shop" : "cook") : hasOptions ? "meals" : "plan";
-  const nextLabel = nextStage === "shop" ? "Open shopping list" : nextStage === "cook" ? "Choose a meal to cook" : nextStage === "meals" ? "Choose your meals" : "Plan your week";
-  const nextTitle = nextStage === "shop" ? "Your shopping list is ready." : nextStage === "cook" ? "Ready when you are." : nextStage === "meals" ? "Your meal picks are ready." : "Let’s plan your week.";
-  const nextDescription = nextStage === "shop"
+  const nextStage = pantryReviewRequired?"plan":readyCount ? (remaining > 0 || pantryCheckCount > 0 ? "shop" : "cook") : hasOptions ? "meals" : "plan";
+  const nextLabel = pantryReviewRequired?"Review your pantry":nextStage === "shop" ? "Open shopping list" : nextStage === "cook" ? "Choose a meal to cook" : nextStage === "meals" ? "Choose your meals" : "Plan your week";
+  const nextTitle = pantryReviewRequired?"Check what’s still on hand.":nextStage === "shop" ? "Your shopping list is ready." : nextStage === "cook" ? "Ready when you are." : nextStage === "meals" ? "Your meal picks are ready." : "Let’s plan your week.";
+  const nextDescription = pantryReviewRequired?"Recovered quantities need your confirmation before shopping or cooking. Missing pantry information is not a purchase requirement.":nextStage === "shop"
     ? `${readyCount} meals chosen · ${remaining} items left to collect${pantryCheckCount ? ` · ${pantryCheckCount} to check in your pantry` : ""}.`
     : nextStage === "cook" ? `${readyCount} meals in your cook lineup.`
     : nextStage === "meals" ? "Choose what you want to cook. We’ll build the list around your picks."

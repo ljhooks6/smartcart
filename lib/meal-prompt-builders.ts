@@ -189,7 +189,7 @@ export function buildGenerateListPrompts({
     `- Respect the user's prep-time preference: ${prepTime || "No preference provided"}.`,
     ...cookingTimeRules(prepTime),
     "- This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.",
-    "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes. Use a natural recognizable dish name; a coherent soup, pasta or one-pan dish can already be a complete meal. Describe complementary sides without attaching unrelated rice to every dish.",
+    isPantryOnlyMode ? "- Every dinner must be a complete meal using only its quantified ingredient list. Do not mention optional sides, sauces, garnishes or serving accompaniments outside that list. Any included side must have its full household quantities allocated in the same cumulative pantry ledger." : "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes. Use a natural recognizable dish name; a coherent soup, pasta or one-pan dish can already be a complete meal. Describe complementary sides without attaching unrelated rice to every dish.",
     `- Avoid repeating these current meal titles: ${existingMeals || "None provided"}. A specifically requested repeat or a hard pantry-only constraint can take precedence; this is not a permanent ban.`,
     `- CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.`,
     ...equipmentGuidance,
