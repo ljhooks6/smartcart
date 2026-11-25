@@ -15,6 +15,7 @@ type GeneratePromptArgs = {
   avoidancePromptBlock: string;
   budget: number;
   combinedPantryItems: string;
+  pantryAmounts?: string;
   cuisinePromptBlock: string;
   dietaryPromptBlock: string;
   existingMeals: string;
@@ -146,6 +147,7 @@ export function buildGenerateListPrompts({
   avoidancePromptBlock,
   budget,
   combinedPantryItems,
+  pantryAmounts,
   cuisinePromptBlock,
   dietaryPromptBlock,
   existingMeals,
@@ -173,6 +175,10 @@ export function buildGenerateListPrompts({
   ];
 
   const corePlanningRules = [
+    ...(isPantryOnlyMode ? [`- Measured pantry snapshot: ${pantryAmounts || "No measured amounts"}. The SUM of all returned dinners and treats must fit these quantities for the requested household size. Include explicit servings for every dinner. Do not assume unknown amounts, package sizes, stock labels or future purchases are sufficient. Return fewer dinners when stock is limited.`] : []),
+    ...(isPantryOnlyMode ? [
+      "- PANTRY MEASUREMENT CONTRACT: Use each corresponding measured pantry ingredient name, preparation form and unit. Each ingredient amount is a positive decimal or fraction followed by its canonical pantry unit, for example 0.25 tsp, 1/2 cup, 2 clove or 1 each. Use tsp for salt/pepper, clove for garlic and each for whole vegetables when those are their snapshot units. Keep preparation instructions separate from the name and amount. Prefer the exact snapshot unit; ordinary same-dimension conversions such as tsp/tbsp are acceptable. Never infer ingredient density, package size, physical size, raw/cooked equivalence or preparation yield. If an ingredient's required amount cannot be expressed reliably in the supplied unit and form, choose another dish or omit it. Do not merely relabel measurements or understate household portions to pass validation.",
+    ] : []),
     "- Build appetizing, recognizable dishes within the full budget. Affordability does not require the cheapest repetitive template or maximum pantry reuse. Do not apply premium upgrades unless requested.",
     isPantryOnlyMode ? "- Return 0 to 7 feasible dinner options. Ingredient, dietary, time and equipment constraints take precedence over count and variety." : "- Return exactly 7 dinner meals.",
     includeBreakfast ? "- Also return exactly 3 practical breakfast options in breakfasts. These are choices, not an automatic seven-day breakfast schedule. Favor quick meals with protein/fiber, realistic household portions, and affordable ingredients." : "- Breakfast is not selected: return an empty breakfasts array.",
@@ -183,7 +189,7 @@ export function buildGenerateListPrompts({
     `- Respect the user's prep-time preference: ${prepTime || "No preference provided"}.`,
     ...cookingTimeRules(prepTime),
     "- This app is for families. EVERY dinner meal MUST contain a substantial protein source such as chicken, beef, seafood, pork, tofu, or heavy beans. NEVER generate a meal that is just carbs and sauce.",
-    "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes. Use a natural recognizable dish name; a coherent soup, pasta or one-pan dish can already be a complete meal. Describe complementary sides without attaching unrelated rice to every dish.",
+    isPantryOnlyMode ? "- Every dinner must be a complete meal using only its quantified ingredient list. Do not mention optional sides, sauces, garnishes or serving accompaniments outside that list. Any included side must have its full household quantities allocated in the same cumulative pantry ledger." : "- CRITICAL RULE: Every generated dinner MUST be a complete, balanced meal. Do not suggest standalone proteins or incomplete dishes. Use a natural recognizable dish name; a coherent soup, pasta or one-pan dish can already be a complete meal. Describe complementary sides without attaching unrelated rice to every dish.",
     `- Avoid repeating these current meal titles: ${existingMeals || "None provided"}. A specifically requested repeat or a hard pantry-only constraint can take precedence; this is not a permanent ban.`,
     `- CRITICAL: You may ONLY generate recipes that can be prepared using the following equipment: ${selectedEquipment}. Do not suggest recipes requiring unselected hardware.`,
     ...equipmentGuidance,
@@ -220,10 +226,12 @@ export function buildGenerateListPrompts({
     isPantryOnlyMode ? "- Use the exact available ingredient names or verified equivalents. Do not invent a specific variety, formulation or preparation. Even water, oil and seasonings must be listed as available to be included." : "- You MUST be specific with ingredient names (for example \"Red Bell Peppers\" or \"Roma Tomatoes\", not just \"Peppers\").",
     "- Title-specific shopping rule: if a meal title or description names a specific ingredient format, the ingredient array must use that same shopper-facing specificity. For example, \"Cheesy Macaroni\" must list \"Macaroni\" or \"Elbow Macaroni\", not generic \"Pasta\"; \"Spaghetti\" must list \"Spaghetti\", not generic \"Pasta\"; \"Yellow Onion\" must not become generic \"Onion\".",
     "- NEVER append conversational text like \"(assumed purchase)\" to ingredient names.",
-    "- BANNED: Any text like \"1 item\", \"(assumed purchase)\", or \"to taste\". If an amount is small, use \"1 pinch\" or \"1 tsp\".",
+    isPantryOnlyMode
+      ? "- BANNED: pinches, dashes, handfuls, packages, cans, bottles, to taste, assumed purchases or unknown quantities. For small seasoning amounts use a measured fraction in the supplied unit, such as 1/8 tsp. Include only ingredients with known compatible measured stock, including water and seasonings."
+      : "- BANNED: Any text like \"1 item\", \"(assumed purchase)\", or \"to taste\". If an amount is small, use \"1 pinch\" or \"1 tsp\".",
     "- You are a professional grocery curator. Preserve useful ingredient types such as \"Red Bell Peppers\", \"English Cucumber\", and \"80/20 Ground Beef\". Every ingredient amount MUST be the quantity actually used by this recipe for the requested household size (for example \"8 oz\", \"1/2 cup\", or \"2\"). Do not round recipe amounts up to a full store package. Use consistent ingredient names across meals when the ingredient is truly identical, including pantry names when using those exact items. Never equate different varieties or forms such as fresh garlic and garlic powder.",
     "- Ingredients must support the named dish and sauce. Do not cram every ingredient into the title or description. No decorative cuisine labels without the corresponding flavor, ingredients and technique.",
-    isPantryOnlyMode ? "- Use price: 0 for on-hand ingredients and estimated_total_cost: 0. No purchase prices are needed. Always list actual recipe amounts; unknown pantry amounts require a check before cooking." : "- Use realistic positive estimated costs consistently with existing grocery estimates; these are general estimates, not local prices or exact checkout totals. Avoid pricing a full container repeatedly as though each recipe requires a new one.",
+    isPantryOnlyMode ? "- Use price: 0 for on-hand ingredients and estimated_total_cost: 0. No purchase prices are needed. Always list actual recipe amounts. Unknown or incompatible pantry amounts cannot establish a feasible plan; omit those options rather than assuming sufficiency." : "- Use realistic positive estimated costs consistently with existing grocery estimates; these are general estimates, not local prices or exact checkout totals. Avoid pricing a full container repeatedly as though each recipe requires a new one.",
   ];
 
   const writingAndDessertRules = [

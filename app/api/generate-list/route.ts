@@ -9,6 +9,7 @@ import { generationRequestSchema } from "@/lib/generation-request";
 import { publicGenerationJob, readGenerationJob, reserveGenerationJob } from "@/lib/generation-jobs";
 import { dispatchGenerationJob } from "@/lib/generation-dispatch";
 import { optionalMealPauseResponse } from "@/lib/meal-availability";
+import { pantryQuantityProblem } from "@/lib/pantry-plan-quantities";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -30,6 +31,8 @@ export async function POST(request: Request) {
   } catch { return reply({ error: "Request body must be valid JSON." }, 400); }
   if (!input.success) return reply({ error: "Check your budget, household size, pantry, and planning preferences." }, 400);
   const safetyResponse = foodSafetyResponse(input.data, true); if (safetyResponse) return safetyResponse;
+  const pantryProblem = pantryQuantityProblem(input.data);
+  if (pantryProblem) return reply({code:"PANTRY_QUANTITIES_REQUIRED",error:pantryProblem,retryable:false},422);
   const key = z.string().uuid().safeParse(request.headers.get("Idempotency-Key"));
   if (!key.success) return reply({ error: "Please refresh MealCaddie before generating a plan." }, 400);
   try {

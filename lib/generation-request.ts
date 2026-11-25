@@ -6,6 +6,7 @@ export const generationRequestSchema = z.object({
   budget: z.number().finite().positive().max(10000),
   diet: z.string().min(1).max(6000), householdSize: z.number().int().min(1).max(30),
   combinedPantryItems: text,
+  pantryInventory: z.array(z.object({ name: z.string().min(1).max(150), quantity: z.number().finite().min(0).max(1000000).optional(), unit: z.string().max(30).optional(), status: z.enum(["owned","stocked","low","restock"]) }).strict()).max(200).optional(),
   fullyStocked: items.optional(), runningLow: items.optional(), restock: items.optional(),
   mustHaveIngredient: text.optional(), avoidIngredients: text.optional(),
   includeDessert: z.boolean().optional(), includeBreakfast: z.literal(false).optional(), includeLunch: z.literal(false).optional(),

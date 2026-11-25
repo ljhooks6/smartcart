@@ -1,5 +1,8 @@
 import { culinaryReview, planConstraintIssues, foodTermMatches, equipmentRequirementText } from "./meal-quality";
 import { availablePantryNames, distinctPantryDinners } from "./pantry-availability";
+import { measuredPantry, pantryQuantityProblem, fitPantryPlan, hasGeneratedMeasurementProblem, pantryMeasurementCorrection } from "./pantry-plan-quantities";
+import type { PantryEntry } from "./pantry";
+import {quantifiedPantryProse} from "./pantry-recipe-contract";
 import {optionalMealPauseResponse} from "./meal-availability";
 import { candidateOutputResponse } from "./food-safety-response";
 import { foodSafetyResponse } from "./food-safety-response";
@@ -26,6 +29,7 @@ type GenerateListRequest = {
   diet: string;
   householdSize: number;
   combinedPantryItems: string;
+  pantryInventory?: PantryEntry[];
   fullyStocked?: string[];
   runningLow?: string[];
   restock?: string[];
@@ -413,6 +417,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     diet,
     householdSize,
     combinedPantryItems,
+    pantryInventory,
     fullyStocked,
     runningLow,
     restock,
@@ -440,6 +445,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     : "Return exactly 7 dinner meals.";
   const responseSchema = pantryOnly ? aiGenerateListResponseSchema.extend({
     meals: z.array(mealSchema.extend({
+      servings: z.number().int().positive(),
       ingredients: z.array(ingredientSchema.extend({ price: z.number().nonnegative().default(0) })).min(1),
     })).max(7),
     desserts: z.array(dessertSchema.extend({
@@ -479,6 +485,10 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
   }
 
   const safetyResponse=foodSafetyResponse({diet,avoidIngredients},true);if(safetyResponse)return safetyResponse;
+  const pantryInput = { mealSourceMode: normalizedMealSourceMode, combinedPantryItems, fullyStocked, runningLow, restock, pantryInventory };
+  const pantryProblem = pantryQuantityProblem(pantryInput);
+  if (pantryProblem) return NextResponse.json({code:"PANTRY_QUANTITIES_REQUIRED",error:pantryProblem,retryable:false},{status:422});
+  const measured = measuredPantry(pantryInput);
   const isPlusGeneration = plan === "plus";
   const cuisinePreference = isPlusGeneration && typeof requestedCuisinePreference === "string" ? requestedCuisinePreference : "";
 
@@ -495,12 +505,13 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     applyUpgrades: Boolean(apply_upgrades),
     avoidancePromptBlock: avoidanceGuidance.promptBlock,
     budget,
-    combinedPantryItems,
+    combinedPantryItems: pantryOnly ? measured.map(entry=>entry.name).join(", ") : combinedPantryItems,
+    pantryAmounts: JSON.stringify(measured),
     cuisinePromptBlock: cuisineGuidance.promptBlock,
     dietaryPromptBlock: dietaryPreferences.promptBlock,
     existingMeals: existingMeals?.trim() || "None provided",
     varietyGuidance: buildMealVarietyGuidance(varietyInput, varietyContext),
-    fullyStocked: Array.isArray(fullyStocked) ? fullyStocked : [],
+    fullyStocked: pantryOnly ? [] : Array.isArray(fullyStocked) ? fullyStocked : [],
     householdSize,
     includeDessert: Boolean(includeDessert),
     includeBreakfast: Boolean(includeBreakfast),
@@ -509,7 +520,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     prepTime,
     restock:
       normalizedMealSourceMode === "pantry-only" ? [] : Array.isArray(restock) ? restock : [],
-    runningLow: Array.isArray(runningLow) ? runningLow : [],
+    runningLow: pantryOnly ? [] : Array.isArray(runningLow) ? runningLow : [],
     selectedEquipment,
     mealSourceMode: normalizedMealSourceMode,
   });
@@ -589,13 +600,22 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     let overusedProteins = normalizedMealSourceMode === "pantry-only" ? [] : findOverusedProteins(parsed.meals);
     let repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
     let cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
+    let quantityReview = pantryOnly ? fitPantryPlan(parsed.meals, parsed.desserts, pantryInput) : null;
+    let quantityCorrectionAttempted = false;
+    const measurementCorrectionNeeded = () => !!quantityReview && parsed.meals.length > 0 && !quantityReview.meals.length && hasGeneratedMeasurementProblem(quantityReview.rejections);
+    function measurementCorrection() {
+      if (!quantityReview || quantityCorrectionAttempted || !measurementCorrectionNeeded()) return "";
+      quantityCorrectionAttempted = true;
+      return pantryMeasurementCorrection(quantityReview.rejections);
+    }
 
-    if (
+    if (providerCalls < 3 && (
       blockedMatches.length > 0 || constraintIssues.length > 0 ||
-      equipmentViolations.length > 0
-    ) {
+      equipmentViolations.length > 0 || measurementCorrectionNeeded()
+    )) {
+      const measurementInstruction = measurementCorrection();
       rawPlan = await requestMealPlan(
-        `CRITICAL RETRY: ${constraintIssues.join("; ")} Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. ${dinnerCountInstruction} Desserts may be 0, 1, or 2 items.`,
+        `CRITICAL RETRY: ${constraintIssues.join("; ")} Fix these issues and return a fresh plan with valid JSON only. Blocked diet or avoidance terms found: ${Array.from(new Set(blockedMatches)).join(", ") || "none"}. Repeated signature flavor/title words found: ${repeatedSignatureWords.join(", ") || "none"}. Equipment rule violations found: ${equipmentViolations.join(", ") || "none"}. ${dinnerCountInstruction} Desserts may be 0, 1, or 2 items. ${measurementInstruction}`,
       );
       parsed = await parsePlan(rawPlan);
       parsed = {
@@ -615,6 +635,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       overusedProteins = normalizedMealSourceMode === "pantry-only" ? [] : findOverusedProteins(parsed.meals);
       repeatedMealFamilies = findRepeatedMealFamilies(parsed.meals);
       cuisineAlignedMeals = countCuisineAlignedMeals(parsed.meals, cuisinePreference);
+      quantityReview = pantryOnly ? fitPantryPlan(parsed.meals, parsed.desserts, pantryInput) : null;
     }
 
     if (
@@ -653,8 +674,8 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
 
     const finalDishSet=()=>[...parsed.meals,...parsed.breakfasts,...parsed.lunches,...parsed.desserts.map(d=>({...d,name:d.title,notes:d.description,day:"Dessert"}))];
     const remainingHardIssues=[...planConstraintIssues(parsed,constraintInput),...equipmentViolations,...blockedMatches];
-    if(remainingHardIssues.length && providerCalls<3) {
-      rawPlan=await requestMealPlan("FINAL CONSTRAINT CORRECTION: "+remainingHardIssues.join("; ")+". Do not relax constraints. No blender means no blended or pureed components; choose a recipe using the selected hardware. Preserve actual dish quality and descriptions. "+dinnerCountInstruction+(pantryOnly ? " Use price 0 for on-hand ingredients." : " Preserve positive ingredient prices."));
+    if((remainingHardIssues.length || (!quantityCorrectionAttempted && measurementCorrectionNeeded())) && providerCalls<3) {
+      rawPlan=await requestMealPlan("FINAL CONSTRAINT CORRECTION: "+remainingHardIssues.join("; ")+". Do not relax constraints. No blender means no blended or pureed components; choose a recipe using the selected hardware. Preserve actual dish quality and descriptions. "+dinnerCountInstruction+(pantryOnly ? " Use price 0 for on-hand ingredients." : " Preserve positive ingredient prices.")+" "+measurementCorrection());
       parsed=await parsePlan(rawPlan);parsed={...parsed,meals:normalizeGeneratedMeals(parsed.meals,householdSize)};
       blockedMatches=findBlockedContentMatches(finalDishSet(),[...dietaryPreferences.blockedIngredients,...avoidanceGuidance.avoidedItems]).concat(allergyConflicts(parsed,diet));
       equipmentViolations=findEquipmentViolations(finalDishSet(),selectedEquipmentSet);
@@ -684,6 +705,17 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
       );
     }
 
+    quantityReview = pantryOnly ? fitPantryPlan(parsed.meals, parsed.desserts, pantryInput) : null;
+    if (quantityReview) {
+      if (!quantityReview.meals.length) {
+        const incompatible = hasGeneratedMeasurementProblem(quantityReview.rejections);
+        return NextResponse.json({code:incompatible ? "PANTRY_MEASUREMENTS_INCOMPATIBLE" : "PANTRY_QUANTITIES_UNSATISFIED",error:(incompatible ? "The generated ingredient measurements could not be matched reliably to your pantry units. Your pantry amounts were not changed. " : "No complete dinner fits the measured pantry stock for this household. ")+[...new Set(quantityReview.omitted)].join(" ")+(incompatible ? " Review the ingredient forms and units, or choose Pantry + store pickup. This does not mean your pantry is empty." : " Update actual on-hand amounts or choose Pantry + store pickup.")+" Keep your dietary restrictions entered. No additional purchases or incompatible recipes were assumed.",retryable:false},{status:422});
+      }
+      parsed = {...parsed, meals:quantityReview.meals, desserts:quantityReview.desserts};
+    }
+    if(pantryOnly){
+      parsed={...parsed,budget_summary:"Pantry Only uses only the listed measured quantities. No additional purchases or sides are included.",meals:parsed.meals.map(m=>({...m,...quantifiedPantryProse(m.name,m.ingredients,householdSize),pantryOnly:true})),desserts:parsed.desserts.map(d=>{const prose=quantifiedPantryProse(d.title,d.ingredients,householdSize);return {...d,title:prose.name,description:prose.description,pantryOnly:true};})};
+    }
     const optionalMeals = [
       ...normalizeOptionalMeals(includeBreakfast ? parsed.breakfasts : [], "breakfast", householdSize),
       ...normalizeOptionalMeals(includeLunch ? parsed.lunches : [], "lunch", householdSize),
@@ -737,7 +769,7 @@ export async function generateMealPlan(body: unknown, plan: "free" | "plus", onU
     return NextResponse.json({
       dietarySafety,
       ...parsed,
-      ...(pantryOnly ? { planning_notice: `${parsed.meals.length < 7 ? `Only ${parsed.meals.length} distinct dinner suggestion(s) fit the listed pantry. ` : ""}Check the required amounts before cooking. On-hand names and stock labels do not confirm enough quantity for these meals.`, upgrade_available: false } : {}),
+      ...(pantryOnly ? { planning_notice: `${parsed.meals.length < 7 ? `Only ${parsed.meals.length} distinct dinner suggestion(s) fit the listed pantry. ` : ""}${quantityReview?.omitted.length ? `${quantityReview.omitted.length} options were omitted because measured stock or compatible units did not cover them. ` : ""}Check the required amounts before cooking. Combined recipe quantities fit the submitted measured snapshot; unknown amounts and package sizes were not assumed sufficient. Update pantry quantities after use or changes.`, pantry_quantity_review: { checkedDinners: parsed.meals.length, omittedOptions: quantityReview?.omitted.length || 0 }, upgrade_available: false } : {}),
       // No extra provider call or retry is made for this culinary preference.
       varietyReview: reviewMealVariety(parsed.meals.map(meal => meal.name), varietyInput, varietyContext),
       meals: allMeals,

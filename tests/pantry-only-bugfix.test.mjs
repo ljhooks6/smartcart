@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loader,withEnv} from './helpers/load-ts.mjs';
 
-const input={budget:60,householdSize:2,diet:'No preference',combinedPantryItems:'Rice, Scallions',mealSourceMode:'pantry-only',availableEquipment:['Stovetop'],prepTime:'Under 30 mins'};
-const dish=(name='Rice with green onion',ingredients=[{name:'Rice',amount:'1 cup',price:0},{name:'Green onion',amount:'1',price:0}])=>({day:'Day 1',name,description:'Tender rice with a crisp onion finish.',prep_time_minutes:20,ingredients});
+const input={budget:60,householdSize:2,diet:'No preference',combinedPantryItems:'Dry white rice, Scallions',pantryInventory:[{name:'Dry white rice',quantity:100,unit:'cup',status:'owned'},{name:'Scallions',quantity:100,unit:'each',status:'owned'}],mealSourceMode:'pantry-only',availableEquipment:['Stovetop'],prepTime:'Under 30 mins'};
+const dish=(name='Dry white rice with green onion',ingredients=[{name:'Dry white rice',amount:'1 cup',price:0},{name:'Green onion',amount:'1',price:0}])=>({day:'Day 1',name,servings:2,description:'Tender rice with a crisp onion finish.',prep_time_minutes:20,ingredients});
 const answer=meals=>({meals,desserts:[],estimated_total_cost:0,budget_summary:'Pantry suggestions',upgrade_available:false});
 async function run(value,extra={},plan='free'){
  return withEnv({OPENAI_API_KEY:'mock-only'},async()=>{
@@ -21,7 +21,7 @@ test('sparse pantry accepts one zero-cost suggestion and safe scallion equivalen
 });
 test('moderate and well-stocked pantry responses retain counts for Free and Plus',async()=>{
  for(const count of [3,7])for(const plan of ['free','plus']){
-  const meals=Array.from({length:count},(_,i)=>dish(['Rice soup','Rice patties','Rice skillet','Rice salad','Steamed rice','Rice porridge','Baked rice'][i]));
+  const meals=Array.from({length:count},(_,i)=>dish(['Dry white rice soup','Dry white rice patties','Dry white rice skillet','Dry white rice salad','Steamed rice','Dry white rice porridge','Baked rice'][i]));
   const r=await run(answer(meals),{availableEquipment:['Stovetop','Oven']},plan);
   assert.equal(r.status,200);assert.equal(r.body.meals.length,count);assert.equal(r.calls,1);
   assert.equal(r.body.estimated_total_cost,0);assert.equal(r.body.upgrade_available,false);
@@ -39,8 +39,8 @@ test('absent ingredients, no feasible meals, schema and provider failures have d
   [answer([dish('Milk rice',[{name:'Milk',amount:'1 cup',price:0}])]),{},422,'PANTRY_INGREDIENT_UNAVAILABLE'],
   [answer([]),{},422,'PANTRY_NO_FEASIBLE_MEALS'],
   [answer([dish()]),{combinedPantryItems:''},400,'PANTRY_INPUT_EMPTY'],
-  [answer([dish()]),{restock:['Rice','Scallions']},400,'PANTRY_INPUT_EMPTY'],
-  [answer([dish('Rice',[])]),{},500,'GENERATION_RESPONSE_INVALID'],
+  [answer([dish()]),{restock:['Dry white rice','Scallions']},400,'PANTRY_INPUT_EMPTY'],
+  [answer([dish('Dry white rice',[])]),{},500,'GENERATION_RESPONSE_INVALID'],
   [new Error('mock failure'),{},500,'GENERATION_PROVIDER_FAILED'],
  ]){
   const r=await run(response,extra);assert.equal(r.status,status);assert.equal(r.body.code,code);
@@ -50,37 +50,37 @@ test('absent ingredients, no feasible meals, schema and provider failures have d
 test('ordinary planning still requires seven dinners and positive costs',async()=>{
  const r=await run(answer([dish()]),{mealSourceMode:'pantry-and-store'});
  assert.equal(r.status,500);assert.equal(r.body.code,'GENERATION_RESPONSE_INVALID');
- const meals=Array.from({length:7},(_,i)=>dish('Rice dinner '+i,[{name:'Rice',amount:'1 cup',price:1}]));
+ const meals=Array.from({length:7},(_,i)=>dish('Dry white rice dinner '+i,[{name:'Dry white rice',amount:'1 cup',price:1}]));
  const normal=await run({...answer(meals),estimated_total_cost:7},{mealSourceMode:'pantry-and-store'});
  assert.equal(normal.status,200);assert.equal(normal.body.meals.length,7);
 });
 test('availability and prompt use reviewed equivalents and exclude restock intentions',()=>{
  const {availablePantryNames,pantryMatchKey}=loader()('lib/pantry-availability.ts');
- const names=availablePantryNames({combinedPantryItems:'Rice, Salt',runningLow:['Scallions'],fullyStocked:['Milk'],restock:['Milk','Salt']});
- assert.deepEqual(names,['Rice','Scallions']);
+ const names=availablePantryNames({combinedPantryItems:'Dry white rice, Salt',runningLow:['Scallions'],fullyStocked:['Milk'],restock:['Milk','Salt']});
+ assert.deepEqual(names,['Dry white rice','Scallions']);
  for(const [a,b] of [['Scallions','Green onions'],['Courgette','Zucchini'],['Garlic cloves, minced','Garlic'],['Jalapeño','Jalapeno']])assert.equal(pantryMatchKey(a),pantryMatchKey(b));
- for(const [a,b] of [['Garlic','Garlic powder'],['Fresh basil','Dried basil'],['Milk','Almond milk'],['Soy sauce','Gluten-free soy sauce'],['Rice','Brown rice']])assert.notEqual(pantryMatchKey(a),pantryMatchKey(b));
+ for(const [a,b] of [['Garlic','Garlic powder'],['Fresh basil','Dried basil'],['Milk','Almond milk'],['Soy sauce','Gluten-free soy sauce'],['Dry white rice','Brown rice']])assert.notEqual(pantryMatchKey(a),pantryMatchKey(b));
  assert.equal(pantryMatchKey('Milk or water'),'');
  const {generationPantryNames}=loader()('lib/pantry.ts');
- assert.deepEqual(generationPantryNames([{name:'Rice',status:'owned'},{name:'Milk',status:'restock',quantity:1},{name:'Salt',status:'low',quantity:0}]),['Rice']);
+ assert.deepEqual(generationPantryNames([{name:'Dry white rice',status:'owned'},{name:'Milk',status:'restock',quantity:1},{name:'Salt',status:'low',quantity:0}]),['Dry white rice']);
 });
 test('validator recognizes scallions without equating garlic with powder',()=>{
  const {planConstraintIssues}=loader()('lib/meal-quality.ts');
  assert.deepEqual(planConstraintIssues(answer([dish()]),input),[]);
  assert.ok(planConstraintIssues(answer([dish('Garlic rice',[{name:'Garlic powder',price:0}])]),{...input,combinedPantryItems:'Garlic'}).length);
- assert.ok(planConstraintIssues(answer([dish('Rice soup',[{name:'Water',amount:'1 cup',price:0}])]),input).length);
+ assert.ok(planConstraintIssues(answer([dish('Dry white rice soup',[{name:'Water',amount:'1 cup',price:0}])]),input).length);
 });
 
 test('generated requirements keep unknown amounts unresolved and subtract measured inventory once',async()=>{
  const r=await run(answer([dish()]));
  const {deriveGroceryLists}=loader()('lib/grocery-list.ts');
- const base={weeklyMenu:r.body.meals,savedDesserts:[],fullyStocked:new Set(['Rice']),runningLow:new Set(),restock:new Set()};
- const unknown=deriveGroceryLists({...base,pantryEntries:[{name:'Rice',status:'stocked'},{name:'Scallions',status:'owned'}]});
+ const base={weeklyMenu:r.body.meals,savedDesserts:[],fullyStocked:new Set(['Dry white rice']),runningLow:new Set(),restock:new Set()};
+ const unknown=deriveGroceryLists({...base,pantryEntries:[{name:'Dry white rice',status:'stocked'},{name:'Scallions',status:'owned'}]});
  assert.equal(unknown.skippedGroceryList.length,0);
  assert.equal(unknown.checkPantryList.length,2);
  assert.ok(unknown.checkPantryList.every(row=>/Amount unknown/.test(row.pantry_note)));
- const partial=deriveGroceryLists({...base,pantryEntries:[{name:'Rice',quantity:0.5,unit:'cup',status:'low'},{name:'Scallions',quantity:1,unit:'each',status:'owned'}]});
- assert.equal(partial.derivedGroceryList.find(row=>row.item_key==='rice').shortage_amount,'0.5 cups');
+ const partial=deriveGroceryLists({...base,pantryEntries:[{name:'Dry white rice',quantity:0.5,unit:'cup',status:'low'},{name:'Scallions',quantity:1,unit:'each',status:'owned'}]});
+ assert.equal(partial.derivedGroceryList.find(row=>row.item_key==='dry white rice').shortage_amount,'0.5 cups');
  assert.equal(partial.skippedGroceryList.length,1);
 });
 
@@ -97,7 +97,7 @@ test('pantry prompts share the validator inventory and do not demand seven dinne
  const p=buildGenerateListPrompts({...input,fullyStocked:['Milk'],restock:['Milk'],runningLow:['Scallions'],selectedEquipment:'Stovetop',adventureGuidance:'',adventureLevel:'Mix it up',applyUpgrades:false,avoidancePromptBlock:'',cuisinePromptBlock:'',dietaryPromptBlock:'Vegetarian',existingMeals:'',mustHavePromptBlock:'',includeDessert:false});
  assert.match(p.systemPrompt,/Return 0 to 7/);assert.match(p.systemPrompt,/price: 0/);
  assert.doesNotMatch(p.systemPrompt,/Return exactly 7 dinner meals/);
- assert.match(p.userPrompt,/Pantry Items: Rice, Scallions/);
+ assert.match(p.userPrompt,/Pantry Items: Dry white rice, Scallions/);
  assert.doesNotMatch(p.userPrompt,/Fully Stocked Pantry Items: Milk/);
 });
 

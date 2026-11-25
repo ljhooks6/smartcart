@@ -5,6 +5,8 @@ import { getMealRequestHeaders } from "../lib/meal-request-headers";
 import { getRecipeSourceKey } from "../lib/recipe-ingredients";
 import { normalizeRecipe, normalizeSavedRecipes, recipeStorageKey, rememberRecipe } from "../lib/recipe-progress";
 import { loadStoredJson, saveStoredJson } from "../lib/smart-cart-persistence";
+import type {PantryEntry} from "../lib/pantry";
+import {pantryMealMetadata} from "../lib/pantry-meal-metadata";
 
 type IngredientItem = {
   name: string;
@@ -13,6 +15,7 @@ type IngredientItem = {
 };
 
 type MealPlanItem = {
+  pantryOnly?:boolean;pantryPlanId?:string;pantryTimeLimit?:number;
   user_id: string;
   day: string;
   name: string;
@@ -39,6 +42,7 @@ type RecipeResponse = {
 };
 
 type UseSmartCartRecipeArgs = {
+  pantryEntries?:PantryEntry[];pantryReviewRequired?:boolean;mealSourceMode?:string;
   householdSize: number;
   userId: string;
   diet: string;
@@ -48,7 +52,7 @@ type UseSmartCartRecipeArgs = {
 
 const safeTrim = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
-export function useSmartCartRecipe({ householdSize, userId, diet, avoidIngredients, availableEquipment }: UseSmartCartRecipeArgs) {
+export function useSmartCartRecipe({ householdSize, userId, diet, avoidIngredients, availableEquipment,pantryEntries=[],pantryReviewRequired=false,mealSourceMode }: UseSmartCartRecipeArgs) {
   const [recipeCache, setRecipeCache] = useState<Record<string, RecipeResponse>>({});
   const recipeSources = useRef<Record<string, string>>({});
   const [activeRecipeMeal, setActiveRecipeMeal] = useState<MealPlanItem | null>(null);
@@ -57,15 +61,17 @@ export function useSmartCartRecipe({ householdSize, userId, diet, avoidIngredien
 
   // A recipe generated under different restrictions must not bypass new checks.
   const preferenceKey = JSON.stringify(["food-quality-v2", diet, avoidIngredients, availableEquipment]);
-  const sourceFor = useCallback((meal: MealPlanItem) => `${getRecipeSourceKey(meal)}::${preferenceKey}`, [preferenceKey]);
+  const sourceFor = useCallback((meal: MealPlanItem) => `${getRecipeSourceKey(meal)}::${preferenceKey}${meal.pantryOnly?JSON.stringify(["pantry-actions-v1",meal.pantryPlanId,meal.pantryTimeLimit,pantryEntries,pantryReviewRequired]):""}`, [preferenceKey,pantryEntries,pantryReviewRequired]);
   const activeRecipe = useMemo(
-    () => (activeRecipeMeal && recipeSources.current[activeRecipeMeal.name] === sourceFor(activeRecipeMeal)
+    () => (activeRecipeMeal && !((activeRecipeMeal.pantryOnly||(activeRecipeMeal.pantryOnly===undefined&&mealSourceMode==="pantry-only"))&&(pantryReviewRequired||!activeRecipeMeal.pantryPlanId||!activeRecipeMeal.pantryTimeLimit)) && recipeSources.current[activeRecipeMeal.name] === sourceFor(activeRecipeMeal)
       ? recipeCache[activeRecipeMeal.name]
       : undefined),
-    [activeRecipeMeal, recipeCache, sourceFor],
+    [activeRecipeMeal, recipeCache, sourceFor,mealSourceMode,pantryReviewRequired],
   );
 
   async function fetchRecipeForMeal(meal: MealPlanItem) {
+    const only=meal.pantryOnly||(meal.pantryOnly===undefined&&mealSourceMode==="pantry-only");
+    if(only&&(pantryReviewRequired||!meal.pantryPlanId||!meal.pantryTimeLimit)){setRecipeError("Review this plan's pantry quantities and preparation forms before cooking. Legacy Pantry Only meals need a newly validated plan.");return null;}
     const sourceKey = sourceFor(meal);
     if (recipeCache[meal.name] && recipeSources.current[meal.name] === sourceKey) {
       setRecipeError(null);
@@ -93,6 +99,7 @@ export function useSmartCartRecipe({ householdSize, userId, diet, avoidIngredien
         headers: await getMealRequestHeaders(userId || undefined),
         body: JSON.stringify({
           mealTitle: meal.name,
+          ...(only?{pantryOnly:true,pantryPlanId:meal.pantryPlanId,maximumMinutes:meal.pantryTimeLimit,pantryInventory:pantryEntries}:{}),
           diet, avoidIngredients, availableEquipment,
           mealNotes: meal.description || meal.notes,
           originalDietaryRestrictions: meal.dietaryRestrictions,
@@ -142,6 +149,7 @@ export function useSmartCartRecipe({ householdSize, userId, diet, avoidIngredien
 
   async function handleGetDessertRecipe(dessert: GeneratedDessert, index: number) {
     const dessertMeal: MealPlanItem = {
+      ...pantryMealMetadata(dessert),
       user_id: safeTrim(userId),
       day: `Sweet Treat ${index + 1}`,
       name: dessert.title,

@@ -45,12 +45,13 @@ test('rejected recipe never overwrites saved ingredients or leaks provider outpu
  assert.equal(r.status,502);assert.equal(f.calls.length,2);assert.equal('ingredients' in await r.json(),false);
 });
 test('zero pantry prices are corrected for ordinary planning, treats use Luna for Plus too',async()=>{
- const f=fixture({plan:'plus',responses:[{...dessert,ingredients:[{name:'Almond milk',amount:'1 cup',price:0}]},dessert]});const r=await f.post('replace-dessert',dessertInput,'valid');
- assert.equal(r.status,200);assert.equal(f.calls.length,2);assert.equal(f.calls[0].model,'gpt-6-luna');assert.match(f.calls[0].messages[0].content,/NOT additional shopping cost/);assert.deepEqual((await r.json()).ingredients,dessert.ingredients);
+ const f=fixture({plan:'plus',responses:[{...dessert,ingredients:[{name:'Almond milk',amount:'1 cup',price:0}]},dessert]});const r=await f.post('replace-dessert',{...dessertInput,mealSourceMode:'pantry-and-store'},'valid');
+ assert.equal(r.status,200);assert.equal(f.calls.length,2);assert.equal(f.calls[0].model,'gpt-6-luna');assert.deepEqual((await r.json()).ingredients,dessert.ingredients);
 });
 test('pantry additions, forbidden equipment and budget overspend cannot be returned',async()=>{
- for(const bad of [{...dessert,ingredients:[{name:'Chia seeds',amount:'1 cup',price:1}]},{...dessert,description:'Bake in an oven.'},{...dessert,ingredients:[{name:'Bananas',amount:'2',price:11}]}]){
-  const f=fixture({responses:[bad]});const r=await f.post('replace-dessert',dessertInput);assert.equal(r.status,502);assert.equal(f.calls.length,2);
+ const blocked=fixture({responses:[dessert]});assert.equal((await blocked.post('replace-dessert',dessertInput)).status,422);assert.equal(blocked.calls.length,0);
+ for(const bad of [{...dessert,description:'Bake in an oven.'},{...dessert,ingredients:[{name:'Bananas',amount:'2',price:11}]}]){
+  const f=fixture({responses:[bad]});const r=await f.post('replace-dessert',{...dessertInput,mealSourceMode:'pantry-and-store'});assert.equal(r.status,502);assert.equal(f.calls.length,2);
  }
 });
 test('malformed preferences and nonpositive budget fail before AI',async()=>{

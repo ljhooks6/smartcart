@@ -1,0 +1,43 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {openAttemptBudget,createBoundedProvider,prepareProviderRequest,measurementLimits} from './helpers/provider-attempt-budget.mjs';
+function lab(){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mc-budget-'));fs.writeFileSync(path.join(dir,'attempts.json'),JSON.stringify({version:1,state:'prepared',attempts:[]}));const budget=openAttemptBudget(dir);return {dir,budget,close:()=>{assert.ok(path.resolve(dir).startsWith(path.resolve(os.tmpdir())+path.sep));fs.rmSync(dir,{recursive:true,force:true});}};}
+const input=model=>({model,response_format:{type:'json_object'},messages:[{role:'system',content:'Synthetic test only'},{role:'user',content:'Household two'}]});
+const ok=()=>Response.json({choices:[{message:{content:'{}'}}],usage:{prompt_tokens:10,completion_tokens:5,total_tokens:15}},{headers:{'x-request-id':'req_synthetic'}});
+
+test('measurement run denies every recipe and third planning attempt before dispatch, durably',async()=>{
+ const l=lab();try{
+  fs.writeFileSync(path.join(l.dir,'attempts.json'),JSON.stringify({version:1,state:'prepared',limits:measurementLimits,attempts:[]}));
+  const budget=openAttemptBudget(l.dir,measurementLimits);budget.arm();let calls=0;
+  const handle=()=>createBoundedProvider({budget:openAttemptBudget(l.dir,measurementLimits),transport:async()=>{calls++;return ok();}});
+  await assert.rejects(handle()(input('gpt-6-luna')),/ATTEMPT_LIMIT/);assert.equal(calls,0);
+  await handle()(input('gpt-4.1'));await assert.rejects(handle()(input('gpt-6-luna')),/ATTEMPT_LIMIT/);
+  await handle()(input('gpt-4.1'));await assert.rejects(handle()(input('gpt-4.1')),/ATTEMPT_LIMIT/);await assert.rejects(handle()(input('gpt-6-luna')),/ATTEMPT_LIMIT/);
+  assert.equal(calls,2);assert.equal(budget.read().attempts.length,2);
+  assert.throws(()=>openAttemptBudget(l.dir).read(),/LEDGER_LIMITS_MISMATCH/);
+  assert.throws(()=>budget.arm(),/NOT_FRESH/);budget.close();await assert.rejects(handle()(input('gpt-4.1')),/NOT_ARMED/);
+  assert.throws(()=>openAttemptBudget(l.dir,{...measurementLimits,planning:4}),/UNAPPROVED_LIMITS/);
+ }finally{l.close();}
+});
+
+test('reduced-profile failures consume permits and uncertainty still freezes the remaining planning allowance',async()=>{
+ for(const uncertain of [false,true]){const l=lab();try{
+  fs.writeFileSync(path.join(l.dir,'attempts.json'),JSON.stringify({version:1,state:'prepared',limits:measurementLimits,attempts:[]}));
+  const budget=openAttemptBudget(l.dir,measurementLimits);budget.arm();let calls=0;
+  const handle=createBoundedProvider({budget,transport:async()=>{calls++;if(uncertain)throw Error('Synthetic failure');return Response.json({error:{}},{status:400});}});
+  if(uncertain){await assert.rejects(handle(input('gpt-4.1')),/UNCERTAIN_PROVIDER_OUTCOME/);await assert.rejects(handle(input('gpt-4.1')),/UNCERTAIN_OR_ACTIVE/);assert.equal(calls,1);}
+  else{await handle(input('gpt-4.1'));await handle(input('gpt-4.1'));await assert.rejects(handle(input('gpt-4.1')),/ATTEMPT_LIMIT/);assert.equal(calls,2);}
+ }finally{l.close();}}
+});
+test('three planning + two recipe requests are durable across reopened ledgers; sixth is denied',async()=>{const l=lab();try{l.budget.arm();let calls=0;const transport=async()=>{calls++;return ok();};for(const model of ['gpt-4.1','gpt-4.1','gpt-4.1','gpt-6-luna','gpt-6-luna'])await createBoundedProvider({budget:openAttemptBudget(l.dir),transport})(input(model));await assert.rejects(createBoundedProvider({budget:l.budget,transport})(input('gpt-4.1')),/ATTEMPT_LIMIT/);assert.equal(calls,5);assert.equal(l.budget.read().attempts.length,5);assert.equal(l.budget.read().attempts[0].providerRequestId,'req_synthetic');}finally{l.close();}});
+test('failed HTTP requests consume permits; concurrent requests cannot exceed the per-kind cap',async()=>{const l=lab();try{l.budget.arm();let calls=0;const handle=createBoundedProvider({budget:l.budget,transport:async()=>{calls++;return Response.json({error:{message:'do not retain private response'}},{status:429});}});for(let i=0;i<3;i++)assert.equal((await handle(input('gpt-4.1'))).status,429);const attempts=await Promise.allSettled([handle(input('gpt-4.1')),handle(input('gpt-4.1'))]);assert.ok(attempts.every(x=>x.status==='rejected'));assert.equal(calls,3);assert.ok(l.budget.read().attempts.every(a=>a.state==='failed'));assert.doesNotMatch(fs.readFileSync(path.join(l.dir,'attempts.json'),'utf8'),/private response|Synthetic test|Household/);}finally{l.close();}});
+test('uncertain transport freezes the entire run and cannot be reset by rearming',async()=>{const l=lab();try{l.budget.arm();let calls=0;const h=createBoundedProvider({budget:l.budget,transport:async()=>{calls++;throw Error('secret provider diagnostics');}});await assert.rejects(h(input('gpt-4.1')),/UNCERTAIN_PROVIDER_OUTCOME/);await assert.rejects(h(input('gpt-6-luna')),/UNCERTAIN_OR_ACTIVE/);assert.throws(()=>openAttemptBudget(l.dir).arm(),/NOT_FRESH/);assert.equal(calls,1);assert.equal(l.budget.read().attempts[0].category,'TRANSPORT_OR_RESPONSE_UNCERTAIN');}finally{l.close();}});
+test('prepared, closed, crashed and corrupt ledgers fail closed before network dispatch',async()=>{const l=lab();try{let calls=0;const h=createBoundedProvider({budget:l.budget,transport:async()=>{calls++;return ok();}});await assert.rejects(h(input('gpt-4.1')),/NOT_ARMED/);l.budget.arm();l.budget.reserve('planning','gpt-4.1',10,'hash');await assert.rejects(h(input('gpt-4.1')),/UNCERTAIN_OR_ACTIVE/);l.budget.close();await assert.rejects(h(input('gpt-4.1')),/NOT_ARMED/);fs.writeFileSync(path.join(l.dir,'attempts.json'),'broken');await assert.rejects(h(input('gpt-4.1')));assert.equal(calls,0);}finally{l.close();}});
+test('allowlisted JSON text requests receive enforced output caps; oversized or alternate paths/options are denied',()=>{for(const [model,cap] of [['gpt-4.1',4096],['gpt-6-luna',3500]]){assert.equal(prepareProviderRequest({...input(model),max_tokens:999999}).request.max_completion_tokens,cap);}for(const body of [{...input('other')},{...input('gpt-4.1'),tools:[]},{...input('gpt-4.1'),stream:true},{...input('gpt-4.1'),messages:[{role:'user',content:'😀'.repeat(10000)}]}])assert.throws(()=>prepareProviderRequest(body));});
+test('budget/authorization failures never dispatch and never consume a provider permit',async()=>{const l=lab();try{l.budget.arm();let calls=0;const h=createBoundedProvider({budget:l.budget,authorize:async()=>{throw Error('WRONG_JOB');},transport:async()=>{calls++;return ok();}});await assert.rejects(h(input('gpt-4.1')),/WRONG_JOB/);assert.equal(calls,0);assert.equal(l.budget.read().attempts.length,0);}finally{l.close();}});
+test('overlapping dispatch is denied while the first outcome is pending',async()=>{const l=lab();try{l.budget.arm();let release,calls=0;const pending=new Promise(r=>release=r);const h=createBoundedProvider({budget:l.budget,transport:async()=>{calls++;await pending;return ok();}});const first=h(input('gpt-4.1'));await new Promise(r=>setImmediate(r));await assert.rejects(h(input('gpt-6-luna')),/UNCERTAIN_OR_ACTIVE/);release();await first;assert.equal(calls,1);}finally{l.close();}});
+test('provider 5xx and inconsistent usage freeze subsequent provider work',async()=>{for(const response of [()=>Response.json({error:{}},{status:503}),()=>Response.json({usage:{prompt_tokens:1,completion_tokens:99999,total_tokens:100000}})]){const l=lab();try{l.budget.arm();const h=createBoundedProvider({budget:l.budget,transport:async()=>response()});let answer;try{answer=await h(input('gpt-4.1'));}catch{}if(answer)assert.equal(answer.status,502,'Uncertain upstream outcomes must not trigger the worker 503 retry path');assert.equal(l.budget.read().attempts[0].state,'uncertain');await assert.rejects(h(input('gpt-6-luna')),/UNCERTAIN_OR_ACTIVE/);}finally{l.close();}}});
+test('job/input and recipe bindings survive reopening and prohibit replacement work',()=>{const l=lab();try{l.budget.bindJob('one','input');l.budget.bindRecipe('recipe');const reopened=openAttemptBudget(l.dir);assert.throws(()=>reopened.bindJob('two','input'),/SECOND_JOB_DENIED/);assert.throws(()=>reopened.bindJob('one','changed'),/INPUT_CHANGED/);assert.throws(()=>reopened.bindRecipe('other'),/SECOND_RECIPE_DENIED/);}finally{l.close();}});

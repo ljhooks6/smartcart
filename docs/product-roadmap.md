@@ -12,6 +12,10 @@ Manual recipe entry and source links; structured import from supported food blog
 
 Proposed tiers: Free manual entry and limited assisted imports; Plus larger import allowances and expanded storage. Research processing, storage and AI costs before setting limits. Respect copyright and platform restrictions, identify uncertainty, and never certify imported recipes as allergy-safe. Universal social extraction is not promised.
 
+## Proposed initiative — Pantry exploration (IMP-006)
+
+Upcoming pantry UX consideration: **IMP-006 — separate ingredient exploration from stock-confirmed planning**. Retain this for the owner-reviewed UX phase; no redesign is included in Assignment 02F. Requirements, risks, tier implications and dependencies remain in [the improvement backlog](improvement-backlog.md#imp-006--separate-pantry-exploration-from-stock-confirmed-planning).
+
 ## Phase 2 — MealCaddie households
 
 Initially two adults, invited into a shared workspace with roles and permissions. Shared weekly calendar, groceries, pantry and Vault; separate personal preferences and optional explicitly shared dietary information. Design removal, revocation, exit and preservation of personally owned data.
