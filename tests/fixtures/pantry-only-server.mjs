@@ -7,6 +7,18 @@ import {writeFile,readFile} from 'node:fs/promises';
 import {generationPostgresLab} from '../helpers/generation-postgres-lab.mjs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+export function fixtureOriginAllowed(origin,pathname,offlineSix){
+ return !origin||origin==='http://localhost:3052'||(offlineSix&&pathname==='/fixture/expire-plus'&&origin==='http://127.0.0.1:3053');
+}
+export function offlinePantryResult(body,six){
+ let data;try{data=JSON.parse(body.messages.find(m=>m.role==='user').content);}catch{/* Planning prompts are plain text, for both Free and Plus models. */}
+ if(Array.isArray(data?.ingredients)&&typeof data.maximumMinutes==='number'){
+  const ids=data.ingredients.map((_,i)=>i),minutes=data.ingredients.some(i=>/dry brown rice/i.test(i.name))?40:30;
+  return {prep_time_minutes:minutes+10,actions:[{action:'mix',ingredientIds:ids,minutes:5},{action:'simmer',ingredientIds:ids,minutes},{action:'serve',ingredientIds:ids,minutes:5}]};
+ }
+ const names={'Rice':'Dry white rice','Black beans':'Cooked black beans','Chickpeas':'Cooked chickpeas'};
+ return {...six,meals:six.meals.map(m=>({...m,ingredients:m.ingredients.map(i=>({...i,name:names[i.name]??i.name}))}))};
+}
 export async function startPantryLab({providerHandler,providerSummary,pantry,receiptPath=process.env.MEALCADDIE_JOURNEY_RECEIPT,installSignalHandlers=true}={}){
 const offlineSix=process.env.MEALCADDIE_OFFLINE_SIX_REPLAY==='1'&&!providerHandler;
 const six=offlineSix?JSON.parse(await readFile(new URL('./pantry-six-dinners.json',import.meta.url),'utf8')):null;
@@ -24,7 +36,7 @@ const send=(res,status,body,extra={})=>{res.writeHead(status,{'Content-Type':'ap
 const server=http.createServer(async(req,res)=>{
  try{
   const url=new URL(req.url,'http://127.0.0.1:3053');
-  if(req.headers.origin&&req.headers.origin!==app)return send(res,403,{message:'Loopback app origin only.'});
+  if(!fixtureOriginAllowed(req.headers.origin,url.pathname,offlineSix))return send(res,403,{message:'Loopback app origin only.'});
   res.setHeader('Access-Control-Allow-Origin',app);res.setHeader('Access-Control-Allow-Headers','authorization,apikey,content-type,x-client-info,x-supabase-api-version,accept-profile,content-profile,prefer,range');res.setHeader('Access-Control-Allow-Methods','GET,POST,PATCH,OPTIONS');res.setHeader('Access-Control-Expose-Headers','Content-Range');
   if(req.method==='OPTIONS')return send(res,204,null);
   if(url.pathname==='/fixture'){
@@ -49,14 +61,7 @@ const server=http.createServer(async(req,res)=>{
    if(token!=='mock-provider-no-paid-calls')return send(res,403,{error:{message:'Mock key only'}});
    providerCalls++;lab.events.push({stage:'generation',provider:'loopback-mock',externalCalls:0});await receipt();
    if(offlineSix){
-    let result;
-    if(body.model!=='gpt-4.1'){
-     const data=JSON.parse(body.messages.find(m=>m.role==='user').content),ids=data.ingredients.map((_,i)=>i),minutes=data.ingredients.some(i=>/dry brown rice/i.test(i.name))?40:30;
-     result={prep_time_minutes:minutes+10,actions:[{action:'mix',ingredientIds:ids,minutes:5},{action:'simmer',ingredientIds:ids,minutes},{action:'serve',ingredientIds:ids,minutes:5}]};
-    }else{
-     const names={'Rice':'Dry white rice','Black beans':'Cooked black beans','Chickpeas':'Cooked chickpeas'};
-     result={...six,meals:six.meals.map(m=>({...m,ingredients:m.ingredients.map(i=>({...i,name:names[i.name]??i.name}))}))};
-    }
+    const result=offlinePantryResult(body,six);
     return send(res,200,{choices:[{message:{role:'assistant',content:JSON.stringify(result)}}],model:body.model,usage:{prompt_tokens:0,completion_tokens:0,total_tokens:0}});
    }
    const allText=body.messages.map(m=>m.content).join('\n'),servings=Number(/Household Size:\s*(\d+)/.exec(allText)?.[1]||2);

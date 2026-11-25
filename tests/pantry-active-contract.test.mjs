@@ -2,12 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {loader,withEnv} from './helpers/load-ts.mjs';
+import {offlinePantryResult,fixtureOriginAllowed} from './fixtures/pantry-only-server.mjs';
 const load=loader(),recovery=load('lib/active-plan-pantry.ts'),forms=load('lib/pantry-preparation.ts'),contract=load('lib/pantry-recipe-contract.ts');
 const original=JSON.parse(readFileSync(new URL('./fixtures/pantry-six-dinners.json',import.meta.url),'utf8'));
 const at='2026-11-24T20:00:00Z';
 const mapping={'Rice':'Dry white rice','Black beans':'Cooked black beans','Chickpeas':'Cooked chickpeas'};
 const inventory=[['Rice',8,'cup'],['Black beans',6,'cup'],['Chickpeas',6,'cup'],['Carrots',8,'each'],['Onions',6,'each'],['Tomatoes',6,'each'],['Garlic cloves',12,'clove'],['Olive oil',16,'tbsp'],['Salt',4,'tsp'],['Black pepper',2,'tsp'],['Water',24,'cup']].map(([name,quantity,unit])=>({name:mapping[name]??name,quantity,unit,status:'owned'}));
 const clarified=original.meals.map(m=>({...m,ingredients:m.ingredients.map(i=>({...i,name:mapping[i.name]??i.name}))}));
+
+test('offline browser fixture distinguishes planning from Cook by contract, including the shared Plus model',()=>{
+ const before=JSON.stringify(original);
+ for(const model of ['gpt-4.1','gpt-6.1-sol'])assert.equal(offlinePantryResult({model,messages:[{role:'user',content:'Household Size: 2; synthetic planning prompt'}]},original).meals.length,6);
+ for(const model of ['gpt-6-luna','gpt-6.1-sol'])assert.equal(offlinePantryResult({model,messages:[{role:'user',content:JSON.stringify({ingredients:clarified[0].ingredients,maximumMinutes:60})}]},original).actions.length,3);
+ assert.equal(JSON.stringify(original),before);
+});
+test('disposable expiration form accepts its own origin without expanding application RPC origins',()=>{
+ assert.equal(fixtureOriginAllowed('http://127.0.0.1:3053','/fixture/expire-plus',true),true);
+ assert.equal(fixtureOriginAllowed('http://127.0.0.1:3053','/fixture/expire-plus',false),false);
+ assert.equal(fixtureOriginAllowed('http://127.0.0.1:3053','/rest/v1/rpc/save_mealcaddie_week',true),false);
+ assert.equal(fixtureOriginAllowed('https://example.invalid','/fixture/expire-plus',true),false);
+ assert.equal(fixtureOriginAllowed('http://localhost:3052','/rest/v1/rpc/save_mealcaddie_week',true),true);
+});
 
 test('active recovery separates immutable original and current edits; owner/plan isolation survives serialized restart',()=>{
  const value=recovery.newActivePantry('one','plan',at,inventory),before=JSON.stringify(value.original);
@@ -20,7 +35,7 @@ test('active recovery separates immutable original and current edits; owner/plan
 });
 test('explicit forms preserve cloud-compatible names and require remeasurement; generic entries remain unresolved',()=>{
  const pantry=load('lib/pantry.ts');
- for(const name of ['Rice','Black beans','Chickpeas']){
+ for(const name of ['Rice','Uncooked rice','Dry rice','Beans','Black beans','Chickpeas']){
   assert.ok(forms.preparationIssue(name));const choices=forms.preparationChoices(name);assert.ok(choices.length);
   const chosen=forms.clarifyPreparation({name,quantity:6,unit:'cup',status:'owned'},choices.at(-1));
   assert.equal(chosen.quantity,undefined);assert.notEqual(chosen.name,name);

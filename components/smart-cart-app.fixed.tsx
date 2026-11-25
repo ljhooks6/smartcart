@@ -1024,7 +1024,7 @@ export function SmartCartApp() {
     <button type="button" className="min-h-11 underline mr-4" onClick={()=>{setPlanning(current=>current?.owner===planOwner?{...current,step:3}:current);navigateToStage("plan");}}>Review pantry quantities and forms</button>
     <button type="button" className="min-h-11 underline" onClick={confirmCurrentPantry}>Confirm these amounts are still on hand</button>
   </section>:activePantry.storageFailed?<p role="alert">This browser could not save active-plan pantry recovery. Keep this page open and review your pantry again if you reload.</p>:null;
-  const grocerySidebar = pantryReviewRequired ? pantryRecoveryNotice : (
+  const grocerySidebar = pantryReviewRequired ? <p className="text-sm text-ink/75">Shopping remains pending until you review the active-plan pantry above.</p> : (
     <SmartCartGrocerySidebar
       pantryCheck={pantryCheck}
       hasUnknownPrices={hasUnknownPrices}

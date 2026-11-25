@@ -5,9 +5,9 @@ import type { PantryEntry } from "./pantry.ts";
 // recipe JSON preserve them without a new database column or inferred yields.
 export function preparationChoices(name: string): string[] {
   const key = ingredientKey(name);
-  if (key === "rice") return ["Dry white rice", "Dry brown rice", "Cooked rice"];
+  if (key === "rice" || /^(?:dry|dried|uncooked|raw) rice$/.test(key)) return ["Dry white rice", "Dry brown rice", "Cooked rice"];
   if (/^(?:white|brown|jasmine|basmati|arborio|wild) rice$/.test(key)) return [`Dry ${name.toLowerCase()}`, `Cooked ${name.toLowerCase()}`];
-  if (/^(?:black bean|chickpea|garbanzo bean|kidney bean|pinto bean|white bean|lentil)$/.test(key)) return [`Dried ${name.toLowerCase()}`, `Cooked ${name.toLowerCase()}`, `Canned ${name.toLowerCase()} (drained)`];
+  if (/^(?:bean|black bean|chickpea|garbanzo bean|kidney bean|pinto bean|white bean|lentil)$/.test(key)) return [`Dried ${name.toLowerCase()}`, `Cooked ${name.toLowerCase()}`, `Canned ${name.toLowerCase()} (drained)`];
   if (/^canned (?:.*bean|chickpea|lentil)$/.test(key)) return [`${name} (drained)`];
   return [];
 }

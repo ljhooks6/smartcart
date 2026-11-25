@@ -33,13 +33,22 @@ No unrelated enhancement is authorized by this document.
 
 ## IMP-007 — Preserve a usable Free Pantry Only plan after reload
 
-- **Status:** Owner-approved in Assignment 02H; implemented as a draft PR #18 candidate. Focused tests and standard build pass; remaining actual browser verification is incomplete because the connected Chrome tab could not be read. See `docs/assignment02h-pantry-recovery.md`. Not released.
+- **Status:** Owner-approved in Assignment 02H; implemented as a draft PR #18 candidate. Focused tests, standard build and local in-app browser recovery/quantity checks pass, including synthetic Plus expiration. See `docs/assignment02h-pantry-recovery.md` for scope and limitations. Not released.
 - **Evidence / confidence:** Confirmed in the actual local real-provider journey at PR18 application commit 20a3de6. Two saved meals and their schedule recovered, but the Free inventory became empty and Shop changed from eleven covered rows/$0 to eleven items to buy. The restore effect explicitly gates pantry recovery on Plus. This is a confirmed behavior; whether current-device Free persistence is desired is a product decision.
 - **Recommendation / user benefit:** Review an owner-scoped current-device/per-plan measured snapshot with timestamp and explicit stale-stock confirmation, separate from Plus cloud pantry memory. Avoid turning an accepted purchase-free plan into an unexplained shopping trip after reload. Do not grant Plus, silently change entitlements or assume old stock is still available.
 - **Implementation complexity:** Medium. **Priority:** High. **Beneficiaries:** Primarily Free; consistent snapshot/reconfirmation semantics also benefit Plus.
 - **Dependencies:** Owner approval of the persistence boundary; account-isolation, saved-plan provenance, stale inventory, Save/reload and grocery recalculation tests. Retain IMP-006 as the separate exploration UX initiative.
 - **Risks:** Stale inventory causing false sufficiency, cross-account cache leakage and accidental expansion of cloud pantry entitlement. Always distinguish the generation snapshot from current physical stock and preserve later user edits.
 - **Potential ongoing costs:** No paid ingredient API or added AI call required. Small local storage and maintenance; shared storage/migration would need separate review if proposed.
+
+## IMP-008 — Shorten ingredient-grounded meal display titles
+
+- **Status:** Proposed during Assignment 02H; not implemented. Owner consideration required.
+- **Evidence / confidence:** Confirmed in the local browser: conservative quantified output produces titles such as “Dry white rice and Cooked black beans skillet.” Repeated preparation labels make meal options harder to scan. Whether shorter labels improve selection is a usability hypothesis.
+- **Recommendation / benefit:** Use a small deterministic display-title formatter that retains only validated food identities and dish styles, while keeping exact preparation forms in ingredient details and recipe provenance. This could improve readability without adding unlisted foods or changing the validated meal.
+- **Complexity:** Low to Medium. **Priority:** Low. **Beneficiaries:** Free and Plus.
+- **Dependencies / risks:** Owner approval; distinguish display labels from canonical ingredient identity and saved recipe/cache keys. Do not hide meaningful forms, imply interchangeable quantities, or introduce title-only ingredients.
+- **Ongoing costs:** No new API, paid call or storage service; small formatter and regression-test maintenance.
 
 ## IMP-005 — Review grocery identity aliases separately from search discovery
 
